@@ -1,0 +1,671 @@
+[gd_scene format=3 uid="uid://t84rkfytcor7"]
+
+[ext_resource type="Script" uid="uid://ckrgapgprd8xk" path="res://main_menu.gd" id="1_menu"]
+[ext_resource type="Script" uid="uid://cr7pux3m5kv3" path="res://main_menu_art.gd" id="2_art"]
+[ext_resource type="Script" uid="uid://cu716f7clq00o" path="res://main_menu_cursor.gd" id="3_cursor"]
+[ext_resource type="Texture2D" uid="uid://48q7scyb0ywi" path="res://assets/ui/kilos_curved.png" id="4_kilos_curved"]
+[ext_resource type="Script" uid="uid://fl5qixkal657" path="res://main_menu_tile_fx.gd" id="5_tile_fx"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="6_title_font"]
+
+[sub_resource type="StyleBoxFlat" id="FallingTile"]
+bg_color = Color(0.411765, 0.745098, 0.603922, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.55)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 4
+shadow_offset = Vector2(5, 7)
+
+[sub_resource type="StyleBoxFlat" id="TileGreen"]
+bg_color = Color(0.411765, 0.745098, 0.603922, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.45)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 5
+shadow_offset = Vector2(7, 9)
+
+[sub_resource type="SystemFont" id="ChunkyFont"]
+font_names = PackedStringArray("Arial Rounded MT Bold", "Arial Black", "Arial")
+font_weight = 800
+subpixel_positioning = 0
+
+[sub_resource type="StyleBoxFlat" id="TileRed"]
+bg_color = Color(1, 0.309804, 0.4, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.45)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 5
+shadow_offset = Vector2(7, 9)
+
+[sub_resource type="StyleBoxFlat" id="TileYellow"]
+bg_color = Color(1, 0.760784, 0.239216, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.45)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 5
+shadow_offset = Vector2(7, 9)
+
+[sub_resource type="StyleBoxFlat" id="TileBlue"]
+bg_color = Color(0.482353, 0.788235, 0.937255, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.45)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 5
+shadow_offset = Vector2(7, 9)
+
+[sub_resource type="StyleBoxFlat" id="TilePurple"]
+bg_color = Color(0.756863, 0.443137, 0.811765, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.45)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 5
+shadow_offset = Vector2(7, 9)
+
+[sub_resource type="StyleBoxFlat" id="TileOrange"]
+bg_color = Color(0.956863, 0.596078, 0.372549, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.45)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 5
+shadow_offset = Vector2(7, 9)
+
+[sub_resource type="StyleBoxFlat" id="TileBlueDeep"]
+bg_color = Color(0.352941, 0.627451, 0.843137, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.45)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 5
+shadow_offset = Vector2(7, 9)
+
+[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(0.286275, 0.266667, 0.388235, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.164706, 0.141176, 0.215686, 0.45)
+shadow_size = 3
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
+content_margin_left = 3.0
+content_margin_top = 4.0
+content_margin_right = 3.0
+content_margin_bottom = 0.0
+bg_color = Color(0.286275, 0.266667, 0.388235, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.968627, 0.890196, 0.741176, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="ButtonHover"]
+content_margin_left = 20.0
+content_margin_top = 11.0
+content_margin_right = 20.0
+content_margin_bottom = 11.0
+bg_color = Color(0.482353, 0.713726, 0.580392, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.968627, 0.890196, 0.741176, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.164706, 0.141176, 0.215686, 0.42)
+shadow_size = 4
+shadow_offset = Vector2(0, 5)
+
+[sub_resource type="StyleBoxFlat" id="QuitNormal"]
+bg_color = Color(0.858824, 0.223529, 0.309804, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.164706, 0.141176, 0.215686, 0.42)
+shadow_size = 3
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="TooltipStyle"]
+bg_color = Color(0.976471, 0.894118, 0.741176, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.247059, 0.215686, 0.313725, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0.152941, 0.129412, 0.2, 0.35)
+shadow_size = 3
+shadow_offset = Vector2(0, 4)
+
+[node name="MainMenu" type="Control" unique_id=1178804453]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="BackgroundFill" type="ColorRect" parent="." unique_id=427787136]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.120969854, 0.5510978, 0.79400885, 1)
+
+[node name="Background" type="Control" parent="." unique_id=314484285]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_art")
+
+[node name="FallingLayer" type="Control" parent="." unique_id=843971288]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FallingTemplate" type="PanelContainer" parent="FallingLayer" unique_id=1211647408]
+visible = false
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("FallingTile")
+
+[node name="FX" type="Control" parent="FallingLayer/FallingTemplate" unique_id=873830840]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Letter" type="Label" parent="FallingLayer/FallingTemplate" unique_id=1565013979]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_outline_color = Color(0.286275, 0.266667, 0.388235, 0.18)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 24
+text = "NOUN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FallTimer" type="Timer" parent="." unique_id=1102163553]
+wait_time = 0.58
+
+[node name="MainLayer" type="Control" parent="." unique_id=1751503129]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LogoGroup" type="Control" parent="MainLayer" unique_id=1772862414]
+anchors_preset = 0
+offset_left = 194.0
+offset_top = 60.0
+offset_right = 1174.0
+offset_bottom = 462.0
+
+[node name="Kilos" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=824369719]
+layout_mode = 0
+offset_left = 140.0
+offset_top = -46.0
+offset_right = 834.0
+offset_bottom = 213.0
+mouse_default_cursor_shape = 2
+texture = ExtResource("4_kilos_curved")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="GrammarG" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=1995916991]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 150.0
+offset_right = 135.0
+offset_bottom = 270.0
+rotation = -0.0698132
+pivot_offset = Vector2(71, 75)
+theme_override_styles/panel = SubResource("TileGreen")
+
+[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarG" unique_id=2030540118]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarG" unique_id=990728519]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 76
+text = "G"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarG" unique_id=2042944773]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 9
+text = "5"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="GrammarR1" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=933265998]
+layout_mode = 0
+offset_left = 145.0
+offset_top = 150.0
+offset_right = 265.0
+offset_bottom = 270.0
+rotation = 0.0872665
+pivot_offset = Vector2(71, 75)
+theme_override_styles/panel = SubResource("TileRed")
+
+[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarR1" unique_id=1733598962]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarR1" unique_id=270135832]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 76
+text = "R"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarR1" unique_id=1831190639]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 9
+text = "4"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="GrammarA1" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=112494732]
+layout_mode = 0
+offset_left = 280.0
+offset_top = 150.0
+offset_right = 400.0
+offset_bottom = 270.0
+rotation = -0.0698132
+pivot_offset = Vector2(71, 75)
+theme_override_styles/panel = SubResource("TileYellow")
+
+[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarA1" unique_id=1990027756]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarA1" unique_id=490210561]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 76
+text = "A"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarA1" unique_id=609858240]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 9
+text = "8"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="GrammarM1" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=1511730324]
+layout_mode = 0
+offset_left = 415.0
+offset_top = 150.0
+offset_right = 535.0
+offset_bottom = 270.0
+rotation = 0.0523599
+pivot_offset = Vector2(71, 75)
+theme_override_styles/panel = SubResource("TileBlue")
+
+[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarM1" unique_id=1734719172]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarM1" unique_id=687116492]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 76
+text = "M"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarM1" unique_id=1568240075]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 9
+text = "10"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="GrammarM2" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=1958823084]
+layout_mode = 0
+offset_left = 550.0
+offset_top = 150.0
+offset_right = 670.0
+offset_bottom = 270.0
+rotation = -0.0523599
+pivot_offset = Vector2(71, 75)
+theme_override_styles/panel = SubResource("TilePurple")
+
+[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarM2" unique_id=1293526709]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarM2" unique_id=1199591641]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 76
+text = "M"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarM2" unique_id=1687611029]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 9
+text = "10"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="GrammarA2" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=462738204]
+layout_mode = 0
+offset_left = 685.0
+offset_top = 150.0
+offset_right = 805.0
+offset_bottom = 270.0
+rotation = 0.0698132
+pivot_offset = Vector2(71, 75)
+theme_override_styles/panel = SubResource("TileOrange")
+
+[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarA2" unique_id=731347204]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarA2" unique_id=1376579001]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 76
+text = "A"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarA2" unique_id=239402047]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 9
+text = "8"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="GrammarR2" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=1680663106]
+layout_mode = 0
+offset_left = 820.0
+offset_top = 150.0
+offset_right = 940.0
+offset_bottom = 270.0
+rotation = -0.0523599
+pivot_offset = Vector2(71, 75)
+theme_override_styles/panel = SubResource("TileBlueDeep")
+
+[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarR2" unique_id=2009637445]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarR2" unique_id=2053006930]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 76
+text = "R"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarR2" unique_id=37253202]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 9
+text = "4"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="LeftMenu" type="VBoxContainer" parent="MainLayer" unique_id=670607935]
+layout_mode = 0
+offset_left = 42.0
+offset_top = 500.0
+offset_right = 205.0
+offset_bottom = 684.0
+theme_override_constants/separation = 7
+
+[node name="Leaderboard" type="Button" parent="MainLayer/LeftMenu" unique_id=893965103]
+custom_minimum_size = Vector2(163, 40)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/hover = SubResource("ButtonHover")
+text = "LEADERBOARD"
+
+[node name="Librarium" type="Button" parent="MainLayer/LeftMenu" unique_id=425720813]
+custom_minimum_size = Vector2(163, 40)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/hover = SubResource("ButtonHover")
+text = "LIBRARIUM"
+
+[node name="Settings" type="Button" parent="MainLayer/LeftMenu" unique_id=1888547398]
+custom_minimum_size = Vector2(163, 40)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/hover = SubResource("ButtonHover")
+text = "SETTINGS"
+
+[node name="Credits" type="Button" parent="MainLayer/LeftMenu" unique_id=794054224]
+custom_minimum_size = Vector2(163, 40)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/hover = SubResource("ButtonHover")
+text = "CREDITS"
+
+[node name="CenterMenu" type="VBoxContainer" parent="MainLayer" unique_id=1750835866]
+layout_mode = 0
+offset_left = 520.0
+offset_top = 492.0
+offset_right = 760.0
+offset_bottom = 685.0
+theme_override_constants/separation = 10
+
+[node name="Resume" type="Button" parent="MainLayer/CenterMenu" unique_id=1106129653]
+custom_minimum_size = Vector2(240, 60)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/hover = SubResource("ButtonHover")
+text = "RESUME"
+
+[node name="Play" type="Button" parent="MainLayer/CenterMenu" unique_id=1153098940]
+custom_minimum_size = Vector2(240, 60)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/hover = SubResource("ButtonHover")
+text = "PLAY"
+
+[node name="Quit" type="Button" parent="MainLayer/CenterMenu" unique_id=638833762]
+custom_minimum_size = Vector2(240, 60)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("QuitNormal")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/hover = SubResource("ButtonHover")
+text = "QUIT"
+
+[node name="Tooltip" type="PanelContainer" parent="MainLayer" unique_id=257164577]
+visible = false
+layout_mode = 0
+offset_right = 192.0
+offset_bottom = 62.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("TooltipStyle")
+
+[node name="Text" type="Label" parent="MainLayer/Tooltip" unique_id=249133200]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.247059, 0.215686, 0.313725, 1)
+theme_override_fonts/font = SubResource("ChunkyFont")
+theme_override_font_sizes/font_size = 12
+text = "Settings, controls and dictionaries."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="CursorCritter" type="Control" parent="." unique_id=1493705781]
+z_index = 100
+anchors_preset = 0
+offset_left = 4.0
+offset_top = 85.0
+offset_right = 44.0
+offset_bottom = 167.0
+mouse_filter = 2
+script = ExtResource("3_cursor")
