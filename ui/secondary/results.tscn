@@ -1,0 +1,248 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://ui/secondary/results.gd" id="1_script"]
+[ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
+
+[sub_resource type="StyleBoxFlat" id="StatCard"]
+bg_color = Color(1, 0.968627, 0.862745, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.411765, 0.745098, 0.603922, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.164706, 0.141176, 0.215686, 0.18)
+shadow_size = 3
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StatusCard"]
+bg_color = Color(0.411765, 0.745098, 0.603922, 0.18)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.533333, 0.419608, 0.55)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[node name="Results" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="OuterMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 70
+theme_override_constants/margin_top = 34
+theme_override_constants/margin_right = 70
+theme_override_constants/margin_bottom = 34
+
+[node name="Panel" type="PanelContainer" parent="OuterMargin"]
+layout_mode = 2
+
+[node name="Padding" type="MarginContainer" parent="OuterMargin/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 26
+
+[node name="Content" type="VBoxContainer" parent="OuterMargin/Panel/Padding"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Header" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 34
+text = "ROUND RESULTS"
+
+[node name="ModeBadge" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 16
+text = "ROUND RESULTS"
+vertical_alignment = 1
+
+[node name="ActivityLabel" type="Label" parent="OuterMargin/Panel/Padding/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.7)
+theme_override_font_sizes/font_size = 15
+text = "No round details received"
+horizontal_alignment = 1
+
+[node name="Stats" type="GridContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 2
+
+[node name="ScoreCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Stats"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StatCard")
+
+[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Stats/ScoreCard"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/ScoreCard/Stack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
+theme_override_font_sizes/font_size = 14
+text = "SCORE"
+horizontal_alignment = 1
+
+[node name="ScoreValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/ScoreCard/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 32
+text = "—"
+horizontal_alignment = 1
+
+[node name="AccuracyCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Stats"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StatCard")
+
+[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Stats/AccuracyCard"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/AccuracyCard/Stack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
+theme_override_font_sizes/font_size = 14
+text = "ACCURACY"
+horizontal_alignment = 1
+
+[node name="AccuracyValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/AccuracyCard/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 32
+text = "—"
+horizontal_alignment = 1
+
+[node name="CorrectCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Stats"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StatCard")
+
+[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Stats/CorrectCard"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/CorrectCard/Stack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
+theme_override_font_sizes/font_size = 14
+text = "CORRECT"
+horizontal_alignment = 1
+
+[node name="CorrectValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/CorrectCard/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 32
+text = "—"
+horizontal_alignment = 1
+
+[node name="StreakCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Stats"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StatCard")
+
+[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Stats/StreakCard"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/StreakCard/Stack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
+theme_override_font_sizes/font_size = 14
+text = "BEST STREAK"
+horizontal_alignment = 1
+
+[node name="StreakValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/StreakCard/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 32
+text = "—"
+horizontal_alignment = 1
+
+[node name="StatusCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StatusCard")
+
+[node name="StatusLabel" type="Label" parent="OuterMargin/Panel/Padding/Content/StatusCard"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "No result data received yet. Values stay blank until gameplay sends them."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RetryButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "RETRY"
+
+[node name="TopicButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "CHOOSE TOPIC"
+
+[node name="ActivityButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "ACTIVITIES"
+
+[node name="MainButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "MAIN MENU"

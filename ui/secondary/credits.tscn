@@ -1,0 +1,185 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://ui/secondary/credits.gd" id="1_script"]
+[ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
+
+[sub_resource type="StyleBoxFlat" id="Card"]
+bg_color = Color(1, 0.968627, 0.862745, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.286275, 0.266667, 0.388235, 0.22)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[node name="Credits" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="OuterMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 72
+theme_override_constants/margin_top = 38
+theme_override_constants/margin_right = 72
+theme_override_constants/margin_bottom = 38
+
+[node name="Panel" type="PanelContainer" parent="OuterMargin"]
+layout_mode = 2
+
+[node name="Padding" type="MarginContainer" parent="OuterMargin/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 30
+
+[node name="Content" type="VBoxContainer" parent="OuterMargin/Panel/Padding"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Header" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="BackButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(118, 48)
+layout_mode = 2
+focus_mode = 2
+text = "← BACK"
+
+[node name="Title" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 34
+text = "CREDITS"
+vertical_alignment = 1
+
+[node name="Hero" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Project" type="Label" parent="OuterMargin/Panel/Padding/Content/Hero"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 29
+text = "KILOSGRAMMAR"
+horizontal_alignment = 1
+
+[node name="Tagline" type="Label" parent="OuterMargin/Panel/Padding/Content/Hero"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.72)
+theme_override_font_sizes/font_size = 14
+text = "Project Nexus • ICCT Colleges • A.Y. 2026–2027"
+horizontal_alignment = 1
+
+[node name="CreditsScroll" type="ScrollContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Cards" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="TeamCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("Card")
+
+[node name="Margin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard/Margin/Stack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 21
+text = "PROJECT NEXUS TEAM"
+
+[node name="Lead" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Teoxon John William Ruiz — Project Manager / Lead Backend & Frontend\nArabi Harwyn Lance Quinto — System Analyst\nCawicaan James Francis Alfaro — UI/UX Lead\nEstaris Kristina Yvonne Frial — DevOps / Deployment\nDaantos Johncarlos Opo — Quality Assurance\nMatienzo Ron Jaypee V — User Acceptance Testing / Pitch"
+autowrap_mode = 2
+
+[node name="Contributors" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Blase John Barry Villanueva — Assistant Backend & Frontend / DBA\nManangan Andrew Garcia — Assistant Backend & Frontend / DBA\nCalleja Rodrigo Jhon Lagarto — Assistant UI/UX\nBobis Lordjethro Bequilla — Writer / UML\nBurgos Riviera Irish Amor — Writer / UML"
+autowrap_mode = 2
+
+[node name="TechCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("Card")
+
+[node name="Margin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TechCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TechCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TechCard/Margin/Stack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 21
+text = "PROJECT & TECHNOLOGY"
+
+[node name="Body" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TechCard/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "KilosGrammar learning game\nBuilt with Godot Engine and GDScript\nInterface uses Titan One\n\nAdditional asset-license attributions can be added as the final project record is completed."
+autowrap_mode = 2
+
+[node name="ThanksCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("Card")
+
+[node name="Margin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/ThanksCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/ThanksCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/ThanksCard/Margin/Stack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 21
+text = "THANK YOU"
+
+[node name="Body" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/ThanksCard/Margin/Stack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "For the students, teachers, classmates, and testers who help make grammar practice clearer and more playful."
+autowrap_mode = 2

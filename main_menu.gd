@@ -75,6 +75,37 @@ const BUTTON_CLICK: AudioStream = preload("res://assets/audio/lexispell_intro/bu
 @onready var falling_template: PanelContainer = $FallingLayer/FallingTemplate
 @onready var fall_timer: Timer = $FallTimer
 
+# New screens are hosted above the original menu so the animated background,
+# falling word cards, title music and custom cursor continue to be reused.
+const PANEL_SCENES := {
+	"tutorial_home": "res://ui/tutorial/tutorial_home.tscn",
+	"tutorial_practice": "res://ui/tutorial/tutorial_practice.tscn",
+	"tutorial_complete": "res://ui/tutorial/tutorial_complete.tscn",
+	"grammar_guide": "res://ui/tutorial/grammar_guide.tscn",
+	"play_activity": "res://ui/play/play_activity.tscn",
+	"play_topic": "res://ui/play/play_topic.tscn",
+	"play_difficulty": "res://ui/play/play_difficulty.tscn",
+	"camera_check": "res://ui/vision/camera_check.tscn",
+	"calibration": "res://ui/vision/calibration.tscn",
+	"ready": "res://ui/play/ready.tscn",
+	"gameplay": "res://ui/play/gameplay.tscn",
+	"pause": "res://ui/play/pause.tscn",
+	"results": "res://ui/secondary/results.tscn",
+	"leaderboard": "res://ui/secondary/leaderboard.tscn",
+	"settings": "res://ui/secondary/settings.tscn",
+	"credits": "res://ui/secondary/credits.tscn"
+}
+var panel_host: Control
+var active_panel: Control
+var current_route := "main"
+var session_state: Dictionary = {
+	"activity": "Catch the Word",
+	"topic": "Noun",
+	"difficulty": "Easy",
+	"entry_source": "play",
+	"demo_mode": true
+}
+
 var rng := RandomNumberGenerator.new()
 var button_tweens: Dictionary = {}
 var logo_tweens: Dictionary = {}
@@ -91,7 +122,7 @@ var logo_bump_active := false
 
 
 func _process(delta: float) -> void:
-	if not intro_done:
+	if not intro_done or current_route != "main":
 		return
 
 	idle_time += delta
@@ -107,6 +138,7 @@ func _process(delta: float) -> void:
 
 func _ready() -> void:
 	rng.seed = 260926
+	_setup_panel_host()
 	_sync_kilos_texture_rect()
 	logo_home = logo_group.position
 	left_home = left_menu.position
@@ -117,14 +149,19 @@ func _ready() -> void:
 		grammar_home_positions[tile] = tile.position
 		grammar_home_rotations[tile] = tile.rotation
 
-	_register_left_button($MainLayer/LeftMenu/Leaderboard, "Global spelling scores and player rankings.", 0.015)
-	_register_left_button($MainLayer/LeftMenu/Librarium, "Browse your collected words and discoveries.", -0.012)
-	_register_left_button($MainLayer/LeftMenu/Settings, "Settings, controls and dictionaries.", 0.013)
+	_register_left_button($MainLayer/LeftMenu/Leaderboard, "View local scores and player rankings.", 0.015)
+	_register_left_button($MainLayer/LeftMenu/Settings, "Adjust audio, display, and gameplay preferences.", 0.013)
 	_register_left_button($MainLayer/LeftMenu/Credits, "Meet the people behind the game.", -0.012)
 
-	_register_button($MainLayer/CenterMenu/Resume, -0.026)
+	_register_button($MainLayer/CenterMenu/Tutorial, -0.026)
 	_register_button($MainLayer/CenterMenu/Play, 0.018)
 	_register_button($MainLayer/CenterMenu/Quit, -0.016)
+	$MainLayer/CenterMenu/Tutorial.pressed.connect(_on_main_navigation.bind("tutorial_home"))
+	$MainLayer/CenterMenu/Play.pressed.connect(_on_main_navigation.bind("play_activity"))
+	$MainLayer/CenterMenu/Quit.pressed.connect(_on_main_navigation.bind("quit"))
+	$MainLayer/LeftMenu/Leaderboard.pressed.connect(_on_main_navigation.bind("leaderboard"))
+	$MainLayer/LeftMenu/Settings.pressed.connect(_on_main_navigation.bind("settings"))
+	$MainLayer/LeftMenu/Credits.pressed.connect(_on_main_navigation.bind("credits"))
 	_register_logo_interactions()
 
 	fall_timer.timeout.connect(_spawn_falling_grammar_card)
@@ -174,10 +211,9 @@ func _play_intro() -> void:
 
 	var menu_buttons: Array[Button] = [
 		$MainLayer/LeftMenu/Leaderboard,
-		$MainLayer/LeftMenu/Librarium,
 		$MainLayer/LeftMenu/Settings,
 		$MainLayer/LeftMenu/Credits,
-		$MainLayer/CenterMenu/Resume,
+		$MainLayer/CenterMenu/Tutorial,
 		$MainLayer/CenterMenu/Play,
 		$MainLayer/CenterMenu/Quit
 	]
@@ -224,6 +260,7 @@ func _play_intro() -> void:
 
 	await get_tree().create_timer(1.12).timeout
 	intro_done = true
+	$MainLayer/CenterMenu/Play.grab_focus()
 	fall_timer.start()
 	for i in range(3):
 		_spawn_falling_grammar_card()
@@ -512,3 +549,133 @@ func _spawn_falling_grammar_card() -> void:
 	tween.tween_property(card, "position", Vector2(target_x, target_y), fall_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_property(card, "rotation", target_rotation, fall_duration).set_trans(Tween.TRANS_LINEAR)
 	tween.chain().tween_callback(card.queue_free)
+
+
+func _setup_panel_host() -> void:
+	panel_host = Control.new()
+	panel_host.name = "PanelHost"
+	panel_host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel_host.z_index = 50
+	panel_host.visible = false
+	add_child(panel_host)
+	# Adding a child to a container-less Control before layout has settled can
+	# leave the overlay at zero size; resize it after the parent is in the tree.
+	panel_host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+
+func _on_main_navigation(route: String) -> void:
+	if not intro_done:
+		return
+	_on_panel_requested(route, {})
+
+
+func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
+	# A fresh round must not inherit fake prototype points from an older demo.
+	var fresh_round := route in ["retry", "play_again", "restart", "change_activity", "last_play"]
+	if route == "ready" and current_route == "pause":
+		fresh_round = true
+	if current_route in ["results", "pause"] and route in ["play_activity", "play_topic", "play_difficulty"]:
+		fresh_round = true
+	if route == "pause" and current_route == "gameplay" and payload.is_empty() and is_instance_valid(active_panel):
+		if active_panel.has_method("get_context"):
+			payload = active_panel.call("get_context")
+	if route == "quit":
+		get_tree().quit()
+		return
+	if route == "main":
+		_return_to_main()
+		return
+	if route == "last_play":
+		route = "play_activity"
+	if route == "retry" or route == "play_again":
+		route = "ready"
+	if route == "change_topic":
+		route = "play_topic"
+	if route == "change_activity":
+		route = "play_activity"
+
+	for key in payload:
+		session_state[key] = payload[key]
+	if fresh_round:
+		for stat_key in ["score", "streak", "best_streak", "correct", "attempts", "total", "accuracy", "time_remaining"]:
+			session_state.erase(stat_key)
+	if route == "tutorial_home":
+		session_state["entry_source"] = "tutorial"
+	elif route == "play_activity":
+		session_state["entry_source"] = "play"
+	_show_panel(route)
+
+
+func _show_panel(route: String) -> void:
+	if not PANEL_SCENES.has(route):
+		push_warning("Unknown KilosGrammar panel route: " + route)
+		return
+	var path: String = PANEL_SCENES[route]
+	if not ResourceLoader.exists(path):
+		push_warning("Panel is not available yet: " + path)
+		return
+	var panel_scene: PackedScene = load(path) as PackedScene
+	if panel_scene == null:
+		push_warning("Cannot load KilosGrammar panel: " + path)
+		return
+
+	if is_instance_valid(active_panel):
+		panel_host.remove_child(active_panel)
+		active_panel.queue_free()
+	active_panel = panel_scene.instantiate() as Control
+	if active_panel == null:
+		push_error("Expected a Control scene: " + path)
+		return
+	panel_host.visible = true
+	logo_group.visible = false
+	left_menu.visible = false
+	center_menu.visible = false
+	tooltip.visible = false
+	if version:
+		version.visible = false
+	panel_host.add_child(active_panel)
+	active_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if active_panel.has_signal("requested"):
+		active_panel.connect("requested", Callable(self, "_on_panel_requested"))
+	if active_panel.has_method("set_context"):
+		active_panel.call("set_context", session_state.duplicate(true))
+	current_route = route
+
+
+func _return_to_main() -> void:
+	if is_instance_valid(active_panel):
+		panel_host.remove_child(active_panel)
+		active_panel.queue_free()
+	active_panel = null
+	panel_host.visible = false
+	logo_group.visible = true
+	left_menu.visible = true
+	center_menu.visible = true
+	tooltip.visible = false
+	if version:
+		version.visible = true
+	current_route = "main"
+	$MainLayer/CenterMenu/Play.call_deferred("grab_focus")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if current_route == "main":
+			return
+		if current_route == "gameplay":
+			_on_panel_requested("pause", {})
+		elif current_route == "pause":
+			_on_panel_requested("gameplay", {})
+		else:
+			var previous_routes := {
+				"play_topic": "play_activity",
+				"play_difficulty": "play_topic",
+				"camera_check": "tutorial_home" if session_state.get("entry_source", "play") == "tutorial" else "play_difficulty",
+				"calibration": "camera_check",
+				"tutorial_practice": "calibration" if bool(session_state.get("from_calibration", false)) else "tutorial_home",
+				"grammar_guide": "tutorial_home",
+				"ready": "camera_check"
+			}
+			_on_panel_requested(String(previous_routes.get(current_route, "main")), {})
+		get_viewport().set_input_as_handled()

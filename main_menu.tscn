@@ -546,7 +546,7 @@ theme_override_constants/separation = 7
 [node name="Leaderboard" type="Button" parent="MainLayer/LeftMenu" unique_id=893965103]
 custom_minimum_size = Vector2(163, 40)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_fonts/font = SubResource("ChunkyFont")
@@ -556,23 +556,10 @@ theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
 text = "LEADERBOARD"
 
-[node name="Librarium" type="Button" parent="MainLayer/LeftMenu" unique_id=425720813]
-custom_minimum_size = Vector2(163, 40)
-layout_mode = 2
-focus_mode = 0
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 13
-theme_override_styles/normal = SubResource("ButtonNormal")
-theme_override_styles/pressed = SubResource("ButtonPressed")
-theme_override_styles/hover = SubResource("ButtonHover")
-text = "LIBRARIUM"
-
 [node name="Settings" type="Button" parent="MainLayer/LeftMenu" unique_id=1888547398]
 custom_minimum_size = Vector2(163, 40)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_fonts/font = SubResource("ChunkyFont")
@@ -585,7 +572,7 @@ text = "SETTINGS"
 [node name="Credits" type="Button" parent="MainLayer/LeftMenu" unique_id=794054224]
 custom_minimum_size = Vector2(163, 40)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_fonts/font = SubResource("ChunkyFont")
@@ -603,10 +590,10 @@ offset_right = 760.0
 offset_bottom = 685.0
 theme_override_constants/separation = 10
 
-[node name="Resume" type="Button" parent="MainLayer/CenterMenu" unique_id=1106129653]
+[node name="Tutorial" type="Button" parent="MainLayer/CenterMenu" unique_id=1106129653]
 custom_minimum_size = Vector2(240, 60)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_fonts/font = SubResource("ChunkyFont")
@@ -614,12 +601,12 @@ theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
-text = "RESUME"
+text = "TUTORIAL"
 
 [node name="Play" type="Button" parent="MainLayer/CenterMenu" unique_id=1153098940]
 custom_minimum_size = Vector2(240, 60)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_fonts/font = SubResource("ChunkyFont")
@@ -632,7 +619,7 @@ text = "PLAY"
 [node name="Quit" type="Button" parent="MainLayer/CenterMenu" unique_id=638833762]
 custom_minimum_size = Vector2(240, 60)
 layout_mode = 2
-focus_mode = 0
+focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_fonts/font = SubResource("ChunkyFont")

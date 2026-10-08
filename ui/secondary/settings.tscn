@@ -1,0 +1,255 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://ui/secondary/settings.gd" id="1_script"]
+[ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
+
+[sub_resource type="StyleBoxFlat" id="SectionCard"]
+bg_color = Color(1, 0.968627, 0.862745, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.286275, 0.266667, 0.388235, 0.22)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="LaneChip"]
+bg_color = Color(0.411765, 0.745098, 0.603922, 0.24)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.533333, 0.419608, 0.75)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="Settings" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="OuterMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 64
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 64
+theme_override_constants/margin_bottom = 30
+
+[node name="Panel" type="PanelContainer" parent="OuterMargin"]
+layout_mode = 2
+
+[node name="Padding" type="MarginContainer" parent="OuterMargin/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 34
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="OuterMargin/Panel/Padding"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="BackButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(118, 48)
+layout_mode = 2
+focus_mode = 2
+text = "← BACK"
+
+[node name="Title" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 34
+text = "SETTINGS"
+vertical_alignment = 1
+
+[node name="SessionNote" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 13
+text = "LOCAL DEVICE CONTROLS"
+vertical_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Sections" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="AudioCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("SectionCard")
+
+[node name="AudioMargin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/AudioCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="AudioStack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/AudioCard/AudioMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="AudioTitle" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/AudioCard/AudioMargin/AudioStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 21
+text = "AUDIO"
+
+[node name="VolumeRow" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/AudioCard/AudioMargin/AudioStack"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="VolumeLabel" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/AudioCard/AudioMargin/AudioStack/VolumeRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "MASTER VOLUME"
+
+[node name="VolumeSlider" type="HSlider" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/AudioCard/AudioMargin/AudioStack/VolumeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 38)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+max_value = 100.0
+step = 1.0
+value = 100.0
+
+[node name="VolumeValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/AudioCard/AudioMargin/AudioStack/VolumeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="MuteCheck" type="CheckButton" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/AudioCard/AudioMargin/AudioStack"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 2
+text = "Mute all audio"
+
+[node name="DisplayCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("SectionCard")
+
+[node name="DisplayMargin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/DisplayCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="DisplayStack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/DisplayCard/DisplayMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DisplayTitle" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/DisplayCard/DisplayMargin/DisplayStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 21
+text = "DISPLAY"
+
+[node name="FullscreenCheck" type="CheckButton" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/DisplayCard/DisplayMargin/DisplayStack"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 2
+text = "Fullscreen"
+
+[node name="DisplayHint" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/DisplayCard/DisplayMargin/DisplayStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.66)
+theme_override_font_sizes/font_size = 13
+text = "Volume, mute, and fullscreen apply immediately to this running game. No saved settings file is connected yet."
+autowrap_mode = 2
+
+[node name="CameraCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("SectionCard")
+
+[node name="CameraMargin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="CameraStack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CameraTitle" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 21
+text = "CAMERA & BODY CONTROLS"
+
+[node name="CameraCopy" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Camera setup and calibration are handled before a body-control activity starts. This settings screen does not open or claim a camera device."
+autowrap_mode = 2
+
+[node name="LaneRow" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="LeftLane" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack/LaneRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("LaneChip")
+
+[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack/LaneRow/LeftLane"]
+layout_mode = 2
+text = "LEFT"
+horizontal_alignment = 1
+
+[node name="CenterLane" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack/LaneRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("LaneChip")
+
+[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack/LaneRow/CenterLane"]
+layout_mode = 2
+text = "CENTER"
+horizontal_alignment = 1
+
+[node name="RightLane" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack/LaneRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("LaneChip")
+
+[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack/LaneRow/RightLane"]
+layout_mode = 2
+text = "RIGHT"
+horizontal_alignment = 1
+
+[node name="ControlHint" type="Label" parent="OuterMargin/Panel/Padding/Content/Scroll/Sections/CameraCard/CameraMargin/CameraStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.66)
+theme_override_font_sizes/font_size = 13
+text = "Body-controlled games use these three fixed screen zones; each player calibrates into the same layout before play."
+autowrap_mode = 2

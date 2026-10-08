@@ -1,0 +1,159 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://ui/secondary/leaderboard.gd" id="1_script"]
+[ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
+
+[sub_resource type="StyleBoxFlat" id="Card"]
+bg_color = Color(1, 0.968627, 0.862745, 0.88)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.411765, 0.745098, 0.603922, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[node name="Leaderboard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="OuterMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 64
+theme_override_constants/margin_top = 34
+theme_override_constants/margin_right = 64
+theme_override_constants/margin_bottom = 34
+
+[node name="Panel" type="PanelContainer" parent="OuterMargin"]
+layout_mode = 2
+
+[node name="Padding" type="MarginContainer" parent="OuterMargin/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 34
+theme_override_constants/margin_bottom = 28
+
+[node name="Content" type="VBoxContainer" parent="OuterMargin/Panel/Padding"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Header" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="BackButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(118, 48)
+layout_mode = 2
+focus_mode = 2
+text = "← BACK"
+
+[node name="Title" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 34
+text = "LEADERBOARD"
+vertical_alignment = 1
+
+[node name="LocalBadge" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 15
+text = "LOCAL RECORDS"
+vertical_alignment = 1
+
+[node name="Intro" type="Label" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.82)
+theme_override_font_sizes/font_size = 15
+text = "Choose a category reserved for future local round scores. Local score storage is not connected yet."
+autowrap_mode = 2
+
+[node name="Categories" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OverallButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Categories"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "OVERALL"
+
+[node name="CatchButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Categories"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "CATCH THE WORD"
+
+[node name="PlaneButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Categories"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "HUMAN PLANE"
+
+[node name="BalloonButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Categories"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+text = "BALLOON POPPING"
+
+[node name="EmptyCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content"]
+custom_minimum_size = Vector2(0, 310)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("Card")
+
+[node name="Center" type="CenterContainer" parent="OuterMargin/Panel/Padding/Content/EmptyCard"]
+layout_mode = 2
+
+[node name="EmptyStack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/EmptyCard/Center"]
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="EmptyTitle" type="Label" parent="OuterMargin/Panel/Padding/Content/EmptyCard/Center/EmptyStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 27
+text = "EMPTY LOCAL • OVERALL"
+horizontal_alignment = 1
+
+[node name="EmptyCopy" type="Label" parent="OuterMargin/Panel/Padding/Content/EmptyCard/Center/EmptyStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.86)
+theme_override_font_sizes/font_size = 16
+text = "No local scores yet."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="EmptyHint" type="Label" parent="OuterMargin/Panel/Padding/Content/EmptyCard/Center/EmptyStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
+theme_override_font_sizes/font_size = 13
+text = "No online leaderboard or score sync is connected in this build."
+horizontal_alignment = 1
+autowrap_mode = 2

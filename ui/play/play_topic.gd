@@ -1,0 +1,109 @@
+extends Control
+
+signal requested(target: String, payload: Dictionary)
+
+const UI = preload("res://ui/play/play_ui.gd")
+const TOPICS := ["Noun", "Verb", "Adjective", "Adverb", "Pronoun"]
+const TOPIC_COLORS := [UI.GREEN, UI.RED, UI.YELLOW, UI.BLUE, UI.PURPLE]
+const FUTURE_TOPICS := ["Preposition", "Conjunction", "Interjection"]
+
+var context: Dictionary = {}
+var topic_buttons: Dictionary = {}
+var next_button: Button
+var context_label: Label
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	var column := UI.make_screen_column(self)
+	UI.add_title(column, "Play • Step 2 of 3", "Choose a Grammar Topic", "Select what you want the round to practice.")
+
+	context_label = UI.make_body_label("", 17, Color(UI.CREAM, 0.78))
+	column.add_child(context_label)
+
+	var card := PanelContainer.new()
+	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", UI.make_panel(Color(UI.INK, 0.78), 26))
+	column.add_child(card)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 16)
+	card.add_child(content)
+
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 16)
+	content.add_child(grid)
+
+	var group := ButtonGroup.new()
+	for index in range(TOPICS.size()):
+		var topic: String = TOPICS[index]
+		var button := Button.new()
+		button.text = topic.to_upper()
+		button.button_group = group
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI.style_selection_button(button, TOPIC_COLORS[index])
+		button.pressed.connect(_select_topic.bind(topic))
+		grid.add_child(button)
+		topic_buttons[topic] = button
+
+	var future_row := HBoxContainer.new()
+	future_row.add_theme_constant_override("separation", 12)
+	content.add_child(future_row)
+	for topic in FUTURE_TOPICS:
+		var future := Button.new()
+		future.text = "%s • SOON" % topic.to_upper()
+		future.disabled = true
+		future.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		future.custom_minimum_size.y = 48
+		UI.style_button(future, UI.INK, 16)
+		future_row.add_child(future)
+
+	var footer: Array[Button] = UI.add_footer(column, "BACK: ACTIVITY", "NEXT: DIFFICULTY")
+	footer[0].pressed.connect(_go_back)
+	next_button = footer[1]
+	next_button.pressed.connect(_go_next)
+	_refresh_selection()
+	call_deferred("_focus_default")
+
+
+func set_context(new_context: Dictionary) -> void:
+	for key in new_context:
+		context[key] = new_context[key]
+	_refresh_selection()
+
+
+func _select_topic(topic: String) -> void:
+	context["topic"] = topic
+	_refresh_selection()
+
+
+func _refresh_selection() -> void:
+	if next_button == null:
+		return
+	var selected := String(context.get("topic", ""))
+	for topic in topic_buttons:
+		var button: Button = topic_buttons[topic]
+		button.set_pressed_no_signal(topic == selected)
+	next_button.disabled = not TOPICS.has(selected)
+	if context_label:
+		context_label.text = "Activity: %s" % String(context.get("activity", "Choose an activity first"))
+
+
+func _focus_default() -> void:
+	var selected := String(context.get("topic", TOPICS[0]))
+	var button: Button = topic_buttons.get(selected, topic_buttons[TOPICS[0]])
+	button.grab_focus()
+
+
+func _go_back() -> void:
+	requested.emit("play_activity", context.duplicate(true))
+
+
+func _go_next() -> void:
+	if next_button.disabled:
+		return
+	requested.emit("play_difficulty", context.duplicate(true))
