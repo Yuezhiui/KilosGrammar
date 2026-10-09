@@ -19,25 +19,24 @@ const ENTRIES := [
 ]
 
 var context: Dictionary = {}
+var outer_margin: MarginContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_ui()
+	resized.connect(_apply_responsive_layout)
+	call_deferred("_apply_responsive_layout")
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
 
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 76)
-	margin.add_theme_constant_override("margin_right", 76)
-	margin.add_theme_constant_override("margin_top", 38)
-	margin.add_theme_constant_override("margin_bottom", 38)
-	add_child(margin)
+	outer_margin = MarginContainer.new()
+	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(outer_margin)
 	var card := PanelContainer.new()
 	card.add_theme_stylebox_override("panel", _panel_style(PANEL, 28, 8))
-	margin.add_child(card)
+	outer_margin.add_child(card)
 	var pad := MarginContainer.new()
 	pad.add_theme_constant_override("margin_left", 34)
 	pad.add_theme_constant_override("margin_right", 34)
@@ -89,6 +88,16 @@ func _grammar_card(title: String, meaning: String, examples: String, color: Colo
 
 func _request(target: String, payload: Dictionary) -> void:
 	requested.emit(target, payload)
+
+func _apply_responsive_layout() -> void:
+	if not is_instance_valid(outer_margin):
+		return
+	var horizontal_margin := int(clampf(size.x * 0.060, 58.0, 118.0))
+	var vertical_margin := int(clampf(size.y * 0.045, 30.0, 58.0))
+	outer_margin.add_theme_constant_override("margin_left", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_right", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_top", vertical_margin)
+	outer_margin.add_theme_constant_override("margin_bottom", vertical_margin)
 
 func _label(text_value: String, font_size: int, color: Color, align: HorizontalAlignment) -> Label:
 	var label := Label.new()

@@ -82,6 +82,13 @@ static func style_selection_button(button: Button, color: Color) -> void:
 	button.add_theme_stylebox_override("pressed", make_button_style(color.darkened(0.12), true, true))
 
 
+static func style_compact_selection_button(button: Button, color: Color, font_size: int = 20) -> void:
+	style_button(button, color, font_size)
+	button.toggle_mode = true
+	button.custom_minimum_size = Vector2(0, 76)
+	button.add_theme_stylebox_override("pressed", make_button_style(color.darkened(0.12), true, true))
+
+
 static func make_label(text_value: String, font_size: int, color: Color = CREAM) -> Label:
 	var label := Label.new()
 	label.text = text_value
@@ -123,6 +130,23 @@ static func make_screen_column(root: Control, margin_size: int = 48) -> VBoxCont
 	return column
 
 
+static func make_compact_screen_column(root: Control, horizontal_margin: int = 36) -> VBoxContainer:
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", horizontal_margin)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_right", horizontal_margin)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	root.add_child(margin)
+
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 10)
+	margin.add_child(column)
+	return column
+
+
 static func add_title(column: VBoxContainer, kicker: String, title: String, subtitle: String) -> void:
 	var kicker_label := make_label(kicker.to_upper(), 18, Color(CREAM, 0.78))
 	kicker_label.custom_minimum_size.y = 24
@@ -135,6 +159,32 @@ static func add_title(column: VBoxContainer, kicker: String, title: String, subt
 	var subtitle_label := make_body_label(subtitle, 18, Color(CREAM, 0.90))
 	subtitle_label.custom_minimum_size.y = 38
 	column.add_child(subtitle_label)
+
+
+static func add_compact_title(column: VBoxContainer, kicker: String, title: String, subtitle: String) -> void:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 18)
+	column.add_child(header)
+
+	var title_stack := VBoxContainer.new()
+	title_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_stack.add_theme_constant_override("separation", 2)
+	header.add_child(title_stack)
+
+	var kicker_label := make_label(kicker.to_upper(), 14, Color(CREAM, 0.76))
+	kicker_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	kicker_label.custom_minimum_size.y = 18
+	title_stack.add_child(kicker_label)
+
+	var title_label := make_label(title.to_upper(), 34)
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	title_label.custom_minimum_size.y = 42
+	title_stack.add_child(title_label)
+
+	var subtitle_label := make_body_label(subtitle, 16, Color(CREAM, 0.86))
+	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	subtitle_label.custom_minimum_size = Vector2(400, 50)
+	header.add_child(subtitle_label)
 
 
 static func add_footer(column: VBoxContainer, back_text: String = "BACK", next_text: String = "NEXT") -> Array[Button]:
@@ -156,6 +206,30 @@ static func add_footer(column: VBoxContainer, back_text: String = "BACK", next_t
 	next.text = next_text
 	next.custom_minimum_size = Vector2(230, 56)
 	style_button(next, GREEN, 22)
+	footer.add_child(next)
+	return [back, next]
+
+
+static func add_compact_footer(column: VBoxContainer, back_text: String = "BACK", next_text: String = "NEXT") -> Array[Button]:
+	var footer := HBoxContainer.new()
+	footer.custom_minimum_size.y = 50
+	footer.add_theme_constant_override("separation", 12)
+	column.add_child(footer)
+
+	var back := Button.new()
+	back.text = back_text
+	back.custom_minimum_size = Vector2(170, 48)
+	style_button(back, INK, 18)
+	footer.add_child(back)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	footer.add_child(spacer)
+
+	var next := Button.new()
+	next.text = next_text
+	next.custom_minimum_size = Vector2(210, 48)
+	style_button(next, GREEN, 18)
 	footer.add_child(next)
 	return [back, next]
 

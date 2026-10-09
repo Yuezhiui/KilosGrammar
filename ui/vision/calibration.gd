@@ -19,28 +19,30 @@ var context: Dictionary = {}
 var demo_index := -1
 var lane_panels: Array[PanelContainer] = []
 var lane_labels: Array[Label] = []
+var lane_hints: Array[Label] = []
 var instruction_label: Label
 var progress_label: Label
 var demo_button: Button
+var player_label: Label
+var outer_margin: MarginContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_ui()
+	resized.connect(_apply_responsive_layout)
+	call_deferred("_apply_responsive_layout")
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
+	_refresh_player_label()
 
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 72)
-	margin.add_theme_constant_override("margin_right", 72)
-	margin.add_theme_constant_override("margin_top", 42)
-	margin.add_theme_constant_override("margin_bottom", 42)
-	add_child(margin)
+	outer_margin = MarginContainer.new()
+	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(outer_margin)
 	var card := PanelContainer.new()
 	card.add_theme_stylebox_override("panel", _panel_style(PANEL, 28, 8))
-	margin.add_child(card)
+	outer_margin.add_child(card)
 	var pad := MarginContainer.new()
 	pad.add_theme_constant_override("margin_left", 40)
 	pad.add_theme_constant_override("margin_right", 40)
@@ -50,9 +52,12 @@ func _build_ui() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 11)
 	pad.add_child(column)
-	column.add_child(_label("CALIBRATION PRACTICE", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(_label("UI PREVIEW • NOT LIVE • No body measurements are being collected.", 14, RED, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(_label("Learn the three play zones. In the real version, calibration will adapt these zones to the player.", 15, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(_label("CALIBRATION PREVIEW", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(_label("TRACKING NOT CONNECTED  •  DEMO ONLY", 14, RED, HORIZONTAL_ALIGNMENT_CENTER))
+	player_label = _label("PLAYER: DEMO PREVIEW", 14, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	player_label.modulate.a = 0.78
+	column.add_child(player_label)
+	column.add_child(_label("Each player will get LEFT, CENTER, and RIGHT movement zones after camera integration. This screen only previews that flow.", 14, INK, HORIZONTAL_ALIGNMENT_CENTER))
 
 	var lane_row := HBoxContainer.new()
 	lane_row.add_theme_constant_override("separation", 14)
@@ -74,27 +79,34 @@ func _build_ui() -> void:
 		var lane_label := _label(LANE_NAMES[i], 22, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
 		lane_labels.append(lane_label)
 		box.add_child(lane_label)
-		box.add_child(_label("Demo zone", 12, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
+		var lane_hint_text: String = ["Player moves left", "Player starts here", "Player moves right"][i]
+		var lane_hint := _label(lane_hint_text, 12, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
+		lane_hints.append(lane_hint)
+		box.add_child(lane_hint)
 
-	instruction_label = _label("Start in CENTER. Press TEST STEP to see the calibration sequence.", 16, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	instruction_label = _label("Start in CENTER. Press TEST STEP to preview a per-player calibration sequence.", 15, INK, HORIZONTAL_ALIGNMENT_CENTER)
 	column.add_child(instruction_label)
-	progress_label = _label("Demo calibration: 0 / 4", 13, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	progress_label = _label("Calibration status: NOT MEASURED  •  Demo step 0 / 4", 13, INK, HORIZONTAL_ALIGNMENT_CENTER)
 	column.add_child(progress_label)
 
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 10)
 	column.add_child(actions)
-	var back := _button("BACK", INK, 145)
+	var back := _button("BACK", INK, 130)
 	back.pressed.connect(_request.bind("camera_check", {"preview_mode": true, "camera_live": false}))
 	actions.add_child(back)
-	demo_button = _button("TEST STEP • DEMO", YELLOW, 205)
+	demo_button = _button("TEST STEP • DEMO", YELLOW, 180)
 	demo_button.pressed.connect(_run_demo_step)
 	actions.add_child(demo_button)
-	var skip := _button("SKIP", RED, 140)
+	var retry := _button("RETRY CALIBRATION", BLUE, 190)
+	retry.tooltip_text = "Reset the UI-only calibration preview"
+	retry.pressed.connect(_retry_calibration)
+	actions.add_child(retry)
+	var skip := _button("SKIP", RED, 115)
 	skip.pressed.connect(_continue_flow.bind(true))
 	actions.add_child(skip)
-	var continue_button := _button("CONTINUE", MINT, 190)
+	var continue_button := _button("CONTINUE", MINT, 160)
 	continue_button.pressed.connect(_continue_flow.bind(false))
 	actions.add_child(continue_button)
 	demo_button.call_deferred("grab_focus")
@@ -105,11 +117,23 @@ func _run_demo_step() -> void:
 	for i in range(lane_panels.size()):
 		lane_panels[i].add_theme_stylebox_override("panel", _lane_style(LANE_COLORS[i], i == active_index))
 		lane_labels[i].text = ("★ " if i == active_index else "") + LANE_NAMES[i]
-	instruction_label.text = "DEMO STEP: Stand in %s. This marker is animated by the UI only." % LANE_NAMES[active_index]
-	progress_label.text = "Demo calibration: %d / %d" % [demo_index + 1, DEMO_SEQUENCE.size()]
+		lane_hints[i].text = "DEMO PLAYER HERE" if i == active_index else ["Player moves left", "Player starts here", "Player moves right"][i]
+	instruction_label.text = "DEMO STEP: Move to %s. The highlighted lane is UI animation only." % LANE_NAMES[active_index]
+	progress_label.text = "Calibration status: NOT MEASURED  •  Demo step %d / %d" % [demo_index + 1, DEMO_SEQUENCE.size()]
 	if demo_index == DEMO_SEQUENCE.size() - 1:
-		instruction_label.text = "Demo sequence complete. No camera data or body measurements were used."
+		instruction_label.text = "Preview complete. No camera data, pose, or lane measurements were captured."
 		demo_button.text = "REPLAY DEMO"
+
+func _retry_calibration() -> void:
+	demo_index = -1
+	for i in range(lane_panels.size()):
+		lane_panels[i].add_theme_stylebox_override("panel", _lane_style(LANE_COLORS[i], false))
+		lane_labels[i].text = LANE_NAMES[i]
+		lane_hints[i].text = ["Player moves left", "Player starts here", "Player moves right"][i]
+	instruction_label.text = "Calibration preview reset. Start in CENTER and press TEST STEP when ready."
+	progress_label.text = "Calibration status: NOT MEASURED  •  Demo step 0 / 4"
+	demo_button.text = "TEST STEP • DEMO"
+	demo_button.grab_focus()
 
 func _continue_flow(skipped: bool) -> void:
 	var entry_source := String(context.get("entry_source", "play"))
@@ -125,6 +149,30 @@ func _continue_flow(skipped: bool) -> void:
 
 func _request(target: String, payload: Dictionary) -> void:
 	requested.emit(target, payload)
+
+func _refresh_player_label() -> void:
+	if not is_instance_valid(player_label):
+		return
+	var display_name := "DEMO PREVIEW"
+	for key in ["name", "student_name", "player_name"]:
+		var candidate := String(context.get(key, "")).strip_edges()
+		if not candidate.is_empty():
+			display_name = candidate.to_upper()
+			break
+	player_label.text = "PLAYER: " + display_name + "  •  LANES ARE NOT MEASURED"
+
+func _apply_responsive_layout() -> void:
+	if not is_instance_valid(outer_margin):
+		return
+	var horizontal_margin := int(clampf(size.x * 0.055, 52.0, 112.0))
+	var vertical_margin := int(clampf(size.y * 0.050, 30.0, 62.0))
+	outer_margin.add_theme_constant_override("margin_left", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_right", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_top", vertical_margin)
+	outer_margin.add_theme_constant_override("margin_bottom", vertical_margin)
+	var lane_height := clampf(size.y * 0.29, 195.0, 305.0)
+	for lane in lane_panels:
+		lane.custom_minimum_size.y = lane_height
 
 func _label(text_value: String, font_size: int, color: Color, align: HorizontalAlignment) -> Label:
 	var label := Label.new()

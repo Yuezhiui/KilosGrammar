@@ -15,10 +15,11 @@ var context_label: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var column := UI.make_screen_column(self)
-	UI.add_title(column, "Play • Step 2 of 3", "Choose a Grammar Topic", "Select what you want the round to practice.")
+	var column := UI.make_compact_screen_column(self)
+	UI.add_compact_title(column, "Play • Step 2 of 3", "Choose a Grammar Topic", "Select the grammar focus for this UI demo.")
 
-	context_label = UI.make_body_label("", 17, Color(UI.CREAM, 0.78))
+	context_label = UI.make_body_label("", 15, Color(UI.CREAM, 0.76))
+	context_label.custom_minimum_size.y = 26
 	column.add_child(context_label)
 
 	var card := PanelContainer.new()
@@ -27,15 +28,15 @@ func _ready() -> void:
 	column.add_child(card)
 
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 16)
+	content.add_theme_constant_override("separation", 12)
 	card.add_child(content)
 
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("h_separation", 16)
-	grid.add_theme_constant_override("v_separation", 16)
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
 	content.add_child(grid)
 
 	var group := ButtonGroup.new()
@@ -45,7 +46,7 @@ func _ready() -> void:
 		button.text = topic.to_upper()
 		button.button_group = group
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UI.style_selection_button(button, TOPIC_COLORS[index])
+		UI.style_compact_selection_button(button, TOPIC_COLORS[index], 20)
 		button.pressed.connect(_select_topic.bind(topic))
 		grid.add_child(button)
 		topic_buttons[topic] = button
@@ -62,7 +63,7 @@ func _ready() -> void:
 		UI.style_button(future, UI.INK, 16)
 		future_row.add_child(future)
 
-	var footer: Array[Button] = UI.add_footer(column, "BACK: ACTIVITY", "NEXT: DIFFICULTY")
+	var footer: Array[Button] = UI.add_compact_footer(column, "BACK", "NEXT: DIFFICULTY")
 	footer[0].pressed.connect(_go_back)
 	next_button = footer[1]
 	next_button.pressed.connect(_go_next)

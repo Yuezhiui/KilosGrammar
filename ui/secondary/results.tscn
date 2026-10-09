@@ -1,30 +1,46 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://ui/secondary/results.gd" id="1_script"]
 [ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
 
-[sub_resource type="StyleBoxFlat" id="StatCard"]
-bg_color = Color(1, 0.968627, 0.862745, 0.92)
+[sub_resource type="StyleBoxFlat" id="InfoCard"]
+bg_color = Color(1, 0.968627, 0.862745, 0.94)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.411765, 0.745098, 0.603922, 1)
+border_color = Color(0.286275, 0.266667, 0.388235, 0.16)
 corner_radius_top_left = 18
 corner_radius_top_right = 18
 corner_radius_bottom_right = 18
 corner_radius_bottom_left = 18
-shadow_color = Color(0.164706, 0.141176, 0.215686, 0.18)
-shadow_size = 3
-shadow_offset = Vector2(0, 4)
 
-[sub_resource type="StyleBoxFlat" id="StatusCard"]
-bg_color = Color(0.411765, 0.745098, 0.603922, 0.18)
+[sub_resource type="StyleBoxFlat" id="RowCard"]
+bg_color = Color(0.286275, 0.266667, 0.388235, 0.055)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="ScoreCardStyle"]
+bg_color = Color(0.411765, 0.745098, 0.603922, 0.2)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0, 0.533333, 0.419608, 0.72)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="GameOverChip"]
+bg_color = Color(1, 0.309804, 0.4, 0.14)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0, 0.533333, 0.419608, 0.55)
+border_color = Color(1, 0.309804, 0.4, 0.5)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
 corner_radius_bottom_right = 14
@@ -47,201 +63,299 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 70
-theme_override_constants/margin_top = 34
-theme_override_constants/margin_right = 70
-theme_override_constants/margin_bottom = 34
+theme_override_constants/margin_left = 150
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 150
+theme_override_constants/margin_bottom = 28
 
 [node name="Panel" type="PanelContainer" parent="OuterMargin"]
 layout_mode = 2
 
 [node name="Padding" type="MarginContainer" parent="OuterMargin/Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 36
-theme_override_constants/margin_top = 26
-theme_override_constants/margin_right = 36
-theme_override_constants/margin_bottom = 26
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 34
+theme_override_constants/margin_bottom = 22
 
 [node name="Content" type="VBoxContainer" parent="OuterMargin/Panel/Padding"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 
-[node name="Header" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+[node name="GameOverPanel" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content"]
+custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_styles/panel = SubResource("GameOverChip")
 
-[node name="Title" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+[node name="GameOverTitle" type="Label" parent="OuterMargin/Panel/Padding/Content/GameOverPanel"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 34
-text = "ROUND RESULTS"
-
-[node name="ModeBadge" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 16
-text = "ROUND RESULTS"
+theme_override_colors/font_color = Color(0.858824, 0.223529, 0.309804, 1)
+theme_override_font_sizes/font_size = 32
+text = "GAME OVER"
+horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ActivityLabel" type="Label" parent="OuterMargin/Panel/Padding/Content"]
+[node name="ActivityValue" type="Label" parent="OuterMargin/Panel/Padding/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.7)
-theme_override_font_sizes/font_size = 15
-text = "No round details received"
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
+theme_override_font_sizes/font_size = 13
+text = ""
 horizontal_alignment = 1
 
-[node name="Stats" type="GridContainer" parent="OuterMargin/Panel/Padding/Content"]
+[node name="SaveStatus" type="Label" parent="OuterMargin/Panel/Padding/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.858824, 0.223529, 0.309804, 0.84)
+theme_override_font_sizes/font_size = 12
+text = "DEMO • SCORE NOT SAVED"
+horizontal_alignment = 1
+
+[node name="InfoColumns" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/h_separation = 14
-theme_override_constants/v_separation = 14
-columns = 2
+theme_override_constants/separation = 12
 
-[node name="ScoreCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Stats"]
-custom_minimum_size = Vector2(0, 120)
+[node name="StudentCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StatCard")
+theme_override_styles/panel = SubResource("InfoCard")
 
-[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Stats/ScoreCard"]
+[node name="StudentMargin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard"]
 layout_mode = 2
-alignment = 1
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 15
 
-[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/ScoreCard/Stack"]
+[node name="StudentStack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
-theme_override_font_sizes/font_size = 14
-text = "SCORE"
-horizontal_alignment = 1
+theme_override_constants/separation = 8
 
-[node name="ScoreValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/ScoreCard/Stack"]
-unique_name_in_owner = true
+[node name="Heading" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 32
-text = "—"
+theme_override_font_sizes/font_size = 18
+text = "STUDENT"
 horizontal_alignment = 1
 
-[node name="AccuracyCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Stats"]
-custom_minimum_size = Vector2(0, 120)
+[node name="StudentIdRow" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("RowCard")
+
+[node name="Row" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/StudentIdRow"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/StudentIdRow/Row"]
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "STUDENT ID"
+vertical_alignment = 1
+
+[node name="StudentIdValue" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/StudentIdRow/Row"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StatCard")
-
-[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Stats/AccuracyCard"]
-layout_mode = 2
-alignment = 1
-
-[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/AccuracyCard/Stack"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
-theme_override_font_sizes/font_size = 14
-text = "ACCURACY"
-horizontal_alignment = 1
-
-[node name="AccuracyValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/AccuracyCard/Stack"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 32
-text = "—"
-horizontal_alignment = 1
-
-[node name="CorrectCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Stats"]
-custom_minimum_size = Vector2(0, 120)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StatCard")
-
-[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Stats/CorrectCard"]
-layout_mode = 2
-alignment = 1
-
-[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/CorrectCard/Stack"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
-theme_override_font_sizes/font_size = 14
-text = "CORRECT"
-horizontal_alignment = 1
-
-[node name="CorrectValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/CorrectCard/Stack"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 32
-text = "—"
-horizontal_alignment = 1
-
-[node name="StreakCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Stats"]
-custom_minimum_size = Vector2(0, 120)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StatCard")
-
-[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/Stats/StreakCard"]
-layout_mode = 2
-alignment = 1
-
-[node name="Label" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/StreakCard/Stack"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
-theme_override_font_sizes/font_size = 14
-text = "BEST STREAK"
-horizontal_alignment = 1
-
-[node name="StreakValue" type="Label" parent="OuterMargin/Panel/Padding/Content/Stats/StreakCard/Stack"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 32
-text = "—"
-horizontal_alignment = 1
-
-[node name="StatusCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StatusCard")
-
-[node name="StatusLabel" type="Label" parent="OuterMargin/Panel/Padding/Content/StatusCard"]
-unique_name_in_owner = true
-layout_mode = 2
 theme_override_font_sizes/font_size = 13
-text = "No result data received yet. Values stay blank until gameplay sends them."
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="StudentNameRow" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("RowCard")
+
+[node name="Row" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/StudentNameRow"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/StudentNameRow/Row"]
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "NAME"
+vertical_alignment = 1
+
+[node name="StudentNameValue" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/StudentNameRow/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="GradeRow" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("RowCard")
+
+[node name="Row" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/GradeRow"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/GradeRow/Row"]
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "GRADE"
+vertical_alignment = 1
+
+[node name="GradeValue" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/StudentCard/StudentMargin/StudentStack/GradeRow/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="GameCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("InfoCard")
+
+[node name="GameMargin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 15
+
+[node name="GameStack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 18
+text = "ROUND"
 horizontal_alignment = 1
-autowrap_mode = 2
+
+[node name="GameStyleRow" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("RowCard")
+
+[node name="Row" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/GameStyleRow"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/GameStyleRow/Row"]
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "GAME STYLE"
+vertical_alignment = 1
+
+[node name="GameStyleValue" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/GameStyleRow/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="GameModeRow" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("RowCard")
+
+[node name="Row" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/GameModeRow"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/GameModeRow/Row"]
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "GAME MODE"
+vertical_alignment = 1
+
+[node name="GameModeValue" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/GameModeRow/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="DifficultyRow" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("RowCard")
+
+[node name="Row" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/DifficultyRow"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/DifficultyRow/Row"]
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "DIFFICULTY"
+vertical_alignment = 1
+
+[node name="DifficultyValue" type="Label" parent="OuterMargin/Panel/Padding/Content/InfoColumns/GameCard/GameMargin/GameStack/DifficultyRow/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="ScoreCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+theme_override_styles/panel = SubResource("ScoreCardStyle")
+
+[node name="ScoreStack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/ScoreCard"]
+layout_mode = 2
+alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="OuterMargin/Panel/Padding/Content/ScoreCard/ScoreStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.64)
+theme_override_font_sizes/font_size = 13
+text = "FINAL SCORE"
+horizontal_alignment = 1
+
+[node name="ScoreValue" type="Label" parent="OuterMargin/Panel/Padding/Content/ScoreCard/ScoreStack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
+theme_override_font_sizes/font_size = 34
+text = ""
+horizontal_alignment = 1
 
 [node name="Actions" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
 [node name="RetryButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 2
 text = "RETRY"
 
-[node name="TopicButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Actions"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 2
-text = "CHOOSE TOPIC"
-
-[node name="ActivityButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Actions"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 2
-text = "ACTIVITIES"
-
 [node name="MainButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Actions"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 2

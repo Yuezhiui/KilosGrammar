@@ -5,9 +5,9 @@ signal requested(target: String, payload: Dictionary)
 const UI = preload("res://ui/play/play_ui.gd")
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const DIFFICULTY_COPY := {
-	"Easy": "Relaxed pace\nGenerous reaction time",
-	"Normal": "Balanced pace\nStandard classroom challenge",
-	"Hard": "Fast pace\nShorter reaction windows"
+	"Easy": "UI preview preset\nRelaxed pacing",
+	"Normal": "UI preview preset\nBalanced pacing",
+	"Hard": "UI preview preset\nFast pacing"
 }
 const DIFFICULTY_COLORS := [UI.GREEN, UI.YELLOW, UI.RED]
 
@@ -19,10 +19,11 @@ var context_label: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var column := UI.make_screen_column(self)
-	UI.add_title(column, "Play • Step 3 of 3", "Choose Difficulty", "This controls the demo pace and challenge timing.")
+	var column := UI.make_compact_screen_column(self)
+	UI.add_compact_title(column, "Play • Step 3 of 3", "Choose Difficulty", "Choose a pacing preset for the interface preview.")
 
-	context_label = UI.make_body_label("", 17, Color(UI.CREAM, 0.80))
+	context_label = UI.make_body_label("", 15, Color(UI.CREAM, 0.76))
+	context_label.custom_minimum_size.y = 26
 	column.add_child(context_label)
 
 	var card := PanelContainer.new()
@@ -34,7 +35,7 @@ func _ready() -> void:
 	grid.columns = 3
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("h_separation", 18)
+	grid.add_theme_constant_override("h_separation", 14)
 	card.add_child(grid)
 
 	var group := ButtonGroup.new()
@@ -45,12 +46,13 @@ func _ready() -> void:
 		button.button_group = group
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		UI.style_selection_button(button, DIFFICULTY_COLORS[index])
+		UI.style_compact_selection_button(button, DIFFICULTY_COLORS[index], 20)
+		button.custom_minimum_size.y = 118
 		button.pressed.connect(_select_difficulty.bind(difficulty))
 		grid.add_child(button)
 		difficulty_buttons[difficulty] = button
 
-	var footer: Array[Button] = UI.add_footer(column, "BACK: TOPIC", "NEXT: CAMERA CHECK")
+	var footer: Array[Button] = UI.add_compact_footer(column, "BACK", "NEXT: CAMERA CHECK")
 	footer[0].pressed.connect(_go_back)
 	next_button = footer[1]
 	next_button.pressed.connect(_go_next)

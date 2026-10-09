@@ -13,26 +13,25 @@ const PURPLE := Color("#C171CF")
 const PANEL := Color("#F7E6BDF2")
 
 var context: Dictionary = {}
+var outer_margin: MarginContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_ui()
+	resized.connect(_apply_responsive_layout)
+	call_deferred("_apply_responsive_layout")
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
 
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 92)
-	margin.add_theme_constant_override("margin_right", 92)
-	margin.add_theme_constant_override("margin_top", 58)
-	margin.add_theme_constant_override("margin_bottom", 58)
-	add_child(margin)
+	outer_margin = MarginContainer.new()
+	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(outer_margin)
 
 	var card := PanelContainer.new()
 	card.add_theme_stylebox_override("panel", _panel_style(PANEL, 28, 8))
-	margin.add_child(card)
+	outer_margin.add_child(card)
 
 	var pad := MarginContainer.new()
 	pad.add_theme_constant_override("margin_left", 48)
@@ -42,6 +41,7 @@ func _build_ui() -> void:
 	card.add_child(pad)
 
 	var column := VBoxContainer.new()
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 16)
 	pad.add_child(column)
 
@@ -103,6 +103,16 @@ func _add_arrow(row: HBoxContainer) -> void:
 
 func _request(target: String, payload: Dictionary) -> void:
 	requested.emit(target, payload)
+
+func _apply_responsive_layout() -> void:
+	if not is_instance_valid(outer_margin):
+		return
+	var horizontal_margin := int(clampf(size.x * 0.072, 72.0, 138.0))
+	var vertical_margin := int(clampf(size.y * 0.070, 44.0, 82.0))
+	outer_margin.add_theme_constant_override("margin_left", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_right", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_top", vertical_margin)
+	outer_margin.add_theme_constant_override("margin_bottom", vertical_margin)
 
 func _label(text_value: String, font_size: int, color: Color, align: HorizontalAlignment) -> Label:
 	var label := Label.new()

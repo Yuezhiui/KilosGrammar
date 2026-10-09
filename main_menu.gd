@@ -54,6 +54,8 @@ const LETTER_POP: AudioStream = preload("res://assets/audio/lexispell_intro/lett
 const TITLE_MUSIC: AudioStream = preload("res://assets/audio/lexispell_intro/title_music.ogg")
 const BUTTON_HOVER: AudioStream = preload("res://assets/audio/lexispell_intro/button_hover.wav")
 const BUTTON_CLICK: AudioStream = preload("res://assets/audio/lexispell_intro/button_click.wav")
+const MUSIC_BUS := "KilosMusic"
+const EFFECTS_BUS := "KilosSFX"
 
 @onready var logo_group: Control = $MainLayer/LogoGroup
 @onready var kilos_label: TextureRect = $MainLayer/LogoGroup/Kilos
@@ -82,6 +84,7 @@ const PANEL_SCENES := {
 	"tutorial_practice": "res://ui/tutorial/tutorial_practice.tscn",
 	"tutorial_complete": "res://ui/tutorial/tutorial_complete.tscn",
 	"grammar_guide": "res://ui/tutorial/grammar_guide.tscn",
+	"student_setup": "res://ui/student/student_setup.tscn",
 	"play_activity": "res://ui/play/play_activity.tscn",
 	"play_topic": "res://ui/play/play_topic.tscn",
 	"play_difficulty": "res://ui/play/play_difficulty.tscn",
@@ -98,13 +101,7 @@ const PANEL_SCENES := {
 var panel_host: Control
 var active_panel: Control
 var current_route := "main"
-var session_state: Dictionary = {
-	"activity": "Catch the Word",
-	"topic": "Noun",
-	"difficulty": "Easy",
-	"entry_source": "play",
-	"demo_mode": true
-}
+var session_state: Dictionary = {"entry_source": "play", "demo_mode": true}
 
 var rng := RandomNumberGenerator.new()
 var button_tweens: Dictionary = {}
@@ -119,6 +116,8 @@ var intro_done := false
 var idle_time := 0.0
 var title_music_player: AudioStreamPlayer
 var logo_bump_active := false
+var tooltip_tween: Tween
+const TOOLTIP_GAP := 24.0
 
 
 func _process(delta: float) -> void:
@@ -143,21 +142,22 @@ func _ready() -> void:
 	logo_home = logo_group.position
 	left_home = left_menu.position
 	center_home = center_menu.position
+	_ensure_audio_buses()
 	_setup_title_music()
 
 	for tile in grammar_tiles:
 		grammar_home_positions[tile] = tile.position
 		grammar_home_rotations[tile] = tile.rotation
 
-	_register_left_button($MainLayer/LeftMenu/Leaderboard, "View local scores and player rankings.", 0.015)
+	_register_left_button($MainLayer/LeftMenu/Leaderboard, "View student scores and rankings.", 0.015)
 	_register_left_button($MainLayer/LeftMenu/Settings, "Adjust audio, display, and gameplay preferences.", 0.013)
-	_register_left_button($MainLayer/LeftMenu/Credits, "Meet the people behind the game.", -0.012)
+	_register_left_button($MainLayer/LeftMenu/Credits, "View the KilosGrammar team and acknowledgments.", -0.012)
 
 	_register_button($MainLayer/CenterMenu/Tutorial, -0.026)
 	_register_button($MainLayer/CenterMenu/Play, 0.018)
 	_register_button($MainLayer/CenterMenu/Quit, -0.016)
 	$MainLayer/CenterMenu/Tutorial.pressed.connect(_on_main_navigation.bind("tutorial_home"))
-	$MainLayer/CenterMenu/Play.pressed.connect(_on_main_navigation.bind("play_activity"))
+	$MainLayer/CenterMenu/Play.pressed.connect(_on_main_navigation.bind("student_setup"))
 	$MainLayer/CenterMenu/Quit.pressed.connect(_on_main_navigation.bind("quit"))
 	$MainLayer/LeftMenu/Leaderboard.pressed.connect(_on_main_navigation.bind("leaderboard"))
 	$MainLayer/LeftMenu/Settings.pressed.connect(_on_main_navigation.bind("settings"))
@@ -165,6 +165,9 @@ func _ready() -> void:
 	_register_logo_interactions()
 
 	fall_timer.timeout.connect(_spawn_falling_grammar_card)
+	tooltip.z_index = 40
+	tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tooltip.visible = false
 	call_deferred("_play_intro")
 
@@ -274,6 +277,7 @@ func _reveal_intro_tile(tile: Control, pitch: float) -> void:
 func _setup_title_music() -> void:
 	title_music_player = AudioStreamPlayer.new()
 	title_music_player.name = "TitleMusic"
+	title_music_player.bus = MUSIC_BUS
 	title_music_player.stream = TITLE_MUSIC
 	title_music_player.volume_db = -32.0
 	add_child(title_music_player)
@@ -292,11 +296,24 @@ func _schedule_sfx(stream: AudioStream, pitch: float, delay: float, volume_db: f
 func _play_one_shot(stream: AudioStream, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 	var player := AudioStreamPlayer.new()
 	player.stream = stream
+	player.bus = EFFECTS_BUS
 	player.pitch_scale = pitch
 	player.volume_db = volume_db
 	add_child(player)
 	player.finished.connect(player.queue_free)
 	player.play()
+
+
+func _ensure_audio_buses() -> void:
+	# UI volume controls need real mixer destinations. These buses are local to
+	# the current Godot session and are never treated as persisted preferences.
+	for bus_name in [MUSIC_BUS, EFFECTS_BUS]:
+		if AudioServer.get_bus_index(bus_name) >= 0:
+			continue
+		AudioServer.add_bus()
+		var new_index: int = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(new_index, bus_name)
+		AudioServer.set_bus_send(new_index, "Master")
 
 
 func _register_left_button(button: Button, copy: String, hover_rotation: float) -> void:
@@ -470,28 +487,43 @@ func _bump_grammar_tile(tile: Control) -> void:
 
 
 func _show_tooltip(button: Button, copy: String) -> void:
+	if current_route != "main":
+		return
+	if tooltip_tween and tooltip_tween.is_valid():
+		tooltip_tween.kill()
 	tooltip_label.text = copy
+	tooltip.custom_minimum_size = Vector2(260.0, 72.0)
+	tooltip.size = Vector2(260.0, 72.0)
 	var rect: Rect2 = button.get_global_rect()
-	tooltip.global_position = Vector2(rect.end.x + 9.0, rect.position.y - 4.0)
-	tooltip.pivot_offset = Vector2(0, tooltip.size.y * 0.5)
+	var viewport_rect: Rect2 = get_viewport_rect()
+	var tooltip_width: float = tooltip.size.x
+	var tooltip_height: float = tooltip.size.y
+	var target_x: float = rect.end.x + TOOLTIP_GAP
+	if target_x + tooltip_width > viewport_rect.end.x - 12.0:
+		target_x = rect.position.x - TOOLTIP_GAP - tooltip_width
+	var target_y: float = rect.position.y + (rect.size.y - tooltip_height) * 0.5
+	target_y = clampf(target_y, 12.0, maxf(12.0, viewport_rect.size.y - tooltip_height - 12.0))
+	tooltip.global_position = Vector2(target_x, target_y)
+	tooltip.pivot_offset = Vector2(0.0, tooltip_height * 0.5)
 	tooltip.visible = true
-	tooltip.scale = Vector2(0.82, 0.82)
+	tooltip.scale = Vector2(0.94, 0.94)
 	tooltip.modulate.a = 0.0
-	var tween: Tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(tooltip, "scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(tooltip, "modulate:a", 1.0, 0.08)
+	tooltip_tween = create_tween()
+	tooltip_tween.set_parallel(true)
+	tooltip_tween.tween_property(tooltip, "scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tooltip_tween.tween_property(tooltip, "modulate:a", 1.0, 0.08)
 
 
 func _hide_tooltip() -> void:
 	if not tooltip.visible:
 		return
-	var tween: Tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(tooltip, "scale", Vector2(0.88, 0.88), 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.tween_property(tooltip, "modulate:a", 0.0, 0.08)
-	await tween.finished
-	tooltip.visible = false
+	if tooltip_tween and tooltip_tween.is_valid():
+		tooltip_tween.kill()
+	tooltip_tween = create_tween()
+	tooltip_tween.set_parallel(true)
+	tooltip_tween.tween_property(tooltip, "scale", Vector2(0.94, 0.94), 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tooltip_tween.tween_property(tooltip, "modulate:a", 0.0, 0.08)
+	tooltip_tween.chain().tween_callback(func() -> void: tooltip.visible = false)
 
 
 func _spawn_falling_grammar_card() -> void:
@@ -573,6 +605,9 @@ func _on_main_navigation(route: String) -> void:
 func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 	# A fresh round must not inherit fake prototype points from an older demo.
 	var fresh_round := route in ["retry", "play_again", "restart", "change_activity", "last_play"]
+	if current_route == "results" and route == "student_setup":
+		# Game Over Retry retains the student/setup, never the finished score.
+		fresh_round = true
 	if route == "ready" and current_route == "pause":
 		fresh_round = true
 	if current_route in ["results", "pause"] and route in ["play_activity", "play_topic", "play_difficulty"]:
@@ -587,9 +622,9 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 		_return_to_main()
 		return
 	if route == "last_play":
-		route = "play_activity"
+		route = "student_setup"
 	if route == "retry" or route == "play_again":
-		route = "ready"
+		route = "student_setup"
 	if route == "change_topic":
 		route = "play_topic"
 	if route == "change_activity":
@@ -597,6 +632,13 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 
 	for key in payload:
 		session_state[key] = payload[key]
+	if route == "student_setup":
+		if current_route == "main" or bool(payload.get("fresh_setup", false)):
+			# Opening Play from the menu always starts with EMPTY fields.
+			session_state = {"entry_source": "play", "demo_mode": true, "student_setup_prefill": false}
+		else:
+			# Retry or Back from activity must preserve the editable student form.
+			session_state["student_setup_prefill"] = true
 	if fresh_round:
 		for stat_key in ["score", "streak", "best_streak", "correct", "attempts", "total", "accuracy", "time_remaining"]:
 			session_state.erase(stat_key)
@@ -669,9 +711,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_panel_requested("gameplay", {})
 		else:
 			var previous_routes := {
+				"play_activity": "student_setup",
+				"student_setup": "main",
 				"play_topic": "play_activity",
 				"play_difficulty": "play_topic",
-				"camera_check": "tutorial_home" if session_state.get("entry_source", "play") == "tutorial" else "play_difficulty",
+				"camera_check": "tutorial_home" if session_state.get("entry_source", "play") == "tutorial" else ("play_activity" if bool(session_state.get("setup_preview", false)) else "play_difficulty"),
 				"calibration": "camera_check",
 				"tutorial_practice": "calibration" if bool(session_state.get("from_calibration", false)) else "tutorial_home",
 				"grammar_guide": "tutorial_home",

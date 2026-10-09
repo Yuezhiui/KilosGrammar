@@ -14,26 +14,27 @@ const PANEL := Color("#F7E6BDF2")
 var context: Dictionary = {}
 var info_label: Label
 var refresh_count := 0
+var outer_margin: MarginContainer
+var preview_panel: PanelContainer
+var checklist: VBoxContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_ui()
+	resized.connect(_apply_responsive_layout)
+	call_deferred("_apply_responsive_layout")
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
 
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 72)
-	margin.add_theme_constant_override("margin_right", 72)
-	margin.add_theme_constant_override("margin_top", 42)
-	margin.add_theme_constant_override("margin_bottom", 42)
-	add_child(margin)
+	outer_margin = MarginContainer.new()
+	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(outer_margin)
 
 	var card := PanelContainer.new()
 	card.add_theme_stylebox_override("panel", _panel_style(PANEL, 28, 8))
-	margin.add_child(card)
+	outer_margin.add_child(card)
 	var pad := MarginContainer.new()
 	pad.add_theme_constant_override("margin_left", 36)
 	pad.add_theme_constant_override("margin_right", 36)
@@ -44,7 +45,7 @@ func _build_ui() -> void:
 	column.add_theme_constant_override("separation", 12)
 	pad.add_child(column)
 	column.add_child(_label("CAMERA CHECK", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	var badge := _label("PREVIEW MODE • CAMERA STATUS: NOT LIVE", 15, RED, HORIZONTAL_ALIGNMENT_CENTER)
+	var badge := _label("PREVIEW MODE  •  TRACKING NOT CONNECTED", 15, RED, HORIZONTAL_ALIGNMENT_CENTER)
 	column.add_child(badge)
 
 	var content := HBoxContainer.new()
@@ -52,36 +53,49 @@ func _build_ui() -> void:
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(content)
 
-	var preview := PanelContainer.new()
-	preview.custom_minimum_size = Vector2(590, 330)
-	preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	preview.add_theme_stylebox_override("panel", _panel_style(INK, 22, 5))
-	content.add_child(preview)
+	var preview_column := VBoxContainer.new()
+	preview_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preview_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preview_column.add_theme_constant_override("separation", 8)
+	content.add_child(preview_column)
+	var frame_caption := _label("CAMERA FRAME  •  16:9 PREVIEW", 13, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	frame_caption.modulate.a = 0.76
+	preview_column.add_child(frame_caption)
+	preview_panel = PanelContainer.new()
+	preview_panel.custom_minimum_size = Vector2(590, 332)
+	preview_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	preview_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	preview_panel.add_theme_stylebox_override("panel", _preview_style())
+	preview_column.add_child(preview_panel)
 	var preview_pad := MarginContainer.new()
 	preview_pad.add_theme_constant_override("margin_left", 26)
 	preview_pad.add_theme_constant_override("margin_right", 26)
 	preview_pad.add_theme_constant_override("margin_top", 34)
 	preview_pad.add_theme_constant_override("margin_bottom", 30)
-	preview.add_child(preview_pad)
+	preview_panel.add_child(preview_pad)
 	var preview_box := VBoxContainer.new()
 	preview_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	preview_box.add_theme_constant_override("separation", 12)
 	preview_pad.add_child(preview_box)
-	preview_box.add_child(_label("▣", 66, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
-	preview_box.add_child(_label("CAMERA PREVIEW PLACEHOLDER", 22, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
-	preview_box.add_child(_label("No camera image or pose data is being read on this screen yet.", 14, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
-	var frame_hint := _label("When CV is connected: keep your head, hands, and feet inside the frame.", 13, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
+	preview_box.add_child(_label("▣", 62, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
+	preview_box.add_child(_label("NO VIDEO FEED", 22, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
+	preview_box.add_child(_label("Camera and pose tracking are not connected yet.", 14, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
+	var frame_hint := _label("Future setup: keep your head, hands, and feet inside this frame.", 13, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
 	frame_hint.modulate.a = 0.72
 	preview_box.add_child(frame_hint)
 
-	var checklist := VBoxContainer.new()
+	checklist = VBoxContainer.new()
 	checklist.custom_minimum_size = Vector2(360, 0)
 	checklist.add_theme_constant_override("separation", 10)
 	content.add_child(checklist)
+	checklist.add_child(_label("SETUP STATUS", 17, INK, HORIZONTAL_ALIGNMENT_CENTER))
 	checklist.add_child(_status_card("1", "CAMERA FEED", "NOT CONNECTED", RED))
-	checklist.add_child(_status_card("2", "BODY POSE", "NOT CONNECTED", RED))
-	checklist.add_child(_status_card("3", "PLAY AREA", "UI PREVIEW", YELLOW))
-	info_label = _label("You can continue in Preview Mode to explore calibration and movement practice.", 13, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	checklist.add_child(_status_card("2", "POSE TRACKING", "NOT CONNECTED", RED))
+	checklist.add_child(_status_card("3", "3-LANE PLAYER VIEW", "DEMO PREVIEW", YELLOW))
+	var note := _label("No image, skeleton, or player position is being detected on this screen.", 12, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	note.modulate.a = 0.72
+	checklist.add_child(note)
+	info_label = _label("Continue in Preview Mode to explore the calibration UI.", 13, INK, HORIZONTAL_ALIGNMENT_CENTER)
 	checklist.add_child(info_label)
 
 	var actions := HBoxContainer.new()
@@ -91,13 +105,13 @@ func _build_ui() -> void:
 	var back := _button("BACK", INK, 150)
 	back.pressed.connect(_go_back)
 	actions.add_child(back)
-	var refresh := _button("CHECK UI STATUS", BLUE, 205)
+	var refresh := _button("CHECK STATUS", BLUE, 185)
 	refresh.pressed.connect(_refresh_preview_status)
 	actions.add_child(refresh)
-	var skip := _button("SKIP SETUP", YELLOW, 170)
+	var skip := _button("SKIP SETUP", YELLOW, 165)
 	skip.pressed.connect(_skip_setup)
 	actions.add_child(skip)
-	var continue_button := _button("CONTINUE IN PREVIEW", MINT, 245)
+	var continue_button := _button("CONTINUE IN PREVIEW", MINT, 235)
 	continue_button.pressed.connect(_request.bind("calibration", {"preview_mode": true, "camera_live": false}))
 	actions.add_child(continue_button)
 	continue_button.call_deferred("grab_focus")
@@ -105,9 +119,9 @@ func _build_ui() -> void:
 func _refresh_preview_status() -> void:
 	refresh_count += 1
 	var messages := [
-		"Still Preview Mode: no camera connector is available yet.",
-		"UI check complete. Camera and pose statuses remain NOT CONNECTED.",
-		"Preview is ready for navigation. No live detection was performed."
+		"Camera feed: NOT CONNECTED. Pose tracking: NOT CONNECTED.",
+		"Status checked. This remains a UI-only preview with no live detection.",
+		"Preview navigation is ready. No player position has been measured."
 	]
 	info_label.text = messages[(refresh_count - 1) % messages.size()]
 
@@ -118,8 +132,22 @@ func _skip_setup() -> void:
 
 func _go_back() -> void:
 	var entry_source := String(context.get("entry_source", "tutorial"))
-	var target := "tutorial_home" if entry_source == "tutorial" else "play_difficulty"
+	var target := "tutorial_home" if entry_source == "tutorial" else ("play_activity" if bool(context.get("setup_preview", false)) else "play_difficulty")
 	requested.emit(target, {})
+
+func _apply_responsive_layout() -> void:
+	if not is_instance_valid(outer_margin) or not is_instance_valid(preview_panel) or not is_instance_valid(checklist):
+		return
+	var horizontal_margin := int(clampf(size.x * 0.055, 52.0, 110.0))
+	var vertical_margin := int(clampf(size.y * 0.050, 30.0, 62.0))
+	outer_margin.add_theme_constant_override("margin_left", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_right", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_top", vertical_margin)
+	outer_margin.add_theme_constant_override("margin_bottom", vertical_margin)
+	var preview_width := clampf(size.x * 0.46, 540.0, 900.0)
+	var preview_height := preview_width * 9.0 / 16.0
+	preview_panel.custom_minimum_size = Vector2(preview_width, preview_height)
+	checklist.custom_minimum_size.x = clampf(size.x * 0.27, 330.0, 430.0)
 
 func _status_card(number: String, title: String, status: String, color: Color) -> PanelContainer:
 	var panel := PanelContainer.new()
@@ -130,10 +158,12 @@ func _status_card(number: String, title: String, status: String, color: Color) -
 	panel.add_child(row)
 	var number_label := _label(number, 24, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
 	number_label.custom_minimum_size = Vector2(46, 0)
+	number_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	number_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(number_label)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(box)
 	box.add_child(_label(title, 15, CREAM, HORIZONTAL_ALIGNMENT_LEFT))
 	var status_label := _label(status, 12, CREAM, HORIZONTAL_ALIGNMENT_LEFT)
@@ -180,6 +210,15 @@ func _panel_style(color: Color, radius: int, shadow: int) -> StyleBoxFlat:
 	style.shadow_color = Color(INK.r, INK.g, INK.b, 0.34)
 	style.shadow_size = shadow
 	style.shadow_offset = Vector2(4, 6)
+	return style
+
+func _preview_style() -> StyleBoxFlat:
+	var style := _panel_style(INK, 22, 5)
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(CREAM.r, CREAM.g, CREAM.b, 0.52)
 	return style
 
 func _focus_style() -> StyleBoxFlat:

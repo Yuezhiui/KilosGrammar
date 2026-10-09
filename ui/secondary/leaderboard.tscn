@@ -1,19 +1,38 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://ui/secondary/leaderboard.gd" id="1_script"]
 [ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
 
-[sub_resource type="StyleBoxFlat" id="Card"]
-bg_color = Color(1, 0.968627, 0.862745, 0.88)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.411765, 0.745098, 0.603922, 1)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
+[sub_resource type="StyleBoxFlat" id="FilterCard"]
+bg_color = Color(1, 0.968627, 0.862745, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.286275, 0.266667, 0.388235, 0.16)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="TableHeader"]
+bg_color = Color(0.286275, 0.266667, 0.388235, 1)
+corner_radius_top_left = 13
+corner_radius_top_right = 13
+corner_radius_bottom_right = 13
+corner_radius_bottom_left = 13
+
+[sub_resource type="StyleBoxFlat" id="TableBody"]
+bg_color = Color(1, 0.968627, 0.862745, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.411765, 0.745098, 0.603922, 0.52)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
 
 [node name="Leaderboard" type="Control"]
 layout_mode = 3
@@ -32,32 +51,34 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 64
-theme_override_constants/margin_top = 34
-theme_override_constants/margin_right = 64
-theme_override_constants/margin_bottom = 34
+theme_override_constants/margin_left = 46
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 46
+theme_override_constants/margin_bottom = 26
 
 [node name="Panel" type="PanelContainer" parent="OuterMargin"]
 layout_mode = 2
 
 [node name="Padding" type="MarginContainer" parent="OuterMargin/Panel"]
 layout_mode = 2
-theme_override_constants/margin_left = 34
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_right = 34
-theme_override_constants/margin_bottom = 28
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 22
 
 [node name="Content" type="VBoxContainer" parent="OuterMargin/Panel/Padding"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 
-[node name="Header" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+[node name="Header" type="GridContainer" parent="OuterMargin/Panel/Padding/Content"]
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/h_separation = 12
+columns = 3
 
 [node name="BackButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Header"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(118, 48)
+custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
 focus_mode = 2
 text = "← BACK"
@@ -67,93 +88,161 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 34
 text = "LEADERBOARD"
+horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LocalBadge" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
+[node name="HeaderSpacer" type="Control" parent="OuterMargin/Panel/Padding/Content/Header"]
+custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 15
-text = "LOCAL RECORDS"
-vertical_alignment = 1
+mouse_filter = 2
 
-[node name="Intro" type="Label" parent="OuterMargin/Panel/Padding/Content"]
+[node name="FilterCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.82)
-theme_override_font_sizes/font_size = 15
-text = "Choose a category reserved for future local round scores. Local score storage is not connected yet."
-autowrap_mode = 2
+theme_override_styles/panel = SubResource("FilterCard")
 
-[node name="Categories" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+[node name="FilterMargin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/FilterCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="FilterRow" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/FilterCard/FilterMargin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="OverallButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Categories"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 46)
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 2
-text = "OVERALL"
-
-[node name="CatchButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Categories"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 46)
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 2
-text = "CATCH THE WORD"
-
-[node name="PlaneButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Categories"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 46)
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 2
-text = "HUMAN PLANE"
-
-[node name="BalloonButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Categories"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 46)
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 2
-text = "BALLOON POPPING"
-
-[node name="EmptyCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content"]
-custom_minimum_size = Vector2(0, 310)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("Card")
-
-[node name="Center" type="CenterContainer" parent="OuterMargin/Panel/Padding/Content/EmptyCard"]
-layout_mode = 2
-
-[node name="EmptyStack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/EmptyCard/Center"]
-custom_minimum_size = Vector2(600, 0)
-layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="EmptyTitle" type="Label" parent="OuterMargin/Panel/Padding/Content/EmptyCard/Center/EmptyStack"]
-unique_name_in_owner = true
+[node name="FilterLabel" type="Label" parent="OuterMargin/Panel/Padding/Content/FilterCard/FilterMargin/FilterRow"]
+custom_minimum_size = Vector2(82, 42)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 27
-text = "EMPTY LOCAL • OVERALL"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
+text = "FILTERS"
+vertical_alignment = 1
 
-[node name="EmptyCopy" type="Label" parent="OuterMargin/Panel/Padding/Content/EmptyCard/Center/EmptyStack"]
+[node name="StyleFilter" type="OptionButton" parent="OuterMargin/Panel/Padding/Content/FilterCard/FilterMargin/FilterRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.86)
-theme_override_font_sizes/font_size = 16
-text = "No local scores yet."
-horizontal_alignment = 1
-autowrap_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+item_count = 1
+selected = 0
+popup/item_0/text = "ALL STYLES"
+popup/item_0/id = 0
 
-[node name="EmptyHint" type="Label" parent="OuterMargin/Panel/Padding/Content/EmptyCard/Center/EmptyStack"]
+[node name="ModeFilter" type="OptionButton" parent="OuterMargin/Panel/Padding/Content/FilterCard/FilterMargin/FilterRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.62)
-theme_override_font_sizes/font_size = 13
-text = "No online leaderboard or score sync is connected in this build."
+size_flags_horizontal = 3
+focus_mode = 2
+item_count = 1
+selected = 0
+popup/item_0/text = "ALL MODES"
+popup/item_0/id = 0
+
+[node name="DifficultyFilter" type="OptionButton" parent="OuterMargin/Panel/Padding/Content/FilterCard/FilterMargin/FilterRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+item_count = 1
+selected = 0
+popup/item_0/text = "ALL DIFFICULTIES"
+popup/item_0/id = 0
+
+[node name="Table" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="TableHeader" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Table"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("TableHeader")
+
+[node name="HeaderMargin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+
+[node name="Columns" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader/HeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="StudentId" type="Label" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader/HeaderMargin/Columns"]
+custom_minimum_size = Vector2(118, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_font_sizes/font_size = 12
+text = "STUDENT ID"
+vertical_alignment = 1
+
+[node name="Name" type="Label" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader/HeaderMargin/Columns"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_font_sizes/font_size = 12
+text = "NAME"
+vertical_alignment = 1
+
+[node name="Grade" type="Label" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader/HeaderMargin/Columns"]
+custom_minimum_size = Vector2(118, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_font_sizes/font_size = 12
+text = "GRADE"
+vertical_alignment = 1
+
+[node name="GameStyle" type="Label" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader/HeaderMargin/Columns"]
+custom_minimum_size = Vector2(126, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_font_sizes/font_size = 12
+text = "GAME STYLE"
+vertical_alignment = 1
+
+[node name="GameMode" type="Label" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader/HeaderMargin/Columns"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_font_sizes/font_size = 12
+text = "GAME MODE"
+vertical_alignment = 1
+
+[node name="Difficulty" type="Label" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader/HeaderMargin/Columns"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_font_sizes/font_size = 12
+text = "DIFFICULTY"
+vertical_alignment = 1
+
+[node name="Score" type="Label" parent="OuterMargin/Panel/Padding/Content/Table/TableHeader/HeaderMargin/Columns"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_font_sizes/font_size = 12
+text = "SCORE"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="TableBody" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/Table"]
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("TableBody")
+
+[node name="EmptyCenter" type="CenterContainer" parent="OuterMargin/Panel/Padding/Content/Table/TableBody"]
+layout_mode = 2
+
+[node name="EmptyCopy" type="Label" parent="OuterMargin/Panel/Padding/Content/Table/TableBody/EmptyCenter"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.7)
+theme_override_font_sizes/font_size = 15
+text = "No saved scores yet • database pending"
 horizontal_alignment = 1
 autowrap_mode = 2

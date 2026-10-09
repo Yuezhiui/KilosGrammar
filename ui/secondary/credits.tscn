@@ -1,19 +1,48 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://ui/secondary/credits.gd" id="1_script"]
 [ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
+[ext_resource type="FontFile" path="res://assets/fonts/Comic Lemon.otf" id="3_comic"]
+[ext_resource type="PackedScene" path="res://ui/shared/lexi_reference_backdrop.tscn" id="4_backdrop"]
 
-[sub_resource type="StyleBoxFlat" id="Card"]
-bg_color = Color(1, 0.968627, 0.862745, 0.9)
-border_width_left = 2
+[sub_resource type="StyleBoxFlat" id="CreditsFrame"]
+bg_color = Color(0.992157, 0.894118, 0.72549, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.278431, 0.27451, 0.376471, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.192157, 0.192157, 0.270588, 0.7)
+shadow_size = 8
+shadow_offset = Vector2(8, 10)
+
+[sub_resource type="StyleBoxFlat" id="CreditsHeader"]
+bg_color = Color(0.278431, 0.27451, 0.376471, 1)
+corner_radius_top_left = 21
+corner_radius_top_right = 21
+
+[sub_resource type="StyleBoxFlat" id="SectionRule"]
+bg_color = Color(0.454902, 0.670588, 0.556863, 0.18)
 border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.286275, 0.266667, 0.388235, 0.22)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
+border_color = Color(0.454902, 0.670588, 0.556863, 0.55)
+corner_radius_bottom_left = 14
+corner_radius_bottom_right = 14
+
+[sub_resource type="StyleBoxFlat" id="TechBox"]
+bg_color = Color(0.278431, 0.27451, 0.376471, 0.055)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.278431, 0.27451, 0.376471, 0.15)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
 
 [node name="Credits" type="Control"]
 layout_mode = 3
@@ -25,161 +54,202 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_script")
 
-[node name="OuterMargin" type="MarginContainer" parent="."]
+[node name="LexiReferenceBackdrop" parent="." instance=ExtResource("4_backdrop")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 72
-theme_override_constants/margin_top = 38
-theme_override_constants/margin_right = 72
-theme_override_constants/margin_bottom = 38
 
-[node name="Panel" type="PanelContainer" parent="OuterMargin"]
-layout_mode = 2
+[node name="CreditsPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchor_left = 0.15
+anchor_top = 0.08
+anchor_right = 0.85
+anchor_bottom = 0.88
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("CreditsFrame")
 
-[node name="Padding" type="MarginContainer" parent="OuterMargin/Panel"]
+[node name="PanelContent" type="VBoxContainer" parent="CreditsPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 36
-theme_override_constants/margin_top = 30
-theme_override_constants/margin_right = 36
-theme_override_constants/margin_bottom = 30
+theme_override_constants/separation = 0
 
-[node name="Content" type="VBoxContainer" parent="OuterMargin/Panel/Padding"]
+[node name="Header" type="PanelContainer" parent="CreditsPanel/PanelContent"]
+custom_minimum_size = Vector2(0, 94)
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_styles/panel = SubResource("CreditsHeader")
 
-[node name="Header" type="HBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+[node name="HeaderTitle" type="RichTextLabel" parent="CreditsPanel/PanelContent/Header"]
+clip_contents = false
 layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="BackButton" type="Button" parent="OuterMargin/Panel/Padding/Content/Header"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(118, 48)
-layout_mode = 2
-focus_mode = 2
-text = "← BACK"
-
-[node name="Title" type="Label" parent="OuterMargin/Panel/Padding/Content/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 34
-text = "CREDITS"
+mouse_filter = 2
+theme_override_colors/default_color = Color(0.992157, 0.894118, 0.72549, 1)
+theme_override_colors/font_outline_color = Color(0.454902, 0.670588, 0.556863, 1)
+theme_override_colors/font_shadow_color = Color(0.192157, 0.192157, 0.270588, 1)
+theme_override_constants/outline_size = 8
+theme_override_constants/shadow_outline_size = 8
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 4
+theme_override_fonts/normal_font = ExtResource("3_comic")
+theme_override_font_sizes/normal_font_size = 44
+bbcode_enabled = true
+text = "[wave amp=40.0 freq=4.0 connected=1]CREDITS[/wave]"
+scroll_active = false
+autowrap_mode = 0
+horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Hero" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content"]
+[node name="Body" type="MarginContainer" parent="CreditsPanel/PanelContent"]
 layout_mode = 2
-theme_override_constants/separation = 6
+size_flags_vertical = 3
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 34
+theme_override_constants/margin_bottom = 24
 
-[node name="Project" type="Label" parent="OuterMargin/Panel/Padding/Content/Hero"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 29
-text = "KILOSGRAMMAR"
-horizontal_alignment = 1
-
-[node name="Tagline" type="Label" parent="OuterMargin/Panel/Padding/Content/Hero"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.286275, 0.266667, 0.388235, 0.72)
-theme_override_font_sizes/font_size = 14
-text = "Project Nexus • ICCT Colleges • A.Y. 2026–2027"
-horizontal_alignment = 1
-
-[node name="CreditsScroll" type="ScrollContainer" parent="OuterMargin/Panel/Padding/Content"]
+[node name="CreditsScroll" type="ScrollContainer" parent="CreditsPanel/PanelContent/Body"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
 
-[node name="Cards" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll"]
+[node name="ScrollCenter" type="CenterContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 12
 
-[node name="TeamCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards"]
+[node name="CreditsStack" type="VBoxContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter"]
+custom_minimum_size = Vector2(610, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("Card")
+theme_override_constants/separation = 18
 
-[node name="Margin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard"]
+[node name="KernelHeading" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
 layout_mode = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 18
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_colors/font_outline_color = Color(0.992157, 0.894118, 0.72549, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 29
+text = "KERNEL"
+horizontal_alignment = 1
 
-[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard/Margin"]
+[node name="KernelRule" type="PanelContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_styles/panel = SubResource("SectionRule")
 
-[node name="Heading" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard/Margin/Stack"]
+[node name="Name01" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 21
-text = "PROJECT NEXUS TEAM"
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Teoxon John William Ruiz"
+horizontal_alignment = 1
 
-[node name="Lead" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard/Margin/Stack"]
+[node name="Name02" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Teoxon John William Ruiz — Project Manager / Lead Backend & Frontend\nArabi Harwyn Lance Quinto — System Analyst\nCawicaan James Francis Alfaro — UI/UX Lead\nEstaris Kristina Yvonne Frial — DevOps / Deployment\nDaantos Johncarlos Opo — Quality Assurance\nMatienzo Ron Jaypee V — User Acceptance Testing / Pitch"
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Arabi Harwyn Lance Quinto"
+horizontal_alignment = 1
+
+[node name="Name03" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Cawicaan James Francis Alfaro"
+horizontal_alignment = 1
+
+[node name="Name04" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Estaris Kristina Yvonne Frial"
+horizontal_alignment = 1
+
+[node name="Name05" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Daantos Johncarlos Opo"
+horizontal_alignment = 1
+
+[node name="Name06" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Matienzo Ron Jaypee V"
+horizontal_alignment = 1
+
+[node name="Name07" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Blase John Barry Villanueva"
+horizontal_alignment = 1
+
+[node name="Name08" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Manangan Andrew Garcia"
+horizontal_alignment = 1
+
+[node name="Name09" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Calleja Rodrigo Jhon Lagarto"
+horizontal_alignment = 1
+
+[node name="Name10" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Bobis Lordjethro Bequilla"
+horizontal_alignment = 1
+
+[node name="Name11" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
+theme_override_font_sizes/font_size = 16
+text = "Burgos Riviera Irish Amor"
+horizontal_alignment = 1
+
+[node name="TechCredits" type="PanelContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("TechBox")
+
+[node name="TechMargin" type="MarginContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack/TechCredits"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
+
+[node name="TechText" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack/TechCredits/TechMargin"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 0.72)
+theme_override_font_sizes/font_size = 11
+text = "Godot Engine — MIT License\nTitan One — SIL Open Font License 1.1\nComic Lemon — Khurasan (free personal/commercial)"
+horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="Contributors" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TeamCard/Margin/Stack"]
+[node name="BottomSpacer" type="Control" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Blase John Barry Villanueva — Assistant Backend & Frontend / DBA\nManangan Andrew Garcia — Assistant Backend & Frontend / DBA\nCalleja Rodrigo Jhon Lagarto — Assistant UI/UX\nBobis Lordjethro Bequilla — Writer / UML\nBurgos Riviera Irish Amor — Writer / UML"
-autowrap_mode = 2
+mouse_filter = 2
 
-[node name="TechCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("Card")
-
-[node name="Margin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TechCard"]
-layout_mode = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 18
-
-[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TechCard/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Heading" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TechCard/Margin/Stack"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 21
-text = "PROJECT & TECHNOLOGY"
-
-[node name="Body" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/TechCard/Margin/Stack"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "KilosGrammar learning game\nBuilt with Godot Engine and GDScript\nInterface uses Titan One\n\nAdditional asset-license attributions can be added as the final project record is completed."
-autowrap_mode = 2
-
-[node name="ThanksCard" type="PanelContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("Card")
-
-[node name="Margin" type="MarginContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/ThanksCard"]
-layout_mode = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 18
-
-[node name="Stack" type="VBoxContainer" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/ThanksCard/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Heading" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/ThanksCard/Margin/Stack"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.533333, 0.419608, 1)
-theme_override_font_sizes/font_size = 21
-text = "THANK YOU"
-
-[node name="Body" type="Label" parent="OuterMargin/Panel/Padding/Content/CreditsScroll/Cards/ThanksCard/Margin/Stack"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "For the students, teachers, classmates, and testers who help make grammar practice clearer and more playful."
-autowrap_mode = 2
+[node name="BackButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(138, 50)
+layout_mode = 1
+anchor_left = 0.055
+anchor_top = 0.905
+anchor_right = 0.055
+anchor_bottom = 0.905
+offset_right = 138.0
+offset_bottom = 50.0
+grow_horizontal = 0
+grow_vertical = 0
+focus_mode = 2
+text = "← HOME"

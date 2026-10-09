@@ -20,25 +20,24 @@ var lane_labels: Array[Label] = []
 var status_label: Label
 var progress_label: Label
 var try_button: Button
+var outer_margin: MarginContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_ui()
+	resized.connect(_apply_responsive_layout)
+	call_deferred("_apply_responsive_layout")
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
 
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 78)
-	margin.add_theme_constant_override("margin_right", 78)
-	margin.add_theme_constant_override("margin_top", 44)
-	margin.add_theme_constant_override("margin_bottom", 44)
-	add_child(margin)
+	outer_margin = MarginContainer.new()
+	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(outer_margin)
 	var card := PanelContainer.new()
 	card.add_theme_stylebox_override("panel", _panel_style(PANEL, 28, 8))
-	margin.add_child(card)
+	outer_margin.add_child(card)
 	var pad := MarginContainer.new()
 	for side in ["margin_left", "margin_right"]:
 		pad.add_theme_constant_override(side, 42)
@@ -51,8 +50,12 @@ func _build_ui() -> void:
 	column.add_child(_label("MOVEMENT PRACTICE", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
 	column.add_child(_label("Stand in CENTER. Step LEFT or RIGHT when the game asks. Return to CENTER before the next move.", 16, INK, HORIZONTAL_ALIGNMENT_CENTER))
 
-	var preview := _label("DEMO ONLY • TRY MOVE simulates the gesture. Body tracking is not connected yet.", 14, RED, HORIZONTAL_ALIGNMENT_CENTER)
-	column.add_child(preview)
+	var status_row := HBoxContainer.new()
+	status_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	status_row.add_theme_constant_override("separation", 10)
+	column.add_child(status_row)
+	status_row.add_child(_status_chip("TRACKING: NOT CONNECTED", RED))
+	status_row.add_child(_status_chip("INPUT: TRY MOVE DEMO", YELLOW))
 
 	var lane_row := HBoxContainer.new()
 	lane_row.add_theme_constant_override("separation", 14)
@@ -113,6 +116,19 @@ func _go_back() -> void:
 	var back_route := "calibration" if bool(context.get("from_calibration", false)) else "tutorial_home"
 	requested.emit(back_route, {"preview_mode": true})
 
+func _apply_responsive_layout() -> void:
+	if not is_instance_valid(outer_margin):
+		return
+	var horizontal_margin := int(clampf(size.x * 0.060, 56.0, 118.0))
+	var vertical_margin := int(clampf(size.y * 0.052, 30.0, 64.0))
+	outer_margin.add_theme_constant_override("margin_left", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_right", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_top", vertical_margin)
+	outer_margin.add_theme_constant_override("margin_bottom", vertical_margin)
+	var lane_height := clampf(size.y * 0.30, 205.0, 315.0)
+	for lane in lane_panels:
+		lane.custom_minimum_size.y = lane_height
+
 func _request(target: String, payload: Dictionary) -> void:
 	requested.emit(target, payload)
 
@@ -141,6 +157,17 @@ func _button(text_value: String, color: Color) -> Button:
 	button.add_theme_stylebox_override("pressed", _panel_style(color.darkened(0.08), 13, 2))
 	button.add_theme_stylebox_override("focus", _focus_style())
 	return button
+
+func _status_chip(text_value: String, color: Color) -> PanelContainer:
+	var chip := PanelContainer.new()
+	chip.custom_minimum_size = Vector2(250, 34)
+	var style := _panel_style(color, 10, 2)
+	style.shadow_offset = Vector2(2, 3)
+	chip.add_theme_stylebox_override("panel", style)
+	var label := _label(text_value, 12, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	chip.add_child(label)
+	return chip
 
 func _lane_style(color: Color, active: bool) -> StyleBoxFlat:
 	var style := _panel_style(color if active else color.darkened(0.05), 22, 8 if active else 4)

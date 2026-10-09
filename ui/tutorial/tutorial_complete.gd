@@ -5,27 +5,24 @@ signal requested(target: String, payload: Dictionary)
 const FONT := preload("res://assets/fonts/TitanOne-Regular.ttf")
 const INK := Color("#494463")
 const CREAM := Color("#F7E6BD")
-const MINT := Color("#69BE9A")
+const MINT := Color("#00886B")
 const BLUE := Color("#7BC9EF")
 const YELLOW := Color("#FFC23D")
 const RED := Color("#FF4F66")
 
 var context: Dictionary = {}
+var outer_margin: MarginContainer
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["margin_left", "margin_right"]:
-		margin.add_theme_constant_override(side, 125)
-	for side in ["margin_top", "margin_bottom"]:
-		margin.add_theme_constant_override(side, 58)
-	add_child(margin)
+	outer_margin = MarginContainer.new()
+	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(outer_margin)
 
 	var card := PanelContainer.new()
 	card.add_theme_stylebox_override("panel", _style(Color("#F7E6BDF2"), 28))
-	margin.add_child(card)
+	outer_margin.add_child(card)
 	var pad := MarginContainer.new()
 	for side in ["margin_left", "margin_right"]:
 		pad.add_theme_constant_override(side, 48)
@@ -43,7 +40,7 @@ func _ready() -> void:
 	var status := PanelContainer.new()
 	status.add_theme_stylebox_override("panel", _style(Color("#494463"), 18))
 	column.add_child(status)
-	var status_label := _label("UI DEMONSTRATION ONLY\nYour body movements have not been verified.\nReal calibration and motion tracking will be available after the camera/YOLO integration.", 16, CREAM)
+	var status_label := _label("UI DEMONSTRATION ONLY\nYour body movements have not been verified.\nReal calibration and motion tracking will be available after camera/CV integration.", 16, CREAM)
 	status_label.custom_minimum_size.y = 110
 	status.add_child(status_label)
 
@@ -53,7 +50,7 @@ func _ready() -> void:
 	actions.add_theme_constant_override("v_separation", 14)
 	column.add_child(actions)
 	var play := _button("GO TO PLAY", MINT)
-	play.pressed.connect(_request.bind("play_activity", {"entry_source": "play"}))
+	play.pressed.connect(_request.bind("student_setup", {"entry_source": "play", "fresh_setup": true}))
 	actions.add_child(play)
 	var again := _button("PRACTICE AGAIN", BLUE)
 	again.pressed.connect(_request.bind("tutorial_practice", {"entry_source": "tutorial", "from_calibration": false}))
@@ -65,6 +62,8 @@ func _ready() -> void:
 	home.pressed.connect(_request.bind("main", {}))
 	actions.add_child(home)
 	play.call_deferred("grab_focus")
+	resized.connect(_apply_responsive_layout)
+	call_deferred("_apply_responsive_layout")
 
 
 func set_context(value: Dictionary) -> void:
@@ -73,6 +72,17 @@ func set_context(value: Dictionary) -> void:
 
 func _request(target: String, payload: Dictionary) -> void:
 	requested.emit(target, payload)
+
+
+func _apply_responsive_layout() -> void:
+	if not is_instance_valid(outer_margin):
+		return
+	var horizontal_margin := int(clampf(size.x * 0.085, 86.0, 160.0))
+	var vertical_margin := int(clampf(size.y * 0.065, 42.0, 76.0))
+	outer_margin.add_theme_constant_override("margin_left", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_right", horizontal_margin)
+	outer_margin.add_theme_constant_override("margin_top", vertical_margin)
+	outer_margin.add_theme_constant_override("margin_bottom", vertical_margin)
 
 
 func _label(value: String, font_size: int, color: Color) -> Label:

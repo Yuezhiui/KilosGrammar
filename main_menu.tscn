@@ -181,6 +181,22 @@ shadow_color = Color(0.164706, 0.141176, 0.215686, 0.42)
 shadow_size = 4
 shadow_offset = Vector2(0, 5)
 
+[sub_resource type="StyleBoxFlat" id="ButtonFocus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.760784, 0.239216, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+expand_margin_left = 1.0
+expand_margin_top = 1.0
+expand_margin_right = 1.0
+expand_margin_bottom = 1.0
+
 [sub_resource type="StyleBoxFlat" id="QuitNormal"]
 bg_color = Color(0.858824, 0.223529, 0.309804, 1)
 corner_radius_top_left = 8
@@ -554,6 +570,7 @@ theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "LEADERBOARD"
 
 [node name="Settings" type="Button" parent="MainLayer/LeftMenu" unique_id=1888547398]
@@ -567,6 +584,7 @@ theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "SETTINGS"
 
 [node name="Credits" type="Button" parent="MainLayer/LeftMenu" unique_id=794054224]
@@ -580,6 +598,7 @@ theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "CREDITS"
 
 [node name="CenterMenu" type="VBoxContainer" parent="MainLayer" unique_id=1750835866]
@@ -601,6 +620,7 @@ theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "TUTORIAL"
 
 [node name="Play" type="Button" parent="MainLayer/CenterMenu" unique_id=1153098940]
@@ -614,6 +634,7 @@ theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "PLAY"
 
 [node name="Quit" type="Button" parent="MainLayer/CenterMenu" unique_id=638833762]
@@ -627,6 +648,7 @@ theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("QuitNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "QUIT"
 
 [node name="Tooltip" type="PanelContainer" parent="MainLayer" unique_id=257164577]
