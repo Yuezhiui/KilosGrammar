@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://p37gldyg6pst"
+path="res://.godot/imported/Better Luck.mp3-505fda267f3bc31b98c5c82f05982abf.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/catch_voice/Better Luck.mp3"
+dest_files=["res://.godot/imported/Better Luck.mp3-505fda267f3bc31b98c5c82f05982abf.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

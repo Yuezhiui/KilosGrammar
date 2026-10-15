@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FFF4B1"/><stop offset=".47" stop-color="#F2BE59"/><stop offset="1" stop-color="#B9742D"/>
+    </linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FAEEFF"/><stop offset="1" stop-color="#D6B6F7"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#CB8FF6"/><stop offset="1" stop-color="#8B56B9"/>
+    </linearGradient>
+  </defs>
+  <circle cx="65" cy="66" r="56" fill="#392111" opacity=".30"/>
+  <circle cx="63" cy="61" r="54" fill="#6B381C" stroke="#4E2918" stroke-width="4"/>
+  <circle cx="63" cy="60" r="48" fill="url(#rim)" stroke="#FFF5BE" stroke-width="3"/>
+  <circle cx="63" cy="60" r="39" fill="url(#base)" stroke="#8D60AF" stroke-width="2.5"/>
+  <path d="M42 26 Q62 17 81 26" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".65" stroke-linecap="round"/>
+  <!-- Color palette and sparkle: qualities that describe a thing. -->
+  <path d="M62 34 C37 34 26 52 30 69 C33 89 52 97 69 95 C82 92 84 81 73 75 C65 70 71 62 81 64 C100 68 104 53 89 42 Q78 34 62 34Z" fill="url(#violet)" stroke="#6B3A94" stroke-width="3.5" stroke-linejoin="round"/>
+  <circle cx="50" cy="50" r="6.5" fill="#FFE071" stroke="#7E4C7C" stroke-width="1.7"/>
+  <circle cx="36" cy="66" r="6.5" fill="#F5877A" stroke="#7E4C7C" stroke-width="1.7"/>
+  <circle cx="50" cy="82" r="6.5" fill="#8CDFA1" stroke="#7E4C7C" stroke-width="1.7"/>
+  <circle cx="68" cy="45" r="6.5" fill="#9BE5FF" stroke="#7E4C7C" stroke-width="1.7"/>
+  <path d="M88 17 L93 28 L104 33 L93 38 L88 50 L83 38 L72 33 L83 28Z" fill="#FFF7C0" stroke="#AD702E" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="85" cy="83" r="3" fill="#FFFDF0"/>
+</svg>

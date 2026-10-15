@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FFF4B1"/><stop offset=".47" stop-color="#F2BE59"/><stop offset="1" stop-color="#B9742D"/>
+    </linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#EAFBFF"/><stop offset="1" stop-color="#A4DFFA"/>
+    </linearGradient>
+    <linearGradient id="people" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#53BCF2"/><stop offset="1" stop-color="#2379BB"/>
+    </linearGradient>
+  </defs>
+  <circle cx="65" cy="66" r="56" fill="#392111" opacity=".30"/>
+  <circle cx="63" cy="61" r="54" fill="#6B381C" stroke="#4E2918" stroke-width="4"/>
+  <circle cx="63" cy="60" r="48" fill="url(#rim)" stroke="#FFF5BE" stroke-width="3"/>
+  <circle cx="63" cy="60" r="39" fill="url(#base)" stroke="#4389B0" stroke-width="2.5"/>
+  <path d="M42 26 Q62 17 81 26" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".65" stroke-linecap="round"/>
+  <!-- Two speakers and a two-way substitution arrow. -->
+  <circle cx="43" cy="62" r="13" fill="#FCE2BD" stroke="#336F9F" stroke-width="3"/>
+  <circle cx="82" cy="62" r="13" fill="#FCE2BD" stroke="#336F9F" stroke-width="3"/>
+  <path d="M27 92 Q26 76 43 75 Q61 77 60 92Z" fill="url(#people)" stroke="#236298" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M65 92 Q64 77 82 75 Q99 78 98 92Z" fill="url(#people)" stroke="#236298" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M39 39 H86 L79 33 M86 39 L79 45" fill="none" stroke="#2479BA" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M88 52 H38 L45 46 M38 52 L45 58" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="101" cy="94" r="4" fill="#FFF2C2" opacity=".9"/>
+</svg>

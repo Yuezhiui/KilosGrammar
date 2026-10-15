@@ -598,7 +598,7 @@ func _focus_style(radius: int) -> StyleBoxFlat:
 	style.border_width_top = 3
 	style.border_width_right = 3
 	style.border_width_bottom = 3
-	style.border_color = YELLOW
+	style.border_color = Color(CREAM.r, CREAM.g, CREAM.b, 0.7)
 	style.corner_radius_top_left = radius
 	style.corner_radius_top_right = radius
 	style.corner_radius_bottom_left = radius

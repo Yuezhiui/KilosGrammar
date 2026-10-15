@@ -1,0 +1,305 @@
+[gd_scene format=3 uid="uid://bcns0owcuap3q"]
+
+[ext_resource type="Script" uid="uid://bmhyrdbwye3jg" path="res://ui/minigames/catch_word.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://rlmoubhjy47e" path="res://WordCatcherMaps/CityMap.png" id="2_map"]
+[ext_resource type="Texture2D" uid="uid://clhvd2tkmwpmn" path="res://WordCatcherCharacters/BOY BODY.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://c8pnfquvg0oll" path="res://WordCatcherCharacters/BOY BASKET.png" id="4_basket"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="5_font"]
+[ext_resource type="Texture2D" uid="uid://boxmkr4bvdvqu" path="res://ui/minigames/catch_hud/generated/title_board.png" id="6_title"]
+[ext_resource type="Texture2D" uid="uid://fnw2gdx3u22i" path="res://ui/minigames/catch_hud/generated/timer_badge.png" id="8_timer"]
+[ext_resource type="Texture2D" uid="uid://cheism1tnam0r" path="res://ui/minigames/catch_hud/generated/lives_badge.png" id="9_lives"]
+[ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://ui/minigames/catch_hud/generated/pause_badge.png" id="10_pause"]
+[ext_resource type="Texture2D" uid="uid://d13sn4nsevrgu" path="res://ui/minigames/catch_hud/generated/score_board.png" id="11_score"]
+
+[node name="CatchTheWord" type="Control" unique_id=1403184396]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_script")
+
+[node name="Background" type="TextureRect" parent="." unique_id=996659973]
+z_index = -20
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_map")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="FallingWordLayer" type="Node2D" parent="." unique_id=1456927821]
+z_index = 1
+
+[node name="CharacterRig" type="Node2D" parent="." unique_id=669911193]
+position = Vector2(640, 813.6)
+
+[node name="Body" type="Sprite2D" parent="CharacterRig" unique_id=1516257554]
+position = Vector2(0.136, -209.87)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("3_body")
+region_enabled = true
+region_rect = Rect2(97, 125, 748, 1547)
+
+[node name="CollectedWords" type="Node2D" parent="CharacterRig" unique_id=883634018]
+z_index = 2
+
+[node name="Basket" type="Sprite2D" parent="CharacterRig" unique_id=956352649]
+z_index = 3
+position = Vector2(0.136, -149.89)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("4_basket")
+region_enabled = true
+region_rect = Rect2(11, 890, 920, 459)
+
+[node name="HUDLayer" type="CanvasLayer" parent="." unique_id=1797021309]
+layer = 20
+
+[node name="HUD" type="Control" parent="HUDLayer" unique_id=724737202]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TitlePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=859901248]
+layout_mode = 0
+offset_left = 13.0
+offset_top = 10.0
+offset_right = 519.0
+offset_bottom = 167.0
+mouse_filter = 2
+texture = ExtResource("6_title")
+expand_mode = 1
+
+[node name="TimerPlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1596940150]
+layout_mode = 0
+offset_left = 990.0
+offset_top = 8.0
+offset_right = 1185.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("8_timer")
+expand_mode = 1
+
+[node name="LivesPlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1349845206]
+visible = false
+layout_mode = 0
+offset_left = 990.0
+offset_top = 8.0
+offset_right = 1185.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("9_lives")
+expand_mode = 1
+
+[node name="PausePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=999468031]
+layout_mode = 0
+offset_left = 1195.0
+offset_top = 8.0
+offset_right = 1276.0
+offset_bottom = 89.0
+mouse_filter = 2
+texture = ExtResource("10_pause")
+expand_mode = 1
+
+[node name="ScorePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1188822547]
+layout_mode = 0
+offset_left = 992.0
+offset_top = 543.0
+offset_right = 1266.0
+offset_bottom = 719.0
+mouse_filter = 2
+texture = ExtResource("11_score")
+expand_mode = 1
+
+[node name="TitleLabel" type="Label" parent="HUDLayer/HUD" unique_id=227329996]
+visible = false
+layout_mode = 0
+offset_left = 59.0
+offset_top = 27.0
+offset_right = 224.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(1, 0.797, 0.247, 1)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.8)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 37
+text = "CATCH"
+vertical_alignment = 1
+
+[node name="TitleTheLabel" type="Label" parent="HUDLayer/HUD" unique_id=516625395]
+visible = false
+layout_mode = 0
+offset_left = 214.0
+offset_top = 27.0
+offset_right = 302.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(1, 0.984, 0.91, 1)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 29
+text = "THE"
+vertical_alignment = 1
+
+[node name="TitleWordLabel" type="Label" parent="HUDLayer/HUD" unique_id=852777914]
+visible = false
+layout_mode = 0
+offset_left = 290.0
+offset_top = 27.0
+offset_right = 454.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(0.4, 0.846, 1, 1)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 37
+text = "WORD"
+vertical_alignment = 1
+
+[node name="PromptLabel" type="Label" parent="HUDLayer/HUD" unique_id=982457133]
+layout_mode = 0
+offset_left = 115.0
+offset_top = 93.0
+offset_right = 421.0
+offset_bottom = 126.0
+theme_override_colors/font_color = Color(0.27, 0.12, 0.05, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 17
+text = "WHICH WORD IS A NOUN?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="HUDLayer/HUD" unique_id=1338652892]
+visible = false
+layout_mode = 0
+offset_left = 460.0
+offset_top = 18.0
+offset_right = 590.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(0.411765, 0.745098, 0.603922, 1)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 18
+text = "SCORE 0000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LivesLabel" type="Label" parent="HUDLayer/HUD" unique_id=2069074409]
+visible = false
+layout_mode = 0
+offset_left = 590.0
+offset_top = 18.0
+offset_right = 700.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(1, 0.309804, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 18
+text = "LIVES 5"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="HUDLayer/HUD" unique_id=1176703706]
+layout_mode = 0
+offset_left = 1062.0
+offset_top = 20.0
+offset_right = 1172.0
+offset_bottom = 70.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 28
+text = "60s"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StreakLabel" type="Label" parent="HUDLayer/HUD" unique_id=908443430]
+visible = false
+layout_mode = 0
+offset_left = 810.0
+offset_top = 18.0
+offset_right = 955.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(0.756863, 0.443137, 0.811765, 1)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 18
+text = "STREAK 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FooterLabel" type="Label" parent="HUDLayer/HUD" unique_id=300588726]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = -30.0
+offset_right = -28.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 0.76)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 12
+text = "KEYBOARD PLAY: A / D OR ARROWS • CAMERA TRACKING: NOT CONNECTED"
+vertical_alignment = 1
+
+[node name="FinishButton" type="Button" parent="HUDLayer/HUD" unique_id=177983020]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -310.0
+offset_top = 20.0
+offset_right = -156.0
+offset_bottom = 66.0
+grow_horizontal = 0
+text = "FINISH ROUND"
+
+[node name="PauseButton" type="Button" parent="HUDLayer/HUD" unique_id=129499625]
+layout_mode = 0
+offset_left = 1212.0
+offset_top = 25.0
+offset_right = 1260.0
+offset_bottom = 73.0
+
+[node name="ScoreBottomContainer" type="VBoxContainer" parent="HUDLayer/HUD" unique_id=1426763398]
+layout_mode = 0
+offset_left = 1053.0
+offset_top = 613.0
+offset_right = 1227.0
+offset_bottom = 673.0
+mouse_filter = 2
+theme_override_constants/separation = -4
+
+[node name="ScoreNumber" type="Label" parent="HUDLayer/HUD/ScoreBottomContainer" unique_id=1415204146]
+custom_minimum_size = Vector2(174, 60)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.207843, 0.109804, 0.0666667, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 40
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1

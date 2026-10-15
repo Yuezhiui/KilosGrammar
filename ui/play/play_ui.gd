@@ -68,7 +68,7 @@ static func style_button(button: Button, color: Color = INK, font_size: int = 24
 	button.add_theme_color_override("font_disabled_color", Color(CREAM, 0.45))
 	button.add_theme_stylebox_override("normal", make_button_style(color))
 	button.add_theme_stylebox_override("hover", make_button_style(color.lightened(0.10), true))
-	button.add_theme_stylebox_override("focus", make_button_style(color.lightened(0.06), true))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_stylebox_override("pressed", make_button_style(color.darkened(0.08), true, true))
 	var disabled_style := make_button_style(Color(color, 0.36))
 	disabled_style.border_color = Color(CREAM, 0.20)

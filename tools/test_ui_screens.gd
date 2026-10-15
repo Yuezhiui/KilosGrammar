@@ -134,6 +134,12 @@ func _run() -> void:
 	await process_frame
 	_assert_route(app, "play_activity", "Student Setup -> Activity")
 	(app.get("active_panel") as Control).call("_select_activity", "Catch the Word")
+	(app.get("active_panel") as Control).call("_play_keyboard_now")
+	await process_frame
+	_assert_route(app, "ready", "Activity -> Ready (skip camera for keyboard prototype)")
+	(app.get("active_panel") as Control).call("_go_back")
+	await process_frame
+	_assert_route(app, "play_activity", "Keyboard Ready Back -> Game Selection")
 	(app.get("active_panel") as Control).call("_go_next")
 	await process_frame
 	_assert_route(app, "camera_check", "Activity -> Camera (no duplicate configuration)")
@@ -147,14 +153,19 @@ func _run() -> void:
 	(app.get("active_panel") as Control).call("_continue_flow", false)
 	await process_frame
 	_assert_route(app, "ready", "Play Calibration -> Ready")
-	app.call("_on_panel_requested", "gameplay", {"demo_mode": true})
-	await process_frame
+	for activity in ["Catch the Word", "Balloon Popping", "Human Plane"]:
+		app.call("_on_panel_requested", "gameplay", {"activity": activity, "topic": "Noun", "game_style": "Noun", "difficulty": "Easy", "demo_mode": true})
+		await process_frame
+		_assert_route(app, "gameplay", "Gameplay scene: " + activity)
+		var mounted_game: Control = (app.get("active_panel") as Control).get_node_or_null("ActiveMiniGame") as Control
+		if mounted_game == null:
+			failures.append("Could not instantiate playable activity: " + activity)
+		elif not mounted_game.has_method("get_context") or not mounted_game.has_method("set_body_x"):
+			failures.append("Missing playable game input/context API: " + activity)
 	var gameplay: Control = app.get("active_panel") as Control
-	gameplay.call("_simulate_correct")
-	gameplay.call("_simulate_wrong")
-	gameplay.call("_finish_demo")
+	gameplay.call("_finish_round")
 	await process_frame
-	_assert_route(app, "results", "Gameplay -> Results")
+	_assert_route(app, "results", "Playable 2D Gameplay -> Results")
 	(app.get("active_panel") as Control).call("_request", "student_setup")
 	await process_frame
 	_assert_route(app, "student_setup", "Game Over Retry -> Student Setup")

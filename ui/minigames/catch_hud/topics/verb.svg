@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FFF4B1"/><stop offset=".47" stop-color="#F2BE59"/><stop offset="1" stop-color="#B9742D"/>
+    </linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#F0FFE8"/><stop offset="1" stop-color="#BCE799"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#6FDB73"/><stop offset="1" stop-color="#248B51"/>
+    </linearGradient>
+  </defs>
+  <circle cx="65" cy="66" r="56" fill="#392111" opacity=".30"/>
+  <circle cx="63" cy="61" r="54" fill="#6B381C" stroke="#4E2918" stroke-width="4"/>
+  <circle cx="63" cy="60" r="48" fill="url(#rim)" stroke="#FFF5BE" stroke-width="3"/>
+  <circle cx="63" cy="60" r="39" fill="url(#base)" stroke="#4D9D54" stroke-width="2.5"/>
+  <path d="M42 26 Q62 17 81 26" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".65" stroke-linecap="round"/>
+  <!-- Running figure represents an action (verb). -->
+  <circle cx="73" cy="40" r="10" fill="#FFC46B" stroke="#6F5725" stroke-width="2.7"/>
+  <path d="M58 56 L73 54 L85 66 M65 54 L52 68 L40 69" fill="none" stroke="#267D47" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M70 58 L61 74 L78 82 L89 98 M61 73 L48 86 L32 90" fill="none" stroke="url(#bolt)" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M25 55 H40 M22 64 H32 M29 76 H41" fill="none" stroke="#64BC56" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M86 99 H99 M30 91 H42" stroke="#285D3D" stroke-width="5" stroke-linecap="round"/>
+</svg>

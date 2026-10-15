@@ -9,11 +9,11 @@ const EXISTING_SCORE_DIALOG = preload("res://ui/student/existing_score_dialog.ts
 
 const GAME_STYLES := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const FUTURE_STYLES := ["Preposition", "Conjunction", "Interjection"]
-const GAME_MODES := ["Quiz", "Activity"]
+const GAME_MODES := ["Seconds", "Lives"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
-const STYLE_COLORS := [UI.GREEN, UI.PURPLE, UI.RED, UI.YELLOW, UI.BLUE]
+const STYLE_COLORS := [UI.GREEN, UI.PURPLE, UI.RED, Color("#E29A36"), UI.BLUE]
 const MODE_COLORS := [UI.DEEP_BLUE, UI.GREEN]
-const DIFFICULTY_COLORS := [UI.GREEN, UI.YELLOW, UI.RED]
+const DIFFICULTY_COLORS := [UI.GREEN, Color("#E29A36"), UI.RED]
 
 var context: Dictionary = {}
 var _identity_student_id := ""
@@ -232,7 +232,8 @@ func _build_game_card(parent: HBoxContainer) -> void:
 	var mode_group := ButtonGroup.new()
 	for index in range(GAME_MODES.size()):
 		var game_mode: String = GAME_MODES[index]
-		var button := _selection_button(game_mode.to_upper(), MODE_COLORS[index], 58, 15)
+		var label_text: String = "60s" if game_mode == "Seconds" else "3 LIVES"
+		var button := _selection_button(label_text, MODE_COLORS[index], 58, 15)
 		button.button_group = mode_group
 		button.pressed.connect(_select_mode.bind(game_mode))
 		mode_row.add_child(button)
@@ -256,9 +257,9 @@ func _build_game_card(parent: HBoxContainer) -> void:
 		_difficulty_buttons[difficulty] = button
 
 	var validation_panel := PanelContainer.new()
-	validation_panel.add_theme_stylebox_override("panel", _soft_panel(Color(UI.YELLOW, 0.14), Color(UI.YELLOW, 0.54), 14))
+	validation_panel.add_theme_stylebox_override("panel", _soft_panel(Color(UI.CREAM, 0.12), Color(UI.CREAM, 0.45), 14))
 	content.add_child(validation_panel)
-	_validation_label = UI.make_body_label("", 13, UI.YELLOW)
+	_validation_label = UI.make_body_label("", 13, UI.CREAM)
 	_validation_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_validation_label.custom_minimum_size.y = 46
 	validation_panel.add_child(_validation_label)
@@ -341,7 +342,8 @@ func _selection_button(text_value: String, color: Color, height: int, font_size:
 	button.custom_minimum_size = Vector2(0, height)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	UI.style_button(button, color, font_size)
-	button.add_theme_stylebox_override("pressed", UI.make_button_style(color.darkened(0.12), true, true))
+	button.add_theme_stylebox_override("pressed", UI.make_button_style(color.darkened(0.12), false, true))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	return button
 
 
@@ -415,19 +417,22 @@ func _associate_identity_with_current_id() -> void:
 
 
 func _select_style(game_style: String) -> void:
-	_selected_style = game_style
+	var canonical := _canonical_value(game_style, GAME_STYLES)
+	_selected_style = canonical if not canonical.is_empty() else game_style
 	_sync_selection_buttons()
 	_update_validation()
 
 
 func _select_mode(game_mode: String) -> void:
-	_selected_mode = game_mode
+	var canonical := _canonical_value(game_mode, GAME_MODES)
+	_selected_mode = canonical if not canonical.is_empty() else game_mode
 	_sync_selection_buttons()
 	_update_validation()
 
 
 func _select_difficulty(difficulty: String) -> void:
-	_selected_difficulty = difficulty
+	var canonical := _canonical_value(difficulty, DIFFICULTIES)
+	_selected_difficulty = canonical if not canonical.is_empty() else difficulty
 	_sync_selection_buttons()
 	_update_validation()
 
@@ -477,7 +482,7 @@ func _update_validation() -> void:
 		_validation_label.add_theme_color_override("font_color", UI.GREEN)
 	else:
 		_validation_label.text = "REQUIRED • %s" % ", ".join(missing)
-		_validation_label.add_theme_color_override("font_color", UI.YELLOW)
+		_validation_label.add_theme_color_override("font_color", UI.CREAM)
 
 
 func _continue() -> void:
@@ -531,4 +536,10 @@ func _canonical_value(value: String, allowed: Array) -> String:
 	for option in allowed:
 		if option.to_lower() == clean.to_lower():
 			return option
+	if allowed == GAME_MODES:
+		match clean.to_lower():
+			"quiz", "sec", "60s", "seconds":
+				return "Seconds"
+			"activity", "life", "3 lives", "lives":
+				return "Lives"
 	return ""

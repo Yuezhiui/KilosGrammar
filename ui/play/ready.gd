@@ -39,12 +39,13 @@ func _ready() -> void:
 	summary_label.custom_minimum_size.y = 76
 	content.add_child(summary_label)
 
-	var hint := UI.make_body_label("The next screen is a prototype gameplay HUD. No live camera or YOLO inference is simulated here.", 16, Color(UI.CREAM, 0.72))
+	var hint := UI.make_body_label("Playable 2D game: use LEFT/RIGHT arrows or A/D. Balloons: SPACE to pop. Camera tracking is not connected yet.", 16, Color(UI.CREAM, 0.78))
 	hint.custom_minimum_size.y = 50
 	content.add_child(hint)
 
-	var footer: Array[Button] = UI.add_footer(column, "BACK: CAMERA CHECK", "START COUNTDOWN")
+	var footer: Array[Button] = UI.add_footer(column, "BACK", "START COUNTDOWN")
 	back_button = footer[0]
+	back_button.text = "BACK: GAME SELECT" if bool(context.get("keyboard_mode", false)) else "BACK: CAMERA CHECK"
 	start_button = footer[1]
 	back_button.pressed.connect(_go_back)
 	start_button.pressed.connect(_start_countdown)
@@ -55,6 +56,8 @@ func _ready() -> void:
 func set_context(new_context: Dictionary) -> void:
 	for key in new_context:
 		context[key] = new_context[key]
+	if back_button:
+		back_button.text = "BACK: GAME SELECT" if bool(context.get("keyboard_mode", false)) else "BACK: CAMERA CHECK"
 	_refresh_summary()
 
 
@@ -76,7 +79,7 @@ func _focus_start() -> void:
 func _go_back() -> void:
 	if countdown_running:
 		return
-	requested.emit("camera_check", context.duplicate(true))
+	requested.emit("play_activity" if bool(context.get("keyboard_mode", false)) else "camera_check", context.duplicate(true))
 
 
 func _start_countdown() -> void:

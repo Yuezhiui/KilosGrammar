@@ -36,6 +36,7 @@ func _refresh() -> void:
 	var show_unsaved := bool(_context.get("demo_mode", false))
 	if _context.has("database_connected"):
 		show_unsaved = show_unsaved or not bool(_context["database_connected"])
+	%SaveStatus.text = "PLAYABLE KEYBOARD ROUND  -  SCORE NOT SAVED" if bool(_context.get("gameplay_implemented", false)) else "DEMO ROUND  -  SCORE NOT SAVED"
 	%SaveStatus.visible = show_unsaved
 
 

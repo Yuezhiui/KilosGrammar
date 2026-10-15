@@ -51,7 +51,10 @@ const FALLING_GRAMMAR_COLORS := [
 ]
 const LOGO_BLOOP: AudioStream = preload("res://assets/audio/lexispell_intro/logo_bloop.wav")
 const LETTER_POP: AudioStream = preload("res://assets/audio/lexispell_intro/letter_pop.wav")
-const TITLE_MUSIC: AudioStream = preload("res://assets/audio/lexispell_intro/title_music.ogg")
+# Optional user-provided local soundtrack. Never require third-party music
+# for a fresh checkout of the public source repository.
+const TITLE_MUSIC_PATH := "res://assets/audio/user_provided/wii_fit_user_settings.mp3"
+const CATCH_PRELOADER_SCRIPT: Script = preload("res://ui/play/catch_asset_preloader.gd")
 const BUTTON_HOVER: AudioStream = preload("res://assets/audio/lexispell_intro/button_hover.wav")
 const BUTTON_CLICK: AudioStream = preload("res://assets/audio/lexispell_intro/button_click.wav")
 const MUSIC_BUS := "KilosMusic"
@@ -100,8 +103,12 @@ const PANEL_SCENES := {
 }
 var panel_host: Control
 var active_panel: Control
+# Keep the active minigame alive behind the pause screen. Rebuilding a fresh
+# gameplay scene on Resume discarded falling tiles, answer gates and shots.
+var paused_game_panel: Control
 var current_route := "main"
 var session_state: Dictionary = {"entry_source": "play", "demo_mode": true}
+var catch_asset_preloader: Node
 
 var rng := RandomNumberGenerator.new()
 var button_tweens: Dictionary = {}
@@ -275,14 +282,23 @@ func _reveal_intro_tile(tile: Control, pitch: float) -> void:
 
 
 func _setup_title_music() -> void:
+	# The user's optional local soundtrack remains available in their editor,
+	# but the public repository is playable without distributing that MP3.
+	if not ResourceLoader.exists(TITLE_MUSIC_PATH):
+		return
+	var selected_music := load(TITLE_MUSIC_PATH) as AudioStream
+	if selected_music == null:
+		return
 	title_music_player = AudioStreamPlayer.new()
 	title_music_player.name = "TitleMusic"
 	title_music_player.bus = MUSIC_BUS
-	title_music_player.stream = TITLE_MUSIC
+	title_music_player.stream = selected_music
 	title_music_player.volume_db = -32.0
 	add_child(title_music_player)
 	if title_music_player.stream is AudioStreamOggVorbis:
 		(title_music_player.stream as AudioStreamOggVorbis).loop = true
+	elif title_music_player.stream is AudioStreamMP3:
+		(title_music_player.stream as AudioStreamMP3).loop = true
 	title_music_player.play()
 	var fade: Tween = create_tween()
 	fade.tween_property(title_music_player, "volume_db", -8.0, 1.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -640,16 +656,59 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 			# Retry or Back from activity must preserve the editable student form.
 			session_state["student_setup_prefill"] = true
 	if fresh_round:
-		for stat_key in ["score", "streak", "best_streak", "correct", "attempts", "total", "accuracy", "time_remaining"]:
+		for stat_key in ["score", "streak", "best_streak", "correct", "attempts", "total", "accuracy", "time_remaining", "lives", "misses", "round_completed", "completion_reason", "round_reason", "gameplay_implemented", "body_x", "catch_collected_words", "round_running"]:
 			session_state.erase(stat_key)
 	if route == "tutorial_home":
 		session_state["entry_source"] = "tutorial"
 	elif route == "play_activity":
 		session_state["entry_source"] = "play"
+	# Ready is already a pre-game screen. Warm ONLY the upcoming Catch round's
+	# imported assets in the background while the user checks position/counts
+	# down; keep the references alive when the Ready panel is freed on START.
+	if route == "ready":
+		_prepare_catch_assets_for_ready()
 	_show_panel(route)
 
 
+func _prepare_catch_assets_for_ready() -> void:
+	if String(session_state.get("activity", "")) != "Catch the Word":
+		if is_instance_valid(catch_asset_preloader):
+			catch_asset_preloader.call("clear_selection")
+		return
+	# Catch chooses these at random only when none were explicitly supplied.
+	# Resolve the same random choice just before Ready to preload ONLY one
+	# character pair and one map, then pass it unchanged to live gameplay.
+	var characters := ["Boy", "Girl", "Grandma", "Grandpa"]
+	var maps := ["City", "Forest", "Mountain"]
+	var character := String(session_state.get("catch_character", ""))
+	var map_name := String(session_state.get("catch_map", ""))
+	if not characters.has(character):
+		character = String(characters.pick_random())
+		session_state["catch_character"] = character
+	if not maps.has(map_name):
+		map_name = String(maps.pick_random())
+		session_state["catch_map"] = map_name
+	if not is_instance_valid(catch_asset_preloader):
+		catch_asset_preloader = CATCH_PRELOADER_SCRIPT.new() as Node
+		catch_asset_preloader.name = "CatchAssetPreloader"
+		add_child(catch_asset_preloader)
+	catch_asset_preloader.call("prepare", character, map_name)
+
+
 func _show_panel(route: String) -> void:
+	if route == "gameplay" and current_route == "pause" and is_instance_valid(paused_game_panel):
+		# Resume the exact game instance, including its live physics/question state.
+		if is_instance_valid(active_panel):
+			panel_host.remove_child(active_panel)
+			active_panel.queue_free()
+		active_panel = paused_game_panel
+		paused_game_panel = null
+		active_panel.visible = true
+		active_panel.process_mode = Node.PROCESS_MODE_INHERIT
+		if active_panel.has_method("_resume"):
+			active_panel.call("_resume")
+		current_route = "gameplay"
+		return
 	if not PANEL_SCENES.has(route):
 		push_warning("Unknown KilosGrammar panel route: " + route)
 		return
@@ -662,9 +721,19 @@ func _show_panel(route: String) -> void:
 		push_warning("Cannot load KilosGrammar panel: " + path)
 		return
 
-	if is_instance_valid(active_panel):
-		panel_host.remove_child(active_panel)
-		active_panel.queue_free()
+	if route == "pause" and current_route == "gameplay" and is_instance_valid(active_panel):
+		# The game already emitted its pause event and froze its own timers.
+		# Disable its entire scene to suspend even queued node/physics updates.
+		paused_game_panel = active_panel
+		paused_game_panel.process_mode = Node.PROCESS_MODE_DISABLED
+		paused_game_panel.visible = false
+	else:
+		# Any other navigation from Pause (Results, Restart, Setup) ends the
+		# suspended game rather than leaving it active in the background.
+		_discard_paused_game()
+		if is_instance_valid(active_panel):
+			panel_host.remove_child(active_panel)
+			active_panel.queue_free()
 	active_panel = panel_scene.instantiate() as Control
 	if active_panel == null:
 		push_error("Expected a Control scene: " + path)
@@ -686,6 +755,9 @@ func _show_panel(route: String) -> void:
 
 
 func _return_to_main() -> void:
+	if is_instance_valid(catch_asset_preloader):
+		catch_asset_preloader.call("clear_selection")
+	_discard_paused_game()
 	if is_instance_valid(active_panel):
 		panel_host.remove_child(active_panel)
 		active_panel.queue_free()
@@ -701,12 +773,24 @@ func _return_to_main() -> void:
 	$MainLayer/CenterMenu/Play.call_deferred("grab_focus")
 
 
+func _discard_paused_game() -> void:
+	if is_instance_valid(paused_game_panel):
+		panel_host.remove_child(paused_game_panel)
+		paused_game_panel.queue_free()
+	paused_game_panel = null
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		if current_route == "main":
 			return
 		if current_route == "gameplay":
-			_on_panel_requested("pause", {})
+			# ESC must call the same game pause hook as its on-screen button;
+			# switching panels directly used to bypass the physics freeze.
+			if is_instance_valid(active_panel) and active_panel.has_method("_pause"):
+				active_panel.call("_pause")
+			else:
+				_on_panel_requested("pause", {})
 		elif current_route == "pause":
 			_on_panel_requested("gameplay", {})
 		else:
@@ -719,7 +803,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				"calibration": "camera_check",
 				"tutorial_practice": "calibration" if bool(session_state.get("from_calibration", false)) else "tutorial_home",
 				"grammar_guide": "tutorial_home",
-				"ready": "camera_check"
+				"ready": "play_activity" if bool(session_state.get("keyboard_mode", false)) else "camera_check"
 			}
 			_on_panel_requested(String(previous_routes.get(current_route, "main")), {})
 		get_viewport().set_input_as_handled()
