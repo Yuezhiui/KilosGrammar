@@ -10,3 +10,8 @@
 # distribution rights. The menu handles a missing override gracefully.
 /assets/audio/user_provided/*.mp3
 /assets/audio/user_provided/*.mp3.import
+
+# Python runtime bytecode and isolated Godot QA import probes.
+__pycache__/
+*.pyc
+ui/redesign/assets/.qa_*.jpg.import

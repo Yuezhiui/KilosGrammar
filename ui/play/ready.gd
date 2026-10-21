@@ -14,7 +14,21 @@ var countdown_running := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var column := UI.make_screen_column(self, 86)
+	var clean_backdrop := ColorRect.new()
+	clean_backdrop.color = Color("087e75")
+	clean_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	clean_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(clean_backdrop)
+	var background := TextureRect.new()
+	background.name = "SetupArtworkBackground"
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.texture = load("res://ui/redesign/assets/student/setup_main_panel.png")
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(background)
+	var compact := get_viewport_rect().size.y <= 550.0
+	var column := UI.make_screen_column(self, 26 if compact else 86)
 	UI.add_title(column, "Ready Check", "Get in Position", "Stand comfortably inside the play area before starting.")
 
 	var center := CenterContainer.new()
@@ -22,25 +36,25 @@ func _ready() -> void:
 	column.add_child(center)
 
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(720, 330)
+	card.custom_minimum_size = Vector2(720, 220 if compact else 330)
 	card.add_theme_stylebox_override("panel", UI.make_panel(Color(UI.INK, 0.88), 30))
 	center.add_child(card)
 
 	var content := VBoxContainer.new()
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 16)
+	content.add_theme_constant_override("separation", 5 if compact else 16)
 	card.add_child(content)
 
 	countdown_label = UI.make_label("READY?", 72, UI.YELLOW)
-	countdown_label.custom_minimum_size.y = 100
+	countdown_label.custom_minimum_size.y = 58 if compact else 100
 	content.add_child(countdown_label)
 
 	summary_label = UI.make_body_label("", 20)
-	summary_label.custom_minimum_size.y = 76
+	summary_label.custom_minimum_size.y = 46 if compact else 76
 	content.add_child(summary_label)
 
-	var hint := UI.make_body_label("Playable 2D game: use LEFT/RIGHT arrows or A/D. Balloons: SPACE to pop. Camera tracking is not connected yet.", 16, Color(UI.CREAM, 0.78))
-	hint.custom_minimum_size.y = 50
+	var hint := UI.make_body_label("Camera mode moves with your body (or use A/D). Raise BOTH hands to fire balloons. Keyboard: SPACE to shoot.", 16, Color(UI.CREAM, 0.78))
+	hint.custom_minimum_size.y = 32 if compact else 50
 	content.add_child(hint)
 
 	var footer: Array[Button] = UI.add_footer(column, "BACK", "START COUNTDOWN")
@@ -58,6 +72,8 @@ func set_context(new_context: Dictionary) -> void:
 		context[key] = new_context[key]
 	if back_button:
 		back_button.text = "BACK: GAME SELECT" if bool(context.get("keyboard_mode", false)) else "BACK: CAMERA CHECK"
+	if PoseService.active and bool(PoseService.calibration.get("valid", false)):
+		countdown_label.text = "YOLO READY"
 	_refresh_summary()
 
 
@@ -99,4 +115,5 @@ func _start_countdown() -> void:
 	await get_tree().create_timer(0.35).timeout
 	var payload := context.duplicate(true)
 	payload["demo_mode"] = true
+	payload["camera_live"] = PoseService.active and bool(PoseService.calibration.get("valid", false)) and not bool(context.get("keyboard_mode", false))
 	requested.emit("gameplay", payload)

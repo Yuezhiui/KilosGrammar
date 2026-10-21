@@ -113,13 +113,14 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 			"%s: removed %s has no HUD node" % [viewport_size, removed_name])
 	var plaque_textures: Dictionary = {}
 	for name in PLAQUE_NAMES:
-		var node := game.get_node_or_null("HUDLayer/HUD/" + name)
+		var node := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") if name == "ScorePlaque" else game.get_node_or_null("HUDLayer/HUD/" + name)
 		var plaque := node as TextureRect
-		_check(plaque != null, "%s: HUD has editor-authored %s TextureRect" % [viewport_size, name])
+		_check(plaque != null, "%s: runtime has %s TextureRect" % [viewport_size, name])
 		if plaque != null:
 			plaques[name] = plaque
 			_check(plaque.texture != null, "%s: %s has an independent texture" % [viewport_size, name])
-			_check(plaque.get_parent() == hud, "%s: %s is an independent HUD sibling" % [viewport_size, name])
+			_check(plaque.get_parent() == (game.score_draw_layer if name == "ScorePlaque" else hud),
+				"%s: %s has the intended runtime parent" % [viewport_size, name])
 			if plaque.texture != null:
 				var path := plaque.texture.resource_path
 				if actual_reference_installed:
@@ -139,9 +140,7 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	var title_the := game.get_node_or_null("HUDLayer/HUD/TitleTheLabel") as Label
 	var title_word := game.get_node_or_null("HUDLayer/HUD/TitleWordLabel") as Label
 	var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
-	var score := game.get_node_or_null("HUDLayer/HUD/ScoreNumber") as Label
-	if score == null:
-		score = game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
+	var score := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var hearts := game.get_node_or_null("HUDLayer/HUD/HeartsBox") as HBoxContainer
 	var pause_button := game.get_node_or_null("HUDLayer/HUD/PauseButton") as Button
@@ -171,6 +170,7 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 					"score": 37,
 					"lives": 2,
 					"time_remaining": 42.0,
+					"round_running": true, # Restore an elapsed Seconds clock from a paused snapshot.
 					"catch_character": "Boy",
 					"catch_map": "City",
 				}
@@ -219,7 +219,7 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 
 				_assert_frame(score, viewport_size, test_name + " score")
 				_assert_frame(pause_button, viewport_size, test_name + " pause button")
-				_check(score.get_parent() == game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer"),
+				_check(score.get_parent() == game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer"),
 					"%s: exactly one numeric scoreboard node is used" % test_name)
 
 				# Alignment is checked once per mode; topics only replace the words.

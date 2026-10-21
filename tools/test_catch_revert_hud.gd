@@ -97,7 +97,7 @@ func _verify_viewport(packed: PackedScene, physical_size: Vector2i) -> void:
 	var hud := game.get_node_or_null("HUDLayer/HUD") as Control
 	var body := game.get_node_or_null("CharacterRig/Body") as Sprite2D
 	var basket := game.get_node_or_null("CharacterRig/Basket") as Sprite2D
-	var numeric := game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
+	var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
 	var time_label := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimerPlaque") as TextureRect
 	var heart_box := game.get_node_or_null("HUDLayer/HUD/HeartsBox") as HBoxContainer
@@ -110,7 +110,7 @@ func _verify_viewport(packed: PackedScene, physical_size: Vector2i) -> void:
 		await process_frame
 		return
 	for node_name in PLAQUES:
-		var plaque := hud.get_node_or_null(String(node_name)) as TextureRect
+		var plaque := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect if node_name == "ScorePlaque" else hud.get_node_or_null(String(node_name)) as TextureRect
 		_check(plaque != null and plaque.texture != null
 			and plaque.texture.resource_path == ART + String(PLAQUES[node_name]),
 			"%s: %s loads NEW supplied PNG" % [physical_size, node_name])
@@ -157,6 +157,7 @@ func _verify_viewport(packed: PackedScene, physical_size: Vector2i) -> void:
 				"difficulty": "Normal",
 				"lives": 3,
 				"time_remaining": 42.0,
+				"round_running": true, # Verify 42s restored from a paused round.
 				"score": 18,
 			})
 			game.set_process(false)
@@ -189,6 +190,9 @@ func _verify_no_duplicate_labels(hud: Control, score: Label, label: String) -> v
 			"%s: baked %s heading not duplicated" % [label, heading_name])
 	var texts: Array[Label] = []
 	_find_labels(hud, texts)
+	# ScoreNumber was reparented from HUD to ScoreDrawLayer at runtime.
+	if score != null:
+		texts.append(score)
 	var score_count := 0
 	var extra_heading_count := 0
 	for node in texts:
@@ -328,7 +332,7 @@ func _check_visible_bounds(hud: Control, physical: Vector2i, label: String) -> v
 	var names := ["TitlePlaque", "TimerPlaque", "LivesPlaque",
 		"PausePlaque", "ScorePlaque", "ScoreBottomContainer"]
 	for name in names:
-		var control := hud.get_node_or_null(name) as Control
+		var control := hud.get_parent().get_parent().get_node_or_null("ScoreDrawLayer/" + name) as Control if name in ["ScorePlaque", "ScoreBottomContainer"] else hud.get_node_or_null(name) as Control
 		if control == null or not control.is_visible_in_tree():
 			continue
 		var actual := control.get_global_rect()

@@ -1,59 +1,40 @@
-# Catch the Word · Layered HUD
+# Catch the Word — Current PNG HUD and audio
 
-## Actual reference PNG art
+The live scene is `res://ui/minigames/catch_word.tscn`, with layout and round
+logic in `catch_word.gd`. The PNG assets are **already installed and imported**;
+the UI is made from independently positioned images, not a screenshot.
 
-The genuine image-generated bitmap assets are delivered in the conversation as
-KilosGrammar_Catch_Actual_Generated_PNGs.zip. The workspace image-saving tool
-could not transfer images directly, so extract that ZIP into the kilos-grammar
-project root. It provides six independent HUD images under
-ui/minigames/catch_hud/generated/: title_board.png, objective_banner.png,
-lives_badge.png, timer_badge.png, pause_badge.png, score_board.png.
+Current active HUD art in `generated/`:
 
-The generated/character/ folder contains boy_body.png,
-boy_basket_hands.png, and word_apple.png as three separate transparent images.
-Godot automatically switches from the fallback SVG HUD to the genuine PNG HUD
-when all six HUD PNGs have been imported. The new Boy body and basket are used
-only when both corresponding PNGs are installed. Girl, Grandma, and Grandpa
-retain their separate original body/basket artwork; all three maps remain
-separate selectable backgrounds.
-
-The title and SCORE words are baked into the generated images, so gameplay
-hides their duplicate GDScript labels when the PNG skin is active. Score
-numbers, dynamic grammar questions, lives hearts, and the Seconds timer remain
-live UI elements. No gameplay mechanics need changes to use the new artwork.
-
-When the ZIP is not extracted, the previous SVG skin stays playable. Open the
-Godot editor after copying PNGs so their textures are imported, then run
-res://tools/test_catch_hud_ui.gd headlessly to validate the reference skin.
-
-The gameplay HUD is assembled from individual imported SVG images and editable Godot labels. These images are **not** one flattened screenshot: each plaque can be moved, replaced, or resized independently in the Godot scene ui/minigames/catch_word.tscn.
-
-| Asset | Purpose |
+| Resource | Current use |
 | --- | --- |
-| title_board.svg | Wooden title and grammar question frame |
-| objective_banner.svg | Cream-colored instruction frame |
-| timer_badge.svg | Blue 60-second timer frame |
-| lives_badge.svg | Wooden hearts display frame |
-| pause_badge.svg | Gold pause control frame |
-| score_board.svg | Wooden star-and-score panel |
-| topics/noun.svg | Noun lesson icon |
-| topics/pronoun.svg | Pronoun lesson icon |
-| topics/verb.svg | Verb lesson icon |
-| topics/adjective.svg | Adjective lesson icon |
-| topics/adverb.svg | Adverb lesson icon |
+| `title_board.png` | Wooden title with baked `CATCH THE WORD`; a single live grammar question sits in its strip |
+| `timer_badge.png` | Blue timer in Seconds mode |
+| `pause_badge.png` | Gold pause button |
+| `score_board.png` | Wooden `SCORE` heading baked into art, with one live score number |
+| `replacement/lives_state_3.png` | Complete three-heart panel in Lives mode |
+| `replacement/lives_state_2.png` | Complete two-heart panel in Lives mode |
+| `replacement/lives_state_1.png` | Complete one-heart panel in Lives mode |
+| `character/word_apple.png` | Glossy falling word apples only |
 
-**Dynamic data stays in Godot**, not in these assets: timer, lives, prompt, objective text, score, and feedback change as the game plays. The same HUD works for all five grammar topics and both teacher-selected game modes.
+**The old cream objective banner is not in the current gameplay HUD.**
+`objective_banner.png`, older SVG variants, and generated replacement character
+art may still exist as unused historical resources. Do not reactivate them
+without an explicit new design decision. Correct/wrong catch feedback plays
+the user's existing MP3s from `res://assets/audio/catch_voice/` through one
+reused `CatchVoicePlayer`. Completed low-scoring Catch rounds play the existing
+`Better Luck.mp3` in the Results panel (or the standalone preview dialog),
+not in the gameplay scene that is immediately freed on navigation.
 
-The character art is independently layered in CatchTheWord/CharacterRig:
+The approved character art remains `WordCatcherCharacters/<CHARACTER> BODY.png`
+and `WordCatcherCharacters/<CHARACTER> BASKET.png` for Boy, Girl, Grandma, and
+Grandpa. Each collected basket apple uses `res://Components/Apple.png`; only
+three labeled caught apples are kept visible. City, Forest, and Mountain maps
+remain separate selectable assets under `WordCatcherMaps/`.
 
-1. Body uses WordCatcherCharacters/<character> BODY.png.
-2. CollectedWords renders up to three collected apples using Components/Apple.png and separate live word labels.
-3. Basket uses WordCatcherCharacters/<character> BASKET.png; the basket and hands draw **in front of** the collected apples.
-
-This lets a character move with the basket while keeping the apples visible at the rim. All four available characters (Boy, Girl, Grandma, Grandpa) use the same layer structure. Backgrounds remain independent textures (City, Forest, Mountain), and falling word apples are individual animated nodes.
-
-To capture actual rendered examples rather than a mockup, run Godot with this command:
-
-    Godot --path . --rendering-method gl_compatibility --script res://tools/capture_catch_hud_variants.gd
-
-Screenshots are written to res://showcase/catch_word_hud/. This command requires a graphical renderer, not --headless.
+To validate the current state, use Godot 4.7.2 scripts such as
+`res://tools/test_catch_clean_hud.gd`, `test_catch_png_assets.gd`,
+`test_catch_round_end_audio.gd`, and `test_catch_spawn_hud_safety.gd`.
+For genuine rendered captures, run the graphical (not `--headless`)
+`res://tools/capture_catch_clean_hud.gd` script. For a standalone fullscreen
+preview use `tools/run_catch_fullscreen.ps1`.

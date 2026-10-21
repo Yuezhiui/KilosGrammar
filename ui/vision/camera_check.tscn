@@ -1,6 +1,93 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=18 format=3 uid="uid://ci15x41444d32"]
 
-[ext_resource type="Script" path="res://ui/vision/camera_check.gd" id="1"]
+[ext_resource type="Script" path="res://ui/vision/camera_check.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="2_font"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/tutorial/bg_classroom.png" id="3_bg"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/tutorial/icon_camera.png" id="4_cam"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_paper"]
+bg_color = Color(1, 0.956863, 0.847059, 0.95)
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_teal_rail"]
+bg_color = Color(0.0509804, 0.505882, 0.454902, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
+bg_color = Color(0.0509804, 0.505882, 0.454902, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_video_outer"]
+bg_color = Color(0.156863, 0.247059, 0.313726, 1)
+corner_radius_top_left = 23
+corner_radius_top_right = 23
+corner_radius_bottom_right = 23
+corner_radius_bottom_left = 23
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_video_inner"]
+bg_color = Color(0.137255, 0.203922, 0.25098, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_status_card"]
+bg_color = Color(0.996078, 0.992157, 0.972549, 1)
+corner_radius_top_left = 23
+corner_radius_top_right = 23
+corner_radius_bottom_right = 23
+corner_radius_bottom_left = 23
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_red_row"]
+bg_color = Color(0.847059, 0.356863, 0.407843, 1)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yellow_row"]
+bg_color = Color(0.964706, 0.717647, 0.266667, 1)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_purple"]
+bg_color = Color(0.505882, 0.380392, 0.709804, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_blue"]
+bg_color = Color(0.266667, 0.533333, 0.788235, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_yellow"]
+bg_color = Color(0.964706, 0.717647, 0.266667, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_green"]
+bg_color = Color(0.0705882, 0.541176, 0.431373, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [node name="CameraCheck" type="Control"]
 layout_mode = 3
@@ -9,4 +96,356 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1")
+script = ExtResource("1_script")
+
+[node name="ClassroomArtwork" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TutorialStage" type="Control" parent="."]
+layout_mode = 0
+offset_right = 1120.0
+offset_bottom = 640.0
+mouse_filter = 2
+
+[node name="BaseCard" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 21.0
+offset_right = 1092.0
+offset_bottom = 619.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_paper")
+
+[node name="AccentRail" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 52.0
+offset_top = 40.0
+offset_right = 60.0
+offset_bottom = 135.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_teal_rail")
+
+[node name="Heading" type="Label" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 43.0
+offset_right = 969.0
+offset_bottom = 97.0
+theme_override_colors/font_color = Color(0.258824, 0.235294, 0.329412, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 33
+text = "CAMERA SETUP CHECK"
+vertical_alignment = 1
+
+[node name="Description" type="Label" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 103.0
+offset_right = 1022.0
+offset_bottom = 152.0
+theme_override_colors/font_color = Color(0.403922, 0.352941, 0.376471, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 17
+text = "Review the camera checklist before continuing to the movement preview."
+vertical_alignment = 1
+
+[node name="BadgePanel" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 806.0
+offset_top = 42.0
+offset_right = 1052.0
+offset_bottom = 78.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="BadgeLabel" type="Label" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 821.0
+offset_top = 46.0
+offset_right = 1037.0
+offset_bottom = 73.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 13
+text = "PREVIEW • NO CAMERA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VideoFrame" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 79.0
+offset_top = 165.0
+offset_right = 649.0
+offset_bottom = 505.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_video_outer")
+
+[node name="VideoInner" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 99.0
+offset_top = 183.0
+offset_right = 630.0
+offset_bottom = 484.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_video_inner")
+
+[node name="CameraIcon" type="TextureRect" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 306.0
+offset_top = 196.0
+offset_right = 418.0
+offset_bottom = 303.0
+texture = ExtResource("4_cam")
+expand_mode = 1
+
+[node name="NoVideoFeedLabel" type="Label" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 136.0
+offset_top = 300.0
+offset_right = 592.0
+offset_bottom = 352.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 25
+text = "NO VIDEO FEED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VideoDescLabel" type="Label" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 133.0
+offset_top = 361.0
+offset_right = 602.0
+offset_bottom = 442.0
+theme_override_colors/font_color = Color(0.847059, 0.909804, 0.905882, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "Camera and tracking are unavailable.
+This is only a preview."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatusCard" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 675.0
+offset_top = 165.0
+offset_right = 1039.0
+offset_bottom = 505.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_status_card")
+
+[node name="StatusHeaderLabel" type="Label" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 700.0
+offset_top = 178.0
+offset_right = 1013.0
+offset_bottom = 214.0
+theme_override_colors/font_color = Color(0.258824, 0.235294, 0.329412, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 20
+text = "SETUP STATUS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Row1Panel" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 692.0
+offset_top = 222.0
+offset_right = 1019.0
+offset_bottom = 294.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_red_row")
+
+[node name="Row1Num" type="Label" parent="TutorialStage/Row1Panel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 62.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+text = "01"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Row1Title" type="Label" parent="TutorialStage/Row1Panel"]
+layout_mode = 0
+offset_left = 77.0
+offset_top = 7.0
+offset_right = 313.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "CAMERA FEED"
+vertical_alignment = 1
+
+[node name="Row1Status" type="Label" parent="TutorialStage/Row1Panel"]
+layout_mode = 0
+offset_left = 77.0
+offset_top = 34.0
+offset_right = 313.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "NOT CONNECTED"
+vertical_alignment = 1
+
+[node name="Row2Panel" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 692.0
+offset_top = 304.0
+offset_right = 1019.0
+offset_bottom = 376.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_red_row")
+
+[node name="Row2Num" type="Label" parent="TutorialStage/Row2Panel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 62.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+text = "02"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Row2Title" type="Label" parent="TutorialStage/Row2Panel"]
+layout_mode = 0
+offset_left = 77.0
+offset_top = 7.0
+offset_right = 313.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "POSE TRACKING"
+vertical_alignment = 1
+
+[node name="Row2Status" type="Label" parent="TutorialStage/Row2Panel"]
+layout_mode = 0
+offset_left = 77.0
+offset_top = 34.0
+offset_right = 313.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "NOT CONNECTED"
+vertical_alignment = 1
+
+[node name="Row3Panel" type="Panel" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 692.0
+offset_top = 386.0
+offset_right = 1019.0
+offset_bottom = 458.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_yellow_row")
+
+[node name="Row3Num" type="Label" parent="TutorialStage/Row3Panel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 62.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(0.258824, 0.235294, 0.329412, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+text = "03"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Row3Title" type="Label" parent="TutorialStage/Row3Panel"]
+layout_mode = 0
+offset_left = 77.0
+offset_top = 7.0
+offset_right = 313.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(0.258824, 0.235294, 0.329412, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "PLAYER POSITION"
+vertical_alignment = 1
+
+[node name="Row3Status" type="Label" parent="TutorialStage/Row3Panel"]
+layout_mode = 0
+offset_left = 77.0
+offset_top = 34.0
+offset_right = 313.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(0.258824, 0.235294, 0.329412, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "DEMO PREVIEW"
+vertical_alignment = 1
+
+[node name="InfoLabel" type="Label" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 116.0
+offset_top = 503.0
+offset_right = 1004.0
+offset_bottom = 530.0
+theme_override_colors/font_color = Color(0.258824, 0.235294, 0.329412, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 13
+text = "Select CHECK STATUS to refresh this preview-only checklist."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BackButton" type="Button" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 71.0
+offset_top = 542.0
+offset_right = 286.0
+offset_bottom = 596.0
+focus_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_purple")
+text = "BACK"
+
+[node name="CheckStatusButton" type="Button" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 323.0
+offset_top = 542.0
+offset_right = 538.0
+offset_bottom = 596.0
+focus_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_blue")
+text = "CHECK STATUS"
+
+[node name="SkipSetupButton" type="Button" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 573.0
+offset_top = 542.0
+offset_right = 788.0
+offset_bottom = 596.0
+focus_mode = 2
+theme_override_colors/font_color = Color(0.258824, 0.235294, 0.329412, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_yellow")
+text = "SKIP SETUP"
+
+[node name="ContinuePreviewButton" type="Button" parent="TutorialStage"]
+layout_mode = 0
+offset_left = 825.0
+offset_top = 542.0
+offset_right = 1040.0
+offset_bottom = 596.0
+focus_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_green")
+text = "CONTINUE PREVIEW"

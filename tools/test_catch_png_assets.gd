@@ -112,7 +112,7 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 			_check(not hud.has_node(absent_name),
 				"%s: removed %s is absent from the HUD" % [viewport_size, absent_name])
 		for plaque_name in PLAQUES:
-			var plaque := hud.get_node_or_null(String(plaque_name)) as TextureRect
+			var plaque := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect if plaque_name == "ScorePlaque" else hud.get_node_or_null(String(plaque_name)) as TextureRect
 			_check(plaque != null, "%s: distinct %s node exists" % [viewport_size, plaque_name])
 			if plaque == null:
 				continue
@@ -123,10 +123,11 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 			_check(plaque.texture != null and plaque.texture.get_width() >= 100,
 				"%s: %s has decoded raster texture" % [viewport_size, plaque_name])
 
-		var numeric := hud.get_node_or_null("ScoreBottomContainer/ScoreNumber") as Label
+		var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
 		var visible_score_titles := 0
-		if hud.has_node("ScoreBottomContainer"):
-			for child in hud.get_node("ScoreBottomContainer").get_children():
+		var score_container := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer")
+		if score_container != null:
+			for child in score_container.get_children():
 				if child is Label and (child as Label).text.strip_edges().to_upper() == "SCORE":
 					if (child as Label).is_visible_in_tree():
 						visible_score_titles += 1
@@ -183,7 +184,7 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 				if mode == "Lives":
 					_check_static_heart_states(game, hearts, life_plaque, clock, time_plaque, context)
 				for plaque_name in PLAQUES:
-					var plaque := hud.get_node_or_null(String(plaque_name)) as TextureRect
+					var plaque := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect if plaque_name == "ScorePlaque" else hud.get_node_or_null(String(plaque_name)) as TextureRect
 					if plaque != null and plaque.is_visible_in_tree():
 						var rect := plaque.get_global_rect()
 						_check(rect.has_area() and Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(rect),

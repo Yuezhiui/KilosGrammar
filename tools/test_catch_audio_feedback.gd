@@ -35,6 +35,8 @@ func _run() -> void:
     for mode in ["Seconds", "Lives"]:
         await _test_catch_voice(mode)
     root.size = original_size
+    # Drain audio callbacks after all menu/game fixtures have been freed.
+    await create_timer(0.5).timeout
     if failures.is_empty():
         print("PASS Catch recorded audio: %d checks, %d voice choices verified; backend=%s" %
             [checks, voice_samples, DisplayServer.get_name()])
@@ -97,6 +99,7 @@ func _test_main_menu_music() -> void:
     if player != null:
         _check(player.playing, "Title music continues playing after the menu introduction")
         player.stop()
+    _stop_audio_tree(app)
     app.queue_free()
     await process_frame
     await process_frame
@@ -168,9 +171,18 @@ func _test_catch_voice(mode: String) -> void:
     # Speech must stop when pausing and when leaving the minigame.
     game._pause()
     _check(not player.playing, "%s: pause immediately stops spoken feedback" % mode)
+    _stop_audio_tree(host)
     host.queue_free()
     await process_frame
     await process_frame
+
+
+func _stop_audio_tree(node: Node) -> void:
+    if node is AudioStreamPlayer:
+        (node as AudioStreamPlayer).stop()
+        (node as AudioStreamPlayer).stream = null
+    for child in node.get_children():
+        _stop_audio_tree(child)
 
 
 func _stream_in_group(stream: AudioStream, choices: Array) -> bool:

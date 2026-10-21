@@ -7,6 +7,7 @@ const CREAM := Color("#F7E6BD")
 const INK := Color("#494463")
 const RED := Color("#FF4F66")
 const PANEL := Color("#F7E6BDF2")
+const ART := preload("res://ui/tutorial/tutorial_theme.gd")
 const ENTRIES := [
 	["NOUN", "Names a person, place, thing, or idea.", "teacher • park • pencil", Color("#69BE9A")],
 	["PRONOUN", "Takes the place of a noun.", "I • she • they", Color("#C171CF")],
@@ -23,12 +24,93 @@ var outer_margin: MarginContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	_build_ui()
-	resized.connect(_apply_responsive_layout)
-	call_deferred("_apply_responsive_layout")
+	var stage := get_node_or_null("TutorialStage") as Control
+	if stage != null:
+		_bind_scene_nodes(stage)
+	else:
+		_build_redesign()
+
+func _bind_scene_nodes(stage: Control) -> void:
+	var scroll := stage.get_node_or_null("GrammarCardScroll") as ScrollContainer
+	if scroll != null:
+		var grid := scroll.get_node_or_null("GridContainer") as GridContainer
+		if grid != null and grid.get_child_count() == 0:
+			_populate_cards(grid)
+	var back := stage.get_node_or_null("BackButton") as Button
+	if back:
+		back.pressed.connect(_request.bind("tutorial_home", {}))
+		back.call_deferred("grab_focus")
+	resized.connect(func() -> void: ART.fit(self, stage))
+	ART.fit(self, stage)
+
+func _populate_cards(grid: GridContainer) -> void:
+	for index in range(ENTRIES.size()):
+		var item: Array = ENTRIES[index]
+		var active := index < 5
+		var card := PanelContainer.new()
+		card.custom_minimum_size = Vector2(462, 143)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#FFFDF4") if active else Color("#EAE6E1")
+		style.set_corner_radius_all(20)
+		style.set_border_width_all(2)
+		style.border_color = item[3]
+		card.add_theme_stylebox_override("panel", style)
+		grid.add_child(card)
+		var visual := Control.new()
+		visual.custom_minimum_size = Vector2(458, 139)
+		card.add_child(visual)
+		var key := String(item[0]).to_lower()
+		var icon_path := "res://ui/redesign/assets/student/topic_" + key + ".png"
+		ART.icon(visual, icon_path, Rect2(12, 22, 91, 92))
+		ART.label(visual, item[0], Rect2(110, 12, 335, 38), 19, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
+		ART.label(visual, item[1], Rect2(110, 47, 328, 42), 13, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
+		ART.label(visual, "Try: " + String(item[2]), Rect2(110, 95, 337, 33), 12, Color("#675D5A"), HORIZONTAL_ALIGNMENT_LEFT)
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
+
+
+func _build_redesign() -> void:
+	var stage := ART.prepare(self, "EXPLORE GRAMMAR!", "Eight parts of speech make up our grammar map. The game currently practices five.", "GRAMMAR GUIDE")
+	ART.label(stage, "Scroll the cards to discover meanings and examples.", Rect2(85, 154, 946, 28), 15, ART.INK)
+	var scroll := ScrollContainer.new()
+	scroll.name = "GrammarCardScroll"
+	scroll.position = Vector2(78, 183)
+	scroll.size = Vector2(968, 335)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.focus_mode = Control.FOCUS_ALL
+	stage.add_child(scroll)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 15)
+	grid.add_theme_constant_override("v_separation", 13)
+	scroll.add_child(grid)
+	for index in range(ENTRIES.size()):
+		var item: Array = ENTRIES[index]
+		var active := index < 5
+		var card := PanelContainer.new()
+		card.custom_minimum_size = Vector2(462, 143)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#FFFDF4") if active else Color("#EAE6E1")
+		style.set_corner_radius_all(20)
+		style.set_border_width_all(2)
+		style.border_color = item[3]
+		card.add_theme_stylebox_override("panel", style)
+		grid.add_child(card)
+		var visual := Control.new()
+		visual.custom_minimum_size = Vector2(458, 139)
+		card.add_child(visual)
+		var key := String(item[0]).to_lower()
+		var icon_path := "res://ui/redesign/assets/student/topic_" + key + ".png"
+		ART.icon(visual, icon_path, Rect2(12, 22, 91, 92))
+		ART.label(visual, item[0], Rect2(110, 12, 335, 38), 19, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
+		ART.label(visual, item[1], Rect2(110, 47, 328, 42), 13, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
+		ART.label(visual, "Try: " + String(item[2]), Rect2(110, 95, 337, 33), 12, Color("#675D5A"), HORIZONTAL_ALIGNMENT_LEFT)
+	ART.label(stage, "Tip: Use your mouse wheel or focus this list and press Arrow Down.", Rect2(82, 525, 762, 27), 13, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
+	var back := ART.button(stage, "BACK TO TUTORIAL", Rect2(789, 537, 260, 60), ART.RED, 16)
+	back.pressed.connect(_request.bind("tutorial_home", {}))
+	back.call_deferred("grab_focus")
 
 func _build_ui() -> void:
 	outer_margin = MarginContainer.new()

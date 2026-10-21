@@ -76,11 +76,13 @@ func _run() -> void:
 	app.call("_on_panel_requested", "settings", {})
 	await process_frame
 	var settings_panel: Control = app.get("active_panel") as Control
-	var settings_title: RichTextLabel = settings_panel.find_child("SettingsTitle", true, false) as RichTextLabel
-	if settings_title == null or not settings_title.bbcode_enabled or not settings_title.text.contains("[wave amp=40.0 freq=4.0 connected=1]"):
-		failures.append("Settings reference title lost Comic Lemon wave animation")
+	var settings_title: Control = settings_panel.find_child("SettingsTitle", true, false) as Control
+	var title_has_art := settings_title is TextureRect and (settings_title as TextureRect).texture != null
+	var title_has_text := settings_title is RichTextLabel and not (settings_title as RichTextLabel).text.is_empty()
+	if settings_title == null or not settings_title.visible or not (title_has_art or title_has_text):
+		failures.append("Settings title art or accessible fallback text missing")
 	else:
-		print("PASS  Settings wave title")
+		print("PASS  Settings title")
 	_test_audio_slider(settings_panel, "VolumeSlider", "Master")
 	_test_audio_slider(settings_panel, "MusicSlider", "KilosMusic")
 	_test_audio_slider(settings_panel, "EffectsSlider", "KilosSFX")
@@ -257,3 +259,4 @@ func _test_audio_slider(settings_panel: Control, slider_name: String, bus_name: 
 	else:
 		print("PASS  ", slider_name, " changes real ", bus_name, " volume")
 	AudioServer.set_bus_volume_db(bus_index, initial_db)
+	slider.value = clampf(db_to_linear(initial_db) * 100.0, 0.0, 100.0)

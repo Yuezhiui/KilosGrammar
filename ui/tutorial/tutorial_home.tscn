@@ -1,12 +1,247 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://b00toria1home"]
 
-[ext_resource type="Script" path="res://ui/tutorial/tutorial_home.gd" id="1"]
+[ext_resource type="Script" uid="uid://craeflyi3pcg" path="res://ui/tutorial/tutorial_home.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://qaqbhp7hlw4a" path="res://ui/redesign/assets/tutorial/bg_classroom.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://47ow82lo8f3j" path="res://Components/0e12567d-88f7-49e6-9bce-06cc27a6d16b.png" id="3_m41oy"]
+[ext_resource type="Texture2D" uid="uid://cbo2svdetld00" path="res://ui/redesign/assets/tutorial/title_whole_body.png" id="3_title"]
+[ext_resource type="Texture2D" uid="uid://ccw7y6pr8pury" path="res://Components/Cat.png" id="4_dwqbx"]
+[ext_resource type="Texture2D" uid="uid://cbckgn1piui21" path="res://ui/redesign/assets/tutorial/steps_three.png" id="4_steps"]
+[ext_resource type="Texture2D" uid="uid://ce378w565nitc" path="res://ui/redesign/assets/tutorial/camera_advisory.png" id="5_advisory"]
+[ext_resource type="Texture2D" uid="uid://t2o2o3ibu3v4" path="res://ui/redesign/assets/tutorial/button_guided.png" id="6_btn_guided"]
+[ext_resource type="Texture2D" uid="uid://cpt87v0ylj8ki" path="res://Components/Grad_hat.png" id="6_qt1rd"]
+[ext_resource type="Texture2D" uid="uid://dkqbwdqfycx5i" path="res://ui/redesign/assets/tutorial/button_movement.png" id="7_btn_move"]
+[ext_resource type="Texture2D" uid="uid://dr4eosum1gp2e" path="res://ui/redesign/assets/tutorial/icon_books.png" id="7_uffpo"]
+[ext_resource type="Texture2D" uid="uid://cmmgk6mmlxdyl" path="res://ui/redesign/assets/tutorial/button_grammar.png" id="8_btn_gram"]
+[ext_resource type="Texture2D" uid="uid://bif31vbwthy5f" path="res://ui/redesign/assets/tutorial/button_back.png" id="9_btn_back"]
+[ext_resource type="Texture2D" uid="uid://duaiigwf0rcew" path="res://ui/redesign/assets/tutorial/icon_star.png" id="13_2g8hc"]
 
-[node name="TutorialHome" type="Control"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_btn"]
+
+[node name="TutorialHome" type="Control" unique_id=1655207804]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1")
+script = ExtResource("1_script")
+
+[node name="ClassroomArtwork" type="TextureRect" parent="." unique_id=277844695]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TutorialStage" type="Control" parent="." unique_id=982374651]
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="Background" type="TextureRect" parent="TutorialStage" unique_id=433746805]
+layout_mode = 0
+offset_left = 130.0
+offset_top = 102.7062
+offset_right = 1160.0
+offset_bottom = 687.7062
+texture = ExtResource("3_m41oy")
+expand_mode = 1
+
+[node name="CAT" type="TextureRect" parent="TutorialStage" unique_id=1587583605]
+layout_mode = 0
+offset_left = 218.452
+offset_top = 33.730545
+offset_right = 408.51892
+offset_bottom = 163.70177
+rotation = -0.019628812
+texture = ExtResource("4_dwqbx")
+expand_mode = 1
+
+[node name="TitleArtwork" type="TextureRect" parent="TutorialStage" unique_id=769674574]
+layout_mode = 0
+offset_left = 267.0
+offset_top = 62.7062
+offset_right = 1025.0
+offset_bottom = 222.7062
+mouse_filter = 2
+texture = ExtResource("3_title")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Star" type="TextureRect" parent="TutorialStage" unique_id=1186331739]
+layout_mode = 0
+offset_left = 950.0
+offset_top = 42.7062
+offset_right = 1011.0
+offset_bottom = 98.7062
+texture = ExtResource("13_2g8hc")
+expand_mode = 1
+
+[node name="Book" type="TextureRect" parent="TutorialStage" unique_id=1427926501]
+layout_mode = 0
+offset_left = 975.0
+offset_top = 100.00001
+offset_right = 1106.3865
+offset_bottom = 194.0
+rotation = 0.111336
+texture = ExtResource("7_uffpo")
+expand_mode = 1
+
+[node name="GradHat" type="TextureRect" parent="TutorialStage" unique_id=189638789]
+layout_mode = 0
+offset_left = 831.00006
+offset_top = 35.7062
+offset_right = 957.00006
+offset_bottom = 125.70621
+rotation = 0.19154775
+scale = Vector2(1.0847186, 1.0174738)
+texture = ExtResource("6_qt1rd")
+expand_mode = 1
+
+[node name="StepsArtwork" type="TextureRect" parent="TutorialStage" unique_id=1516256599]
+layout_mode = 0
+offset_left = 267.0
+offset_top = 223.7062
+offset_right = 1066.0
+offset_bottom = 438.7062
+mouse_filter = 2
+texture = ExtResource("4_steps")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CameraAdvisoryArtwork" type="TextureRect" parent="TutorialStage" unique_id=768267039]
+layout_mode = 0
+offset_left = 267.0
+offset_top = 446.7062
+offset_right = 1065.0
+offset_bottom = 506.7062
+mouse_filter = 2
+texture = ExtResource("5_advisory")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ButtonArtwork_START_GUIDED_TUTORIAL" type="TextureRect" parent="TutorialStage" unique_id=1013942095]
+layout_mode = 0
+offset_left = 334.0
+offset_top = 514.7062
+offset_right = 634.0
+offset_bottom = 585.7062
+mouse_filter = 2
+texture = ExtResource("6_btn_guided")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StartButton" type="Button" parent="TutorialStage" unique_id=508359589]
+layout_mode = 0
+offset_left = 334.0
+offset_top = 514.7062
+offset_right = 634.0
+offset_bottom = 585.7062
+mouse_default_cursor_shape = 2
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_btn")
+text = "START GUIDED TUTORIAL"
+
+[node name="ButtonArtwork_MOVEMENT_PRACTICE" type="TextureRect" parent="TutorialStage" unique_id=986710230]
+layout_mode = 0
+offset_left = 698.0
+offset_top = 513.7062
+offset_right = 998.0
+offset_bottom = 584.7062
+mouse_filter = 2
+texture = ExtResource("7_btn_move")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PracticeButton" type="Button" parent="TutorialStage" unique_id=384947297]
+layout_mode = 0
+offset_left = 698.0
+offset_top = 513.7062
+offset_right = 998.0
+offset_bottom = 584.7062
+mouse_default_cursor_shape = 2
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_btn")
+text = "MOVEMENT PRACTICE"
+
+[node name="ButtonArtwork_GRAMMAR_GUIDE" type="TextureRect" parent="TutorialStage" unique_id=227744817]
+layout_mode = 0
+offset_left = 335.0
+offset_top = 572.7062
+offset_right = 635.0
+offset_bottom = 641.7062
+mouse_filter = 2
+texture = ExtResource("8_btn_gram")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GrammarButton" type="Button" parent="TutorialStage" unique_id=1047822498]
+layout_mode = 0
+offset_left = 335.0
+offset_top = 572.7062
+offset_right = 635.0
+offset_bottom = 641.7062
+mouse_default_cursor_shape = 2
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_btn")
+text = "GRAMMAR GUIDE"
+
+[node name="ButtonArtwork_BACK_TO_MAIN" type="TextureRect" parent="TutorialStage" unique_id=1342513006]
+layout_mode = 0
+offset_left = 698.0
+offset_top = 572.7062
+offset_right = 998.0
+offset_bottom = 641.7062
+mouse_filter = 2
+texture = ExtResource("9_btn_back")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BackButton" type="Button" parent="TutorialStage" unique_id=1444911622]
+layout_mode = 0
+offset_left = 698.0
+offset_top = 572.7062
+offset_right = 998.0
+offset_bottom = 641.7062
+mouse_default_cursor_shape = 2
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_btn")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_btn")
+text = "BACK TO MAIN"

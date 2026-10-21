@@ -11,18 +11,83 @@ const YELLOW := Color("#FFC23D")
 const BLUE := Color("#7BC9EF")
 const PURPLE := Color("#C171CF")
 const PANEL := Color("#F7E6BDF2")
+const ART := preload("res://ui/tutorial/tutorial_theme.gd")
+const SETTINGS_PREFS := preload("res://ui/secondary/settings.gd")
 
 var context: Dictionary = {}
 var outer_margin: MarginContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	_build_ui()
-	resized.connect(_apply_responsive_layout)
-	call_deferred("_apply_responsive_layout")
+	if DisplayServer.get_name() != "headless":
+		SETTINGS_PREFS.restore_saved_preferences(true)
+	var stage := get_node_or_null("TutorialStage") as Control
+	if stage != null:
+		_bind_scene_nodes(stage)
+	else:
+		_build_redesign()
+
+func _bind_scene_nodes(stage: Control) -> void:
+	var start := stage.get_node_or_null("StartButton") as Button
+	var practice := stage.get_node_or_null("PracticeButton") as Button
+	var grammar := stage.get_node_or_null("GrammarButton") as Button
+	var back := stage.get_node_or_null("BackButton") as Button
+
+	var art_guided := stage.get_node_or_null("ButtonArtwork_START_GUIDED_TUTORIAL") as TextureRect
+	var art_move := stage.get_node_or_null("ButtonArtwork_MOVEMENT_PRACTICE") as TextureRect
+	var art_gram := stage.get_node_or_null("ButtonArtwork_GRAMMAR_GUIDE") as TextureRect
+	var art_back := stage.get_node_or_null("ButtonArtwork_BACK_TO_MAIN") as TextureRect
+
+	_bind_button_interactive(start, art_guided, func() -> void: _request("camera_check", {"entry_source": "tutorial", "preview_mode": true, "camera_live": false}))
+	_bind_button_interactive(practice, art_move, func() -> void: _request("tutorial_practice", {"entry_source": "tutorial", "preview_mode": true, "camera_live": false, "from_calibration": false}))
+	_bind_button_interactive(grammar, art_gram, func() -> void: _request("grammar_guide", {}))
+	_bind_button_interactive(back, art_back, func() -> void: _request("main", {}))
+
+	if start:
+		start.call_deferred("grab_focus")
+
+	resized.connect(func() -> void: ART.fit(self, stage, Vector2(1280.0, 720.0)))
+	ART.fit(self, stage, Vector2(1280.0, 720.0))
+
+func _bind_button_interactive(btn: Button, art: TextureRect, on_pressed: Callable) -> void:
+	if btn == null:
+		return
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	btn.pressed.connect(on_pressed)
+	if art != null:
+		btn.mouse_entered.connect(func() -> void: art.modulate = Color(1.15, 1.15, 1.15))
+		btn.mouse_exited.connect(func() -> void: art.modulate = Color.WHITE)
+		btn.focus_entered.connect(func() -> void: art.modulate = Color(1.15, 1.15, 1.15))
+		btn.focus_exited.connect(func() -> void: art.modulate = Color.WHITE)
+		btn.button_down.connect(func() -> void: art.modulate = Color(0.85, 0.85, 0.85))
+		btn.button_up.connect(func() -> void: art.modulate = Color(1.15, 1.15, 1.15) if btn.has_focus() or btn.is_hovered() else Color.WHITE)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F11 or (event.keycode == KEY_ENTER and event.alt_pressed):
+			SETTINGS_PREFS.toggle_fullscreen()
+			get_viewport().set_input_as_handled()
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
+
+
+func _build_redesign() -> void:
+	var stage := ART.prepare(self, "", "", "")
+	ART.icon(stage, ART.TUTORIAL_ART + "title_whole_body.png", Rect2(181, 20, 758, 160))
+	# The three numbered cards and their lettering are already painted in the
+	# supplied reference art. Keep them as one clean image, without text doubles.
+	ART.icon(stage, ART.TUTORIAL_ART + "steps_three.png", Rect2(81, 174, 954, 239))
+	ART.icon(stage, ART.TUTORIAL_ART + "camera_advisory.png", Rect2(161, 401, 798, 60))
+	var start := ART.artwork_button(stage, "START GUIDED TUTORIAL", Rect2(145, 461, 384, 71), ART.TUTORIAL_ART + "button_guided.png", ART.GREEN)
+	start.pressed.connect(_request.bind("camera_check", {"entry_source": "tutorial", "preview_mode": true, "camera_live": false}))
+	var practice := ART.artwork_button(stage, "MOVEMENT PRACTICE", Rect2(591, 461, 384, 71), ART.TUTORIAL_ART + "button_movement.png", ART.BLUE)
+	practice.pressed.connect(_request.bind("tutorial_practice", {"entry_source": "tutorial", "preview_mode": true, "camera_live": false, "from_calibration": false}))
+	var grammar := ART.artwork_button(stage, "GRAMMAR GUIDE", Rect2(145, 537, 384, 69), ART.TUTORIAL_ART + "button_grammar.png", ART.PURPLE)
+	grammar.pressed.connect(_request.bind("grammar_guide", {}))
+	var back := ART.artwork_button(stage, "BACK TO MAIN", Rect2(591, 537, 384, 69), ART.TUTORIAL_ART + "button_back.png", ART.RED)
+	back.pressed.connect(_request.bind("main", {}))
+	start.call_deferred("grab_focus")
 
 func _build_ui() -> void:
 	outer_margin = MarginContainer.new()

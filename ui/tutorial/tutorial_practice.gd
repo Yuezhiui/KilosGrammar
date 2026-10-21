@@ -12,10 +12,11 @@ const BLUE := Color("#7BC9EF")
 const PANEL := Color("#F7E6BDF2")
 const LANE_COLORS := [Color("#C171CF"), Color("#69BE9A"), Color("#7BC9EF")]
 const LANE_NAMES := ["LEFT", "CENTER", "RIGHT"]
+const ART := preload("res://ui/tutorial/tutorial_theme.gd")
 
 var context: Dictionary = {}
 var demo_step := -1
-var lane_panels: Array[PanelContainer] = []
+var lane_panels: Array[Control] = []
 var lane_labels: Array[Label] = []
 var status_label: Label
 var progress_label: Label
@@ -24,12 +25,69 @@ var outer_margin: MarginContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	_build_ui()
-	resized.connect(_apply_responsive_layout)
-	call_deferred("_apply_responsive_layout")
+	var stage := get_node_or_null("TutorialStage") as Control
+	if stage != null:
+		_bind_scene_nodes(stage)
+	else:
+		_build_redesign()
+
+func _bind_scene_nodes(stage: Control) -> void:
+	lane_panels = [
+		stage.get_node_or_null("LeftLane") as Control,
+		stage.get_node_or_null("CenterLane") as Control,
+		stage.get_node_or_null("RightLane") as Control
+	]
+	lane_labels = [
+		stage.get_node_or_null("LeftLane/LeftName") as Label,
+		stage.get_node_or_null("CenterLane/CenterName") as Label,
+		stage.get_node_or_null("RightLane/RightName") as Label
+	]
+	status_label = stage.get_node_or_null("StatusLabel") as Label
+	progress_label = stage.get_node_or_null("ProgressLabel") as Label
+	var back := stage.get_node_or_null("BackButton") as Button
+	if back:
+		back.pressed.connect(_go_back)
+	try_button = stage.get_node_or_null("TryButton") as Button
+	if try_button:
+		try_button.pressed.connect(_run_demo_step)
+		try_button.call_deferred("grab_focus")
+	var finish := stage.get_node_or_null("FinishButton") as Button
+	if finish:
+		finish.pressed.connect(_request.bind("tutorial_complete", {"tutorial_practiced": true, "preview_mode": true, "camera_live": false}))
+	resized.connect(func() -> void: ART.fit(self, stage))
+	ART.fit(self, stage)
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
+
+
+func _build_redesign() -> void:
+	var stage := ART.prepare(self, "PRACTICE YOUR MOVES!", "Move between the LEFT, CENTER and RIGHT lanes using this interactive demonstration.", "MOVEMENT • DEMO")
+	ART.label(stage, "NO CAMERA TRACKING  •  USE TRY MOVE TO PREVIEW", Rect2(139, 157, 840, 31), 16, ART.RED)
+	for i in range(3):
+		var x := 92.0 + i * 331.0
+		var lane := PanelContainer.new()
+		lane.name = LANE_NAMES[i] + "Lane"
+		lane.position = Vector2(x, 200)
+		lane.size = Vector2(275, 236)
+		lane.add_theme_stylebox_override("panel", _lane_style(LANE_COLORS[i], false))
+		lane.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stage.add_child(lane)
+		lane_panels.append(lane)
+		var glyph: String = ["←", "●", "→"][i]
+		ART.label(stage, glyph, Rect2(x + 16, 214, 243, 88), 54, ART.CREAM)
+		var name_label := ART.label(stage, LANE_NAMES[i], Rect2(x + 17, 306, 241, 43), 25, ART.CREAM)
+		lane_labels.append(name_label)
+		ART.label(stage, ["Step to the left", "Stand in the middle", "Step to the right"][i], Rect2(x + 15, 354, 246, 40), 14, ART.CREAM)
+	status_label = ART.label(stage, "Select TRY MOVE to highlight each zone in the demonstration.", Rect2(97, 440, 922, 34), 17, ART.INK)
+	progress_label = ART.label(stage, "Practice progress: 0 / 3  •  UI demonstration only", Rect2(155, 478, 815, 29), 14, ART.INK)
+	var back := ART.button(stage, "BACK", Rect2(98, 532, 277, 57), ART.PURPLE)
+	back.pressed.connect(_go_back)
+	try_button = ART.button(stage, "TRY MOVE • DEMO", Rect2(418, 532, 277, 57), ART.YELLOW)
+	try_button.pressed.connect(_run_demo_step)
+	var finish := ART.button(stage, "FINISH TUTORIAL", Rect2(737, 532, 277, 57), ART.GREEN)
+	finish.pressed.connect(_request.bind("tutorial_complete", {"tutorial_practiced": true, "preview_mode": true, "camera_live": false}))
+	try_button.call_deferred("grab_focus")
 
 func _build_ui() -> void:
 	outer_margin = MarginContainer.new()

@@ -70,7 +70,7 @@ func _run() -> void:
 	var hud := game.get_node_or_null("HUDLayer/HUD") as Control
 	var background := game.get_node_or_null("Background") as TextureRect
 	var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
-	var score := game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
+	var score := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
 	var old_score := game.get_node_or_null("HUDLayer/HUD/ScoreLabel") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var hearts := game.get_node_or_null("HUDLayer/HUD/HeartsBox") as HBoxContainer
@@ -106,6 +106,7 @@ func _run() -> void:
 						"score": 37,
 						"lives": 2,
 						"time_remaining": 42.0,
+							"round_running": true, # Preserve the elapsed timer in this resume fixture.
 					})
 					game.set_process(false)
 					await process_frame
@@ -144,7 +145,7 @@ func _run() -> void:
 					_assert_mode(game, mode, timer, hearts, label)
 					_assert_score_changes(game, score, label)
 					_assert_all_visible_hud_controls(hud, label)
-					_assert_plaque_alignment(hud, score, prompt, timer, hearts, pause, mode, label)
+					_assert_plaque_alignment(game, hud, score, prompt, timer, hearts, pause, mode, label)
 
 		_check(selected_map_paths.size() == MAPS.size(),
 			"City, Forest and Mountain load three distinct background images")
@@ -266,16 +267,16 @@ func _assert_control_in_view(control: Control, label: String, require_cover: boo
 	_check(within, "%s fits 1280x720: %s" % [label, rect])
 
 
-func _assert_plaque_alignment(hud: Control, score: Label, prompt: Label,
+func _assert_plaque_alignment(game: Control, hud: Control, score: Label, prompt: Label,
 		timer: Label, hearts: HBoxContainer, pause: Button,
 		mode: String, label: String) -> void:
 	var title_plaque := hud.get_node_or_null("TitlePlaque") as TextureRect
-	var score_plaque := hud.get_node_or_null("ScorePlaque") as TextureRect
+	var score_plaque := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect
 	var pause_plaque := hud.get_node_or_null("PausePlaque") as TextureRect
 	var timer_plaque := hud.get_node_or_null("TimerPlaque") as TextureRect
 	var lives_plaque := hud.get_node_or_null("LivesPlaque") as TextureRect
 	for plaque_name in HUD_PLAQUES:
-		var plaque := hud.get_node_or_null(plaque_name) as TextureRect
+		var plaque := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect if plaque_name == "ScorePlaque" else hud.get_node_or_null(plaque_name) as TextureRect
 		_check(plaque != null and plaque.texture != null,
 			label + ": " + plaque_name + " has bitmap/vector background")
 	if title_plaque != null:

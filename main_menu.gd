@@ -55,8 +55,9 @@ const LETTER_POP: AudioStream = preload("res://assets/audio/lexispell_intro/lett
 # for a fresh checkout of the public source repository.
 const TITLE_MUSIC_PATH := "res://assets/audio/user_provided/wii_fit_user_settings.mp3"
 const CATCH_PRELOADER_SCRIPT: Script = preload("res://ui/play/catch_asset_preloader.gd")
+const SETTINGS_PREFS: Script = preload("res://ui/secondary/settings.gd")
+const BUTTON_SOUND_WIRING: Script = preload("res://ui/shared/button_sound_wiring.gd")
 const BUTTON_HOVER: AudioStream = preload("res://assets/audio/lexispell_intro/button_hover.wav")
-const BUTTON_CLICK: AudioStream = preload("res://assets/audio/lexispell_intro/button_click.wav")
 const MUSIC_BUS := "KilosMusic"
 const EFFECTS_BUS := "KilosSFX"
 
@@ -81,7 +82,8 @@ const EFFECTS_BUS := "KilosSFX"
 @onready var fall_timer: Timer = $FallTimer
 
 # New screens are hosted above the original menu so the animated background,
-# falling word cards, title music and custom cursor continue to be reused.
+# falling word cards and title music continue to be reused. The normal
+# system mouse cursor remains visible across the main menu and UI panels.
 const PANEL_SCENES := {
 	"tutorial_home": "res://ui/tutorial/tutorial_home.tscn",
 	"tutorial_practice": "res://ui/tutorial/tutorial_practice.tscn",
@@ -122,6 +124,7 @@ var center_home := Vector2.ZERO
 var intro_done := false
 var idle_time := 0.0
 var title_music_player: AudioStreamPlayer
+var button_sounds: Node
 var logo_bump_active := false
 var tooltip_tween: Tween
 const TOOLTIP_GAP := 24.0
@@ -143,13 +146,28 @@ func _process(delta: float) -> void:
 
 
 func _ready() -> void:
+	# Keep the default operating-system pointer; do not replace or hide it.
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	rng.seed = 260926
 	_setup_panel_host()
+	# Use the original layered main panel, not the flattened logo artwork.
+	# Individual GRAMMAR tiles must remain visible for their pop animations and
+	# falling grammar cards must remain fully opaque behind the buttons.
 	_sync_kilos_texture_rect()
 	logo_home = logo_group.position
 	left_home = left_menu.position
 	center_home = center_menu.position
 	_ensure_audio_buses()
+	button_sounds = BUTTON_SOUND_WIRING.new()
+	button_sounds.name = "ButtonSounds"
+	add_child(button_sounds)
+	button_sounds.call("watch", $MainLayer)
+	button_sounds.call("watch", panel_host)
+	# Restore saved mixer, mute, and display choices before title music starts.
+	if DisplayServer.get_name() != "headless":
+		SETTINGS_PREFS.restore_saved_preferences(true)
+	else:
+		SETTINGS_PREFS.restore_saved_preferences(false)
 	_setup_title_music()
 
 	for tile in grammar_tiles:
@@ -367,11 +385,9 @@ func _refresh_pivot(button: Button) -> void:
 		button.pivot_offset = button.size * 0.5
 
 
-func _hover_button(button: Button, play_sound: bool = true) -> void:
+func _hover_button(button: Button) -> void:
 	button.z_index = 20
 	_kill_button_tween(button)
-	if play_sound:
-		_play_one_shot(BUTTON_HOVER, 1.0, -4.0)
 	var scale_ratio: float = clampf(128.0 / maxf(button.size.x, 1.0), 0.5, 1.0)
 	var scale_target: float = 1.0 + 0.2 * scale_ratio
 	var rotation_target: float = float([-1.0, 1.0].pick_random()) * deg_to_rad(5.0 * scale_ratio)
@@ -399,7 +415,6 @@ func _unhover_button(button: Button) -> void:
 
 func _press_button(button: Button) -> void:
 	_kill_button_tween(button)
-	_play_one_shot(BUTTON_CLICK, 1.0, -1.0)
 	var tween: Tween = create_tween()
 	button_tweens[button] = tween
 	tween.tween_property(button, "scale", Vector2(0.94, 0.90), 0.055).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -408,7 +423,7 @@ func _press_button(button: Button) -> void:
 func _release_button(button: Button) -> void:
 	var hovered: bool = button.get_global_rect().has_point(get_viewport().get_mouse_position())
 	if hovered:
-		_hover_button(button, false)
+		_hover_button(button)
 	else:
 		_unhover_button(button)
 
@@ -637,6 +652,8 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 	if route == "main":
 		_return_to_main()
 		return
+	if PoseService.active and route in ["student_setup", "play_activity", "play_topic", "play_difficulty", "results", "tutorial_home", "quit"]:
+		PoseService.stop_camera()
 	if route == "last_play":
 		route = "student_setup"
 	if route == "retry" or route == "play_again":
@@ -705,6 +722,7 @@ func _show_panel(route: String) -> void:
 		paused_game_panel = null
 		active_panel.visible = true
 		active_panel.process_mode = Node.PROCESS_MODE_INHERIT
+		button_sounds.call("reset_hover_origin", active_panel)
 		if active_panel.has_method("_resume"):
 			active_panel.call("_resume")
 		current_route = "gameplay"
@@ -751,10 +769,14 @@ func _show_panel(route: String) -> void:
 		active_panel.connect("requested", Callable(self, "_on_panel_requested"))
 	if active_panel.has_method("set_context"):
 		active_panel.call("set_context", session_state.duplicate(true))
+	button_sounds.call("watch", active_panel)
+	button_sounds.call("reset_hover_origin", active_panel)
 	current_route = route
 
 
 func _return_to_main() -> void:
+	if PoseService.active:
+		PoseService.stop_camera()
 	if is_instance_valid(catch_asset_preloader):
 		catch_asset_preloader.call("clear_selection")
 	_discard_paused_game()
@@ -766,6 +788,7 @@ func _return_to_main() -> void:
 	logo_group.visible = true
 	left_menu.visible = true
 	center_menu.visible = true
+	button_sounds.call("reset_hover_origin", $MainLayer)
 	tooltip.visible = false
 	if version:
 		version.visible = true
@@ -781,6 +804,11 @@ func _discard_paused_game() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F11 or (event.keycode == KEY_ENTER and event.alt_pressed):
+			SETTINGS_PREFS.toggle_fullscreen()
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		if current_route == "main":
 			return

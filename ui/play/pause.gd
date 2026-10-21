@@ -11,6 +11,46 @@ var resume_button: Button
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	var card := get_node_or_null("PauseCard") as Control
+	if card != null:
+		_bind_scene_nodes(card)
+	else:
+		_build_ui()
+
+func _bind_scene_nodes(card: Control) -> void:
+	summary_label = card.get_node_or_null("SummaryLabel") as Label
+	resume_button = card.get_node_or_null("ResumeButton") as Button
+	if resume_button:
+		resume_button.pressed.connect(_resume)
+		resume_button.call_deferred("grab_focus")
+	var restart := card.get_node_or_null("RestartButton") as Button
+	if restart:
+		restart.pressed.connect(_restart)
+	var change := card.get_node_or_null("ChangeSetupButton") as Button
+	if change:
+		change.pressed.connect(_change_setup)
+	var results := card.get_node_or_null("ResultsButton") as Button
+	if results:
+		results.pressed.connect(_results)
+	var main_menu := card.get_node_or_null("MainMenuButton") as Button
+	if main_menu:
+		main_menu.pressed.connect(_main_menu)
+	_refresh_summary()
+
+func _build_ui() -> void:
+	var clean_backdrop := ColorRect.new()
+	clean_backdrop.color = Color("087e75")
+	clean_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	clean_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(clean_backdrop)
+	var background := TextureRect.new()
+	background.name = "SetupArtworkBackground"
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.texture = load("res://ui/redesign/assets/student/setup_main_panel.png")
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(background)
 
 	var dimmer := ColorRect.new()
 	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -23,21 +63,21 @@ func _ready() -> void:
 	add_child(center)
 
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(560, 560)
+	card.custom_minimum_size = Vector2(560, 450 if get_viewport_rect().size.y <= 550.0 else 560)
 	card.add_theme_stylebox_override("panel", UI.make_panel(Color(UI.INK, 0.97), 30))
 	center.add_child(card)
 
 	var content := VBoxContainer.new()
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 14)
+	content.add_theme_constant_override("separation", 6 if get_viewport_rect().size.y <= 550.0 else 14)
 	card.add_child(content)
 
 	var title := UI.make_label("PAUSED", 48, UI.CREAM)
-	title.custom_minimum_size.y = 66
+	title.custom_minimum_size.y = 44 if get_viewport_rect().size.y <= 550.0 else 66
 	content.add_child(title)
 
 	summary_label = UI.make_body_label("", 18, Color(UI.CREAM, 0.78))
-	summary_label.custom_minimum_size.y = 68
+	summary_label.custom_minimum_size.y = 42 if get_viewport_rect().size.y <= 550.0 else 68
 	content.add_child(summary_label)
 
 	resume_button = _add_action(content, "RESUME", UI.GREEN, "_resume")
@@ -58,7 +98,7 @@ func set_context(new_context: Dictionary) -> void:
 func _add_action(parent: VBoxContainer, text_value: String, color: Color, method_name: String) -> Button:
 	var button := Button.new()
 	button.text = text_value
-	button.custom_minimum_size = Vector2(420, 54)
+	button.custom_minimum_size = Vector2(420, 46 if get_viewport_rect().size.y <= 550.0 else 54)
 	UI.style_button(button, color, 20)
 	button.pressed.connect(Callable(self, method_name))
 	parent.add_child(button)

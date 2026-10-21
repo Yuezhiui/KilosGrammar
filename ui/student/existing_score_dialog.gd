@@ -15,8 +15,25 @@ var _close_button: Button
 
 
 func _ready() -> void:
-	_build_ui()
+	var card := get_node_or_null("DialogCard") as Control
+	if card != null:
+		_bind_scene_nodes(card)
+	else:
+		_build_ui()
 	hide()
+
+func _bind_scene_nodes(card: Control) -> void:
+	_title_label = card.get_node_or_null("TitleLabel") as Label
+	_body_label = card.get_node_or_null("BodyLabel") as Label
+	_keep_button = card.get_node_or_null("Actions/KeepButton") as Button
+	if _keep_button:
+		_keep_button.pressed.connect(_keep_existing)
+	_replace_button = card.get_node_or_null("Actions/ReplaceButton") as Button
+	if _replace_button:
+		_replace_button.pressed.connect(_replace_existing)
+	_close_button = card.get_node_or_null("Actions/CloseButton") as Button
+	if _close_button:
+		_close_button.pressed.connect(_cancel)
 
 
 func present_confirmed(record: Dictionary) -> void:

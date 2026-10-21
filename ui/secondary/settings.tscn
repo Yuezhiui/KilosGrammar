@@ -1,14 +1,1710 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://i012d0lcedj1"]
 
-[ext_resource type="Script" path="res://ui/secondary/settings.gd" id="1_script"]
-[ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
+[ext_resource type="Theme" uid="uid://nkuj848galqf" path="res://ui/secondary/secondary_theme.tres" id="1_5jtvo"]
+[ext_resource type="Script" uid="uid://bl65p8tjp4a7k" path="res://ui/secondary/settings.gd" id="2_lq16r"]
+[ext_resource type="PackedScene" path="res://ui/shared/lexi_reference_backdrop.tscn" id="3_lyri3"]
+[ext_resource type="Texture2D" uid="uid://dmcncn3tphmj7" path="res://ui/redesign/assets/shared/classroom_bg.png" id="5_ghgfw"]
+[ext_resource type="Texture2D" uid="uid://s1qqrek5n0m3" path="res://ui/redesign/assets/settings/panel_main.png" id="6_yh8kq"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="8_f0pql"]
+[ext_resource type="Texture2D" uid="uid://v3myfd5dekv0" path="res://ui/redesign/assets/settings/tab_settings_green.png" id="9_xvthk"]
+[ext_resource type="Texture2D" uid="uid://yjfbu0pgyvn3" path="res://ui/redesign/assets/settings/tab_controls_cream.png" id="10_tvp2g"]
+[ext_resource type="Texture2D" uid="uid://dv5xhtt85yu0l" path="res://ui/redesign/assets/settings/tab_camera_cream.png" id="11_jcsf2"]
+[ext_resource type="Texture2D" uid="uid://bxmv72udpejqm" path="res://ui/redesign/assets/settings/icon_sound.png" id="12_lrjum"]
+[ext_resource type="Texture2D" uid="uid://brbhxuaxp71b5" path="res://ui/redesign/assets/settings/slider_knob_green_28.png" id="13_i4cww"]
+[ext_resource type="Texture2D" uid="uid://cdfr36knijt2h" path="res://ui/redesign/assets/settings/icon_music.png" id="14_iw87i"]
+[ext_resource type="Texture2D" uid="uid://b4c4f4fhs7hp" path="res://ui/redesign/assets/settings/icon_star.png" id="15_6soms"]
+[ext_resource type="Texture2D" uid="uid://yr4ffp8ea6g3" path="res://ui/redesign/assets/settings/icon_muted.png" id="16_3uyxv"]
+[ext_resource type="Texture2D" uid="uid://dch7x2vt5mbji" path="res://ui/redesign/assets/settings/toggle_on.png" id="17_cjrpd"]
+[ext_resource type="Texture2D" uid="uid://bxx0kv2joypjc" path="res://ui/redesign/assets/settings/toggle_off.png" id="18_nf8ja"]
+[ext_resource type="Texture2D" uid="uid://bw4jd76657mqx" path="res://ui/redesign/assets/settings/icon_screen.png" id="19_vb5bl"]
+[ext_resource type="Texture2D" uid="uid://bjvb8vc12csyn" path="res://ui/redesign/assets/settings/icon_fullscreen.png" id="20_55mj8"]
+[ext_resource type="Texture2D" uid="uid://db7snwgjfvny2" path="res://ui/secondary/qwqwqw.png" id="20_l5m0o"]
+[ext_resource type="Texture2D" uid="uid://be7hl038w12tc" path="res://ui/redesign/assets/settings/title_settings.png" id="21_4wdqf"]
+[ext_resource type="Texture2D" uid="uid://cqdeotymnlo0r" path="res://ui/redesign/assets/settings/button_home.png" id="22_vxyoo"]
 
-[node name="Settings" type="Control"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kh2aw"]
+bg_color = Color(0.7607843, 0.9019608, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.61960787, 0.8235294, 0.9647059, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j0uhd"]
+bg_color = Color(0.87058824, 0.9411765, 0.9882353, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0.8980392, 0.9764706, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qurtl"]
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ebdrf"]
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b28tq"]
+bg_color = Color(1, 0.972549, 0.9254902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.91764706, 0.8627451, 0.78431374, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uv3sa"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.83137256, 0.8980392, 0.9607843, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5f6tp"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.1254902, 0.77254903, 0.47843137, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1nqnu"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.19545099, 0.79074514, 0.52015686, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_df2wl"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.8, 0.8862745, 0.9529412, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8efgo"]
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xh2v8"]
+bg_color = Color(1, 0.972549, 0.9254902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.91764706, 0.8627451, 0.78431374, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_seh1p"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.83137256, 0.8980392, 0.9607843, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pxj7h"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.1254902, 0.77254903, 0.47843137, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i48se"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.19545099, 0.79074514, 0.52015686, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uwebo"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.8, 0.8862745, 0.9529412, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tb5a5"]
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5eju7"]
+bg_color = Color(1, 0.972549, 0.9254902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.91764706, 0.8627451, 0.78431374, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fu5xp"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.83137256, 0.8980392, 0.9607843, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yr1kk"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.1254902, 0.77254903, 0.47843137, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_34k8a"]
+content_margin_top = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.19545099, 0.79074514, 0.52015686, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0t7nh"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.8, 0.8862745, 0.9529412, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xbgpi"]
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g4p6f"]
+bg_color = Color(1, 0.972549, 0.9254902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.91764706, 0.8627451, 0.78431374, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7xt7x"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1w2wh"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_r7hek"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hl4nd"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1ytyg"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_buhgn"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.7607843, 0.23921569, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ts6xo"]
+bg_color = Color(0.87058824, 0.9411765, 0.9882353, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0.8980392, 0.9764706, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_viy3c"]
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g5vi4"]
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pb1gq"]
+bg_color = Color(1, 0.972549, 0.9254902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.91764706, 0.8627451, 0.78431374, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_v1d6o"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hqu6s"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_r7uhw"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1iaug"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hfjr8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_31p8q"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.7607843, 0.23921569, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lplbj"]
+bg_color = Color(0.87058824, 0.9411765, 0.9882353, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0.8980392, 0.9764706, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1b6i0"]
+bg_color = Color(0.1254902, 0.77254903, 0.47843137, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lsgup"]
+content_margin_top = 1.0
+content_margin_bottom = 1.0
+bg_color = Color(0.08235294, 0.14509805, 0.34117648, 0.25)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_775y6"]
+bg_color = Color(0.48235294, 0.7882353, 0.9372549, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cp0fb"]
+content_margin_top = 1.0
+content_margin_bottom = 1.0
+bg_color = Color(0.08235294, 0.14509805, 0.34117648, 0.25)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ox1kt"]
+bg_color = Color(1, 0.7607843, 0.23921569, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w7b4t"]
+content_margin_top = 1.0
+content_margin_bottom = 1.0
+bg_color = Color(0.08235294, 0.14509805, 0.34117648, 0.35)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i7356"]
+bg_color = Color(0.08235294, 0.14509805, 0.34117648, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.30980393, 0.4, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_swqi2"]
+bg_color = Color(0.87058824, 0.9411765, 0.9882353, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 0.8980392, 0.9764706, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_favtk"]
+bg_color = Color(0.08235294, 0.14509805, 0.34117648, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.30980393, 0.4, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_312xx"]
+content_margin_top = 1.0
+content_margin_bottom = 1.0
+bg_color = Color(0.08235294, 0.14509805, 0.34117648, 0.28)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_b8y6i"]
+bg_color = Color(0.48235294, 0.7882353, 0.9372549, 0.18)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.48235294, 0.7882353, 0.9372549, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k4ige"]
+bg_color = Color(0.1254902, 0.77254903, 0.47843137, 0.18)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.1254902, 0.77254903, 0.47843137, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5wmd1"]
+bg_color = Color(1, 0.7607843, 0.23921569, 0.18)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.7607843, 0.23921569, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pb6oh"]
+content_margin_top = 1.0
+content_margin_bottom = 1.0
+bg_color = Color(0.08235294, 0.14509805, 0.34117648, 0.28)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_flopu"]
+bg_color = Color(0, 0.53333336, 0.41960785, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_boahw"]
+texture = ExtResource("9_xvthk")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_4au7u"]
+texture = ExtResource("9_xvthk")
+modulate_color = Color(0.85, 0.88, 0.94, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_oppic"]
+texture = ExtResource("9_xvthk")
+modulate_color = Color(1.12, 1.12, 1.12, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_c0fc1"]
+texture = ExtResource("9_xvthk")
+modulate_color = Color(0.88, 0.92, 0.98, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_hm26i"]
+texture = ExtResource("9_xvthk")
+modulate_color = Color(0.66, 0.66, 0.66, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ebl71"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.7607843, 0.23921569, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_7fuy4"]
+texture = ExtResource("10_tvp2g")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_iu4ae"]
+texture = ExtResource("10_tvp2g")
+modulate_color = Color(0.85, 0.88, 0.94, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_l6wlh"]
+texture = ExtResource("10_tvp2g")
+modulate_color = Color(1.12, 1.12, 1.12, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_7tcl1"]
+texture = ExtResource("10_tvp2g")
+modulate_color = Color(0.88, 0.92, 0.98, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_85utp"]
+texture = ExtResource("10_tvp2g")
+modulate_color = Color(0.66, 0.66, 0.66, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d8cfx"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.7607843, 0.23921569, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_6wuk1"]
+texture = ExtResource("11_jcsf2")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1expf"]
+texture = ExtResource("11_jcsf2")
+modulate_color = Color(0.85, 0.88, 0.94, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_31plp"]
+texture = ExtResource("11_jcsf2")
+modulate_color = Color(1.12, 1.12, 1.12, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_wjeew"]
+texture = ExtResource("11_jcsf2")
+modulate_color = Color(0.88, 0.92, 0.98, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_aope4"]
+texture = ExtResource("11_jcsf2")
+modulate_color = Color(0.66, 0.66, 0.66, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ojcnu"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.7607843, 0.23921569, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_0rx1t"]
+texture = ExtResource("22_vxyoo")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_lnmsh"]
+texture = ExtResource("22_vxyoo")
+modulate_color = Color(0.85, 0.88, 0.94, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_pqcma"]
+texture = ExtResource("22_vxyoo")
+modulate_color = Color(1.12, 1.12, 1.12, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_eifh7"]
+texture = ExtResource("22_vxyoo")
+modulate_color = Color(0.88, 0.92, 0.98, 1)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_5n83y"]
+texture = ExtResource("22_vxyoo")
+modulate_color = Color(0.66, 0.66, 0.66, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4x4tl"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.7607843, 0.23921569, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+expand_margin_left = 2.0
+expand_margin_top = 2.0
+expand_margin_right = 2.0
+expand_margin_bottom = 2.0
+
+[node name="Settings" type="Control" unique_id=290202755]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("2_theme")
-script = ExtResource("1_script")
+theme = ExtResource("1_5jtvo")
+script = ExtResource("2_lq16r")
+
+[node name="LexiReferenceBackdrop" parent="." unique_id=608649516 instance=ExtResource("3_lyri3")]
+layout_mode = 1
+
+[node name="ClassroomArtwork" type="TextureRect" parent="." unique_id=818491411]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_ghgfw")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="MainStage" type="Control" parent="." unique_id=1636173107]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 35.0
+offset_top = -1.0
+offset_right = 35.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SettingsCard" type="Control" parent="MainStage" unique_id=252674782]
+anchors_preset = 0
+offset_left = 115.0
+offset_top = 126.0
+offset_right = 1165.0
+offset_bottom = 630.0
+mouse_filter = 2
+
+[node name="BoardArtwork" type="NinePatchRect" parent="MainStage/SettingsCard" unique_id=899979853]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -37.0
+offset_right = -24.0
+offset_bottom = 58.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("6_yh8kq")
+patch_margin_left = 74
+patch_margin_top = 64
+patch_margin_right = 74
+patch_margin_bottom = 64
+
+[node name="CardPadding" type="MarginContainer" parent="MainStage/SettingsCard" unique_id=835465447]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 239.0
+offset_top = 10.0
+offset_right = -75.0
+offset_bottom = 13.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 44
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 26
+
+[node name="BoardLayout" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding" unique_id=1718793474]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ContentStack" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout" unique_id=426759010]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="SectionHeading" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack" unique_id=1244440703]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_kh2aw")
+
+[node name="HeadingMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/SectionHeading" unique_id=409782612]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_right = 14
+
+[node name="HeadingRow" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/SectionHeading/HeadingMargin" unique_id=938237261]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeadingIcon" type="TextureRect" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/SectionHeading/HeadingMargin/HeadingRow" unique_id=1345823965]
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("12_lrjum")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HeadingLabel" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/SectionHeading/HeadingMargin/HeadingRow" unique_id=1043598376]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 20
+text = "AUDIO & DISPLAY"
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ScrollHint" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/SectionHeading/HeadingMargin/HeadingRow" unique_id=314782348]
+visible = false
+modulate = Color(1, 1, 1, 0.78)
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 11
+text = "SCROLL DOWN ↓"
+horizontal_alignment = 2
+vertical_alignment = 1
+clip_text = true
+
+[node name="PageHost" type="Control" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack" unique_id=1969382039]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PageScroll" type="ScrollContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost" unique_id=3007889]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="SettingsPage" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll" unique_id=1284101614]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="AudioGroup" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage" unique_id=1176746314]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_j0uhd")
+
+[node name="GroupInset" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup" unique_id=1765952220]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="GroupRows" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset" unique_id=615577731]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="GroupTitleRow" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows" unique_id=378833162]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GroupTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupTitleRow" unique_id=1629980066]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 17
+text = "AUDIO"
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="GroupBody" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows" unique_id=46942394]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_qurtl")
+
+[node name="GroupBodyMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody" unique_id=1976329749]
+layout_mode = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 2
+
+[node name="GroupFields" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin" unique_id=58417087]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="SliderMastervolumeRow" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields" unique_id=1579271791]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ebdrf")
+
+[node name="RowMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow" unique_id=1975472490]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 2
+
+[node name="RowHBox" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow/RowMargin" unique_id=1772270592]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TileIcon Sound" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow/RowMargin/RowHBox" unique_id=358923707]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_b28tq")
+
+[node name="TileMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow/RowMargin/RowHBox/TileIcon Sound" unique_id=1755532500]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="@TextureRect@4" type="TextureRect" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow/RowMargin/RowHBox/TileIcon Sound/TileMargin" unique_id=1242212190]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("12_lrjum")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RowLabel" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow/RowMargin/RowHBox" unique_id=1295643597]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 14
+text = "MASTER VOLUME"
+vertical_alignment = 1
+
+[node name="VolumeSlider" type="HSlider" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow/RowMargin/RowHBox" unique_id=70469767]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_icons/grabber = ExtResource("13_i4cww")
+theme_override_icons/grabber_highlight = ExtResource("13_i4cww")
+theme_override_icons/grabber_disabled = ExtResource("13_i4cww")
+theme_override_styles/slider = SubResource("StyleBoxFlat_uv3sa")
+theme_override_styles/grabber_area = SubResource("StyleBoxFlat_5f6tp")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBoxFlat_1nqnu")
+value = 100.0
+
+[node name="ValueBadge" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow/RowMargin/RowHBox" unique_id=2070420637]
+custom_minimum_size = Vector2(68, 30)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_df2wl")
+
+[node name="VolumeValue" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMastervolumeRow/RowMargin/RowHBox/ValueBadge" unique_id=527755942]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(62, 28)
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 14
+text = "100%"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="SliderMusicRow" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields" unique_id=1123865271]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_8efgo")
+
+[node name="RowMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow" unique_id=802566121]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 2
+
+[node name="RowHBox" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow/RowMargin" unique_id=1129414429]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TileIcon Music" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow/RowMargin/RowHBox" unique_id=268474889]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_xh2v8")
+
+[node name="TileMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow/RowMargin/RowHBox/TileIcon Music" unique_id=280431801]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="@TextureRect@5" type="TextureRect" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow/RowMargin/RowHBox/TileIcon Music/TileMargin" unique_id=928530605]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("14_iw87i")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RowLabel" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow/RowMargin/RowHBox" unique_id=395418770]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 14
+text = "MUSIC"
+vertical_alignment = 1
+
+[node name="MusicSlider" type="HSlider" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow/RowMargin/RowHBox" unique_id=1250183205]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_icons/grabber = ExtResource("13_i4cww")
+theme_override_icons/grabber_highlight = ExtResource("13_i4cww")
+theme_override_icons/grabber_disabled = ExtResource("13_i4cww")
+theme_override_styles/slider = SubResource("StyleBoxFlat_seh1p")
+theme_override_styles/grabber_area = SubResource("StyleBoxFlat_pxj7h")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBoxFlat_i48se")
+value = 100.0
+
+[node name="ValueBadge" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow/RowMargin/RowHBox" unique_id=1978625677]
+custom_minimum_size = Vector2(68, 30)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_uwebo")
+
+[node name="MusicValue" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderMusicRow/RowMargin/RowHBox/ValueBadge" unique_id=804678962]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(62, 28)
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 14
+text = "100%"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="SliderEffectsRow" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields" unique_id=213866503]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tb5a5")
+
+[node name="RowMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow" unique_id=1106750958]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 2
+
+[node name="RowHBox" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow/RowMargin" unique_id=418547930]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TileIcon Star" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow/RowMargin/RowHBox" unique_id=907121458]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_5eju7")
+
+[node name="TileMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow/RowMargin/RowHBox/TileIcon Star" unique_id=2135459103]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="@TextureRect@6" type="TextureRect" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow/RowMargin/RowHBox/TileIcon Star/TileMargin" unique_id=162295014]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("15_6soms")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RowLabel" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow/RowMargin/RowHBox" unique_id=389573606]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 14
+text = "EFFECTS"
+vertical_alignment = 1
+
+[node name="EffectsSlider" type="HSlider" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow/RowMargin/RowHBox" unique_id=494516901]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 28)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
+theme_override_icons/grabber = ExtResource("13_i4cww")
+theme_override_icons/grabber_highlight = ExtResource("13_i4cww")
+theme_override_icons/grabber_disabled = ExtResource("13_i4cww")
+theme_override_styles/slider = SubResource("StyleBoxFlat_fu5xp")
+theme_override_styles/grabber_area = SubResource("StyleBoxFlat_yr1kk")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBoxFlat_34k8a")
+value = 100.0
+
+[node name="ValueBadge" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow/RowMargin/RowHBox" unique_id=1026569493]
+custom_minimum_size = Vector2(68, 30)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0t7nh")
+
+[node name="EffectsValue" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/SliderEffectsRow/RowMargin/RowHBox/ValueBadge" unique_id=226635114]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(62, 28)
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 14
+text = "100%"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ToggleMuteallaudioRow" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields" unique_id=1314403064]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_xbgpi")
+
+[node name="RowMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow" unique_id=428902228]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 2
+
+[node name="RowHBox" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow/RowMargin" unique_id=2015078086]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TileIcon Muted" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow/RowMargin/RowHBox" unique_id=805252419]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_g4p6f")
+
+[node name="TileMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow/RowMargin/RowHBox/TileIcon Muted" unique_id=1057720042]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="@TextureRect@7" type="TextureRect" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow/RowMargin/RowHBox/TileIcon Muted/TileMargin" unique_id=18610272]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("16_3uyxv")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow/RowMargin/RowHBox" unique_id=1744931051]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 1
+
+[node name="ToggleTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow/RowMargin/RowHBox/TextBox" unique_id=1785526988]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 15
+text = "MUTE ALL AUDIO"
+autowrap_mode = 3
+
+[node name="ToggleHint" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow/RowMargin/RowHBox/TextBox" unique_id=743897661]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.3882353, 0.4509804, 0.5568628, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+text = "Master bus mute"
+autowrap_mode = 3
+
+[node name="MuteCheck" type="CheckButton" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/AudioGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleMuteallaudioRow/RowMargin/RowHBox" unique_id=1841473526]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_7xt7x")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_1w2wh")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_r7hek")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_hl4nd")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_1ytyg")
+theme_override_styles/focus = SubResource("StyleBoxFlat_buhgn")
+theme_override_constants/check_v_offset = 0
+theme_override_icons/checked = ExtResource("17_cjrpd")
+theme_override_icons/unchecked = ExtResource("18_nf8ja")
+theme_override_icons/checked_disabled = ExtResource("17_cjrpd")
+theme_override_icons/unchecked_disabled = ExtResource("18_nf8ja")
+
+[node name="DisplayGroup" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage" unique_id=775954147]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_ts6xo")
+
+[node name="GroupInset" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup" unique_id=685185193]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="GroupRows" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset" unique_id=533662339]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="GroupTitleRow" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows" unique_id=2028023138]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="@TextureRect@8" type="TextureRect" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupTitleRow" unique_id=101396756]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("19_vb5bl")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GroupTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupTitleRow" unique_id=2136146230]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 17
+text = "DISPLAY"
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="GroupBody" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows" unique_id=928286302]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_viy3c")
+
+[node name="GroupBodyMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody" unique_id=2035358194]
+layout_mode = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 2
+
+[node name="GroupFields" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin" unique_id=482264303]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ToggleFullscreenRow" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields" unique_id=523237023]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_g5vi4")
+
+[node name="RowMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow" unique_id=1289973554]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 2
+
+[node name="RowHBox" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow/RowMargin" unique_id=2116278732]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TileIcon Fullscreen" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow/RowMargin/RowHBox" unique_id=1673233063]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pb1gq")
+
+[node name="TileMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow/RowMargin/RowHBox/TileIcon Fullscreen" unique_id=1105248482]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="@TextureRect@9" type="TextureRect" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow/RowMargin/RowHBox/TileIcon Fullscreen/TileMargin" unique_id=212342054]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("20_55mj8")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow/RowMargin/RowHBox" unique_id=1245431033]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 1
+
+[node name="ToggleTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow/RowMargin/RowHBox/TextBox" unique_id=1357778093]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 15
+text = "FULLSCREEN"
+autowrap_mode = 3
+
+[node name="ToggleHint" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow/RowMargin/RowHBox/TextBox" unique_id=392681847]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.3882353, 0.4509804, 0.5568628, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+text = "Switch between windowed and fullscreen"
+autowrap_mode = 3
+
+[node name="FullscreenCheck" type="CheckButton" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/SettingsPage/DisplayGroup/GroupInset/GroupRows/GroupBody/GroupBodyMargin/GroupFields/ToggleFullscreenRow/RowMargin/RowHBox" unique_id=2054397915]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 36)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_v1d6o")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_hqu6s")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_r7uhw")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_1iaug")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_hfjr8")
+theme_override_styles/focus = SubResource("StyleBoxFlat_31p8q")
+theme_override_constants/check_v_offset = 0
+theme_override_icons/checked = ExtResource("17_cjrpd")
+theme_override_icons/unchecked = ExtResource("18_nf8ja")
+theme_override_icons/checked_disabled = ExtResource("17_cjrpd")
+theme_override_icons/unchecked_disabled = ExtResource("18_nf8ja")
+
+[node name="ControlsPage" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll" unique_id=1488839265]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="ControlsCard" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage" unique_id=142383116]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_lplbj")
+
+[node name="ControlsMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard" unique_id=2085024450]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="ControlsBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin" unique_id=1228501788]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SectionTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox" unique_id=1492721221]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 15
+text = "CONTROL GUIDE"
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="InfoRowMenunavigation" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox" unique_id=2090659183]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Marker" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowMenunavigation" unique_id=138675702]
+custom_minimum_size = Vector2(6, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1b6i0")
+
+[node name="TextBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowMenunavigation" unique_id=1934724295]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowMenunavigation/TextBox" unique_id=64126170]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 13
+text = "MENU NAVIGATION"
+autowrap_mode = 3
+
+[node name="Detail" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowMenunavigation/TextBox" unique_id=604078203]
+modulate = Color(1, 1, 1, 0.74)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 11
+text = "Mouse / touch, or Tab + Enter / Space to navigate menus."
+autowrap_mode = 3
+
+[node name="Separator" type="HSeparator" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox" unique_id=72852006]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxFlat_lsgup")
+
+[node name="InfoRowKeyboardminigames" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox" unique_id=1910725230]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Marker" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowKeyboardminigames" unique_id=1703901146]
+custom_minimum_size = Vector2(6, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_775y6")
+
+[node name="TextBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowKeyboardminigames" unique_id=963956378]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowKeyboardminigames/TextBox" unique_id=730787733]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 13
+text = "KEYBOARD MINIGAMES"
+autowrap_mode = 3
+
+[node name="Detail" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowKeyboardminigames/TextBox" unique_id=560871809]
+modulate = Color(1, 1, 1, 0.74)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 11
+text = "A / D or Arrow Keys to move left and right. Space / Enter to fire."
+autowrap_mode = 3
+
+[node name="@HSeparator@10" type="HSeparator" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox" unique_id=1333141500]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxFlat_cp0fb")
+
+[node name="InfoRowPauseresume" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox" unique_id=1883623051]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Marker" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowPauseresume" unique_id=862972010]
+custom_minimum_size = Vector2(6, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ox1kt")
+
+[node name="TextBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowPauseresume" unique_id=1274112532]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowPauseresume/TextBox" unique_id=1397106397]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 13
+text = "PAUSE / RESUME"
+autowrap_mode = 3
+
+[node name="Detail" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/InfoRowPauseresume/TextBox" unique_id=1639122566]
+modulate = Color(1, 1, 1, 0.74)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 11
+text = "Press ESC or click the in-game Pause button anytime."
+autowrap_mode = 3
+
+[node name="@HSeparator@11" type="HSeparator" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox" unique_id=1251356211]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxFlat_w7b4t")
+
+[node name="StatusBanner" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox" unique_id=842862143]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_i7356")
+
+[node name="BannerMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/StatusBanner" unique_id=799349435]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 6
+
+[node name="BannerBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/StatusBanner/BannerMargin" unique_id=246653925]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="BannerTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/StatusBanner/BannerMargin/BannerBox" unique_id=790784135]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.30980393, 0.4, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+text = "BODY TRACKING: PREVIEW ONLY"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="BannerDetail" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/ControlsPage/ControlsCard/ControlsMargin/ControlsBox/StatusBanner/BannerMargin/BannerBox" unique_id=2100841597]
+modulate = Color(1, 1, 1, 0.82)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.99215686, 0.89411765, 0.7254902, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 11
+text = "Webcam pose tracking will be calibrated in a future milestone."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CameraPage" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll" unique_id=1451944855]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="CameraCard" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage" unique_id=1784607143]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_swqi2")
+
+[node name="CameraMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard" unique_id=221304805]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="CameraBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin" unique_id=240774721]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SectionTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox" unique_id=1069701735]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 15
+text = "CAMERA STATUS"
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="StatusBanner" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox" unique_id=1309914529]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_favtk")
+
+[node name="BannerMargin" type="MarginContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/StatusBanner" unique_id=792600706]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 6
+
+[node name="BannerBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/StatusBanner/BannerMargin" unique_id=1203691306]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="BannerTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/StatusBanner/BannerMargin/BannerBox" unique_id=1057356621]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.30980393, 0.4, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+text = "CAMERA & TRACKING: NOT CONNECTED"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="BannerDetail" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/StatusBanner/BannerMargin/BannerBox" unique_id=389949153]
+modulate = Color(1, 1, 1, 0.82)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.99215686, 0.89411765, 0.7254902, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 11
+text = "Settings does not open a live camera device or report fake detection."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Separator" type="HSeparator" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox" unique_id=309692715]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxFlat_312xx")
+
+[node name="LaneTitle" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox" unique_id=1170023199]
+modulate = Color(1, 1, 1, 0.88)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 14
+text = "3-LANE PLAYER CALIBRATION PREVIEW"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="LanesBox" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox" unique_id=1220838761]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ChipLeft Left" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/LanesBox" unique_id=544743516]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_b8y6i")
+
+[node name="ChipLabel" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/LanesBox/ChipLeft Left" unique_id=1790016204]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+text = "<  LEFT"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ChipCenter" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/LanesBox" unique_id=1550318246]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_k4ige")
+
+[node name="ChipLabel" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/LanesBox/ChipCenter" unique_id=369471477]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+text = "CENTER"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ChipRight Right" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/LanesBox" unique_id=907907436]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_5wmd1")
+
+[node name="ChipLabel" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/LanesBox/ChipRight Right" unique_id=1317399570]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+text = "RIGHT  >"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="@HSeparator@12" type="HSeparator" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox" unique_id=1546061153]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxFlat_pb6oh")
+
+[node name="InfoRowCalibration" type="HBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox" unique_id=953029716]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Marker" type="PanelContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/InfoRowCalibration" unique_id=1650129616]
+custom_minimum_size = Vector2(6, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_flopu")
+
+[node name="TextBox" type="VBoxContainer" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/InfoRowCalibration" unique_id=870230756]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/InfoRowCalibration/TextBox" unique_id=1962075171]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 13
+text = "CALIBRATION"
+autowrap_mode = 3
+
+[node name="Detail" type="Label" parent="MainStage/SettingsCard/CardPadding/BoardLayout/ContentStack/PageHost/PageScroll/CameraPage/CameraCard/CameraMargin/CameraBox/InfoRowCalibration/TextBox" unique_id=1401956212]
+modulate = Color(1, 1, 1, 0.74)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.08235294, 0.14509805, 0.34117648, 1)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 11
+text = "Physical calibration maps real movement to the LEFT / CENTER / RIGHT zones."
+autowrap_mode = 3
+
+[node name="Controls" type="Panel" parent="MainStage/SettingsCard" unique_id=1841104665]
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_left = 54.0
+offset_top = 69.0
+offset_right = 242.0
+offset_bottom = 432.0
+mouse_filter = 2
+
+[node name="SidebarSettingsTab" type="Button" parent="MainStage/SettingsCard/Controls" unique_id=1645012825]
+custom_minimum_size = Vector2(196, 66)
+layout_mode = 0
+offset_left = 14.0
+offset_top = 8.0
+offset_right = 210.0
+offset_bottom = 74.0
+tooltip_text = "Settings"
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxTexture_boahw")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_4au7u")
+theme_override_styles/hover = SubResource("StyleBoxTexture_oppic")
+theme_override_styles/hover_pressed = SubResource("StyleBoxTexture_c0fc1")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_hm26i")
+theme_override_styles/focus = SubResource("StyleBoxFlat_ebl71")
+
+[node name="SidebarControlsTab" type="Button" parent="MainStage/SettingsCard/Controls" unique_id=1462311090]
+custom_minimum_size = Vector2(196, 66)
+layout_mode = 0
+offset_left = 14.0
+offset_top = 75.0
+offset_right = 210.0
+offset_bottom = 141.0
+tooltip_text = "Controls"
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxTexture_7fuy4")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_iu4ae")
+theme_override_styles/hover = SubResource("StyleBoxTexture_l6wlh")
+theme_override_styles/hover_pressed = SubResource("StyleBoxTexture_7tcl1")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_85utp")
+theme_override_styles/focus = SubResource("StyleBoxFlat_d8cfx")
+
+[node name="SidebarCameraTab" type="Button" parent="MainStage/SettingsCard/Controls" unique_id=1421646156]
+custom_minimum_size = Vector2(196, 66)
+layout_mode = 0
+offset_left = 13.0
+offset_top = 143.0
+offset_right = 209.0
+offset_bottom = 209.0
+tooltip_text = "Camera"
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
+theme_override_fonts/font = ExtResource("8_f0pql")
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxTexture_6wuk1")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_1expf")
+theme_override_styles/hover = SubResource("StyleBoxTexture_31plp")
+theme_override_styles/hover_pressed = SubResource("StyleBoxTexture_wjeew")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_aope4")
+theme_override_styles/focus = SubResource("StyleBoxFlat_ojcnu")
+
+[node name="SettingsTitle" type="TextureRect" parent="MainStage" unique_id=1474213380]
+z_index = 2
+layout_mode = 0
+offset_left = 319.0
+offset_top = 12.0
+offset_right = 917.0
+offset_bottom = 175.0
+mouse_filter = 2
+texture = ExtResource("21_4wdqf")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextureRect" type="TextureRect" parent="MainStage" unique_id=1113614361]
+layout_mode = 0
+offset_left = 222.0
+offset_top = 540.0
+offset_right = 418.0
+offset_bottom = 671.0
+texture = ExtResource("20_l5m0o")
+expand_mode = 1
+
+[node name="BackButton" type="Button" parent="MainStage" unique_id=493096504]
+unique_name_in_owner = true
+z_index = 2
+custom_minimum_size = Vector2(184, 56)
+layout_mode = 0
+offset_left = 1038.0
+offset_top = 28.0
+offset_right = 1222.0
+offset_bottom = 84.0
+tooltip_text = "Return to main menu"
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("StyleBoxTexture_0rx1t")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_lnmsh")
+theme_override_styles/hover = SubResource("StyleBoxTexture_pqcma")
+theme_override_styles/hover_pressed = SubResource("StyleBoxTexture_eifh7")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_5n83y")
+theme_override_styles/focus = SubResource("StyleBoxFlat_4x4tl")

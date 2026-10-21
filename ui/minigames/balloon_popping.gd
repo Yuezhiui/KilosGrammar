@@ -25,6 +25,10 @@ const SHARED_LIVES_STATE_3: Texture2D = preload("res://ui/minigames/catch_hud/ge
 const CARNIVAL_ART := "res://ui/minigames/balloon_art/reference/"
 const PAUSE_ICON: Texture2D = preload("res://assets/icons/pause_white.svg")
 const PLAY_ICON: Texture2D = preload("res://assets/icons/play_white.svg")
+const CATCH_VOICE_DIR := "res://assets/audio/catch_voice/"
+const POSITIVE_VOICE_CUES := ["GoodJob.mp3", "niceee.mp3", "Awesome.mp3", "Perfect.mp3", "You Nailed it.mp3"]
+const NEGATIVE_VOICE_CUES := ["Awww.mp3", "Wrong Answer.mp3", "You Missed.mp3"]
+const MISSED_SHOT_VOICE_COOLDOWN_MS := 1400
 
 const ACTIVITY := "Balloon Popping"
 const LANE_COUNT := 3
@@ -50,6 +54,8 @@ var rng := RandomNumberGenerator.new()
 var score := 0
 var correct_count := 0
 var attempts := 0
+@export_range(1, 10) var default_lives: int = 3
+@export var default_duration: float = 60.0
 var hearts := 3
 var time_remaining := 60.0
 var round_time_remaining := 7.0
@@ -112,6 +118,9 @@ var pause_button: Button
 var finish_button: Button
 var balloon_motion_tween: Tween
 var balloon_tween_paused := false
+var balloon_voice_player: AudioStreamPlayer
+var balloon_voice_streams: Dictionary = {}
+var last_missed_shot_voice_msec := -100000
 
 
 func _ready() -> void:
@@ -122,6 +131,7 @@ func _ready() -> void:
 		return
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	rng.randomize()
+	_initialize_voice_feedback()
 	_build_scene()
 	_apply_context()
 	resized.connect(_layout_scene)
@@ -214,6 +224,7 @@ func set_body_x(normalized_x: float) -> void:
 func _finish_round() -> void:
 	if finishing:
 		return
+	_stop_voice_feedback()
 	finishing = true
 	round_completed = true
 	timer_running = false
@@ -244,143 +255,167 @@ func _build_scene() -> void:
 	var hud_layer := $HudLayer as Control
 	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# Painted carnival HUD graphics are separate transparent sprites. The
-	# prompt and score remain live text; never bake example words or numbers.
-	carnival_objective_plaque = _create_carnival_hud_plaque(hud_layer, "objective_panel.png", "ObjectivePanel")
+	carnival_objective_plaque = hud_layer.get_node_or_null("ObjectivePanel") as TextureRect
 	if carnival_objective_plaque == null:
-		carnival_title_plaque = _create_carnival_hud_plaque(hud_layer, "title_marquee.png", "CarnivalTitle")
-		carnival_prompt_plaque = _create_carnival_hud_plaque(hud_layer, "prompt_blank.png", "CarnivalPrompt")
-	carnival_score_plaque = _create_carnival_hud_plaque(hud_layer, "score_plaque_blank.png", "CarnivalScore")
+		carnival_objective_plaque = _create_carnival_hud_plaque(hud_layer, "objective_panel.png", "ObjectivePanel")
+	if carnival_objective_plaque == null:
+		carnival_title_plaque = hud_layer.get_node_or_null("CarnivalTitle") as TextureRect
+		if carnival_title_plaque == null:
+			carnival_title_plaque = _create_carnival_hud_plaque(hud_layer, "title_marquee.png", "CarnivalTitle")
+		carnival_prompt_plaque = hud_layer.get_node_or_null("CarnivalPrompt") as TextureRect
+		if carnival_prompt_plaque == null:
+			carnival_prompt_plaque = _create_carnival_hud_plaque(hud_layer, "prompt_blank.png", "CarnivalPrompt")
+	carnival_score_plaque = hud_layer.get_node_or_null("CarnivalScore") as TextureRect
+	if carnival_score_plaque == null:
+		carnival_score_plaque = _create_carnival_hud_plaque(hud_layer, "score_plaque_blank.png", "CarnivalScore")
 
-	# Share Catch the Word's exact timer and complete 3/2/1-heart PNGs.
-	# Keep the old heart nodes only as hidden compatibility nodes; do not
-	# overlay them on these complete heart-state images.
-	shared_timer_plaque = TextureRect.new()
-	shared_timer_plaque.name = "TimerPlaque"
-	shared_timer_plaque.texture = SHARED_TIMER_BADGE
-	shared_timer_plaque.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shared_timer_plaque.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	shared_timer_plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud_layer.add_child(shared_timer_plaque)
-	shared_lives_plaque = TextureRect.new()
-	shared_lives_plaque.name = "LivesPlaque"
-	shared_lives_plaque.texture = SHARED_LIVES_STATE_3
-	shared_lives_plaque.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shared_lives_plaque.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	shared_lives_plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud_layer.add_child(shared_lives_plaque)
+	shared_timer_plaque = hud_layer.get_node_or_null("TimerPlaque") as TextureRect
+	if shared_timer_plaque == null:
+		shared_timer_plaque = TextureRect.new()
+		shared_timer_plaque.name = "TimerPlaque"
+		shared_timer_plaque.texture = SHARED_TIMER_BADGE
+		shared_timer_plaque.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		shared_timer_plaque.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		shared_timer_plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud_layer.add_child(shared_timer_plaque)
 
-	title_label = Label.new()
-	title_label.name = "TitleLabel"
-	title_label.text = "BALLOON POPPING"
-	title_label.add_theme_font_override("font", FONT)
-	title_label.add_theme_font_size_override("font_size", 24)
-	title_label.add_theme_color_override("font_color", Color.WHITE)
-	title_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	title_label.add_theme_constant_override("outline_size", 6)
-	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud_layer.add_child(title_label)
+	shared_lives_plaque = hud_layer.get_node_or_null("LivesPlaque") as TextureRect
+	if shared_lives_plaque == null:
+		shared_lives_plaque = TextureRect.new()
+		shared_lives_plaque.name = "LivesPlaque"
+		shared_lives_plaque.texture = SHARED_LIVES_STATE_3
+		shared_lives_plaque.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		shared_lives_plaque.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		shared_lives_plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud_layer.add_child(shared_lives_plaque)
+
+	title_label = hud_layer.get_node_or_null("TitleLabel") as Label
+	if title_label == null:
+		title_label = Label.new()
+		title_label.name = "TitleLabel"
+		title_label.text = "BALLOON POPPING"
+		title_label.add_theme_font_override("font", FONT)
+		title_label.add_theme_font_size_override("font_size", 24)
+		title_label.add_theme_color_override("font_color", Color.WHITE)
+		title_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		title_label.add_theme_constant_override("outline_size", 6)
+		title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud_layer.add_child(title_label)
 	if carnival_objective_plaque != null or carnival_title_plaque != null:
 		title_label.visible = false
 
-	prompt_label = Label.new()
-	prompt_label.name = "PromptLabel"
-	prompt_label.text = "POP THE MATCHING WORD"
-	prompt_label.add_theme_font_override("font", FONT)
-	prompt_label.add_theme_font_size_override("font_size", 16)
-	prompt_label.add_theme_color_override("font_color", Color.WHITE)
-	prompt_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	prompt_label.add_theme_constant_override("outline_size", 4)
-	prompt_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if carnival_objective_plaque != null or carnival_prompt_plaque != null:
-		prompt_label.add_theme_color_override("font_color", Color("#122650"))
-		prompt_label.add_theme_constant_override("outline_size", 0)
-		prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	prompt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud_layer.add_child(prompt_label)
+	prompt_label = hud_layer.get_node_or_null("PromptLabel") as Label
+	if prompt_label == null:
+		prompt_label = Label.new()
+		prompt_label.name = "PromptLabel"
+		prompt_label.text = "POP THE MATCHING WORD"
+		prompt_label.add_theme_font_override("font", FONT)
+		prompt_label.add_theme_font_size_override("font_size", 16)
+		prompt_label.add_theme_color_override("font_color", Color.WHITE)
+		prompt_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		prompt_label.add_theme_constant_override("outline_size", 4)
+		prompt_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if carnival_objective_plaque != null or carnival_prompt_plaque != null:
+			prompt_label.add_theme_color_override("font_color", Color("#122650"))
+			prompt_label.add_theme_constant_override("outline_size", 0)
+			prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		prompt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud_layer.add_child(prompt_label)
 
-	score_bottom_container = VBoxContainer.new()
-	score_bottom_container.name = "ScoreBottomContainer"
-	score_bottom_container.add_theme_constant_override("separation", -4)
-	score_bottom_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud_layer.add_child(score_bottom_container)
+	score_bottom_container = hud_layer.get_node_or_null("ScoreBottomContainer") as VBoxContainer
+	if score_bottom_container == null:
+		score_bottom_container = VBoxContainer.new()
+		score_bottom_container.name = "ScoreBottomContainer"
+		score_bottom_container.add_theme_constant_override("separation", -4)
+		score_bottom_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud_layer.add_child(score_bottom_container)
 
-	var score_title := Label.new()
-	score_title.name = "ScoreTitle"
-	score_title.text = "SCORE"
-	score_title.add_theme_font_override("font", FONT)
-	score_title.add_theme_font_size_override("font_size", 30)
-	score_title.add_theme_color_override("font_color", Color.WHITE)
-	score_title.add_theme_color_override("font_outline_color", Color.BLACK)
-	score_title.add_theme_constant_override("outline_size", 6)
-	score_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	score_bottom_container.add_child(score_title)
+	var score_title := score_bottom_container.get_node_or_null("ScoreTitle") as Label
+	if score_title == null:
+		score_title = Label.new()
+		score_title.name = "ScoreTitle"
+		score_title.text = "SCORE"
+		score_title.add_theme_font_override("font", FONT)
+		score_title.add_theme_font_size_override("font_size", 30)
+		score_title.add_theme_color_override("font_color", Color.WHITE)
+		score_title.add_theme_color_override("font_outline_color", Color.BLACK)
+		score_title.add_theme_constant_override("outline_size", 6)
+		score_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		score_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		score_bottom_container.add_child(score_title)
 	if carnival_score_plaque != null:
 		score_title.visible = false
 
-	score_bottom_number = Label.new()
-	score_bottom_number.name = "ScoreNumber"
-	score_bottom_number.text = "0"
-	score_bottom_number.add_theme_font_override("font", FONT)
-	score_bottom_number.add_theme_font_size_override("font_size", 38)
-	score_bottom_number.add_theme_color_override("font_color", Color.WHITE)
-	score_bottom_number.add_theme_color_override("font_outline_color", Color.BLACK)
-	score_bottom_number.add_theme_constant_override("outline_size", 6)
-	score_bottom_number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	score_bottom_number.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	score_bottom_container.add_child(score_bottom_number)
+	score_bottom_number = score_bottom_container.get_node_or_null("ScoreNumber") as Label
+	if score_bottom_number == null:
+		score_bottom_number = Label.new()
+		score_bottom_number.name = "ScoreNumber"
+		score_bottom_number.text = "0"
+		score_bottom_number.add_theme_font_override("font", FONT)
+		score_bottom_number.add_theme_font_size_override("font_size", 38)
+		score_bottom_number.add_theme_color_override("font_color", Color.WHITE)
+		score_bottom_number.add_theme_color_override("font_outline_color", Color.BLACK)
+		score_bottom_number.add_theme_constant_override("outline_size", 6)
+		score_bottom_number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		score_bottom_number.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		score_bottom_container.add_child(score_bottom_number)
 	if carnival_score_plaque != null:
 		score_bottom_number.add_theme_color_override("font_color", Color("#102962"))
 		score_bottom_number.add_theme_constant_override("outline_size", 0)
 	score_label = score_bottom_number
 
-	hearts_box = HBoxContainer.new()
-	hearts_box.name = "HeartsBox"
-	hearts_box.add_theme_constant_override("separation", 10)
-	hearts_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud_layer.add_child(hearts_box)
-	for i in range(3):
-		var heart_rect := TextureRect.new()
-		heart_rect.name = "Heart%d" % (i + 1)
-		heart_rect.texture = HEART_RED
-		heart_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		heart_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		heart_rect.custom_minimum_size = Vector2(44, 40)
-		heart_rect.size = Vector2(44, 40)
-		heart_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		hearts_box.add_child(heart_rect)
+	hearts_box = hud_layer.get_node_or_null("HeartsBox") as HBoxContainer
+	if hearts_box == null:
+		hearts_box = HBoxContainer.new()
+		hearts_box.name = "HeartsBox"
+		hearts_box.add_theme_constant_override("separation", 10)
+		hearts_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud_layer.add_child(hearts_box)
+		for i in range(3):
+			var heart_rect := TextureRect.new()
+			heart_rect.name = "Heart%d" % (i + 1)
+			heart_rect.texture = HEART_RED
+			heart_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			heart_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			heart_rect.custom_minimum_size = Vector2(44, 40)
+			heart_rect.size = Vector2(44, 40)
+			heart_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			hearts_box.add_child(heart_rect)
 
-	time_label = Label.new()
-	time_label.name = "TimeLabel"
-	time_label.text = "60s"
-	time_label.add_theme_font_override("font", FONT)
-	time_label.add_theme_font_size_override("font_size", 36)
-	time_label.add_theme_color_override("font_color", Color.WHITE)
-	time_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	time_label.add_theme_constant_override("outline_size", 6)
-	time_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	time_label.add_theme_font_size_override("font_size", 29)
-	time_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud_layer.add_child(time_label)
+	time_label = hud_layer.get_node_or_null("TimeLabel") as Label
+	if time_label == null:
+		time_label = Label.new()
+		time_label.name = "TimeLabel"
+		time_label.text = "60s"
+		time_label.add_theme_font_override("font", FONT)
+		time_label.add_theme_font_size_override("font_size", 29)
+		time_label.add_theme_color_override("font_color", Color.WHITE)
+		time_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		time_label.add_theme_constant_override("outline_size", 6)
+		time_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		time_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud_layer.add_child(time_label)
 
-	var empty_style := StyleBoxEmpty.new()
-	pause_button = Button.new()
-	pause_button.name = "PauseButton"
-	pause_button.icon = PAUSE_ICON
-	pause_button.expand_icon = true
-	pause_button.custom_minimum_size = Vector2(44, 44)
-	pause_button.focus_mode = Control.FOCUS_NONE
-	pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	pause_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	pause_button.add_theme_stylebox_override("normal", empty_style)
-	pause_button.add_theme_stylebox_override("hover", empty_style)
-	pause_button.add_theme_stylebox_override("pressed", empty_style)
-	pause_button.add_theme_stylebox_override("focus", empty_style)
-	pause_button.pressed.connect(_toggle_pause)
-	hud_layer.add_child(pause_button)
+	pause_button = hud_layer.get_node_or_null("PauseButton") as Button
+	if pause_button == null:
+		var empty_style := StyleBoxEmpty.new()
+		pause_button = Button.new()
+		pause_button.name = "PauseButton"
+		pause_button.icon = PAUSE_ICON
+		pause_button.expand_icon = true
+		pause_button.custom_minimum_size = Vector2(44, 44)
+		pause_button.focus_mode = Control.FOCUS_NONE
+		pause_button.mouse_filter = Control.MOUSE_FILTER_STOP
+		pause_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		pause_button.add_theme_stylebox_override("normal", empty_style)
+		pause_button.add_theme_stylebox_override("hover", empty_style)
+		pause_button.add_theme_stylebox_override("pressed", empty_style)
+		pause_button.add_theme_stylebox_override("focus", empty_style)
+		hud_layer.add_child(pause_button)
+	if not pause_button.pressed.is_connected(_toggle_pause):
+		pause_button.pressed.connect(_toggle_pause)
 
 	# Compatibility labels for QA testing
 	hearts_label = Label.new()
@@ -450,14 +485,6 @@ func _bind_raw_art_textures() -> void:
 			label.add_theme_color_override("font_color", Color.WHITE)
 			label.add_theme_color_override("font_outline_color", Color.BLACK)
 			label.add_theme_constant_override("outline_size", 6)
-	if is_instance_valid(launcher):
-		var cannon := launcher.get_node_or_null("GunSprite") as Sprite2D
-		if cannon != null and ResourceLoader.exists(CARNIVAL_ART + "cannon_front.png"):
-			cannon.texture = _load_raw_png(CARNIVAL_ART + "cannon_front.png")
-			cannon.scale = Vector2(0.34, 0.34)
-			# Place the painted star/front face above the lower screen edge.
-			# The launcher/projectile origin itself remains unchanged.
-			cannon.position = Vector2(0.0, -28.0)
 
 
 func _load_raw_png(path: String) -> Texture2D:
@@ -471,19 +498,21 @@ func _load_raw_png(path: String) -> Texture2D:
 
 
 func _apply_context() -> void:
+	_stop_voice_feedback()
+	last_missed_shot_voice_msec = -100000
 	var raw_mode := String(context.get("game_mode", context.get("mode", "Seconds"))).to_lower()
 	if raw_mode in ["seconds", "60s", "sec", "quiz"]:
 		game_mode = "Seconds"
 		is_seconds_mode = true
 		is_lives_mode = false
-		time_remaining = float(context.get("time_remaining", 60.0))
-		hearts = int(context.get("lives", context.get("hearts", 3)))
+		time_remaining = float(context.get("time_remaining", default_duration))
+		hearts = int(context.get("lives", context.get("hearts", default_lives)))
 	else:
 		game_mode = "Lives"
 		is_seconds_mode = false
 		is_lives_mode = true
 		time_remaining = float(context.get("time_remaining", 999.0))
-		hearts = int(context.get("lives", context.get("hearts", 3)))
+		hearts = int(context.get("lives", context.get("hearts", default_lives)))
 
 	var difficulty := _difficulty()
 	match difficulty:
@@ -748,6 +777,7 @@ func _pop_balloon(lane: int) -> void:
 	if was_valid:
 		pending_valid_lanes.erase(lane)
 		correct_count += 1
+		_speak_balloon_feedback(true)
 		var award := _correct_award()
 		score += award
 		_show_floating_score("+%d" % award, pop_position, Color("#FFEB3B"))
@@ -760,6 +790,7 @@ func _pop_balloon(lane: int) -> void:
 		else:
 			feedback_label.text = "+%d • ONE CORRECT BALLOON LEFT" % award
 	else:
+		_speak_balloon_feedback(false)
 		_show_floating_score("-0", pop_position, Color("#E53935"))
 		_spawn_confetti(pop_position, false)
 		if is_lives_mode:
@@ -778,6 +809,7 @@ func _on_projectile_missed(projectile: Area2D) -> void:
 	_forget_projectile(projectile)
 	projectile.queue_free()
 	attempts += 1
+	_speak_balloon_feedback(false, true)
 	feedback_label.text = "MISSED SHOT"
 	_refresh_hud()
 
@@ -787,6 +819,7 @@ func _on_question_timeout() -> void:
 		return
 	round_active = false
 	balloon_floating = false
+	_speak_balloon_feedback(false, true)
 	if is_lives_mode:
 		hearts = maxi(hearts - 1, 0)
 		if hearts <= 0:
@@ -1104,19 +1137,19 @@ func _layout_hud() -> void:
 		var ui_scale := clampf(minf(size.x / 1280.0, size.y / 720.0), 0.66, 1.50)
 		var left := 22.0 * ui_scale
 		if carnival_objective_plaque != null:
-			var panel_pos := Vector2(left, size.y - 169.0 * ui_scale)
-			var panel_size := Vector2(455.0, 164.0) * ui_scale
+			var panel_pos := Vector2(left, 14.0 * ui_scale)
+			var panel_size := Vector2(430.0, 155.0) * ui_scale
 			carnival_objective_plaque.position = panel_pos
 			carnival_objective_plaque.size = panel_size
-			prompt_label.position = panel_pos + Vector2(24.0, 86.0) * ui_scale
-			prompt_label.size = Vector2(406.0, 66.0) * ui_scale
+			prompt_label.position = panel_pos + Vector2(24.0, 80.0) * ui_scale
+			prompt_label.size = Vector2(382.0, 65.0) * ui_scale
 		else:
-			carnival_title_plaque.position = Vector2(left, size.y - 210.0 * ui_scale)
-			carnival_title_plaque.size = Vector2(310.0, 140.0) * ui_scale
-			carnival_prompt_plaque.position = Vector2(left, size.y - 96.0 * ui_scale)
-			carnival_prompt_plaque.size = Vector2(460.0, 87.0) * ui_scale
-			prompt_label.position = carnival_prompt_plaque.position + Vector2(26.0, 12.0) * ui_scale
-			prompt_label.size = Vector2(408.0, 65.0) * ui_scale
+			carnival_title_plaque.position = Vector2(left, 10.0 * ui_scale)
+			carnival_title_plaque.size = Vector2(310.0, 70.0) * ui_scale
+			carnival_prompt_plaque.position = Vector2(left, 82.0 * ui_scale)
+			carnival_prompt_plaque.size = Vector2(430.0, 82.0) * ui_scale
+			prompt_label.position = carnival_prompt_plaque.position + Vector2(24.0, 10.0) * ui_scale
+			prompt_label.size = Vector2(382.0, 62.0) * ui_scale
 		# Keep long grammar descriptions centered inside the actual cream inset.
 		var prompt_font_size := maxi(12, int(round(17.0 * ui_scale)))
 		while prompt_font_size > 12 and FONT.get_multiline_string_size(prompt_label.text,
@@ -1124,10 +1157,10 @@ func _layout_hud() -> void:
 			prompt_font_size -= 1
 		prompt_label.add_theme_font_size_override("font_size", prompt_font_size)
 		if carnival_score_plaque != null:
-			carnival_score_plaque.position = Vector2(size.x - 400.0 * ui_scale, size.y - 165.0 * ui_scale)
-			carnival_score_plaque.size = Vector2(216.0, 136.0) * ui_scale
+			carnival_score_plaque.position = Vector2(size.x - 470.0 * ui_scale, 14.0 * ui_scale)
+			carnival_score_plaque.size = Vector2(204.0, 128.0) * ui_scale
 			if is_instance_valid(score_bottom_container):
-				score_bottom_container.position = carnival_score_plaque.position + Vector2(53.0, 58.0) * ui_scale
+				score_bottom_container.position = carnival_score_plaque.position + Vector2(47.0, 50.0) * ui_scale
 				score_bottom_container.size = Vector2(110.0, 46.0) * ui_scale
 			var score_font_size := maxi(17, int(round(39.0 * ui_scale)))
 			while score_font_size > 17 and FONT.get_string_size(score_bottom_number.text,
@@ -1138,8 +1171,8 @@ func _layout_hud() -> void:
 		# Give each badge one uniform width scale; derive its height from the
 		# ACTUAL active texture ratio so neither the stopwatch nor hearts squash.
 		var badge_width := 171.0 * ui_scale
-		var badge_x := size.x - 177.0 * ui_scale
-		var badge_y := size.y - 137.0 * ui_scale
+		var badge_x := size.x - 248.0 * ui_scale
+		var badge_y := 16.0 * ui_scale
 		var timer_height := badge_width * SHARED_TIMER_BADGE.get_height() / SHARED_TIMER_BADGE.get_width()
 		var lives_height := badge_width * SHARED_LIVES_STATE_3.get_height() / SHARED_LIVES_STATE_3.get_width()
 		if is_instance_valid(shared_timer_plaque):
@@ -1153,20 +1186,20 @@ func _layout_hud() -> void:
 			time_label.size = Vector2(101.0, 39.0) * ui_scale
 			time_label.add_theme_font_size_override("font_size", maxi(15, int(round(26.0 * ui_scale))))
 		if is_instance_valid(pause_button):
-			pause_button.position = Vector2(size.x - 69.0 * ui_scale, 22.0 * ui_scale)
+			pause_button.position = Vector2(size.x - 65.0 * ui_scale, 16.0 * ui_scale)
 			pause_button.size = Vector2(45.0, 45.0) * ui_scale
 		return
-	title_label.position = Vector2(36.0, size.y - 126.0)
+	title_label.position = Vector2(36.0, 16.0)
 	title_label.size = Vector2(340.0, 36.0)
 
-	prompt_label.position = Vector2(36.0, size.y - 93.0)
+	prompt_label.position = Vector2(36.0, 52.0)
 	# Reserve the center for the cannon. On compact windows a narrower prompt
 	# wraps into three readable lines instead of painting across its barrel.
 	prompt_label.size = Vector2(minf(size.x * 0.35, 500.0), 78.0)
 
 	if is_instance_valid(score_bottom_container):
 		# Keep the number away from both the shooting cannon and the prompt.
-		score_bottom_container.position = Vector2(size.x - 250.0, size.y - 110.0)
+		score_bottom_container.position = Vector2(size.x - 450.0, 16.0)
 		score_bottom_container.size = Vector2(220.0, 95.0)
 
 	if is_instance_valid(time_label):
@@ -1253,6 +1286,7 @@ func _toggle_pause() -> void:
 func _pause() -> void:
 	if finishing or not timer_running:
 		return
+	_stop_voice_feedback()
 	round_active_before_pause = round_active
 	timer_running = false
 	round_active = false
@@ -1286,6 +1320,7 @@ func _resume() -> void:
 func _exit_to_results() -> void:
 	if finishing:
 		return
+	_stop_voice_feedback()
 	finishing = true
 	timer_running = false
 	round_active = false
@@ -1293,6 +1328,49 @@ func _exit_to_results() -> void:
 	round_completed = false
 	_clear_projectiles()
 	requested.emit("results", get_context())
+
+
+func _initialize_voice_feedback() -> void:
+	# Reuse Catch the Word's recorded phrases with one bounded player.
+	balloon_voice_player = AudioStreamPlayer.new()
+	balloon_voice_player.name = "BalloonVoicePlayer"
+	balloon_voice_player.bus = "KilosSFX" if AudioServer.get_bus_index("KilosSFX") >= 0 else "Master"
+	balloon_voice_player.volume_db = 2.0
+	add_child(balloon_voice_player)
+	for filename in POSITIVE_VOICE_CUES + NEGATIVE_VOICE_CUES:
+		var path: String = CATCH_VOICE_DIR + filename
+		if ResourceLoader.exists(path):
+			balloon_voice_streams[filename] = load(path) as AudioStream
+
+
+func _speak_balloon_feedback(correct: bool, missed: bool = false) -> void:
+	if not is_instance_valid(balloon_voice_player) or finishing or not timer_running:
+		return
+	if missed:
+		# A run of missed projectiles should not repeatedly cut off speech.
+		var now_msec := Time.get_ticks_msec()
+		if balloon_voice_player.playing or now_msec - last_missed_shot_voice_msec < MISSED_SHOT_VOICE_COOLDOWN_MS:
+			return
+		last_missed_shot_voice_msec = now_msec
+	var cues := POSITIVE_VOICE_CUES if correct else NEGATIVE_VOICE_CUES
+	var filename: String = "You Missed.mp3" if missed else cues[rng.randi_range(0, cues.size() - 1)]
+	if not balloon_voice_streams.has(filename):
+		return
+	balloon_voice_player.stop()
+	balloon_voice_player.stream = null
+	balloon_voice_player.stream = balloon_voice_streams[filename] as AudioStream
+	balloon_voice_player.play()
+
+
+func _stop_voice_feedback() -> void:
+	if is_instance_valid(balloon_voice_player):
+		balloon_voice_player.stop()
+		balloon_voice_player.stream = null
+
+
+func _exit_tree() -> void:
+	_stop_voice_feedback()
+	balloon_voice_streams.clear()
 
 
 func _topic() -> String:

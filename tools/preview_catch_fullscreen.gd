@@ -5,6 +5,7 @@ extends SceneTree
 # Run through tools/run_catch_fullscreen.ps1 (or Godot --script with user args).
 
 const CATCH_SCENE := "res://ui/minigames/catch_word.tscn"
+const RESULTS_SCRIPT := preload("res://ui/secondary/results.gd")
 const DEFAULTS := {
 	"character": "Boy",
 	"topic": "Noun",
@@ -26,6 +27,8 @@ var host: Control
 var game: Control
 var pause_dialog: ConfirmationDialog
 var result_dialog: ConfirmationDialog
+var low_score_voice_player: AudioStreamPlayer
+var low_score_voice_started := false
 
 
 func _initialize() -> void:
@@ -71,6 +74,11 @@ func _launch() -> void:
 
 	if smoke_test:
 		await process_frame
+		var actual_window_mode := DisplayServer.window_get_mode()
+		if DisplayServer.get_name() != "headless" and actual_window_mode not in [DisplayServer.WINDOW_MODE_FULLSCREEN, DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN]:
+			push_error("Catch fullscreen smoke test: graphical window did not enter fullscreen mode")
+			quit(1)
+			return
 		if String(game.get("topic")) != String(options["topic"]) \
 			or String(game.get("selected_character")) != String(options["character"]) \
 			or String(game.get("selected_map")) != String(options["map"]) \
@@ -80,7 +88,7 @@ func _launch() -> void:
 			push_error("Catch fullscreen smoke test: requested settings were not applied")
 			quit(1)
 			return
-		print("PASS Catch standalone preview: ", _game_context(), ", viewport=", root.size, ", display=", DisplayServer.get_name())
+		print("PASS Catch standalone preview: ", _game_context(), ", viewport=", root.size, ", display=", DisplayServer.get_name(), ", window_mode=", actual_window_mode)
 		quit(0)
 		return
 
@@ -154,10 +162,35 @@ func _game_requested(target: String, result: Dictionary) -> void:
 	if target == "pause" and is_instance_valid(pause_dialog):
 		pause_dialog.popup_centered()
 	elif target == "results" and is_instance_valid(result_dialog):
+		_play_result_encouragement(result)
 		result_dialog.dialog_text = "Score: %s    Correct: %s    Attempts: %s\n\nPlay another round?" % [
 			result.get("score", 0), result.get("correct", 0), result.get("attempts", 0)
 		]
 		result_dialog.popup_centered()
+
+
+func _play_result_encouragement(result: Dictionary) -> void:
+	if low_score_voice_started or not RESULTS_SCRIPT.should_play_catch_low_score(result):
+		return
+	if not ResourceLoader.exists(RESULTS_SCRIPT.LOW_SCORE_CATCH_VOICE_PATH):
+		return
+	var clip := load(RESULTS_SCRIPT.LOW_SCORE_CATCH_VOICE_PATH) as AudioStream
+	if clip == null:
+		return
+	if not is_instance_valid(low_score_voice_player):
+		low_score_voice_player = AudioStreamPlayer.new()
+		low_score_voice_player.name = "PreviewLowScoreVoicePlayer"
+		low_score_voice_player.bus = "KilosSFX" if AudioServer.get_bus_index("KilosSFX") >= 0 else "Master"
+		host.add_child(low_score_voice_player)
+	low_score_voice_player.stream = clip
+	low_score_voice_started = true
+	low_score_voice_player.play()
+
+
+func _stop_result_encouragement() -> void:
+	if is_instance_valid(low_score_voice_player):
+		low_score_voice_player.stop()
+		low_score_voice_player.stream = null
 
 
 func _resume() -> void:
@@ -166,10 +199,13 @@ func _resume() -> void:
 
 
 func _restart() -> void:
+	_stop_result_encouragement()
+	low_score_voice_started = false
 	if is_instance_valid(game):
 		game.call("set_context", _game_context())
 		game.set_process(true)
 
 
 func _exit_game() -> void:
+	_stop_result_encouragement()
 	quit(0)

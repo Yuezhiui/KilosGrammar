@@ -1,0 +1,6 @@
+# Optional local Windows webcam/pose worker. Install for Python 3.11.
+# PyTorch is installed by Ultralytics when missing; choose the appropriate
+# CPU build from pytorch.org when preparing offline classroom deployment.
+ultralytics>=8.4.0,<9
+opencv-python>=4.10,<6
+lap>=0.5.12

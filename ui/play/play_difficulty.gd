@@ -10,6 +10,7 @@ const DIFFICULTY_COPY := {
 	"Hard": "UI preview preset\nFast pacing"
 }
 const DIFFICULTY_COLORS := [UI.GREEN, UI.YELLOW, UI.RED]
+const ART := "res://ui/redesign/assets/student/"
 
 var context: Dictionary = {}
 var difficulty_buttons: Dictionary = {}
@@ -19,6 +20,19 @@ var context_label: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	var clean_backdrop := ColorRect.new()
+	clean_backdrop.color = Color("087e75")
+	clean_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	clean_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(clean_backdrop)
+	var background := TextureRect.new()
+	background.name = "SetupArtworkBackground"
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.texture = load(ART + "setup_main_panel.png")
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(background)
 	var column := UI.make_compact_screen_column(self)
 	UI.add_compact_title(column, "Play • Step 3 of 3", "Choose Difficulty", "Choose a pacing preset for the interface preview.")
 
@@ -34,7 +48,7 @@ func _ready() -> void:
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	grid.add_theme_constant_override("h_separation", 14)
 	card.add_child(grid)
 
@@ -45,9 +59,25 @@ func _ready() -> void:
 		button.text = "%s\n\n%s" % [difficulty.to_upper(), DIFFICULTY_COPY[difficulty]]
 		button.button_group = group
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		UI.style_compact_selection_button(button, DIFFICULTY_COLORS[index], 20)
-		button.custom_minimum_size.y = 118
+		var image := load(ART + "difficulty_%s.png" % difficulty.to_lower()) as Texture2D
+		if image:
+			var art := TextureRect.new()
+			art.name = "OriginalButtonArt"
+			art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			art.texture = image
+			art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			button.add_child(art)
+			var image_style := StyleBoxEmpty.new()
+			for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+				button.add_theme_stylebox_override(state, image_style)
+			button.tooltip_text = button.text.replace("\n", " ")
+			for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color", "font_hover_pressed_color", "font_outline_color"]:
+				button.add_theme_color_override(state, Color.TRANSPARENT)
+		button.custom_minimum_size.y = 132 if get_viewport_rect().size.x < 1000.0 else 172
 		button.pressed.connect(_select_difficulty.bind(difficulty))
 		grid.add_child(button)
 		difficulty_buttons[difficulty] = button

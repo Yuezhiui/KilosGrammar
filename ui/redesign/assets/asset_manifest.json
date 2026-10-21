@@ -1,0 +1,1534 @@
+{
+  "main": [
+    {
+      "target": "res://ui/redesign/assets/main/bg_clouds.png",
+      "source": "MAIN/5e404e45-74fb-4f27-b5e9-eaf8aadb98e3.png",
+      "source_sha256": "767356407ea43475ccc013462e6fb496c86ab2fc93a5c2997f1c328e53bb512a",
+      "crop_xyxy": [
+        843,
+        20,
+        1654,
+        485
+      ],
+      "size": [
+        811,
+        465
+      ],
+      "bytes": 331706,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        4,
+        811,
+        465
+      ],
+      "notes": "Clean teal/cloud background; rounded source corners.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/bg_clouds_starry.png",
+      "source": "MAIN/5e404e45-74fb-4f27-b5e9-eaf8aadb98e3.png",
+      "source_sha256": "767356407ea43475ccc013462e6fb496c86ab2fc93a5c2997f1c328e53bb512a",
+      "crop_xyxy": [
+        19,
+        20,
+        831,
+        485
+      ],
+      "size": [
+        812,
+        465
+      ],
+      "bytes": 377928,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        1,
+        812,
+        465
+      ],
+      "notes": "Teal/cloud background with baked star motifs.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/logo_full.png",
+      "source": "MAIN/f2abe4b3-a62f-4761-b7b2-8246da404a16.png",
+      "source_sha256": "32fe8db45f828c3b7ea1572e25c3654c2fd92a1b78d56b5bc86406c0f3bcfc61",
+      "crop_xyxy": [
+        243,
+        17,
+        1440,
+        524
+      ],
+      "size": [
+        1197,
+        507
+      ],
+      "bytes": 723722,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        12,
+        9,
+        1189,
+        498
+      ],
+      "notes": "Full KILOS GRAMMAR combined title with decorative stars.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/logo_compact.png",
+      "source": "MAIN/f2abe4b3-a62f-4761-b7b2-8246da404a16.png",
+      "source_sha256": "32fe8db45f828c3b7ea1572e25c3654c2fd92a1b78d56b5bc86406c0f3bcfc61",
+      "crop_xyxy": [
+        47,
+        523,
+        737,
+        762
+      ],
+      "size": [
+        690,
+        239
+      ],
+      "bytes": 253044,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        5,
+        9,
+        675,
+        239
+      ],
+      "notes": "KILOS-only alternate wordmark; NOT a complete combined logo.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_tutorial.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        43,
+        86,
+        576,
+        284
+      ],
+      "size": [
+        533,
+        198
+      ],
+      "bytes": 109335,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        3,
+        2,
+        533,
+        198
+      ],
+      "notes": "Purple TUTORIAL including book icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_play.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        574,
+        86,
+        1100,
+        284
+      ],
+      "size": [
+        526,
+        198
+      ],
+      "bytes": 101971,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        526,
+        198
+      ],
+      "notes": "Green PLAY including triangle icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_quit.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        1095,
+        86,
+        1629,
+        284
+      ],
+      "size": [
+        534,
+        198
+      ],
+      "bytes": 102856,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        5,
+        532,
+        198
+      ],
+      "notes": "Red QUIT including door icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_leaderboard.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        164,
+        287,
+        617,
+        434
+      ],
+      "size": [
+        453,
+        147
+      ],
+      "bytes": 72797,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        4,
+        0,
+        448,
+        143
+      ],
+      "notes": "Small purple LEADERBOARD with trophy icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_settings.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        624,
+        287,
+        1057,
+        434
+      ],
+      "size": [
+        433,
+        147
+      ],
+      "bytes": 66860,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        4,
+        5,
+        429,
+        145
+      ],
+      "notes": "Small purple SETTINGS with gear icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_credits.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        1061,
+        287,
+        1504,
+        434
+      ],
+      "size": [
+        443,
+        147
+      ],
+      "bytes": 67341,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        1,
+        4,
+        440,
+        145
+      ],
+      "notes": "Small purple CREDITS with star icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_blank_purple.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        42,
+        438,
+        576,
+        624
+      ],
+      "size": [
+        534,
+        186
+      ],
+      "bytes": 88082,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        3,
+        3,
+        534,
+        183
+      ],
+      "notes": "Purple unlabeled 3D button background; tint-safe variant not guaranteed.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_blank_green.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        569,
+        438,
+        1103,
+        624
+      ],
+      "size": [
+        534,
+        186
+      ],
+      "bytes": 86085,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        1,
+        534,
+        186
+      ],
+      "notes": "Green unlabeled 3D button background.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_blank_red.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        1094,
+        438,
+        1630,
+        624
+      ],
+      "size": [
+        536,
+        186
+      ],
+      "bytes": 89104,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        3,
+        534,
+        185
+      ],
+      "notes": "Red unlabeled 3D button background.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/btn_blank_nav.png",
+      "source": "MAIN/81a7d8bd-eb2b-413e-9b74-dd305844bd9b.png",
+      "source_sha256": "b8381df14682c9be541f5995870537697397811bb0c9e14d8bdcbdf39dafb893",
+      "crop_xyxy": [
+        70,
+        627,
+        483,
+        763
+      ],
+      "size": [
+        413,
+        136
+      ],
+      "bytes": 48513,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        6,
+        6,
+        413,
+        136
+      ],
+      "notes": "Short dark-purple unlabeled navigation button.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/cloud_edge_left.png",
+      "source": "MAIN/5e404e45-74fb-4f27-b5e9-eaf8aadb98e3.png",
+      "source_sha256": "767356407ea43475ccc013462e6fb496c86ab2fc93a5c2997f1c328e53bb512a",
+      "crop_xyxy": [
+        27,
+        494,
+        232,
+        638
+      ],
+      "size": [
+        205,
+        144
+      ],
+      "bytes": 25006,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        2,
+        0,
+        198,
+        144
+      ],
+      "notes": "Short standalone bottom cloud cluster.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/cloud_edge_center.png",
+      "source": "MAIN/5e404e45-74fb-4f27-b5e9-eaf8aadb98e3.png",
+      "source_sha256": "767356407ea43475ccc013462e6fb496c86ab2fc93a5c2997f1c328e53bb512a",
+      "crop_xyxy": [
+        450,
+        525,
+        819,
+        646
+      ],
+      "size": [
+        369,
+        121
+      ],
+      "bytes": 30390,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        368,
+        121
+      ],
+      "notes": "Wide standalone bottom cloud strip.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/cloud_edge_right.png",
+      "source": "MAIN/5e404e45-74fb-4f27-b5e9-eaf8aadb98e3.png",
+      "source_sha256": "767356407ea43475ccc013462e6fb496c86ab2fc93a5c2997f1c328e53bb512a",
+      "crop_xyxy": [
+        846,
+        528,
+        1225,
+        643
+      ],
+      "size": [
+        379,
+        115
+      ],
+      "bytes": 28654,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        5,
+        0,
+        372,
+        115
+      ],
+      "notes": "Second wide bottom cloud strip.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/sparkle_gold.png",
+      "source": "MAIN/16e2cc3e-574f-409e-a3bb-f7bc4cb27b58.png",
+      "source_sha256": "a323702c0a6a3bb3b6599c422c3c8c5415ab05fa7d5361c44df709309f339428",
+      "crop_xyxy": [
+        474,
+        481,
+        635,
+        638
+      ],
+      "size": [
+        161,
+        157
+      ],
+      "bytes": 35775,
+      "alpha_extrema": [
+        0,
+        253
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        157,
+        157
+      ],
+      "notes": "Gold four-point star decoration (source artwork).",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/sparkle_white.png",
+      "source": "MAIN/16e2cc3e-574f-409e-a3bb-f7bc4cb27b58.png",
+      "source_sha256": "a323702c0a6a3bb3b6599c422c3c8c5415ab05fa7d5361c44df709309f339428",
+      "crop_xyxy": [
+        463,
+        285,
+        642,
+        471
+      ],
+      "size": [
+        179,
+        186
+      ],
+      "bytes": 45041,
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        179,
+        186
+      ],
+      "notes": "White/cyan star decoration.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/main/sticker_today.png",
+      "source": "MAIN/4ba88951-a495-430f-9a34-d580aea1b89f.png",
+      "source_sha256": "320b5cd77e915bd685b07547113b091ae708b561726ba13f80ebff712c21d5f9",
+      "crop_xyxy": [
+        29,
+        134,
+        636,
+        488
+      ],
+      "size": [
+        607,
+        354
+      ],
+      "bytes": 198817,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        9,
+        9,
+        596,
+        338
+      ],
+      "notes": "Isolated blue TODAY sticker and its 4 ornamental rays.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": [
+        [
+          111,
+          144,
+          451,
+          327
+        ],
+        [
+          63,
+          189,
+          58,
+          56
+        ],
+        [
+          39,
+          262,
+          66,
+          40
+        ],
+        [
+          553,
+          339,
+          71,
+          44
+        ],
+        [
+          540,
+          393,
+          60,
+          62
+        ]
+      ]
+    },
+    {
+      "target": "res://ui/redesign/assets/main/sticker_soft.png",
+      "source": "MAIN/4ba88951-a495-430f-9a34-d580aea1b89f.png",
+      "source_sha256": "320b5cd77e915bd685b07547113b091ae708b561726ba13f80ebff712c21d5f9",
+      "crop_xyxy": [
+        603,
+        140,
+        1173,
+        488
+      ],
+      "size": [
+        570,
+        348
+      ],
+      "bytes": 191574,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        7,
+        10,
+        562,
+        335
+      ],
+      "notes": "Isolated orange SOFT sticker and its 4 ornamental rays.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": [
+        [
+          669,
+          151,
+          426,
+          323
+        ],
+        [
+          632,
+          158,
+          60,
+          57
+        ],
+        [
+          611,
+          225,
+          66,
+          39
+        ],
+        [
+          1092,
+          339,
+          72,
+          41
+        ],
+        [
+          1079,
+          389,
+          61,
+          62
+        ]
+      ]
+    },
+    {
+      "target": "res://ui/redesign/assets/main/sticker_book.png",
+      "source": "MAIN/7ef65dc8-d1df-4b70-8c12-e3538ca236fd.png",
+      "source_sha256": "94433c1f547fffa703348cfecbf308a7422a0bdbb46c2692e51f0e75d6b35629",
+      "crop_xyxy": [
+        1481,
+        380,
+        1620,
+        482
+      ],
+      "size": [
+        139,
+        102
+      ],
+      "bytes": 22768,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        1,
+        8,
+        130,
+        102
+      ],
+      "notes": "Single white/teal book symbol; left edge and bottom clipped to exclude adjacent yellow accent and dark-green book.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": [
+        [
+          1483,
+          389,
+          127,
+          101
+        ]
+      ]
+    },
+    {
+      "target": "res://ui/redesign/assets/main/sticker_book_green.png",
+      "source": "MAIN/7ef65dc8-d1df-4b70-8c12-e3538ca236fd.png",
+      "source_sha256": "94433c1f547fffa703348cfecbf308a7422a0bdbb46c2692e51f0e75d6b35629",
+      "crop_xyxy": [
+        1486,
+        482,
+        1628,
+        598
+      ],
+      "size": [
+        142,
+        116
+      ],
+      "bytes": 26317,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        8,
+        6,
+        132,
+        105
+      ],
+      "notes": "Single dark green open-book symbol; separated from white variant.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": [
+        [
+          1495,
+          489,
+          122,
+          97
+        ]
+      ]
+    }
+  ],
+  "student": [
+    {
+      "target": "res://ui/redesign/assets/student/btn_back.png",
+      "source": "STUDENT GAME SETUP/42268c5f-bd9f-469a-8085-9b203f2cb030.png",
+      "source_sha256": "7a127de3604897c3d53cd18de4932be8eba7568e4271bee3e484e2062f8e00fb",
+      "crop_xyxy": [
+        101,
+        64,
+        790,
+        300
+      ],
+      "size": [
+        689,
+        236
+      ],
+      "bytes": 135772,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        10,
+        0,
+        688,
+        234
+      ],
+      "notes": "Large BACK with left arrow; full padding around corner highlights.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/btn_continue.png",
+      "source": "STUDENT GAME SETUP/42268c5f-bd9f-469a-8085-9b203f2cb030.png",
+      "source_sha256": "7a127de3604897c3d53cd18de4932be8eba7568e4271bee3e484e2062f8e00fb",
+      "crop_xyxy": [
+        821,
+        26,
+        1651,
+        311
+      ],
+      "size": [
+        830,
+        285
+      ],
+      "bytes": 168302,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        13,
+        1,
+        830,
+        269
+      ],
+      "notes": "Large CONTINUE with right arrow and all yellow rays.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/topic_noun.png",
+      "source": "STUDENT GAME SETUP/435d767e-07ae-4ea7-b06b-c9f44b08977a.png",
+      "source_sha256": "bf6dbcf1934d21b0d89389975a47d216e422a036606be8cbd888c885cab436d0",
+      "crop_xyxy": [
+        35,
+        150,
+        564,
+        385
+      ],
+      "size": [
+        529,
+        235
+      ],
+      "bytes": 124987,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        529,
+        235
+      ],
+      "notes": "Green NOUN option with book icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/topic_pronoun.png",
+      "source": "STUDENT GAME SETUP/435d767e-07ae-4ea7-b06b-c9f44b08977a.png",
+      "source_sha256": "bf6dbcf1934d21b0d89389975a47d216e422a036606be8cbd888c885cab436d0",
+      "crop_xyxy": [
+        570,
+        151,
+        1107,
+        384
+      ],
+      "size": [
+        537,
+        233
+      ],
+      "bytes": 124445,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        537,
+        233
+      ],
+      "notes": "Purple PRONOUN option with people icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/topic_verb.png",
+      "source": "STUDENT GAME SETUP/435d767e-07ae-4ea7-b06b-c9f44b08977a.png",
+      "source_sha256": "bf6dbcf1934d21b0d89389975a47d216e422a036606be8cbd888c885cab436d0",
+      "crop_xyxy": [
+        1111,
+        151,
+        1643,
+        384
+      ],
+      "size": [
+        532,
+        233
+      ],
+      "bytes": 125370,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        531,
+        233
+      ],
+      "notes": "Red VERB option with running figure icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/topic_adjective.png",
+      "source": "STUDENT GAME SETUP/435d767e-07ae-4ea7-b06b-c9f44b08977a.png",
+      "source_sha256": "bf6dbcf1934d21b0d89389975a47d216e422a036606be8cbd888c885cab436d0",
+      "crop_xyxy": [
+        228,
+        388,
+        831,
+        639
+      ],
+      "size": [
+        603,
+        251
+      ],
+      "bytes": 153994,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        603,
+        251
+      ],
+      "notes": "Orange ADJECTIVE with stars.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/topic_adverb.png",
+      "source": "STUDENT GAME SETUP/435d767e-07ae-4ea7-b06b-c9f44b08977a.png",
+      "source_sha256": "bf6dbcf1934d21b0d89389975a47d216e422a036606be8cbd888c885cab436d0",
+      "crop_xyxy": [
+        841,
+        389,
+        1448,
+        639
+      ],
+      "size": [
+        607,
+        250
+      ],
+      "bytes": 146516,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        1,
+        0,
+        607,
+        250
+      ],
+      "notes": "Blue ADVERB with lightning bolt.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/topic_preposition_locked.png",
+      "source": "STUDENT GAME SETUP/435d767e-07ae-4ea7-b06b-c9f44b08977a.png",
+      "source_sha256": "bf6dbcf1934d21b0d89389975a47d216e422a036606be8cbd888c885cab436d0",
+      "crop_xyxy": [
+        36,
+        635,
+        562,
+        869
+      ],
+      "size": [
+        526,
+        234
+      ],
+      "bytes": 120392,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        526,
+        234
+      ],
+      "notes": "Gray PREPOSITION SOON locked option, deliberately not playable.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/topic_conjunction_locked.png",
+      "source": "STUDENT GAME SETUP/435d767e-07ae-4ea7-b06b-c9f44b08977a.png",
+      "source_sha256": "bf6dbcf1934d21b0d89389975a47d216e422a036606be8cbd888c885cab436d0",
+      "crop_xyxy": [
+        569,
+        635,
+        1107,
+        866
+      ],
+      "size": [
+        538,
+        231
+      ],
+      "bytes": 119342,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        538,
+        231
+      ],
+      "notes": "Gray CONJUNCTION SOON locked option, deliberately not playable.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/topic_interjection_locked.png",
+      "source": "STUDENT GAME SETUP/435d767e-07ae-4ea7-b06b-c9f44b08977a.png",
+      "source_sha256": "bf6dbcf1934d21b0d89389975a47d216e422a036606be8cbd888c885cab436d0",
+      "crop_xyxy": [
+        1112,
+        635,
+        1643,
+        868
+      ],
+      "size": [
+        531,
+        233
+      ],
+      "bytes": 120254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        531,
+        233
+      ],
+      "notes": "Gray INTERJECTION SOON locked option, deliberately not playable.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/mode_seconds.png",
+      "source": "STUDENT GAME SETUP/7ee2f611-a9c4-4eb5-8260-07c47b031bd6.png",
+      "source_sha256": "63d78e2082604638c96e375dd426fd118fe3ee530b93932826dfcdde5db08c65",
+      "crop_xyxy": [
+        163,
+        51,
+        827,
+        399
+      ],
+      "size": [
+        664,
+        348
+      ],
+      "bytes": 202862,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        13,
+        1,
+        657,
+        340
+      ],
+      "notes": "Blue clock badge 60s; literal 60s baked text, not a dynamic countdown.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/mode_lives.png",
+      "source": "STUDENT GAME SETUP/7ee2f611-a9c4-4eb5-8260-07c47b031bd6.png",
+      "source_sha256": "63d78e2082604638c96e375dd426fd118fe3ee530b93932826dfcdde5db08c65",
+      "crop_xyxy": [
+        837,
+        52,
+        1510,
+        400
+      ],
+      "size": [
+        673,
+        348
+      ],
+      "bytes": 209388,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        12,
+        2,
+        660,
+        339
+      ],
+      "notes": "Green 3 LIVES badge with white heart; static selector not lives HUD.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/difficulty_easy.png",
+      "source": "STUDENT GAME SETUP/7ee2f611-a9c4-4eb5-8260-07c47b031bd6.png",
+      "source_sha256": "63d78e2082604638c96e375dd426fd118fe3ee530b93932826dfcdde5db08c65",
+      "crop_xyxy": [
+        69,
+        421,
+        571,
+        743
+      ],
+      "size": [
+        502,
+        322
+      ],
+      "bytes": 153116,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        7,
+        2,
+        496,
+        313
+      ],
+      "notes": "Green EASY with star.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/difficulty_normal.png",
+      "source": "STUDENT GAME SETUP/7ee2f611-a9c4-4eb5-8260-07c47b031bd6.png",
+      "source_sha256": "63d78e2082604638c96e375dd426fd118fe3ee530b93932826dfcdde5db08c65",
+      "crop_xyxy": [
+        586,
+        421,
+        1088,
+        744
+      ],
+      "size": [
+        502,
+        323
+      ],
+      "bytes": 156762,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        4,
+        1,
+        494,
+        323
+      ],
+      "notes": "Orange NORMAL with two stars.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/difficulty_hard.png",
+      "source": "STUDENT GAME SETUP/7ee2f611-a9c4-4eb5-8260-07c47b031bd6.png",
+      "source_sha256": "63d78e2082604638c96e375dd426fd118fe3ee530b93932826dfcdde5db08c65",
+      "crop_xyxy": [
+        1102,
+        421,
+        1607,
+        744
+      ],
+      "size": [
+        505,
+        323
+      ],
+      "bytes": 159817,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        5,
+        3,
+        495,
+        321
+      ],
+      "notes": "Red HARD with three stars.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/setup_main_panel.png",
+      "source": "STUDENT GAME SETUP/ce1ac866-46f2-43e1-9469-9adc131fd868.png",
+      "source_sha256": "a82ad8e7574174804be1b735daff102bebe71b2df584d5e743f3df4e3ec76ab4",
+      "crop_xyxy": [
+        120,
+        17,
+        1554,
+        524
+      ],
+      "size": [
+        1434,
+        507
+      ],
+      "bytes": 465704,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        7,
+        4,
+        1423,
+        507
+      ],
+      "notes": "Large blue framed empty cream panel, background only.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/setup_heading.png",
+      "source": "STUDENT GAME SETUP/ce1ac866-46f2-43e1-9469-9adc131fd868.png",
+      "source_sha256": "a82ad8e7574174804be1b735daff102bebe71b2df584d5e743f3df4e3ec76ab4",
+      "crop_xyxy": [
+        118,
+        519,
+        915,
+        650
+      ],
+      "size": [
+        797,
+        131
+      ],
+      "bytes": 131276,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        9,
+        0,
+        789,
+        131
+      ],
+      "notes": "Blue GAME SETUP title board with controller icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/setup_topic_caption.png",
+      "source": "STUDENT GAME SETUP/ce1ac866-46f2-43e1-9469-9adc131fd868.png",
+      "source_sha256": "a82ad8e7574174804be1b735daff102bebe71b2df584d5e743f3df4e3ec76ab4",
+      "crop_xyxy": [
+        120,
+        650,
+        905,
+        748
+      ],
+      "size": [
+        785,
+        98
+      ],
+      "bytes": 95446,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        6,
+        0,
+        785,
+        98
+      ],
+      "notes": "Cream GAME STYLE/GRAMMAR TOPIC caption; baked text.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/setup_mode_caption.png",
+      "source": "STUDENT GAME SETUP/ce1ac866-46f2-43e1-9469-9adc131fd868.png",
+      "source_sha256": "a82ad8e7574174804be1b735daff102bebe71b2df584d5e743f3df4e3ec76ab4",
+      "crop_xyxy": [
+        901,
+        650,
+        1552,
+        748
+      ],
+      "size": [
+        651,
+        98
+      ],
+      "bytes": 80257,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        645,
+        98
+      ],
+      "notes": "Cream GAME MODE/UI PREVIEW caption; UI PREVIEW baked.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/setup_difficulty_caption.png",
+      "source": "STUDENT GAME SETUP/ce1ac866-46f2-43e1-9469-9adc131fd868.png",
+      "source_sha256": "a82ad8e7574174804be1b735daff102bebe71b2df584d5e743f3df4e3ec76ab4",
+      "crop_xyxy": [
+        119,
+        747,
+        1550,
+        839
+      ],
+      "size": [
+        1431,
+        92
+      ],
+      "bytes": 117624,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        7,
+        0,
+        1428,
+        92
+      ],
+      "notes": "Cream DIFFICULTY caption; baked text.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/setup_required_caption.png",
+      "source": "STUDENT GAME SETUP/ce1ac866-46f2-43e1-9469-9adc131fd868.png",
+      "source_sha256": "a82ad8e7574174804be1b735daff102bebe71b2df584d5e743f3df4e3ec76ab4",
+      "crop_xyxy": [
+        119,
+        839,
+        1552,
+        938
+      ],
+      "size": [
+        1433,
+        99
+      ],
+      "bytes": 152434,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        7,
+        0,
+        1427,
+        99
+      ],
+      "notes": "Blue REQUIRED Student ID/Name/Grade&Section... caption; baked text.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/icon_player.png",
+      "source": "STUDENT GAME SETUP/42268c5f-bd9f-469a-8085-9b203f2cb030.png",
+      "source_sha256": "7a127de3604897c3d53cd18de4932be8eba7568e4271bee3e484e2062f8e00fb",
+      "crop_xyxy": [
+        34,
+        627,
+        180,
+        779
+      ],
+      "size": [
+        146,
+        152
+      ],
+      "bytes": 24517,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        1,
+        146,
+        141
+      ],
+      "notes": "Standalone orange student/person square icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/icon_clipboard.png",
+      "source": "STUDENT GAME SETUP/42268c5f-bd9f-469a-8085-9b203f2cb030.png",
+      "source_sha256": "7a127de3604897c3d53cd18de4932be8eba7568e4271bee3e484e2062f8e00fb",
+      "crop_xyxy": [
+        193,
+        624,
+        333,
+        773
+      ],
+      "size": [
+        140,
+        149
+      ],
+      "bytes": 23332,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        13,
+        0,
+        133,
+        143
+      ],
+      "notes": "Standalone blue clipboard icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/icon_graduation.png",
+      "source": "STUDENT GAME SETUP/42268c5f-bd9f-469a-8085-9b203f2cb030.png",
+      "source_sha256": "7a127de3604897c3d53cd18de4932be8eba7568e4271bee3e484e2062f8e00fb",
+      "crop_xyxy": [
+        347,
+        623,
+        514,
+        772
+      ],
+      "size": [
+        167,
+        149
+      ],
+      "bytes": 20951,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        5,
+        9,
+        167,
+        132
+      ],
+      "notes": "Standalone graduation cap icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/icon_gamepad.png",
+      "source": "STUDENT GAME SETUP/42268c5f-bd9f-469a-8085-9b203f2cb030.png",
+      "source_sha256": "7a127de3604897c3d53cd18de4932be8eba7568e4271bee3e484e2062f8e00fb",
+      "crop_xyxy": [
+        513,
+        624,
+        694,
+        781
+      ],
+      "size": [
+        181,
+        157
+      ],
+      "bytes": 35359,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        6,
+        181,
+        141
+      ],
+      "notes": "Standalone controller icon; check nearby rays.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    },
+    {
+      "target": "res://ui/redesign/assets/student/icon_book.png",
+      "source": "STUDENT GAME SETUP/42268c5f-bd9f-469a-8085-9b203f2cb030.png",
+      "source_sha256": "7a127de3604897c3d53cd18de4932be8eba7568e4271bee3e484e2062f8e00fb",
+      "crop_xyxy": [
+        699,
+        626,
+        866,
+        783
+      ],
+      "size": [
+        167,
+        157
+      ],
+      "bytes": 28263,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        5,
+        6,
+        164,
+        137
+      ],
+      "notes": "Standalone open-book icon.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    }
+  ],
+  "shared": [
+    {
+      "target": "res://ui/redesign/assets/shared/classroom_bg.png",
+      "source": "SETTINGS/52c44321-00e4-4f07-92ce-012696fa4ce6.png",
+      "source_sha256": "816242341dd076449f756fdfd6047e2b334ed44e232c2b7ab475a3951aab349a",
+      "crop_xyxy": [
+        0,
+        0,
+        1672,
+        941
+      ],
+      "size": [
+        1672,
+        941
+      ],
+      "bytes": 1726828,
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "nontransparent_bbox_local": [
+        0,
+        0,
+        1672,
+        941
+      ],
+      "notes": "Standalone clean classroom illustration from SETTINGS source, not a flattened UI screenshot; board space for two columns.",
+      "review": "visual acceptance needed",
+      "isolated_source_alpha_bboxes_xywh": null
+    }
+  ]
+}

@@ -10,6 +10,7 @@ const RED := Color("#FF4F66")
 const YELLOW := Color("#FFC23D")
 const BLUE := Color("#7BC9EF")
 const PANEL := Color("#F7E6BDF2")
+const ART := preload("res://ui/tutorial/tutorial_theme.gd")
 
 var context: Dictionary = {}
 var info_label: Label
@@ -17,15 +18,163 @@ var refresh_count := 0
 var outer_margin: MarginContainer
 var preview_panel: PanelContainer
 var checklist: VBoxContainer
+var live_stage: Control
+var camera_button: Button
+var live_preview: TextureRect
+var passing_to_calibration := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	_build_ui()
-	resized.connect(_apply_responsive_layout)
-	call_deferred("_apply_responsive_layout")
+	var stage := get_node_or_null("TutorialStage") as Control
+	if stage != null:
+		_bind_scene_nodes(stage)
+	else:
+		_build_redesign()
+	# Camera is opt-in. No webcam device is opened by merely visiting this page.
+
+func _bind_scene_nodes(stage: Control) -> void:
+	info_label = stage.get_node_or_null("InfoLabel") as Label
+	var back := stage.get_node_or_null("BackButton") as Button
+	if back:
+		back.pressed.connect(_go_back)
+	var check := stage.get_node_or_null("CheckStatusButton") as Button
+	if check:
+		check.pressed.connect(_toggle_live_camera)
+	var skip := stage.get_node_or_null("SkipSetupButton") as Button
+	if skip:
+		skip.pressed.connect(_skip_setup)
+	var next := stage.get_node_or_null("ContinuePreviewButton") as Button
+	if next:
+		next.pressed.connect(_continue_to_calibration)
+		next.call_deferred("grab_focus")
+	resized.connect(func() -> void: ART.fit(self, stage))
+	ART.fit(self, stage)
+	_setup_live_camera(stage, check)
 
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
+
+
+func _build_redesign() -> void:
+	var stage := ART.prepare(self, "CAMERA SETUP CHECK", "Review the camera checklist before continuing to the movement preview.", "PREVIEW • NO CAMERA")
+	ART.panel(stage, Rect2(79, 165, 570, 340), Color("#283F50"), 23)
+	ART.panel(stage, Rect2(99, 183, 531, 301), Color("#233440"), 16)
+	ART.icon(stage, ART.TUTORIAL_ART + "icon_camera.png", Rect2(306, 196, 112, 107))
+	ART.label(stage, "NO VIDEO FEED", Rect2(136, 300, 456, 52), 25, Color.WHITE)
+	ART.label(stage, "Camera and tracking are unavailable.\nThis is only a preview.", Rect2(133, 361, 469, 81), 15, Color("#D8E8E7"))
+	ART.panel(stage, Rect2(675, 165, 364, 340), Color("#FEFDF8"), 23)
+	ART.label(stage, "SETUP STATUS", Rect2(700, 178, 313, 36), 20, ART.INK)
+	var details := [
+		["01", "CAMERA FEED", "NOT CONNECTED", ART.RED],
+		["02", "POSE TRACKING", "NOT CONNECTED", ART.RED],
+		["03", "PLAYER POSITION", "DEMO PREVIEW", ART.YELLOW]
+	]
+	for i in range(details.size()):
+		var row: Array = details[i]
+		var y := 222.0 + i * 82.0
+		ART.panel(stage, Rect2(692, y, 327, 72), row[3], 15)
+		ART.label(stage, row[0], Rect2(704, y + 8, 50, 50), 22, Color.WHITE if i < 2 else ART.INK)
+		ART.label(stage, row[1], Rect2(769, y + 7, 236, 27), 15, Color.WHITE if i < 2 else ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
+		ART.label(stage, row[2], Rect2(769, y + 34, 236, 28), 12, Color.WHITE if i < 2 else ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
+	info_label = ART.label(stage, "Select CHECK STATUS to refresh this preview-only checklist.", Rect2(116, 503, 888, 27), 13, ART.INK)
+	var back := ART.button(stage, "BACK", Rect2(71, 542, 215, 54), ART.PURPLE, 15)
+	back.pressed.connect(_go_back)
+	var check := ART.button(stage, "CHECK STATUS", Rect2(323, 542, 215, 54), ART.BLUE, 15)
+	check.pressed.connect(_toggle_live_camera)
+	var skip := ART.button(stage, "SKIP SETUP", Rect2(573, 542, 215, 54), ART.YELLOW, 15)
+	skip.pressed.connect(_skip_setup)
+	var next := ART.button(stage, "CONTINUE PREVIEW", Rect2(825, 542, 215, 54), ART.GREEN, 15)
+	next.pressed.connect(_continue_to_calibration)
+	next.call_deferred("grab_focus")
+	_setup_live_camera(stage, check)
+
+
+func _setup_live_camera(stage: Control, toggle_button: Button) -> void:
+	live_stage = stage
+	camera_button = toggle_button
+	if is_instance_valid(camera_button):
+		camera_button.text = "STOP CAMERA" if PoseService.active else "START CAMERA"
+	live_preview = TextureRect.new()
+	live_preview.name = "LiveCameraImage"
+	live_preview.position = Vector2(99, 183)
+	live_preview.size = Vector2(531, 301)
+	live_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	live_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	live_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	live_preview.visible = PoseService.preview_texture != null
+	stage.add_child(live_preview)
+	if PoseService.preview_texture != null:
+		live_preview.texture = PoseService.preview_texture
+	PoseService.status_updated.connect(_on_live_status)
+	PoseService.preview_updated.connect(_on_live_preview)
+	_on_live_status(PoseService.current_status)
+
+
+func _toggle_live_camera() -> void:
+	if PoseService.active:
+		PoseService.stop_camera()
+	else:
+		PoseService.start_camera()
+	if is_instance_valid(camera_button):
+		camera_button.text = "STOP CAMERA" if PoseService.active else "START CAMERA"
+
+
+func _on_live_preview(texture: Texture2D) -> void:
+	if is_instance_valid(live_preview):
+		live_preview.texture = texture
+		live_preview.visible = true
+		for name in ["CameraIcon", "NoVideoFeedLabel", "VideoDescLabel"]:
+			var placeholder := live_stage.get_node_or_null(name) as CanvasItem
+			if placeholder:
+				placeholder.visible = false
+
+
+func _on_live_status(data: Dictionary) -> void:
+	if not is_instance_valid(live_stage):
+		return
+	var state := String(data.get("state", "off"))
+	var camera_value := "OPEN" if bool(data.get("camera", false)) else ("LOADING" if state == "loading" else "OFFLINE")
+	var lock_state := String(data.get("lock_state", "waiting"))
+	var pose_value := "PLAYER LOCKED" if PoseService.has_valid_pose() else ("LOADING" if state == "loading" else lock_state.to_upper())
+	var player_value := "X: %.2f / FPS: %.1f" % [PoseService.player_x, float(data.get("fps", 0.0))] if PoseService.has_valid_pose() else "NOT YET LOCKED"
+	var paths := ["Row1Panel/Row1Status", "Row2Panel/Row2Status", "Row3Panel/Row3Status"]
+	var messages := [camera_value, pose_value, player_value]
+	for i in range(paths.size()):
+		var field := live_stage.get_node_or_null(paths[i]) as Label
+		if field:
+			field.text = messages[i]
+	var badge := live_stage.get_node_or_null("BadgeLabel") as Label
+	if badge:
+		badge.text = "YOLO26 • PLAYER LOCKED" if PoseService.has_valid_pose() else "YOLO26 • ENROLLMENT"
+	if is_instance_valid(info_label):
+		info_label.text = String(data.get("detail", "Click START CAMERA to test live pose detection.")).left(112)
+	if state == "off" or state == "error":
+		if is_instance_valid(camera_button):
+			camera_button.text = "START CAMERA"
+		if is_instance_valid(live_preview):
+			live_preview.visible = false
+		for name in ["CameraIcon", "NoVideoFeedLabel", "VideoDescLabel"]:
+			var placeholder := live_stage.get_node_or_null(name) as CanvasItem
+			if placeholder:
+				placeholder.visible = true
+
+
+func _continue_to_calibration() -> void:
+	passing_to_calibration = PoseService.active
+	var live := PoseService.has_valid_pose()
+	requested.emit("calibration", {
+		"preview_mode": not live, "camera_live": live, "calibration_live": false,
+		"camera_requested": true
+	})
+
+
+func _exit_tree() -> void:
+	if PoseService.status_updated.is_connected(_on_live_status):
+		PoseService.status_updated.disconnect(_on_live_status)
+	if PoseService.preview_updated.is_connected(_on_live_preview):
+		PoseService.preview_updated.disconnect(_on_live_preview)
+	if not passing_to_calibration and PoseService.active:
+		PoseService.stop_camera()
 
 func _build_ui() -> void:
 	outer_margin = MarginContainer.new()

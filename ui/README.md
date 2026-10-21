@@ -2,7 +2,8 @@
 
 This directory contains the Godot 4 UI screens opened as overlays by
 `main_menu.gd` while the original KilosGrammar animated background, music,
-falling grammar words, and custom cursor stay active.
+falling grammar words stay active. The normal operating-system cursor is
+used throughout; no custom cat-shaped pointer overlays the UI.
 
 ## Main panel
 
@@ -63,7 +64,7 @@ Plane still uses original programmatically drawn 2D visuals.
   path of correct falling grammar word tiles; incorrect catches and missed
   matching words cost lives. A randomized Boy/Girl/Grandma/Grandpa sprite and
   randomized City/Forest/Mountain background appear per fresh run. The basket
-  shows no more than five caught correct word cards; further catches still
+  shows no more than three labeled caught apples; further catches still
   score without expanding the visible inventory.
 - **Balloon Popping:** A/D or Left/Right to aim the launcher; SPACE/ENTER to
   fire a visible projectile that pops the correct grammar balloon on impact.
@@ -92,7 +93,7 @@ Open `res://ui/minigames/catch_word.tscn` in the Godot 2D editor:
   texture is randomized on a new run from `res://WordCatcherMaps/`.
 - `CharacterRig/Body` and `CharacterRig/Basket` are independent Sprite2D
   layers driven by the matching images under `res://WordCatcherCharacters/`.
-- `CharacterRig/CollectedWords` sits behind Basket and displays up to five
+- `CharacterRig/CollectedWords` sits behind Basket and displays up to three
   collected word cards; `FallingWordLayer` holds active falling words.
 - `HUDLayer/HUD` contains editor-adjustable labels and Pause/Finish buttons.
 

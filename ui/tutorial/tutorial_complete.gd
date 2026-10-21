@@ -9,6 +9,7 @@ const MINT := Color("#00886B")
 const BLUE := Color("#7BC9EF")
 const YELLOW := Color("#FFC23D")
 const RED := Color("#FF4F66")
+const ART := preload("res://ui/tutorial/tutorial_theme.gd")
 
 var context: Dictionary = {}
 var outer_margin: MarginContainer
@@ -16,6 +17,50 @@ var outer_margin: MarginContainer
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	var stage := get_node_or_null("TutorialStage") as Control
+	if stage != null:
+		_bind_scene_nodes(stage)
+	else:
+		_build_redesign()
+
+func _bind_scene_nodes(stage: Control) -> void:
+	var play := stage.get_node_or_null("PlayButton") as Button
+	if play:
+		play.pressed.connect(_request.bind("student_setup", {"entry_source": "play", "fresh_setup": true}))
+		play.call_deferred("grab_focus")
+	var again := stage.get_node_or_null("AgainButton") as Button
+	if again:
+		again.pressed.connect(_request.bind("tutorial_practice", {"entry_source": "tutorial", "preview_mode": true, "camera_live": false, "from_calibration": false}))
+	var guide := stage.get_node_or_null("GuideButton") as Button
+	if guide:
+		guide.pressed.connect(_request.bind("grammar_guide", {}))
+	var home := stage.get_node_or_null("HomeButton") as Button
+	if home:
+		home.pressed.connect(_request.bind("main", {}))
+	resized.connect(func() -> void: ART.fit(self, stage))
+	ART.fit(self, stage)
+
+
+func _build_redesign() -> void:
+	var stage := ART.prepare(self, "YOU FINISHED THE PREVIEW!", "You explored how the three movement lanes would work in the real game.", "NICE WORK!")
+	ART.panel(stage, Rect2(102, 174, 915, 114), Color("#ECF9E8"), 23)
+	ART.label(stage, "★  GREAT JOB EXPLORING!  ★", Rect2(138, 181, 837, 51), 29, ART.GREEN)
+	ART.label(stage, "LEFT  •  CENTER  •  RIGHT", Rect2(138, 233, 837, 36), 19, ART.INK)
+	ART.panel(stage, Rect2(103, 310, 914, 104), Color("#435C63"), 19)
+	ART.label(stage, "PREVIEW FINISHED — NOT A TRACKING RESULT", Rect2(119, 321, 882, 35), 19, Color.WHITE)
+	ART.label(stage, "Your body was not measured. Camera recognition and real player calibration are not connected.", Rect2(153, 362, 816, 46), 15, Color("#FFEFCA"))
+	var play := ART.button(stage, "GO TO PLAY", Rect2(105, 438, 430, 60), ART.GREEN)
+	play.pressed.connect(_request.bind("student_setup", {"entry_source": "play", "fresh_setup": true}))
+	var again := ART.button(stage, "PRACTICE AGAIN", Rect2(568, 438, 430, 60), ART.BLUE)
+	again.pressed.connect(_request.bind("tutorial_practice", {"entry_source": "tutorial", "preview_mode": true, "camera_live": false, "from_calibration": false}))
+	var guide := ART.button(stage, "GRAMMAR GUIDE", Rect2(105, 520, 430, 60), ART.PURPLE)
+	guide.pressed.connect(_request.bind("grammar_guide", {}))
+	var home := ART.button(stage, "MAIN MENU", Rect2(568, 520, 430, 60), ART.RED)
+	home.pressed.connect(_request.bind("main", {}))
+	play.call_deferred("grab_focus")
+
+
+func _legacy_ready() -> void:
 	outer_margin = MarginContainer.new()
 	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(outer_margin)

@@ -128,7 +128,7 @@ func _verify_formation(game: Control, resolution: Vector2i, name: String) -> voi
         name + ": exactly three synchronized apples")
     if game.falling_tiles.size() != 3:
         return
-    var score := game.get_node("HUDLayer/HUD/ScorePlaque") as Control
+    var score := game.get_node("ScoreDrawLayer/ScorePlaque") as Control
     # Godot uses a 1280-wide logical CanvasItem coordinate system even when
     # the physical Window is 875 pixels wide (canvas_items stretch).
     # Compare PHYSICAL screen rectangles after applying final_transform;

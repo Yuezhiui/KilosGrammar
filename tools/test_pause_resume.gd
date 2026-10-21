@@ -47,6 +47,9 @@ func _run() -> void:
 	app.queue_free()
 	await process_frame
 	await process_frame
+	# Allow MP3 playback references from the fast pause/restart fixtures to
+	# release before shutting down the headless audio server.
+	await create_timer(0.5).timeout
 	_finish()
 
 

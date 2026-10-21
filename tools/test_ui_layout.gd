@@ -49,7 +49,8 @@ func _run() -> void:
 			for node in controls:
 				var control := node as Control
 				if (control is Button or control is HSlider or control is LineEdit or control is Label) and control.is_visible_in_tree() and not _in_scroller(control):
-					var rect := control.get_global_rect()
+					# Falling-word labels start offscreen within a clipped gameplay parent.
+					var rect := _drawn_rect(control)
 					if rect.size.x < 1.0 or rect.size.y < 1.0:
 						continue
 					if not frame_rect.encloses(rect.grow(-1.0)):
@@ -65,6 +66,9 @@ func _run() -> void:
 	app.queue_free()
 	await process_frame
 	await process_frame
+	# Let outstanding MP3 playback callbacks retire before the headless
+	# test shuts down the audio server; this is not a gameplay delay.
+	await create_timer(0.5).timeout
 	if failures.is_empty():
 		print("PASS  layout boundaries: %d visible labels and interactive controls across %d target sizes" % [measured, SIZES.size()])
 		quit(0)
@@ -88,3 +92,15 @@ func _in_scroller(control: Control) -> bool:
 			return true
 		ancestor = ancestor.get_parent()
 	return false
+
+
+func _drawn_rect(control: Control) -> Rect2:
+	var visible_rect := control.get_global_rect()
+	var ancestor := control.get_parent()
+	while ancestor != null:
+		if ancestor is Control and (ancestor as Control).clip_contents:
+			visible_rect = visible_rect.intersection((ancestor as Control).get_global_rect())
+			if not visible_rect.has_area():
+				return Rect2()
+		ancestor = ancestor.get_parent()
+	return visible_rect

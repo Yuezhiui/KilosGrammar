@@ -98,7 +98,7 @@ func _check_window(packed: PackedScene, physical: Vector2i) -> void:
 			var ctx := "%s %s %s" % [physical, mode, topic]
 			_assert_hud_without_objective(live, ctx)
 			var prompt := live.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
-			var score := live.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
+			var score := live.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
 			_check(prompt != null and prompt.is_visible_in_tree()
 				and prompt.text.contains(topic.to_upper()),
 				ctx + ": live grammar question remains visible")
@@ -120,8 +120,11 @@ func _assert_hud_without_objective(game: Node, ctx: String) -> void:
 		return
 	for name in REMOVED:
 		_check(not hud.has_node(name), ctx + ": removed " + name + " absent")
+	# Raw editor instances retain their authored HUD node. Runtime moves only
+	# the score artwork into the draw layer below the character.
+	var score_authored_or_runtime := hud.has_node("ScorePlaque") if game.get_node_or_null("ScoreDrawLayer") == null else game.get_node_or_null("ScoreDrawLayer/ScorePlaque") != null
 	_check(hud.has_node("TitlePlaque") and hud.has_node("PromptLabel")
-		and hud.has_node("ScorePlaque") and hud.has_node("LivesPlaque")
+		and score_authored_or_runtime and hud.has_node("LivesPlaque")
 		and hud.has_node("TimerPlaque"), ctx + ": original HUD artwork remains")
 
 

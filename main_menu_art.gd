@@ -18,10 +18,13 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var canvas_size: Vector2 = size
 	draw_rect(Rect2(Vector2.ZERO, canvas_size), Color("00886bff"), true)
+	_draw_cloud_accents(canvas_size)
+	_draw_motion_paths(canvas_size)
 
 	var star_color := Color("ffffffff")
+	var warm_star_color := Color("ffe06aff")
 	var book_color := Color("ffffffff")
-	var dot_color := Color("ffffffff")
+	var dot_color := Color("47d6b7aa")
 	var stars := [
 		# Top band
 		Vector3(0.08, 0.13, 25.0), Vector3(0.18, 0.16, 12.0),
@@ -55,12 +58,14 @@ func _draw() -> void:
 		pulse = smoothstep(0.0, 1.0, pulse)
 		var scale_value := lerpf(0.16, 1.0, pulse)
 		var alpha := lerpf(0.28, 1.0, pulse)
-		var animated_color := Color(star_color.r, star_color.g, star_color.b, star_color.a * alpha)
+		var base_color: Color = warm_star_color if index % 7 == 2 else star_color
+		var animated_color := Color(base_color.r, base_color.g, base_color.b, base_color.a * alpha)
 		_draw_soft_star(Vector2(canvas_size.x * item.x, canvas_size.y * item.y), item.z * scale_value, animated_color)
 
 	var dots := [Vector2(0.04, 0.29), Vector2(0.22, 0.13), Vector2(0.51, 0.12), Vector2(0.96, 0.31), Vector2(0.08, 0.82), Vector2(0.54, 0.88)]
 	for p: Vector2 in dots:
-		draw_circle(Vector2(canvas_size.x * p.x, canvas_size.y * p.y), 9.0, dot_color)
+		var center := Vector2(canvas_size.x * p.x, canvas_size.y * p.y)
+		draw_arc(center, 5.0, 0.0, TAU, 24, dot_color, 2.4, true)
 
 	var books := [
 		[Vector2(canvas_size.x * 0.07, canvas_size.y * 0.53), 0.72, -0.22, 0.0],
@@ -77,6 +82,61 @@ func _draw() -> void:
 		var float_y := sin(animation_time * 0.72 + phase) * 2.2
 		var wobble := sin(animation_time * 0.48 + phase) * 0.025
 		_draw_book(center + Vector2(0, float_y), scale_value, base_rotation + wobble, book_color)
+
+
+func _draw_cloud_accents(canvas_size: Vector2) -> void:
+	# Soft scalloped masses around the frame add the same depth as the reference
+	# without turning the background into a static image. They stay behind every
+	# falling word, logo tile and menu control.
+	var cloud_a := Color("0a9b7b")
+	var cloud_b := Color("10a987")
+	var cloud_shadow := Color("067761")
+
+	_draw_cloud_cluster(Vector2(-38.0, 116.0), [72.0, 92.0, 66.0], cloud_a)
+	_draw_cloud_cluster(Vector2(canvas_size.x + 34.0, 282.0), [86.0, 110.0, 76.0], cloud_b)
+
+	var floor_y := canvas_size.y + 20.0
+	draw_rect(Rect2(0.0, canvas_size.y * 0.94, canvas_size.x, canvas_size.y * 0.12), cloud_shadow, true)
+	_draw_cloud_cluster(Vector2(66.0, floor_y), [104.0, 82.0, 114.0, 88.0], cloud_b)
+	_draw_cloud_cluster(Vector2(canvas_size.x * 0.24, floor_y + 8.0), [72.0, 92.0, 68.0], cloud_a)
+	_draw_cloud_cluster(Vector2(canvas_size.x * 0.76, floor_y + 10.0), [80.0, 104.0, 76.0], cloud_a)
+	_draw_cloud_cluster(Vector2(canvas_size.x - 72.0, floor_y), [118.0, 86.0, 108.0], cloud_b)
+
+
+func _draw_cloud_cluster(origin: Vector2, radii: Array, color: Color) -> void:
+	var cursor_x := origin.x
+	for index in range(radii.size()):
+		var radius: float = float(radii[index])
+		var y_offset := sin(float(index) * 1.73) * radius * 0.18
+		draw_circle(Vector2(cursor_x, origin.y + y_offset), radius, color)
+		cursor_x += radius * 1.05
+
+
+func _draw_motion_paths(canvas_size: Vector2) -> void:
+	var path_color := Color("35cdb3a8")
+	_draw_dashed_curve(
+		Vector2(-25.0, canvas_size.y * 0.34),
+		Vector2(canvas_size.x * 0.08, canvas_size.y * 0.19),
+		Vector2(canvas_size.x * 0.23, canvas_size.y * 0.24),
+		path_color
+	)
+	_draw_dashed_curve(
+		Vector2(canvas_size.x * 0.72, canvas_size.y * 0.79),
+		Vector2(canvas_size.x * 0.88, canvas_size.y * 0.65),
+		Vector2(canvas_size.x + 28.0, canvas_size.y * 0.78),
+		path_color
+	)
+
+
+func _draw_dashed_curve(start: Vector2, control: Vector2, finish: Vector2, color: Color) -> void:
+	var previous := start
+	for index in range(1, 31):
+		var t := float(index) / 30.0
+		var inverse := 1.0 - t
+		var point := start * inverse * inverse + control * 2.0 * inverse * t + finish * t * t
+		if index % 2 == 0:
+			draw_line(previous, point, color, 3.5, true)
+		previous = point
 
 
 func _draw_soft_star(center: Vector2, radius: float, color: Color) -> void:

@@ -1,40 +1,15 @@
-[gd_resource type="Theme" load_steps=8 format=3]
+[gd_resource type="Theme" format=3 uid="uid://nkuj848galqf"]
 
-[ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="1_font"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="1_font"]
 
-[sub_resource type="StyleBoxFlat" id="PanelMain"]
-bg_color = Color(0.968627, 0.901961, 0.741176, 0.96)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.286275, 0.266667, 0.388235, 1)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.164706, 0.141176, 0.215686, 0.42)
-shadow_size = 8
-shadow_offset = Vector2(8, 10)
-
-[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
-content_margin_left = 18.0
-content_margin_top = 10.0
-content_margin_right = 18.0
-content_margin_bottom = 10.0
-bg_color = Color(0.286275, 0.266667, 0.388235, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.968627, 0.890196, 0.741176, 0.5)
+[sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
+bg_color = Color(0.286275, 0.266667, 0.388235, 0.42)
 corner_radius_top_left = 11
 corner_radius_top_right = 11
 corner_radius_bottom_right = 11
 corner_radius_bottom_left = 11
-shadow_color = Color(0.164706, 0.141176, 0.215686, 0.36)
-shadow_size = 3
-shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxEmpty" id="ButtonFocus"]
 
 [sub_resource type="StyleBoxFlat" id="ButtonHover"]
 content_margin_left = 18.0
@@ -55,6 +30,25 @@ shadow_color = Color(0.164706, 0.141176, 0.215686, 0.36)
 shadow_size = 4
 shadow_offset = Vector2(0, 5)
 
+[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.286275, 0.266667, 0.388235, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.968627, 0.890196, 0.741176, 0.5)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+shadow_color = Color(0.164706, 0.141176, 0.215686, 0.36)
+shadow_size = 3
+shadow_offset = Vector2(0, 4)
+
 [sub_resource type="StyleBoxFlat" id="ButtonPressed"]
 content_margin_left = 18.0
 content_margin_top = 12.0
@@ -71,32 +65,37 @@ corner_radius_top_right = 11
 corner_radius_bottom_right = 11
 corner_radius_bottom_left = 11
 
-[sub_resource type="StyleBoxEmpty" id="ButtonFocus"]
-
-
-[sub_resource type="StyleBoxFlat" id="ButtonDisabled"]
-bg_color = Color(0.286275, 0.266667, 0.388235, 0.42)
-corner_radius_top_left = 11
-corner_radius_top_right = 11
-corner_radius_bottom_right = 11
-corner_radius_bottom_left = 11
+[sub_resource type="StyleBoxFlat" id="PanelMain"]
+bg_color = Color(0.968627, 0.901961, 0.741176, 0.96)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.286275, 0.266667, 0.388235, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.164706, 0.141176, 0.215686, 0.42)
+shadow_size = 8
+shadow_offset = Vector2(8, 10)
 
 [resource]
 default_font = ExtResource("1_font")
 default_font_size = 17
 Button/colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+Button/colors/font_disabled_color = Color(0.968627, 0.890196, 0.741176, 0.6)
+Button/colors/font_focus_color = Color(0.968627, 0.890196, 0.741176, 1)
 Button/colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
 Button/colors/font_pressed_color = Color(0.968627, 0.890196, 0.741176, 1)
-Button/colors/font_focus_color = Color(0.968627, 0.890196, 0.741176, 1)
-Button/colors/font_disabled_color = Color(0.968627, 0.890196, 0.741176, 0.6)
 Button/font_sizes/font_size = 15
-Button/styles/normal = SubResource("ButtonNormal")
-Button/styles/hover = SubResource("ButtonHover")
-Button/styles/pressed = SubResource("ButtonPressed")
-Button/styles/focus = SubResource("ButtonFocus")
 Button/styles/disabled = SubResource("ButtonDisabled")
+Button/styles/focus = SubResource("ButtonFocus")
+Button/styles/hover = SubResource("ButtonHover")
+Button/styles/normal = SubResource("ButtonNormal")
+Button/styles/pressed = SubResource("ButtonPressed")
 CheckButton/colors/font_color = Color(0.286275, 0.266667, 0.388235, 1)
-CheckButton/colors/font_hover_color = Color(0.0, 0.533333, 0.419608, 1)
+CheckButton/colors/font_hover_color = Color(0, 0.533333, 0.419608, 1)
 CheckButton/colors/font_pressed_color = Color(0.286275, 0.266667, 0.388235, 1)
 Label/colors/font_color = Color(0.286275, 0.266667, 0.388235, 1)
 PanelContainer/styles/panel = SubResource("PanelMain")

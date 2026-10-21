@@ -98,8 +98,8 @@ func _run_size(packed: PackedScene, screen_size: Vector2i) -> void:
 		await process_frame
 		return
 	var title := hud.get_node_or_null("TitlePlaque") as TextureRect
-	var scoreboard := hud.get_node_or_null("ScorePlaque") as TextureRect
-	var numeric := hud.get_node_or_null("ScoreBottomContainer/ScoreNumber") as Label
+	var scoreboard := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect
+	var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
 	var prompt := hud.get_node_or_null("PromptLabel") as Label
 	var title_panel := title as Control
 	var time_label := hud.get_node_or_null("TimeLabel") as Label
@@ -133,6 +133,7 @@ func _run_size(packed: PackedScene, screen_size: Vector2i) -> void:
 					"score": 108,
 					"lives": 2,
 					"time_remaining": 42.0,
+					"round_running": true, # Simulate a saved 42s clock.
 				})
 				game.set_process(false)
 				await process_frame
@@ -155,6 +156,9 @@ func _run_size(packed: PackedScene, screen_size: Vector2i) -> void:
 func _assert_headings(hud: Control, numeric: Label, context: String) -> void:
 	var all_labels: Array[Label] = []
 	_collect_labels(hud, all_labels)
+	# Include the numeric score that now sits below the character canvas.
+	if numeric != null:
+		all_labels.append(numeric)
 	var visible_headings := 0
 	var visible_scores := 0
 	var visible_live_numbers := 0
@@ -182,8 +186,9 @@ func _assert_headings(hud: Control, numeric: Label, context: String) -> void:
 			"%s: %s label exists but stays hidden over baked text" % [context, node_name])
 	var extra_score_titles := 0
 	var visible_score_titles := 0
-	if hud.has_node("ScoreBottomContainer"):
-		var container := hud.get_node("ScoreBottomContainer")
+	var score_container := numeric.get_parent() if numeric != null else null
+	if score_container != null:
+		var container := score_container
 		for child in container.get_children():
 			if child is Label and (child as Label).text.strip_edges().to_upper() == "SCORE":
 				extra_score_titles += 1
@@ -303,7 +308,7 @@ func _assert_offscreen(hud: Control, screen_size: Vector2i, context: String) -> 
 	for name in ["TitlePlaque", "ScorePlaque", "PausePlaque",
 			"PauseButton", "PromptLabel", "ScoreBottomContainer",
 			"TimerPlaque", "LivesPlaque", "TimeLabel", "HeartsBox"]:
-		var control := hud.get_node_or_null(name) as Control
+		var control := hud.get_parent().get_parent().get_node_or_null("ScoreDrawLayer/" + name) as Control if name in ["ScorePlaque", "ScoreBottomContainer"] else hud.get_node_or_null(name) as Control
 		if control == null:
 			_fail(context + ": missing HUD control " + name)
 			continue

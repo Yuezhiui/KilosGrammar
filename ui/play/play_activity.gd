@@ -30,6 +30,19 @@ var selected_copy: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	var clean_backdrop := ColorRect.new()
+	clean_backdrop.color = Color("087e75")
+	clean_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	clean_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(clean_backdrop)
+	var backdrop := TextureRect.new()
+	backdrop.name = "SetupArtworkBackground"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.texture = load("res://ui/redesign/assets/student/setup_main_panel.png")
+	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(backdrop)
 	var column := UI.make_compact_screen_column(self)
 	UI.add_compact_title(column, "Play • Choose Game", "Choose an Activity", "Select your playable 2D game, then continue to the camera preview.")
 
@@ -131,7 +144,7 @@ func _refresh_selection() -> void:
 		button.set_pressed_no_signal(activity == selected)
 	next_button.disabled = not ACTIVITIES.has(selected)
 	keyboard_button.disabled = not ACTIVITIES.has(selected) or not _has_complete_teacher_setup()
-	next_button.text = "NEXT: CAMERA CHECK" if _has_complete_teacher_setup() else "NEXT: TOPIC"
+	next_button.text = "NEXT: AUTO CALIBRATION" if _has_complete_teacher_setup() else "NEXT: TOPIC"
 	if selected_title and ACTIVITIES.has(selected):
 		selected_title.text = selected.to_upper()
 		selected_badge.text = "%s • PLAYABLE" % String(ACTIVITY_HINTS[selected])
@@ -165,7 +178,10 @@ func _go_next() -> void:
 		payload["game_mode"] = game_mode
 		payload["difficulty"] = difficulty
 		payload["keyboard_mode"] = false
-		requested.emit("camera_check", payload)
+		payload["camera_requested"] = true
+		# The camera-based Play path starts YOLO in the calibration screen;
+		# students no longer need to click CHECK CAMERA or CAPTURE each zone.
+		requested.emit("calibration", payload)
 		return
 	requested.emit("play_topic", context.duplicate(true))
 

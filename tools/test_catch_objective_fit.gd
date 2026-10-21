@@ -81,7 +81,7 @@ func _run_viewport(packed: PackedScene, physical: Vector2i) -> void:
 	var hud := game.get_node_or_null("HUDLayer/HUD") as Control
 	var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
 	var title := game.get_node_or_null("HUDLayer/HUD/TitlePlaque") as TextureRect
-	var score := game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
+	var score := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimerPlaque") as TextureRect
 	var clock := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var lives := game.get_node_or_null("HUDLayer/HUD/LivesPlaque") as TextureRect

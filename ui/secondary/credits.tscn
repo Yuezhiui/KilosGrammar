@@ -62,7 +62,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CreditsPanel" type="PanelContainer" parent="."]
+[node name="CreditsPanel" type="Panel" parent="."]
 layout_mode = 1
 anchor_left = 0.15
 anchor_top = 0.08
@@ -72,18 +72,30 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("CreditsFrame")
 
-[node name="PanelContent" type="VBoxContainer" parent="CreditsPanel"]
-layout_mode = 2
-theme_override_constants/separation = 0
+[node name="PanelContent" type="Control" parent="CreditsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Header" type="PanelContainer" parent="CreditsPanel/PanelContent"]
-custom_minimum_size = Vector2(0, 94)
-layout_mode = 2
+[node name="Header" type="Panel" parent="CreditsPanel/PanelContent"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 94.0
+grow_horizontal = 2
 theme_override_styles/panel = SubResource("CreditsHeader")
 
 [node name="HeaderTitle" type="RichTextLabel" parent="CreditsPanel/PanelContent/Header"]
 clip_contents = false
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 theme_override_colors/default_color = Color(0.992157, 0.894118, 0.72549, 1)
 theme_override_colors/font_outline_color = Color(0.454902, 0.670588, 0.556863, 1)
@@ -101,17 +113,25 @@ autowrap_mode = 0
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Body" type="MarginContainer" parent="CreditsPanel/PanelContent"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/margin_left = 34
-theme_override_constants/margin_top = 22
-theme_override_constants/margin_right = 34
-theme_override_constants/margin_bottom = 24
+[node name="Body" type="Control" parent="CreditsPanel/PanelContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 34.0
+offset_top = 116.0
+offset_right = -34.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="CreditsScroll" type="ScrollContainer" parent="CreditsPanel/PanelContent/Body"]
-layout_mode = 2
-size_flags_vertical = 3
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 1
 

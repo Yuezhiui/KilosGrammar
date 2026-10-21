@@ -22,6 +22,8 @@ func _run() -> void:
 				await _case(mode, difficulty, character)
 	if checked != 24:
 		failures.append("Only %d of 24 gameplay configurations executed" % checked)
+	# Let the audio mixer retire queued MP3 playbacks after fixture teardown.
+	await create_timer(0.5).timeout
 	if failures.is_empty():
 		print("PASS: top-edge immediate-fall three-apple waves, HUD/score safety, collisions, pause, and restart in all 24 mode/difficulty/character configurations")
 		quit(0)
@@ -97,8 +99,17 @@ func _case(mode: String, difficulty: String, character: String) -> void:
 	if tiles_layer != null and tiles_layer.get_child_count() != game.falling_tiles.size():
 		failures.append("%s: orphan tile nodes after restart" % case_name)
 	await _check_wave_resolution(game, case_name)
+	_stop_audio_tree(host)
 	host.queue_free()
 	await process_frame
+	await process_frame
+
+func _stop_audio_tree(node: Node) -> void:
+	if node is AudioStreamPlayer:
+		(node as AudioStreamPlayer).stop()
+		(node as AudioStreamPlayer).stream = null
+	for child in node.get_children():
+		_stop_audio_tree(child)
 
 func _check_wave_resolution(game: Control, case_name: String) -> void:
 	# All three answers now begin fully above the viewport and fall
@@ -253,7 +264,7 @@ func _check_tiles(game: Control, case_name: String) -> void:
 		var sprite_rect := Rect2(position - game.APPLE_SIZE * 0.5, game.APPLE_SIZE)
 		# The wooden score plaque overlays the bottom-right catch zone.
 		# Falling apples must not be placed in a lane that enters behind it.
-		var score := hud.get_node("ScorePlaque") as TextureRect
+		var score := game.get_node("ScoreDrawLayer/ScorePlaque") as TextureRect
 		var rightmost_safe_x: float = score.position.x - game.APPLE_SIZE.x * 0.5 - game.APPLE_SPACING_MARGIN
 		if position.x > rightmost_safe_x + 0.5:
 			failures.append("%s: apple %d will pass behind scoreboard at %s" % [case_name, i, position])

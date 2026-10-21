@@ -31,6 +31,7 @@ func _case(character: String, topic: String, difficulty: String, mode: String) -
 	host.size = Vector2(1280, 720)
 	root.add_child(host)
 	var game := SCENE.instantiate() as Control
+	game.set_process(false)
 	host.add_child(game)
 	game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await process_frame
@@ -63,6 +64,7 @@ func _case(character: String, topic: String, difficulty: String, mode: String) -
 		if not game.round_running:
 			failures.append(label + " resume failed")
 		game.set_context(ctx)
+		game.set_process(false)
 		await process_frame
 		game.set_process(false)
 		_assert_wave(game, label + " retry %d" % retry)
@@ -93,13 +95,15 @@ func _assert_wave(game: Control, label: String) -> void:
 	if tiles.size() != 3:
 		failures.append("%s: expected 3 synchronized apple choices, got %d" % [label, tiles.size()])
 		return
-	if game.wave_phase != "reading":
-		failures.append(label + " new wave is not in the reading phase")
+	if game.wave_phase != "falling":
+		failures.append(label + " new wave must immediately enter falling phase")
 	var matching := 0
 	var lanes: Dictionary = {}
 	var words: Dictionary = {}
 	var start_y := Vector2(tiles[0]["pos"]).y
 	var speed := float(tiles[0]["speed"])
+	if start_y + game.APPLE_SIZE.y * 0.5 > 0.0:
+		failures.append(label + " new apple wave is not fully above the screen")
 	for tile in tiles:
 		if bool(tile["matching"]):
 			matching += 1

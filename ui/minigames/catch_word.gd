@@ -43,6 +43,7 @@ const CHARACTER_CANVAS_SIZE := Vector2(941.0, 1672.0)
 const CHARACTER_ANCHOR := Vector2(470.5, 1672.0)
 const CHARACTER_TARGET_HEIGHT_RATIO := 0.63
 const COLLECTED_WORD_LIMIT := 3
+const SECONDS_ROUND_DURATION := 60.0
 
 const MAP_ASSETS := {
 	"City": "res://WordCatcherMaps/CityMap.png",
@@ -110,8 +111,8 @@ const NEGATIVE_VOICE_CUES := ["Awww.mp3", "Wrong Answer.mp3", "You Missed.mp3"]
 
 var spawn_interval := 0.0 # Waves now start moving immediately from above the screen.
 var base_fall_speed := 105.0
-var default_lives := 3
-var default_duration := 60.0
+@export_range(1, 10) var default_lives: int = 3
+@export var default_duration: float = 60.0
 var spawn_clock := 0.0
 var wave_phase := "idle" # idle, reading, falling, clearing
 var wave_index := 0
@@ -159,6 +160,7 @@ var tile_style_cache: Dictionary = {}
 var hearts_box: HBoxContainer
 var score_bottom_container: VBoxContainer
 var score_bottom_number: Label
+var score_draw_layer: Control
 var using_reference_pngs := false
 var gameplay_apple_texture: Texture2D = APPLE_TEXTURE
 var lives_texture_cache: Dictionary = {}
@@ -174,6 +176,7 @@ func _ready() -> void:
 	_load_grammar_bank_if_available()
 	_build_controls()
 	_apply_generated_reference_assets()
+	_place_score_behind_character()
 	_select_round_art({})
 	_apply_difficulty()
 	_reset_round_geometry()
@@ -199,18 +202,21 @@ func set_context(value: Dictionary) -> void:
 	correct_count = maxi(int(context.get("correct", 0)), 0)
 	attempts = maxi(int(context.get("attempts", 0)), 0)
 	lives = clampi(int(context.get("lives", default_lives)), 0, default_lives)
-	time_remaining = clampf(float(context.get("time_remaining", default_duration)), 0.0, default_duration)
+	# A new Seconds round always starts at 60. Only an actual paused round
+	# can restore elapsed time; an inherited Lives placeholder may be 999.
+	var is_resume := _is_resume_snapshot(value)
+	time_remaining = clampf(float(context.get("time_remaining", default_duration)), 0.0, default_duration) if is_resume else default_duration
 	round_finished = false
 	round_completed = false
 	round_running = true
 	finish_reason = ""
 	spawn_clock = 0.0
 	wave_phase = "idle"
-	wave_index = maxi(int(context.get("catch_wave_index", 0)), 0) if _is_resume_snapshot(value) else 0
+	wave_index = maxi(int(context.get("catch_wave_index", 0)), 0) if is_resume else 0
 	_clear_falling_tiles()
 	_clear_transient_effects()
 	collected_words.clear()
-	if _is_resume_snapshot(value):
+	if is_resume:
 		for word in context.get("catch_collected_words", []):
 			if collected_words.size() >= COLLECTED_WORD_LIMIT:
 				break
@@ -243,6 +249,8 @@ func _finish_round() -> void:
 	round_finished = true
 	round_completed = true
 	round_running = false
+	# Results owns the end-of-round cue. Stop any catch phrase before routing.
+	_stop_voice_feedback()
 	_clear_falling_tiles()
 	_clear_transient_effects()
 	set_process(false)
@@ -419,6 +427,20 @@ func _apply_generated_reference_assets() -> void:
 	_layout_controls()
 
 
+func _place_score_behind_character() -> void:
+	# The HUD lives in CanvasLayer 20; score nodes inside it always cover the
+	# player, regardless of z_index. Keep the rest of the HUD on that layer.
+	score_draw_layer = Control.new()
+	score_draw_layer.name = "ScoreDrawLayer"
+	score_draw_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(score_draw_layer)
+	score_plaque.reparent(score_draw_layer)
+	score_bottom_container.reparent(score_draw_layer)
+	score_draw_layer.z_index = 0
+	character_rig.z_index = 1
+	_layout_controls()
+
+
 func _layout_controls() -> void:
 	if not is_instance_valid(hud):
 		return
@@ -436,6 +458,11 @@ func _layout_controls() -> void:
 	hud.size = hud_canvas_size
 	hud.scale = Vector2.ONE * hud_scale
 	hud.position = Vector2.ZERO
+	if is_instance_valid(score_draw_layer):
+		# Match the HUD's viewport scaling after moving only its score art.
+		score_draw_layer.size = hud_canvas_size
+		score_draw_layer.scale = hud.scale
+		score_draw_layer.position = hud.position
 	var extra_x := maxf(0.0, hud_canvas_size.x - HUD_DESIGN_SIZE.x)
 	var extra_y := maxf(0.0, hud_canvas_size.y - HUD_DESIGN_SIZE.y)
 
@@ -495,14 +522,14 @@ func _apply_difficulty() -> void:
 		game_mode = "Seconds"
 		is_seconds_mode = true
 		is_lives_mode = false
-		default_duration = 60.0
-		default_lives = 3
+		default_duration = SECONDS_ROUND_DURATION
+		default_lives = int(context.get("lives", default_lives))
 	else:
 		game_mode = "Lives"
 		is_seconds_mode = false
 		is_lives_mode = true
-		default_duration = 999.0
-		default_lives = 3
+		default_duration = float(context.get("time_remaining", 999.0))
+		default_lives = int(context.get("lives", default_lives))
 
 	match difficulty:
 		"Hard":
@@ -1062,6 +1089,7 @@ func _manual_finish() -> void:
 	round_finished = true
 	round_completed = false
 	round_running = false
+	_stop_voice_feedback()
 	_clear_falling_tiles()
 	_clear_transient_effects()
 	set_process(false)

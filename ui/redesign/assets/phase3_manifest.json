@@ -1,0 +1,3263 @@
+{
+  "game_over": [
+    {
+      "name": "bg_teal_clean",
+      "path": "res://ui/redesign/assets/game_over/bg_teal_clean.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        20,
+        33,
+        806,
+        490
+      ],
+      "extraction": "box",
+      "meaning": "Teal cloud/star backdrop",
+      "baked_text": false,
+      "size": [
+        786,
+        457
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        785,
+        455
+      ],
+      "bytes": 316694
+    },
+    {
+      "name": "bg_teal_decorated",
+      "path": "res://ui/redesign/assets/game_over/bg_teal_decorated.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        19,
+        504,
+        806,
+        1082
+      ],
+      "extraction": "box",
+      "meaning": "Decorated teal results backdrop",
+      "baked_text": false,
+      "size": [
+        787,
+        578
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        787,
+        578
+      ],
+      "bytes": 506635
+    },
+    {
+      "name": "panel_results_header",
+      "path": "res://ui/redesign/assets/game_over/panel_results_header.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        24,
+        17,
+        912,
+        377
+      ],
+      "extraction": "component",
+      "meaning": "Blank cream results header",
+      "baked_text": false,
+      "size": [
+        888,
+        360
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        883,
+        355
+      ],
+      "bytes": 256665
+    },
+    {
+      "name": "panel_results_side",
+      "path": "res://ui/redesign/assets/game_over/panel_results_side.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 6,
+      "source_crop_xyxy": [
+        926,
+        60,
+        1424,
+        329
+      ],
+      "extraction": "component",
+      "meaning": "Blank cream side information panel",
+      "baked_text": false,
+      "size": [
+        498,
+        269
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        493,
+        264
+      ],
+      "bytes": 107892
+    },
+    {
+      "name": "panel_student",
+      "path": "res://ui/redesign/assets/game_over/panel_student.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        29,
+        368,
+        546,
+        677
+      ],
+      "extraction": "component",
+      "meaning": "Student summary card with baked sample labels",
+      "baked_text": true,
+      "size": [
+        517,
+        309
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        512,
+        304
+      ],
+      "bytes": 165237
+    },
+    {
+      "name": "panel_round",
+      "path": "res://ui/redesign/assets/game_over/panel_round.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        565,
+        367,
+        1077,
+        677
+      ],
+      "extraction": "component",
+      "meaning": "Round summary card with baked sample labels",
+      "baked_text": true,
+      "size": [
+        512,
+        310
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        507,
+        305
+      ],
+      "bytes": 169804
+    },
+    {
+      "name": "panel_student_blank",
+      "path": "res://ui/redesign/assets/game_over/panel_student_blank.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 4,
+      "source_crop_xyxy": [
+        30,
+        683,
+        546,
+        950
+      ],
+      "extraction": "component",
+      "meaning": "Editable student information card",
+      "baked_text": false,
+      "size": [
+        516,
+        267
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        511,
+        262
+      ],
+      "bytes": 111306
+    },
+    {
+      "name": "panel_round_blank",
+      "path": "res://ui/redesign/assets/game_over/panel_round_blank.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 5,
+      "source_crop_xyxy": [
+        565,
+        683,
+        1078,
+        950
+      ],
+      "extraction": "component",
+      "meaning": "Editable round information card",
+      "baked_text": false,
+      "size": [
+        513,
+        267
+      ],
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        508,
+        262
+      ],
+      "bytes": 110660
+    },
+    {
+      "name": "panel_student_rows",
+      "path": "res://ui/redesign/assets/game_over/panel_student_rows.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 9,
+      "source_crop_xyxy": [
+        1097,
+        610,
+        1430,
+        822
+      ],
+      "extraction": "component",
+      "meaning": "Separate Student ID/Name/Grade rows",
+      "baked_text": true,
+      "size": [
+        333,
+        212
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        328,
+        207
+      ],
+      "bytes": 79549
+    },
+    {
+      "name": "panel_round_rows",
+      "path": "res://ui/redesign/assets/game_over/panel_round_rows.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 8,
+      "source_crop_xyxy": [
+        1097,
+        820,
+        1430,
+        1033
+      ],
+      "extraction": "component",
+      "meaning": "Separate topic/mode/difficulty rows",
+      "baked_text": true,
+      "size": [
+        333,
+        213
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        328,
+        208
+      ],
+      "bytes": 83780
+    },
+    {
+      "name": "score_footer",
+      "path": "res://ui/redesign/assets/game_over/score_footer.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 7,
+      "source_crop_xyxy": [
+        68,
+        941,
+        801,
+        1075
+      ],
+      "extraction": "component",
+      "meaning": "FINAL SCORE bar with balloons",
+      "baked_text": true,
+      "size": [
+        733,
+        134
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        728,
+        129
+      ],
+      "bytes": 118742
+    },
+    {
+      "name": "button_retry",
+      "path": "res://ui/redesign/assets/game_over/button_retry.png",
+      "source": "GAME OVER/de37ba98-8e4b-4239-9114-64ce39b11daa.png",
+      "source_sha256": "5e52b97f394c81329644534f545c4c563c3e106c77e0ef8404cf016a3da0481c",
+      "source_component_rank": 5,
+      "source_crop_xyxy": [
+        70,
+        60,
+        701,
+        239
+      ],
+      "extraction": "component",
+      "meaning": "Purple RETRY button",
+      "baked_text": true,
+      "size": [
+        631,
+        179
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        626,
+        174
+      ],
+      "bytes": 123821
+    },
+    {
+      "name": "button_retry_hover",
+      "path": "res://ui/redesign/assets/game_over/button_retry_hover.png",
+      "source": "GAME OVER/de37ba98-8e4b-4239-9114-64ce39b11daa.png",
+      "source_sha256": "5e52b97f394c81329644534f545c4c563c3e106c77e0ef8404cf016a3da0481c",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        55,
+        247,
+        718,
+        456
+      ],
+      "extraction": "component",
+      "meaning": "Purple RETRY hover glow",
+      "baked_text": true,
+      "size": [
+        663,
+        209
+      ],
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        658,
+        204
+      ],
+      "bytes": 169382
+    },
+    {
+      "name": "button_retry_disabled",
+      "path": "res://ui/redesign/assets/game_over/button_retry_disabled.png",
+      "source": "GAME OVER/de37ba98-8e4b-4239-9114-64ce39b11daa.png",
+      "source_sha256": "5e52b97f394c81329644534f545c4c563c3e106c77e0ef8404cf016a3da0481c",
+      "source_component_rank": 7,
+      "source_crop_xyxy": [
+        70,
+        457,
+        702,
+        630
+      ],
+      "extraction": "component",
+      "meaning": "Purple RETRY dimmed",
+      "baked_text": true,
+      "size": [
+        632,
+        173
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        627,
+        168
+      ],
+      "bytes": 119063
+    },
+    {
+      "name": "button_main_menu",
+      "path": "res://ui/redesign/assets/game_over/button_main_menu.png",
+      "source": "GAME OVER/de37ba98-8e4b-4239-9114-64ce39b11daa.png",
+      "source_sha256": "5e52b97f394c81329644534f545c4c563c3e106c77e0ef8404cf016a3da0481c",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        744,
+        60,
+        1379,
+        239
+      ],
+      "extraction": "component",
+      "meaning": "Blue MAIN MENU button",
+      "baked_text": true,
+      "size": [
+        635,
+        179
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        629,
+        174
+      ],
+      "bytes": 121621
+    },
+    {
+      "name": "button_main_menu_hover",
+      "path": "res://ui/redesign/assets/game_over/button_main_menu_hover.png",
+      "source": "GAME OVER/de37ba98-8e4b-4239-9114-64ce39b11daa.png",
+      "source_sha256": "5e52b97f394c81329644534f545c4c563c3e106c77e0ef8404cf016a3da0481c",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        729,
+        246,
+        1394,
+        455
+      ],
+      "extraction": "component",
+      "meaning": "Blue MAIN MENU hover glow",
+      "baked_text": true,
+      "size": [
+        665,
+        209
+      ],
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        660,
+        204
+      ],
+      "bytes": 168886
+    },
+    {
+      "name": "button_main_menu_disabled",
+      "path": "res://ui/redesign/assets/game_over/button_main_menu_disabled.png",
+      "source": "GAME OVER/de37ba98-8e4b-4239-9114-64ce39b11daa.png",
+      "source_sha256": "5e52b97f394c81329644534f545c4c563c3e106c77e0ef8404cf016a3da0481c",
+      "source_component_rank": 6,
+      "source_crop_xyxy": [
+        744,
+        456,
+        1379,
+        636
+      ],
+      "extraction": "component",
+      "meaning": "Blue MAIN MENU dimmed",
+      "baked_text": true,
+      "size": [
+        635,
+        180
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        629,
+        175
+      ],
+      "bytes": 121187
+    },
+    {
+      "name": "button_blank_purple",
+      "path": "res://ui/redesign/assets/game_over/button_blank_purple.png",
+      "source": "GAME OVER/de37ba98-8e4b-4239-9114-64ce39b11daa.png",
+      "source_sha256": "5e52b97f394c81329644534f545c4c563c3e106c77e0ef8404cf016a3da0481c",
+      "source_component_rank": 11,
+      "source_crop_xyxy": [
+        72,
+        638,
+        497,
+        751
+      ],
+      "extraction": "component",
+      "meaning": "Blank purple rounded button",
+      "baked_text": false,
+      "size": [
+        425,
+        113
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        420,
+        108
+      ],
+      "bytes": 47240
+    },
+    {
+      "name": "button_blank_blue",
+      "path": "res://ui/redesign/assets/game_over/button_blank_blue.png",
+      "source": "GAME OVER/de37ba98-8e4b-4239-9114-64ce39b11daa.png",
+      "source_sha256": "5e52b97f394c81329644534f545c4c563c3e106c77e0ef8404cf016a3da0481c",
+      "source_component_rank": 8,
+      "source_crop_xyxy": [
+        72,
+        756,
+        497,
+        876
+      ],
+      "extraction": "component",
+      "meaning": "Blank blue rounded button",
+      "baked_text": false,
+      "size": [
+        425,
+        120
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        420,
+        115
+      ],
+      "bytes": 45411
+    },
+    {
+      "name": "icon_star_large",
+      "path": "res://ui/redesign/assets/game_over/icon_star_large.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 11,
+      "source_crop_xyxy": [
+        1139,
+        376,
+        1256,
+        492
+      ],
+      "extraction": "component",
+      "meaning": "Golden star",
+      "baked_text": false,
+      "size": [
+        117,
+        116
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        112,
+        111
+      ],
+      "bytes": 17807
+    },
+    {
+      "name": "icon_star_small",
+      "path": "res://ui/redesign/assets/game_over/icon_star_small.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 13,
+      "source_crop_xyxy": [
+        1298,
+        392,
+        1375,
+        471
+      ],
+      "extraction": "component",
+      "meaning": "Small golden star",
+      "baked_text": false,
+      "size": [
+        77,
+        79
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        72,
+        74
+      ],
+      "bytes": 8919
+    },
+    {
+      "name": "icon_star_green",
+      "path": "res://ui/redesign/assets/game_over/icon_star_green.png",
+      "source": "GAME OVER/bd415751-73f7-4488-a851-e7da2d71950d.png",
+      "source_sha256": "0d39c2b5f8e685547eefb50b662e83171a541675abbbd604b291fd7b67186ca0",
+      "source_component_rank": 12,
+      "source_crop_xyxy": [
+        1293,
+        498,
+        1380,
+        587
+      ],
+      "extraction": "component",
+      "meaning": "Green-backed star",
+      "baked_text": false,
+      "size": [
+        87,
+        89
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        82,
+        84
+      ],
+      "bytes": 13520
+    },
+    {
+      "name": "decor_books_red",
+      "path": "res://ui/redesign/assets/game_over/decor_books_red.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        813,
+        367,
+        1112,
+        542
+      ],
+      "extraction": "component",
+      "meaning": "Red open-book illustration",
+      "baked_text": false,
+      "size": [
+        299,
+        175
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        294,
+        170
+      ],
+      "bytes": 66359
+    },
+    {
+      "name": "decor_books_blue",
+      "path": "res://ui/redesign/assets/game_over/decor_books_blue.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 5,
+      "source_crop_xyxy": [
+        1146,
+        371,
+        1432,
+        541
+      ],
+      "extraction": "component",
+      "meaning": "Blue open-book illustration",
+      "baked_text": false,
+      "size": [
+        286,
+        170
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        281,
+        165
+      ],
+      "bytes": 60840
+    },
+    {
+      "name": "decor_books_stack",
+      "path": "res://ui/redesign/assets/game_over/decor_books_stack.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 6,
+      "source_crop_xyxy": [
+        817,
+        531,
+        1056,
+        715
+      ],
+      "extraction": "component",
+      "meaning": "Stack of books",
+      "baked_text": false,
+      "size": [
+        239,
+        184
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        234,
+        179
+      ],
+      "bytes": 66401
+    },
+    {
+      "name": "decor_clouds",
+      "path": "res://ui/redesign/assets/game_over/decor_clouds.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 7,
+      "source_crop_xyxy": [
+        819,
+        817,
+        1091,
+        936
+      ],
+      "extraction": "component",
+      "meaning": "Blue and white cloud cluster",
+      "baked_text": false,
+      "size": [
+        272,
+        119
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        267,
+        114
+      ],
+      "bytes": 34434
+    },
+    {
+      "name": "decor_balloons",
+      "path": "res://ui/redesign/assets/game_over/decor_balloons.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 20,
+      "source_crop_xyxy": [
+        473,
+        930,
+        632,
+        1074
+      ],
+      "extraction": "component",
+      "meaning": "Red and blue balloons",
+      "baked_text": false,
+      "size": [
+        159,
+        144
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        153,
+        139
+      ],
+      "bytes": 30595
+    },
+    {
+      "name": "decor_word_today",
+      "path": "res://ui/redesign/assets/game_over/decor_word_today.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 14,
+      "source_crop_xyxy": [
+        840,
+        41,
+        1033,
+        154
+      ],
+      "extraction": "component",
+      "meaning": "TODAY word tile",
+      "baked_text": true,
+      "size": [
+        193,
+        113
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        188,
+        108
+      ],
+      "bytes": 27865
+    },
+    {
+      "name": "decor_word_him",
+      "path": "res://ui/redesign/assets/game_over/decor_word_him.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 19,
+      "source_crop_xyxy": [
+        1043,
+        36,
+        1228,
+        152
+      ],
+      "extraction": "component",
+      "meaning": "HIM word tile",
+      "baked_text": true,
+      "size": [
+        185,
+        116
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        180,
+        111
+      ],
+      "bytes": 25877
+    },
+    {
+      "name": "decor_word_often",
+      "path": "res://ui/redesign/assets/game_over/decor_word_often.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 12,
+      "source_crop_xyxy": [
+        1242,
+        42,
+        1432,
+        159
+      ],
+      "extraction": "component",
+      "meaning": "OFTEN word tile",
+      "baked_text": true,
+      "size": [
+        190,
+        117
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        185,
+        112
+      ],
+      "bytes": 28208
+    },
+    {
+      "name": "decor_word_learn",
+      "path": "res://ui/redesign/assets/game_over/decor_word_learn.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 11,
+      "source_crop_xyxy": [
+        1040,
+        150,
+        1230,
+        264
+      ],
+      "extraction": "component",
+      "meaning": "LEARN word tile",
+      "baked_text": true,
+      "size": [
+        190,
+        114
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        185,
+        109
+      ],
+      "bytes": 30043
+    },
+    {
+      "name": "decor_word_play",
+      "path": "res://ui/redesign/assets/game_over/decor_word_play.png",
+      "source": "GAME OVER/21c38a89-e765-4a40-9347-c0e9d8bdf7f1.png",
+      "source_sha256": "c679b079730f4e64a401a86f7917d2d63cf57b40489969fc03fb7a328b8f71ca",
+      "source_component_rank": 13,
+      "source_crop_xyxy": [
+        1244,
+        151,
+        1433,
+        268
+      ],
+      "extraction": "component",
+      "meaning": "PLAY word tile",
+      "baked_text": true,
+      "size": [
+        189,
+        117
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        184,
+        112
+      ],
+      "bytes": 28192
+    },
+    {
+      "name": "icon_grad_cap",
+      "path": "res://ui/redesign/assets/game_over/icon_grad_cap.png",
+      "source": "GAME OVER/58bfaf29-c8d1-4dea-9702-1948b7f2d381.png",
+      "source_sha256": "1713bcf6f3d949a55adf21cc1d463a5ced0b4d2fb0751755f8a854562ed9bb4b",
+      "source_component_rank": 4,
+      "source_crop_xyxy": [
+        42,
+        77,
+        397,
+        332
+      ],
+      "extraction": "component",
+      "meaning": "Graduation cap",
+      "baked_text": false,
+      "size": [
+        355,
+        255
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        350,
+        249
+      ],
+      "bytes": 91115
+    },
+    {
+      "name": "icon_target",
+      "path": "res://ui/redesign/assets/game_over/icon_target.png",
+      "source": "GAME OVER/58bfaf29-c8d1-4dea-9702-1948b7f2d381.png",
+      "source_sha256": "1713bcf6f3d949a55adf21cc1d463a5ced0b4d2fb0751755f8a854562ed9bb4b",
+      "source_component_rank": 7,
+      "source_crop_xyxy": [
+        405,
+        66,
+        668,
+        336
+      ],
+      "extraction": "component",
+      "meaning": "Target and arrow",
+      "baked_text": false,
+      "size": [
+        263,
+        270
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        257,
+        264
+      ],
+      "bytes": 84214
+    },
+    {
+      "name": "icon_student_id",
+      "path": "res://ui/redesign/assets/game_over/icon_student_id.png",
+      "source": "GAME OVER/58bfaf29-c8d1-4dea-9702-1948b7f2d381.png",
+      "source_sha256": "1713bcf6f3d949a55adf21cc1d463a5ced0b4d2fb0751755f8a854562ed9bb4b",
+      "source_component_rank": 9,
+      "source_crop_xyxy": [
+        691,
+        103,
+        957,
+        311
+      ],
+      "extraction": "component",
+      "meaning": "Student ID card",
+      "baked_text": false,
+      "size": [
+        266,
+        208
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        261,
+        203
+      ],
+      "bytes": 58067
+    },
+    {
+      "name": "icon_avatar",
+      "path": "res://ui/redesign/assets/game_over/icon_avatar.png",
+      "source": "GAME OVER/58bfaf29-c8d1-4dea-9702-1948b7f2d381.png",
+      "source_sha256": "1713bcf6f3d949a55adf21cc1d463a5ced0b4d2fb0751755f8a854562ed9bb4b",
+      "source_component_rank": 11,
+      "source_crop_xyxy": [
+        980,
+        82,
+        1184,
+        332
+      ],
+      "extraction": "component",
+      "meaning": "Purple student avatar",
+      "baked_text": false,
+      "size": [
+        204,
+        250
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        199,
+        245
+      ],
+      "bytes": 52782
+    },
+    {
+      "name": "icon_controller",
+      "path": "res://ui/redesign/assets/game_over/icon_controller.png",
+      "source": "GAME OVER/58bfaf29-c8d1-4dea-9702-1948b7f2d381.png",
+      "source_sha256": "1713bcf6f3d949a55adf21cc1d463a5ced0b4d2fb0751755f8a854562ed9bb4b",
+      "source_component_rank": 8,
+      "source_crop_xyxy": [
+        104,
+        343,
+        425,
+        545
+      ],
+      "extraction": "component",
+      "meaning": "Game controller",
+      "baked_text": false,
+      "size": [
+        321,
+        202
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        316,
+        197
+      ],
+      "bytes": 80294
+    },
+    {
+      "name": "icon_gear",
+      "path": "res://ui/redesign/assets/game_over/icon_gear.png",
+      "source": "GAME OVER/58bfaf29-c8d1-4dea-9702-1948b7f2d381.png",
+      "source_sha256": "1713bcf6f3d949a55adf21cc1d463a5ced0b4d2fb0751755f8a854562ed9bb4b",
+      "source_component_rank": 13,
+      "source_crop_xyxy": [
+        498,
+        330,
+        727,
+        550
+      ],
+      "extraction": "component",
+      "meaning": "Gear",
+      "baked_text": false,
+      "size": [
+        229,
+        220
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        6,
+        224,
+        215
+      ],
+      "bytes": 61030
+    },
+    {
+      "name": "icon_chart",
+      "path": "res://ui/redesign/assets/game_over/icon_chart.png",
+      "source": "GAME OVER/58bfaf29-c8d1-4dea-9702-1948b7f2d381.png",
+      "source_sha256": "1713bcf6f3d949a55adf21cc1d463a5ced0b4d2fb0751755f8a854562ed9bb4b",
+      "source_component_rank": 15,
+      "source_crop_xyxy": [
+        742,
+        331,
+        942,
+        538
+      ],
+      "extraction": "component",
+      "meaning": "Bar chart",
+      "baked_text": false,
+      "size": [
+        200,
+        207
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        195,
+        202
+      ],
+      "bytes": 35107
+    }
+  ],
+  "tutorial": [
+    {
+      "name": "bg_classroom",
+      "path": "res://ui/redesign/assets/tutorial/bg_classroom.png",
+      "source": "TUTORIAL/4080601d-0d7a-47b0-b108-a1e534f44f56.png",
+      "source_sha256": "f67007a7e48ad27228d450caf647e688b3deb23b76121e1c330035524fd838e3",
+      "source_component_rank": null,
+      "source_crop_xyxy": [
+        0,
+        0,
+        1672,
+        941
+      ],
+      "extraction": "full",
+      "meaning": "Standalone illustrated classroom backdrop",
+      "baked_text": false,
+      "size": [
+        1672,
+        941
+      ],
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        1672,
+        941
+      ],
+      "bytes": 1784208
+    },
+    {
+      "name": "path_title",
+      "path": "res://ui/redesign/assets/tutorial/path_title.png",
+      "source": "TUTORIAL/a8056136-4d23-4878-8457-13f003c21a43.png",
+      "source_sha256": "fc2dea805da2eaef8eed9d18484a179279c9a262b6d034d62a898491d2da576f",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        408,
+        41,
+        1045,
+        168
+      ],
+      "extraction": "component",
+      "meaning": "TUTORIAL PATH banner",
+      "baked_text": true,
+      "size": [
+        637,
+        127
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        632,
+        122
+      ],
+      "bytes": 93994
+    },
+    {
+      "name": "title_whole_body",
+      "path": "res://ui/redesign/assets/tutorial/title_whole_body.png",
+      "source": "TUTORIAL/a8056136-4d23-4878-8457-13f003c21a43.png",
+      "source_sha256": "fc2dea805da2eaef8eed9d18484a179279c9a262b6d034d62a898491d2da576f",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        271,
+        178,
+        1186,
+        452
+      ],
+      "extraction": "component",
+      "meaning": "LEARN WITH YOUR WHOLE BODY! title",
+      "baked_text": true,
+      "size": [
+        915,
+        274
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        909,
+        269
+      ],
+      "bytes": 352578
+    },
+    {
+      "name": "panel_blank",
+      "path": "res://ui/redesign/assets/tutorial/panel_blank.png",
+      "source": "TUTORIAL/a8056136-4d23-4878-8457-13f003c21a43.png",
+      "source_sha256": "fc2dea805da2eaef8eed9d18484a179279c9a262b6d034d62a898491d2da576f",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        9,
+        442,
+        1441,
+        1053
+      ],
+      "extraction": "component",
+      "meaning": "Empty cream-bordered information card",
+      "baked_text": false,
+      "size": [
+        1432,
+        611
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1427,
+        606
+      ],
+      "bytes": 618764
+    },
+    {
+      "name": "steps_three",
+      "path": "res://ui/redesign/assets/tutorial/steps_three.png",
+      "source": "TUTORIAL/0e1ae538-e3f3-4baa-afb2-21aa6e8d2e5a.png",
+      "source_sha256": "1d72e125e7446363b9c630593b21a8cb6fbe4c00c38e9d29146b2776ddff59f2",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        14,
+        263,
+        1438,
+        688
+      ],
+      "extraction": "component",
+      "meaning": "Three camera/calibrate/practice cards connected by arrows",
+      "baked_text": true,
+      "size": [
+        1424,
+        425
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1419,
+        420
+      ],
+      "bytes": 644037
+    },
+    {
+      "name": "camera_advisory",
+      "path": "res://ui/redesign/assets/tutorial/camera_advisory.png",
+      "source": "TUTORIAL/0e1ae538-e3f3-4baa-afb2-21aa6e8d2e5a.png",
+      "source_sha256": "1d72e125e7446363b9c630593b21a8cb6fbe4c00c38e9d29146b2776ddff59f2",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        13,
+        748,
+        1435,
+        892
+      ],
+      "extraction": "component",
+      "meaning": "Camera/body tracking UI preview disclaimer",
+      "baked_text": true,
+      "size": [
+        1422,
+        144
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1417,
+        139
+      ],
+      "bytes": 209988
+    },
+    {
+      "name": "button_guided",
+      "path": "res://ui/redesign/assets/tutorial/button_guided.png",
+      "source": "TUTORIAL/7e4b73c1-10d5-4fe1-8f50-8da3ae32cc21.png",
+      "source_sha256": "068717d39767d25970067744b9289d6db2bbfed426113aaf5296d050207379dc",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        75,
+        54,
+        1373,
+        296
+      ],
+      "extraction": "component",
+      "meaning": "START GUIDED TUTORIAL",
+      "baked_text": true,
+      "size": [
+        1298,
+        242
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        6,
+        1293,
+        236
+      ],
+      "bytes": 276912
+    },
+    {
+      "name": "button_movement",
+      "path": "res://ui/redesign/assets/tutorial/button_movement.png",
+      "source": "TUTORIAL/7e4b73c1-10d5-4fe1-8f50-8da3ae32cc21.png",
+      "source_sha256": "068717d39767d25970067744b9289d6db2bbfed426113aaf5296d050207379dc",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        75,
+        315,
+        1374,
+        561
+      ],
+      "extraction": "component",
+      "meaning": "MOVEMENT PRACTICE",
+      "baked_text": true,
+      "size": [
+        1299,
+        246
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1293,
+        241
+      ],
+      "bytes": 281879
+    },
+    {
+      "name": "button_grammar",
+      "path": "res://ui/redesign/assets/tutorial/button_grammar.png",
+      "source": "TUTORIAL/7e4b73c1-10d5-4fe1-8f50-8da3ae32cc21.png",
+      "source_sha256": "068717d39767d25970067744b9289d6db2bbfed426113aaf5296d050207379dc",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        75,
+        578,
+        1374,
+        811
+      ],
+      "extraction": "component",
+      "meaning": "GRAMMAR GUIDE",
+      "baked_text": true,
+      "size": [
+        1299,
+        233
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        1293,
+        228
+      ],
+      "bytes": 265723
+    },
+    {
+      "name": "button_back",
+      "path": "res://ui/redesign/assets/tutorial/button_back.png",
+      "source": "TUTORIAL/7e4b73c1-10d5-4fe1-8f50-8da3ae32cc21.png",
+      "source_sha256": "068717d39767d25970067744b9289d6db2bbfed426113aaf5296d050207379dc",
+      "source_component_rank": 4,
+      "source_crop_xyxy": [
+        75,
+        822,
+        1374,
+        1052
+      ],
+      "extraction": "component",
+      "meaning": "BACK TO MAIN",
+      "baked_text": true,
+      "size": [
+        1299,
+        230
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        1293,
+        225
+      ],
+      "bytes": 252488
+    },
+    {
+      "name": "icon_cat",
+      "path": "res://ui/redesign/assets/tutorial/icon_cat.png",
+      "source": "TUTORIAL/a8056136-4d23-4878-8457-13f003c21a43.png",
+      "source_sha256": "fc2dea805da2eaef8eed9d18484a179279c9a262b6d034d62a898491d2da576f",
+      "source_component_rank": 4,
+      "source_crop_xyxy": [
+        44,
+        14,
+        391,
+        281
+      ],
+      "extraction": "component",
+      "meaning": "Black cat mascot",
+      "baked_text": false,
+      "size": [
+        347,
+        267
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        342,
+        261
+      ],
+      "bytes": 111885
+    },
+    {
+      "name": "icon_cap",
+      "path": "res://ui/redesign/assets/tutorial/icon_cap.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        615,
+        30,
+        1042,
+        349
+      ],
+      "extraction": "component",
+      "meaning": "Graduation cap",
+      "baked_text": false,
+      "size": [
+        427,
+        319
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        6,
+        422,
+        314
+      ],
+      "bytes": 123624
+    },
+    {
+      "name": "icon_books",
+      "path": "res://ui/redesign/assets/tutorial/icon_books.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        1047,
+        26,
+        1419,
+        334
+      ],
+      "extraction": "component",
+      "meaning": "Stack of books",
+      "baked_text": false,
+      "size": [
+        372,
+        308
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        367,
+        303
+      ],
+      "bytes": 141201
+    },
+    {
+      "name": "icon_camera",
+      "path": "res://ui/redesign/assets/tutorial/icon_camera.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 6,
+      "source_crop_xyxy": [
+        168,
+        338,
+        391,
+        582
+      ],
+      "extraction": "component",
+      "meaning": "Webcam eye",
+      "baked_text": false,
+      "size": [
+        223,
+        244
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        218,
+        239
+      ],
+      "bytes": 67543
+    },
+    {
+      "name": "icon_calibration",
+      "path": "res://ui/redesign/assets/tutorial/icon_calibration.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 4,
+      "source_crop_xyxy": [
+        562,
+        330,
+        857,
+        585
+      ],
+      "extraction": "component",
+      "meaning": "Body calibration",
+      "baked_text": false,
+      "size": [
+        295,
+        255
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        290,
+        250
+      ],
+      "bytes": 94253
+    },
+    {
+      "name": "icon_controller",
+      "path": "res://ui/redesign/assets/tutorial/icon_controller.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 5,
+      "source_crop_xyxy": [
+        1031,
+        348,
+        1337,
+        588
+      ],
+      "extraction": "component",
+      "meaning": "Game controller",
+      "baked_text": false,
+      "size": [
+        306,
+        240
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        301,
+        235
+      ],
+      "bytes": 87398
+    },
+    {
+      "name": "icon_play",
+      "path": "res://ui/redesign/assets/tutorial/icon_play.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 11,
+      "source_crop_xyxy": [
+        31,
+        577,
+        247,
+        788
+      ],
+      "extraction": "component",
+      "meaning": "Play icon",
+      "baked_text": false,
+      "size": [
+        216,
+        211
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        210,
+        206
+      ],
+      "bytes": 46000
+    },
+    {
+      "name": "icon_movement",
+      "path": "res://ui/redesign/assets/tutorial/icon_movement.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 10,
+      "source_crop_xyxy": [
+        263,
+        577,
+        480,
+        788
+      ],
+      "extraction": "component",
+      "meaning": "Movement icon",
+      "baked_text": false,
+      "size": [
+        217,
+        211
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        211,
+        206
+      ],
+      "bytes": 49221
+    },
+    {
+      "name": "icon_guide",
+      "path": "res://ui/redesign/assets/tutorial/icon_guide.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 9,
+      "source_crop_xyxy": [
+        494,
+        577,
+        712,
+        788
+      ],
+      "extraction": "component",
+      "meaning": "Book guide",
+      "baked_text": false,
+      "size": [
+        218,
+        211
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        213,
+        206
+      ],
+      "bytes": 49404
+    },
+    {
+      "name": "icon_home",
+      "path": "res://ui/redesign/assets/tutorial/icon_home.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 8,
+      "source_crop_xyxy": [
+        728,
+        577,
+        946,
+        788
+      ],
+      "extraction": "component",
+      "meaning": "Home icon",
+      "baked_text": false,
+      "size": [
+        218,
+        211
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        212,
+        206
+      ],
+      "bytes": 50597
+    },
+    {
+      "name": "icon_star",
+      "path": "res://ui/redesign/assets/tutorial/icon_star.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 13,
+      "source_crop_xyxy": [
+        1238,
+        549,
+        1431,
+        738
+      ],
+      "extraction": "component",
+      "meaning": "Large gold star",
+      "baked_text": false,
+      "size": [
+        193,
+        189
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        188,
+        184
+      ],
+      "bytes": 35637
+    },
+    {
+      "name": "decor_leaf",
+      "path": "res://ui/redesign/assets/tutorial/decor_leaf.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 18,
+      "source_crop_xyxy": [
+        18,
+        791,
+        202,
+        929
+      ],
+      "extraction": "component",
+      "meaning": "Glossy green leaf",
+      "baked_text": false,
+      "size": [
+        184,
+        138
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        179,
+        133
+      ],
+      "bytes": 26714
+    },
+    {
+      "name": "decor_leaves",
+      "path": "res://ui/redesign/assets/tutorial/decor_leaves.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 14,
+      "source_crop_xyxy": [
+        29,
+        934,
+        275,
+        1069
+      ],
+      "extraction": "component",
+      "meaning": "Paired green leaves",
+      "baked_text": false,
+      "size": [
+        246,
+        135
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        240,
+        129
+      ],
+      "bytes": 38508
+    },
+    {
+      "name": "decor_pencil",
+      "path": "res://ui/redesign/assets/tutorial/decor_pencil.png",
+      "source": "TUTORIAL/c9345c38-0591-44dd-b67c-63f0b8eed9ae.png",
+      "source_sha256": "bbce6c553e0bb896cd58f63b934829a3f65e1af8305556c27eb4dec2191db8f1",
+      "source_component_rank": 7,
+      "source_crop_xyxy": [
+        1017,
+        876,
+        1430,
+        1055
+      ],
+      "extraction": "component",
+      "meaning": "Blue and yellow pencil",
+      "baked_text": false,
+      "size": [
+        413,
+        179
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        6,
+        408,
+        173
+      ],
+      "bytes": 68671
+    }
+  ],
+  "settings": [
+    {
+      "name": "title_settings",
+      "path": "res://ui/redesign/assets/settings/title_settings.png",
+      "source": "SETTINGS/0e12567d-88f7-49e6-9bce-06cc27a6d16b.png",
+      "source_sha256": "c6640c1ccea14ab1b902f078a7b13123ece0df38e92b7862e8ce84415d3336d0",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        98,
+        27,
+        1580,
+        425
+      ],
+      "extraction": "component",
+      "meaning": "SETTINGS wooden title with cat and leaves",
+      "baked_text": true,
+      "size": [
+        1482,
+        398
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        6,
+        1476,
+        393
+      ],
+      "bytes": 656029
+    },
+    {
+      "name": "panel_main",
+      "path": "res://ui/redesign/assets/settings/panel_main.png",
+      "source": "SETTINGS/66f6d386-a694-4ac8-9813-525cf4ed144c.png",
+      "source_sha256": "242cf03b734aa8b9ac407fb71b5b88455caa9962e649e39f0ce63426dfbfad0b",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        15,
+        9,
+        1134,
+        555
+      ],
+      "extraction": "component",
+      "meaning": "Large blank cream settings panel",
+      "baked_text": false,
+      "size": [
+        1119,
+        546
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1114,
+        541
+      ],
+      "bytes": 511877
+    },
+    {
+      "name": "panel_sidebar",
+      "path": "res://ui/redesign/assets/settings/panel_sidebar.png",
+      "source": "SETTINGS/66f6d386-a694-4ac8-9813-525cf4ed144c.png",
+      "source_sha256": "242cf03b734aa8b9ac407fb71b5b88455caa9962e649e39f0ce63426dfbfad0b",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        1104,
+        13,
+        1371,
+        553
+      ],
+      "extraction": "component",
+      "meaning": "Tall narrow cream sidebar frame",
+      "baked_text": false,
+      "size": [
+        267,
+        540
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        262,
+        535
+      ],
+      "bytes": 137610
+    },
+    {
+      "name": "field_row_cream",
+      "path": "res://ui/redesign/assets/settings/field_row_cream.png",
+      "source": "SETTINGS/66f6d386-a694-4ac8-9813-525cf4ed144c.png",
+      "source_sha256": "242cf03b734aa8b9ac407fb71b5b88455caa9962e649e39f0ce63426dfbfad0b",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        29,
+        625,
+        1045,
+        745
+      ],
+      "extraction": "component",
+      "meaning": "Wide empty white/cream field",
+      "baked_text": false,
+      "size": [
+        1016,
+        120
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1011,
+        115
+      ],
+      "bytes": 85651
+    },
+    {
+      "name": "field_row_blue",
+      "path": "res://ui/redesign/assets/settings/field_row_blue.png",
+      "source": "SETTINGS/66f6d386-a694-4ac8-9813-525cf4ed144c.png",
+      "source_sha256": "242cf03b734aa8b9ac407fb71b5b88455caa9962e649e39f0ce63426dfbfad0b",
+      "source_component_rank": 4,
+      "source_crop_xyxy": [
+        29,
+        819,
+        1046,
+        921
+      ],
+      "extraction": "component",
+      "meaning": "Wide empty pale-blue field",
+      "baked_text": false,
+      "size": [
+        1017,
+        102
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1012,
+        96
+      ],
+      "bytes": 68273
+    },
+    {
+      "name": "field_row_white",
+      "path": "res://ui/redesign/assets/settings/field_row_white.png",
+      "source": "SETTINGS/66f6d386-a694-4ac8-9813-525cf4ed144c.png",
+      "source_sha256": "242cf03b734aa8b9ac407fb71b5b88455caa9962e649e39f0ce63426dfbfad0b",
+      "source_component_rank": 5,
+      "source_crop_xyxy": [
+        29,
+        741,
+        1045,
+        821
+      ],
+      "extraction": "component",
+      "meaning": "Wide empty white field",
+      "baked_text": false,
+      "size": [
+        1016,
+        80
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1011,
+        74
+      ],
+      "bytes": 56139
+    },
+    {
+      "name": "field_row_header",
+      "path": "res://ui/redesign/assets/settings/field_row_header.png",
+      "source": "SETTINGS/66f6d386-a694-4ac8-9813-525cf4ed144c.png",
+      "source_sha256": "242cf03b734aa8b9ac407fb71b5b88455caa9962e649e39f0ce63426dfbfad0b",
+      "source_component_rank": 6,
+      "source_crop_xyxy": [
+        29,
+        552,
+        1045,
+        626
+      ],
+      "extraction": "component",
+      "meaning": "Wide blue rounded header strip",
+      "baked_text": false,
+      "size": [
+        1016,
+        74
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        1011,
+        68
+      ],
+      "bytes": 54981
+    },
+    {
+      "name": "field_card_blue",
+      "path": "res://ui/redesign/assets/settings/field_card_blue.png",
+      "source": "SETTINGS/66f6d386-a694-4ac8-9813-525cf4ed144c.png",
+      "source_sha256": "242cf03b734aa8b9ac407fb71b5b88455caa9962e649e39f0ce63426dfbfad0b",
+      "source_component_rank": 7,
+      "source_crop_xyxy": [
+        1054,
+        724,
+        1352,
+        920
+      ],
+      "extraction": "component",
+      "meaning": "Blue empty settings card",
+      "baked_text": false,
+      "size": [
+        298,
+        196
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        293,
+        190
+      ],
+      "bytes": 44691
+    },
+    {
+      "name": "field_card_cream",
+      "path": "res://ui/redesign/assets/settings/field_card_cream.png",
+      "source": "SETTINGS/66f6d386-a694-4ac8-9813-525cf4ed144c.png",
+      "source_sha256": "242cf03b734aa8b9ac407fb71b5b88455caa9962e649e39f0ce63426dfbfad0b",
+      "source_component_rank": 8,
+      "source_crop_xyxy": [
+        1353,
+        725,
+        1650,
+        920
+      ],
+      "extraction": "component",
+      "meaning": "Cream empty settings card",
+      "baked_text": false,
+      "size": [
+        297,
+        195
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        292,
+        189
+      ],
+      "bytes": 43251
+    },
+    {
+      "name": "button_home",
+      "path": "res://ui/redesign/assets/settings/button_home.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        506,
+        22,
+        1167,
+        220
+      ],
+      "extraction": "component",
+      "meaning": "Purple HOME button",
+      "baked_text": true,
+      "size": [
+        661,
+        198
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        656,
+        193
+      ],
+      "bytes": 132924
+    },
+    {
+      "name": "tab_settings_green",
+      "path": "res://ui/redesign/assets/settings/tab_settings_green.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 10,
+      "source_crop_xyxy": [
+        53,
+        226,
+        544,
+        381
+      ],
+      "extraction": "component",
+      "meaning": "Green SETTINGS tab",
+      "baked_text": true,
+      "size": [
+        491,
+        155
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        486,
+        150
+      ],
+      "bytes": 91602
+    },
+    {
+      "name": "tab_controls_green",
+      "path": "res://ui/redesign/assets/settings/tab_controls_green.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 11,
+      "source_crop_xyxy": [
+        593,
+        226,
+        1083,
+        382
+      ],
+      "extraction": "component",
+      "meaning": "Green CONTROLS tab",
+      "baked_text": true,
+      "size": [
+        490,
+        156
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        484,
+        151
+      ],
+      "bytes": 92060
+    },
+    {
+      "name": "tab_camera_green",
+      "path": "res://ui/redesign/assets/settings/tab_camera_green.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 9,
+      "source_crop_xyxy": [
+        1130,
+        226,
+        1621,
+        381
+      ],
+      "extraction": "component",
+      "meaning": "Green CAMERA tab",
+      "baked_text": true,
+      "size": [
+        491,
+        155
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        486,
+        150
+      ],
+      "bytes": 88238
+    },
+    {
+      "name": "tab_settings_cream",
+      "path": "res://ui/redesign/assets/settings/tab_settings_cream.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 8,
+      "source_crop_xyxy": [
+        53,
+        375,
+        544,
+        537
+      ],
+      "extraction": "component",
+      "meaning": "Cream SETTINGS tab",
+      "baked_text": true,
+      "size": [
+        491,
+        162
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        486,
+        157
+      ],
+      "bytes": 87357
+    },
+    {
+      "name": "tab_controls_cream",
+      "path": "res://ui/redesign/assets/settings/tab_controls_cream.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 7,
+      "source_crop_xyxy": [
+        592,
+        375,
+        1083,
+        537
+      ],
+      "extraction": "component",
+      "meaning": "Cream CONTROLS tab",
+      "baked_text": true,
+      "size": [
+        491,
+        162
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        486,
+        157
+      ],
+      "bytes": 88475
+    },
+    {
+      "name": "tab_camera_cream",
+      "path": "res://ui/redesign/assets/settings/tab_camera_cream.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 6,
+      "source_crop_xyxy": [
+        1130,
+        375,
+        1621,
+        537
+      ],
+      "extraction": "component",
+      "meaning": "Cream CAMERA tab",
+      "baked_text": true,
+      "size": [
+        491,
+        162
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        486,
+        157
+      ],
+      "bytes": 85586
+    },
+    {
+      "name": "button_blank_green",
+      "path": "res://ui/redesign/assets/settings/button_blank_green.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 5,
+      "source_crop_xyxy": [
+        52,
+        546,
+        551,
+        705
+      ],
+      "extraction": "component",
+      "meaning": "Unlabeled green rounded button",
+      "baked_text": false,
+      "size": [
+        499,
+        159
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        494,
+        154
+      ],
+      "bytes": 71556
+    },
+    {
+      "name": "button_blank_purple",
+      "path": "res://ui/redesign/assets/settings/button_blank_purple.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 4,
+      "source_crop_xyxy": [
+        1120,
+        547,
+        1624,
+        711
+      ],
+      "extraction": "component",
+      "meaning": "Unlabeled purple rounded button",
+      "baked_text": false,
+      "size": [
+        504,
+        164
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        499,
+        159
+      ],
+      "bytes": 76264
+    },
+    {
+      "name": "button_blank_cream",
+      "path": "res://ui/redesign/assets/settings/button_blank_cream.png",
+      "source": "SETTINGS/c6745883-d3fb-4d7f-8d95-d977f1f6d2f3.png",
+      "source_sha256": "2267cbe904b4ae8f6f2c3a09ae21b9ed3317eb38bf3c521a3d1d51f898b77f33",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        582,
+        546,
+        1092,
+        713
+      ],
+      "extraction": "component",
+      "meaning": "Unlabeled cream rounded button",
+      "baked_text": false,
+      "size": [
+        510,
+        167
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        6,
+        505,
+        162
+      ],
+      "bytes": 66794
+    },
+    {
+      "name": "volume_preview_empty",
+      "path": "res://ui/redesign/assets/settings/volume_preview_empty.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        64,
+        42,
+        1112,
+        164
+      ],
+      "extraction": "component",
+      "meaning": "Volume track sample empty (100% text baked)",
+      "baked_text": true,
+      "size": [
+        1048,
+        122
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        1043,
+        117
+      ],
+      "bytes": 113633
+    },
+    {
+      "name": "volume_preview_mid",
+      "path": "res://ui/redesign/assets/settings/volume_preview_mid.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        64,
+        170,
+        1112,
+        294
+      ],
+      "extraction": "component",
+      "meaning": "Volume track sample partial (100% text baked)",
+      "baked_text": true,
+      "size": [
+        1048,
+        124
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        1043,
+        119
+      ],
+      "bytes": 115395
+    },
+    {
+      "name": "volume_preview_full",
+      "path": "res://ui/redesign/assets/settings/volume_preview_full.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        64,
+        301,
+        1112,
+        423
+      ],
+      "extraction": "component",
+      "meaning": "Volume track sample full (100% text baked)",
+      "baked_text": true,
+      "size": [
+        1048,
+        122
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        1043,
+        117
+      ],
+      "bytes": 118167
+    },
+    {
+      "name": "toggle_on_sample",
+      "path": "res://ui/redesign/assets/settings/toggle_on_sample.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 10,
+      "source_crop_xyxy": [
+        1297,
+        68,
+        1615,
+        202
+      ],
+      "extraction": "component",
+      "meaning": "ON toggle sample; use native CheckButton to interact",
+      "baked_text": true,
+      "size": [
+        318,
+        134
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        312,
+        129
+      ],
+      "bytes": 50719
+    },
+    {
+      "name": "toggle_off_sample",
+      "path": "res://ui/redesign/assets/settings/toggle_off_sample.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 9,
+      "source_crop_xyxy": [
+        1297,
+        242,
+        1619,
+        378
+      ],
+      "extraction": "component",
+      "meaning": "OFF toggle sample; use native CheckButton to interact",
+      "baked_text": true,
+      "size": [
+        322,
+        136
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        316,
+        131
+      ],
+      "bytes": 51202
+    },
+    {
+      "name": "icon_settings",
+      "path": "res://ui/redesign/assets/settings/icon_settings.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 17,
+      "source_crop_xyxy": [
+        55,
+        446,
+        224,
+        617
+      ],
+      "extraction": "component",
+      "meaning": "Settings gear icon",
+      "baked_text": false,
+      "size": [
+        169,
+        171
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        164,
+        166
+      ],
+      "bytes": 38726
+    },
+    {
+      "name": "icon_controls",
+      "path": "res://ui/redesign/assets/settings/icon_controls.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 18,
+      "source_crop_xyxy": [
+        230,
+        445,
+        399,
+        617
+      ],
+      "extraction": "component",
+      "meaning": "Controller icon",
+      "baked_text": false,
+      "size": [
+        169,
+        172
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        164,
+        167
+      ],
+      "bytes": 36470
+    },
+    {
+      "name": "icon_camera",
+      "path": "res://ui/redesign/assets/settings/icon_camera.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 13,
+      "source_crop_xyxy": [
+        408,
+        444,
+        578,
+        617
+      ],
+      "extraction": "component",
+      "meaning": "Camera icon",
+      "baked_text": false,
+      "size": [
+        170,
+        173
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        165,
+        168
+      ],
+      "bytes": 35001
+    },
+    {
+      "name": "icon_sound",
+      "path": "res://ui/redesign/assets/settings/icon_sound.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 15,
+      "source_crop_xyxy": [
+        583,
+        444,
+        753,
+        617
+      ],
+      "extraction": "component",
+      "meaning": "Speaker icon",
+      "baked_text": false,
+      "size": [
+        170,
+        173
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        6,
+        164,
+        168
+      ],
+      "bytes": 37258
+    },
+    {
+      "name": "icon_music",
+      "path": "res://ui/redesign/assets/settings/icon_music.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 16,
+      "source_crop_xyxy": [
+        756,
+        444,
+        923,
+        617
+      ],
+      "extraction": "component",
+      "meaning": "Music note icon",
+      "baked_text": false,
+      "size": [
+        167,
+        173
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        161,
+        168
+      ],
+      "bytes": 34753
+    },
+    {
+      "name": "icon_star",
+      "path": "res://ui/redesign/assets/settings/icon_star.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 12,
+      "source_crop_xyxy": [
+        927,
+        443,
+        1098,
+        616
+      ],
+      "extraction": "component",
+      "meaning": "Star icon",
+      "baked_text": false,
+      "size": [
+        171,
+        173
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        166,
+        168
+      ],
+      "bytes": 37033
+    },
+    {
+      "name": "icon_muted",
+      "path": "res://ui/redesign/assets/settings/icon_muted.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 19,
+      "source_crop_xyxy": [
+        1104,
+        444,
+        1270,
+        617
+      ],
+      "extraction": "component",
+      "meaning": "Muted speaker icon",
+      "baked_text": false,
+      "size": [
+        166,
+        173
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        161,
+        168
+      ],
+      "bytes": 35432
+    },
+    {
+      "name": "icon_screen",
+      "path": "res://ui/redesign/assets/settings/icon_screen.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 11,
+      "source_crop_xyxy": [
+        1275,
+        443,
+        1446,
+        617
+      ],
+      "extraction": "component",
+      "meaning": "Screen icon",
+      "baked_text": false,
+      "size": [
+        171,
+        174
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        166,
+        169
+      ],
+      "bytes": 34701
+    },
+    {
+      "name": "icon_fullscreen",
+      "path": "res://ui/redesign/assets/settings/icon_fullscreen.png",
+      "source": "SETTINGS/1d297c55-4e6b-4caf-b705-5228ef4e32df.png",
+      "source_sha256": "1d23847ea296c254915b88e420e6a604c26ce293da1fafd24b735621a97c2860",
+      "source_component_rank": 14,
+      "source_crop_xyxy": [
+        1451,
+        444,
+        1622,
+        618
+      ],
+      "extraction": "component",
+      "meaning": "Fullscreen arrows icon",
+      "baked_text": false,
+      "size": [
+        171,
+        174
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        165,
+        169
+      ],
+      "bytes": 37555
+    },
+    {
+      "name": "icon_cat",
+      "path": "res://ui/redesign/assets/settings/icon_cat.png",
+      "source": "SETTINGS/0e12567d-88f7-49e6-9bce-06cc27a6d16b.png",
+      "source_sha256": "c6640c1ccea14ab1b902f078a7b13123ece0df38e92b7862e8ce84415d3336d0",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        665,
+        432,
+        1027,
+        729
+      ],
+      "extraction": "component",
+      "meaning": "Black cat mascot",
+      "baked_text": false,
+      "size": [
+        362,
+        297
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        357,
+        292
+      ],
+      "bytes": 97139
+    },
+    {
+      "name": "icon_cap",
+      "path": "res://ui/redesign/assets/settings/icon_cap.png",
+      "source": "SETTINGS/0e12567d-88f7-49e6-9bce-06cc27a6d16b.png",
+      "source_sha256": "c6640c1ccea14ab1b902f078a7b13123ece0df38e92b7862e8ce84415d3336d0",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        239,
+        425,
+        586,
+        728
+      ],
+      "extraction": "component",
+      "meaning": "Graduation cap",
+      "baked_text": false,
+      "size": [
+        347,
+        303
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        342,
+        298
+      ],
+      "bytes": 100194
+    },
+    {
+      "name": "decor_leaf_cluster",
+      "path": "res://ui/redesign/assets/settings/decor_leaf_cluster.png",
+      "source": "SETTINGS/0e12567d-88f7-49e6-9bce-06cc27a6d16b.png",
+      "source_sha256": "c6640c1ccea14ab1b902f078a7b13123ece0df38e92b7862e8ce84415d3336d0",
+      "source_component_rank": 4,
+      "source_crop_xyxy": [
+        52,
+        681,
+        376,
+        913
+      ],
+      "extraction": "component",
+      "meaning": "Green leaves cluster",
+      "baked_text": false,
+      "size": [
+        324,
+        232
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        319,
+        226
+      ],
+      "bytes": 81901
+    },
+    {
+      "name": "decor_books_purple",
+      "path": "res://ui/redesign/assets/settings/decor_books_purple.png",
+      "source": "SETTINGS/79097ef5-f37d-4e23-9c4d-ecef0ee3a164.png",
+      "source_sha256": "5a127ae54891571cb6669f8c6a376ba5df1799482e99ed0965926c528fb73484",
+      "source_component_rank": 1,
+      "source_crop_xyxy": [
+        869,
+        27,
+        1315,
+        304
+      ],
+      "extraction": "component",
+      "meaning": "Purple book stack",
+      "baked_text": false,
+      "size": [
+        446,
+        277
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        441,
+        272
+      ],
+      "bytes": 144118
+    },
+    {
+      "name": "decor_books_blue",
+      "path": "res://ui/redesign/assets/settings/decor_books_blue.png",
+      "source": "SETTINGS/79097ef5-f37d-4e23-9c4d-ecef0ee3a164.png",
+      "source_sha256": "5a127ae54891571cb6669f8c6a376ba5df1799482e99ed0965926c528fb73484",
+      "source_component_rank": 2,
+      "source_crop_xyxy": [
+        6,
+        20,
+        444,
+        301
+      ],
+      "extraction": "component",
+      "meaning": "Blue book stack",
+      "baked_text": false,
+      "size": [
+        438,
+        281
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        6,
+        433,
+        276
+      ],
+      "bytes": 140724
+    },
+    {
+      "name": "decor_books_red",
+      "path": "res://ui/redesign/assets/settings/decor_books_red.png",
+      "source": "SETTINGS/79097ef5-f37d-4e23-9c4d-ecef0ee3a164.png",
+      "source_sha256": "5a127ae54891571cb6669f8c6a376ba5df1799482e99ed0965926c528fb73484",
+      "source_component_rank": 3,
+      "source_crop_xyxy": [
+        449,
+        41,
+        871,
+        310
+      ],
+      "extraction": "component",
+      "meaning": "Red book stack",
+      "baked_text": false,
+      "size": [
+        422,
+        269
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        417,
+        264
+      ],
+      "bytes": 132183
+    },
+    {
+      "name": "decor_books_standing",
+      "path": "res://ui/redesign/assets/settings/decor_books_standing.png",
+      "source": "SETTINGS/79097ef5-f37d-4e23-9c4d-ecef0ee3a164.png",
+      "source_sha256": "5a127ae54891571cb6669f8c6a376ba5df1799482e99ed0965926c528fb73484",
+      "source_component_rank": 5,
+      "source_crop_xyxy": [
+        1311,
+        12,
+        1656,
+        290
+      ],
+      "extraction": "component",
+      "meaning": "Standing books",
+      "baked_text": false,
+      "size": [
+        345,
+        278
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        6,
+        5,
+        340,
+        273
+      ],
+      "bytes": 107548
+    },
+    {
+      "name": "decor_plant",
+      "path": "res://ui/redesign/assets/settings/decor_plant.png",
+      "source": "SETTINGS/79097ef5-f37d-4e23-9c4d-ecef0ee3a164.png",
+      "source_sha256": "5a127ae54891571cb6669f8c6a376ba5df1799482e99ed0965926c528fb73484",
+      "source_component_rank": 6,
+      "source_crop_xyxy": [
+        22,
+        297,
+        268,
+        575
+      ],
+      "extraction": "component",
+      "meaning": "Potted plant",
+      "baked_text": false,
+      "size": [
+        246,
+        278
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        241,
+        273
+      ],
+      "bytes": 77135
+    },
+    {
+      "name": "decor_green_leaves",
+      "path": "res://ui/redesign/assets/settings/decor_green_leaves.png",
+      "source": "SETTINGS/79097ef5-f37d-4e23-9c4d-ecef0ee3a164.png",
+      "source_sha256": "5a127ae54891571cb6669f8c6a376ba5df1799482e99ed0965926c528fb73484",
+      "source_component_rank": 15,
+      "source_crop_xyxy": [
+        21,
+        586,
+        329,
+        722
+      ],
+      "extraction": "component",
+      "meaning": "Leaf decoration",
+      "baked_text": false,
+      "size": [
+        308,
+        136
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        5,
+        5,
+        303,
+        130
+      ],
+      "bytes": 41194
+    }
+  ]
+}

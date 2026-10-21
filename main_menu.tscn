@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://t84rkfytcor7"]
 
 [ext_resource type="Script" uid="uid://ckrgapgprd8xk" path="res://main_menu.gd" id="1_menu"]
-[ext_resource type="Script" uid="uid://cr7pux3m5kv3" path="res://main_menu_art.gd" id="2_art"]
-[ext_resource type="Script" uid="uid://cu716f7clq00o" path="res://main_menu_cursor.gd" id="3_cursor"]
+[ext_resource type="Script" path="res://main_menu_art.gd" id="2_art"]
 [ext_resource type="Texture2D" uid="uid://48q7scyb0ywi" path="res://assets/ui/kilos_curved.png" id="4_kilos_curved"]
-[ext_resource type="Script" uid="uid://fl5qixkal657" path="res://main_menu_tile_fx.gd" id="5_tile_fx"]
+[ext_resource type="Script" path="res://main_menu_tile_fx.gd" id="5_tile_fx"]
 [ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="6_title_font"]
+[ext_resource type="Texture2D" path="res://assets/ui/main_panel_buttons.png" id="7_main_buttons"]
 
 [sub_resource type="StyleBoxFlat" id="FallingTile"]
 bg_color = Color(0.411765, 0.745098, 0.603922, 1)
@@ -133,75 +133,264 @@ shadow_size = 5
 shadow_offset = Vector2(7, 9)
 
 [sub_resource type="StyleBoxFlat" id="ButtonNormal"]
-content_margin_left = 12.0
-content_margin_top = 8.0
-content_margin_right = 12.0
-content_margin_bottom = 8.0
-bg_color = Color(0.286275, 0.266667, 0.388235, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0.164706, 0.141176, 0.215686, 0.45)
-shadow_size = 3
-shadow_offset = Vector2(0, 4)
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.286275, 0.239216, 0.403922, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.203922, 0.164706, 0.298039, 0.95)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.0784314, 0.2, 0.180392, 0.52)
+shadow_size = 5
+shadow_offset = Vector2(0, 6)
 
 [sub_resource type="StyleBoxFlat" id="ButtonPressed"]
-content_margin_left = 3.0
-content_margin_top = 4.0
-content_margin_right = 3.0
-content_margin_bottom = 0.0
-bg_color = Color(0.286275, 0.266667, 0.388235, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.968627, 0.890196, 0.741176, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
+content_margin_left = 18.0
+content_margin_top = 12.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.219608, 0.180392, 0.32549, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.968627, 0.890196, 0.741176, 0.8)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.0784314, 0.2, 0.180392, 0.35)
+shadow_size = 2
+shadow_offset = Vector2(0, 3)
 
 [sub_resource type="StyleBoxFlat" id="ButtonHover"]
-content_margin_left = 20.0
-content_margin_top = 11.0
-content_margin_right = 20.0
-content_margin_bottom = 11.0
-bg_color = Color(0.482353, 0.713726, 0.580392, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.968627, 0.890196, 0.741176, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0.164706, 0.141176, 0.215686, 0.42)
-shadow_size = 4
-shadow_offset = Vector2(0, 5)
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.356863, 0.301961, 0.494118, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.968627, 0.890196, 0.741176, 0.88)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.0784314, 0.2, 0.180392, 0.5)
+shadow_size = 6
+shadow_offset = Vector2(0, 7)
+
 [sub_resource type="StyleBoxFlat" id="ButtonFocus"]
 bg_color = Color(0, 0, 0, 0)
-border_width_left = 0
-border_width_top = 0
-border_width_right = 0
-border_width_bottom = 0
 border_color = Color(0, 0, 0, 0)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="AtlasTexture" id="IconTrophy"]
+atlas = ExtResource("7_main_buttons")
+region = Rect2(1062, 760, 155, 151)
 
-[sub_resource type="StyleBoxFlat" id="QuitNormal"]
-bg_color = Color(0.858824, 0.223529, 0.309804, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0.164706, 0.141176, 0.215686, 0.42)
+[sub_resource type="AtlasTexture" id="IconGear"]
+atlas = ExtResource("7_main_buttons")
+region = Rect2(1263, 755, 188, 160)
+
+[sub_resource type="AtlasTexture" id="IconStar"]
+atlas = ExtResource("7_main_buttons")
+region = Rect2(1449, 753, 152, 156)
+
+[sub_resource type="StyleBoxFlat" id="TutorialNormal"]
+content_margin_left = 22.0
+content_margin_top = 13.0
+content_margin_right = 22.0
+content_margin_bottom = 13.0
+bg_color = Color(0.603922, 0.313726, 0.858824, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.811765, 0.619608, 0.968627, 0.82)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.215686, 0.137255, 0.313726, 0.58)
+shadow_size = 7
+shadow_offset = Vector2(0, 8)
+
+[sub_resource type="StyleBoxFlat" id="TutorialPressed"]
+content_margin_left = 22.0
+content_margin_top = 16.0
+content_margin_right = 22.0
+content_margin_bottom = 10.0
+bg_color = Color(0.505882, 0.235294, 0.745098, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.92549, 0.788235, 0.9)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.215686, 0.137255, 0.313726, 0.38)
 shadow_size = 3
 shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="TutorialHover"]
+content_margin_left = 22.0
+content_margin_top = 13.0
+content_margin_right = 22.0
+content_margin_bottom = 13.0
+bg_color = Color(0.682353, 0.392157, 0.917647, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.92549, 0.788235, 0.95)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.215686, 0.137255, 0.313726, 0.62)
+shadow_size = 8
+shadow_offset = Vector2(0, 9)
+
+[sub_resource type="AtlasTexture" id="IconBook"]
+atlas = ExtResource("7_main_buttons")
+region = Rect2(473, 772, 168, 139)
+
+[sub_resource type="StyleBoxFlat" id="PlayNormal"]
+content_margin_left = 22.0
+content_margin_top = 13.0
+content_margin_right = 22.0
+content_margin_bottom = 13.0
+bg_color = Color(0.184314, 0.807843, 0.443137, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.505882, 0.956863, 0.658824, 0.84)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.0470588, 0.321569, 0.25098, 0.6)
+shadow_size = 7
+shadow_offset = Vector2(0, 8)
+
+[sub_resource type="StyleBoxFlat" id="PlayPressed"]
+content_margin_left = 22.0
+content_margin_top = 16.0
+content_margin_right = 22.0
+content_margin_bottom = 10.0
+bg_color = Color(0.121569, 0.698039, 0.356863, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.92549, 0.788235, 0.9)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.0470588, 0.321569, 0.25098, 0.4)
+shadow_size = 3
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="PlayHover"]
+content_margin_left = 22.0
+content_margin_top = 13.0
+content_margin_right = 22.0
+content_margin_bottom = 13.0
+bg_color = Color(0.286275, 0.87451, 0.537255, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.92549, 0.788235, 0.95)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.0470588, 0.321569, 0.25098, 0.64)
+shadow_size = 8
+shadow_offset = Vector2(0, 9)
+
+[sub_resource type="AtlasTexture" id="IconPlay"]
+atlas = ExtResource("7_main_buttons")
+region = Rect2(713, 758, 122, 149)
+
+[sub_resource type="StyleBoxFlat" id="QuitNormal"]
+content_margin_left = 22.0
+content_margin_top = 13.0
+content_margin_right = 22.0
+content_margin_bottom = 13.0
+bg_color = Color(1, 0.309804, 0.4, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.654902, 0.690196, 0.8)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.215686, 0.137255, 0.235294, 0.55)
+shadow_size = 7
+shadow_offset = Vector2(0, 8)
+
+[sub_resource type="StyleBoxFlat" id="QuitPressed"]
+content_margin_left = 22.0
+content_margin_top = 16.0
+content_margin_right = 22.0
+content_margin_bottom = 10.0
+bg_color = Color(0.901961, 0.254902, 0.341176, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.92549, 0.788235, 0.9)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.215686, 0.137255, 0.235294, 0.4)
+shadow_size = 3
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="QuitHover"]
+content_margin_left = 22.0
+content_margin_top = 13.0
+content_margin_right = 22.0
+content_margin_bottom = 13.0
+bg_color = Color(1, 0.411765, 0.486275, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.92549, 0.788235, 0.95)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.215686, 0.137255, 0.235294, 0.62)
+shadow_size = 8
+shadow_offset = Vector2(0, 9)
+
+[sub_resource type="AtlasTexture" id="IconQuit"]
+atlas = ExtResource("7_main_buttons")
+region = Rect2(880, 756, 125, 151)
 
 [sub_resource type="StyleBoxFlat" id="TooltipStyle"]
 bg_color = Color(0.976471, 0.894118, 0.741176, 1)
@@ -300,10 +489,10 @@ offset_bottom = 462.0
 
 [node name="Kilos" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=824369719]
 layout_mode = 0
-offset_left = 140.0
-offset_top = -46.0
-offset_right = 834.0
-offset_bottom = 213.0
+offset_left = 116.0
+offset_top = -45.0
+offset_right = 810.0
+offset_bottom = 214.0
 mouse_default_cursor_shape = 2
 texture = ExtResource("4_kilos_curved")
 expand_mode = 1
@@ -549,103 +738,121 @@ vertical_alignment = 2
 
 [node name="LeftMenu" type="VBoxContainer" parent="MainLayer" unique_id=670607935]
 layout_mode = 0
-offset_left = 42.0
-offset_top = 500.0
-offset_right = 205.0
-offset_bottom = 684.0
-theme_override_constants/separation = 7
+offset_left = 44.0
+offset_top = 474.0
+offset_right = 269.0
+offset_bottom = 678.0
+theme_override_constants/separation = 10
 
 [node name="Leaderboard" type="Button" parent="MainLayer/LeftMenu" unique_id=893965103]
-custom_minimum_size = Vector2(163, 40)
+custom_minimum_size = Vector2(225, 55)
 layout_mode = 2
-focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_outline_color = Color(0.141176, 0.113725, 0.215686, 0.42)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
 theme_override_styles/focus = SubResource("ButtonFocus")
 text = "LEADERBOARD"
+icon = SubResource("IconTrophy")
+expand_icon = true
 
 [node name="Settings" type="Button" parent="MainLayer/LeftMenu" unique_id=1888547398]
-custom_minimum_size = Vector2(163, 40)
+custom_minimum_size = Vector2(225, 55)
 layout_mode = 2
-focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_outline_color = Color(0.141176, 0.113725, 0.215686, 0.42)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
 theme_override_styles/focus = SubResource("ButtonFocus")
 text = "SETTINGS"
+icon = SubResource("IconGear")
+expand_icon = true
 
 [node name="Credits" type="Button" parent="MainLayer/LeftMenu" unique_id=794054224]
-custom_minimum_size = Vector2(163, 40)
+custom_minimum_size = Vector2(225, 55)
 layout_mode = 2
-focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_outline_color = Color(0.141176, 0.113725, 0.215686, 0.42)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("ButtonNormal")
 theme_override_styles/pressed = SubResource("ButtonPressed")
 theme_override_styles/hover = SubResource("ButtonHover")
 theme_override_styles/focus = SubResource("ButtonFocus")
 text = "CREDITS"
+icon = SubResource("IconStar")
+expand_icon = true
 
 [node name="CenterMenu" type="VBoxContainer" parent="MainLayer" unique_id=1750835866]
 layout_mode = 0
-offset_left = 520.0
-offset_top = 492.0
-offset_right = 760.0
-offset_bottom = 685.0
+offset_left = 470.0
+offset_top = 435.0
+offset_right = 810.0
+offset_bottom = 681.0
 theme_override_constants/separation = 10
 
 [node name="Tutorial" type="Button" parent="MainLayer/CenterMenu" unique_id=1106129653]
-custom_minimum_size = Vector2(240, 60)
+custom_minimum_size = Vector2(340, 72)
 layout_mode = 2
-focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_outline_color = Color(0.270588, 0.137255, 0.388235, 0.4)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("ButtonNormal")
-theme_override_styles/pressed = SubResource("ButtonPressed")
-theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_font_sizes/font_size = 21
+theme_override_styles/normal = SubResource("TutorialNormal")
+theme_override_styles/pressed = SubResource("TutorialPressed")
+theme_override_styles/hover = SubResource("TutorialHover")
 theme_override_styles/focus = SubResource("ButtonFocus")
 text = "TUTORIAL"
+icon = SubResource("IconBook")
+expand_icon = true
 
 [node name="Play" type="Button" parent="MainLayer/CenterMenu" unique_id=1153098940]
-custom_minimum_size = Vector2(240, 60)
+custom_minimum_size = Vector2(340, 72)
 layout_mode = 2
-focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_outline_color = Color(0.0392157, 0.286275, 0.188235, 0.38)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("ButtonNormal")
-theme_override_styles/pressed = SubResource("ButtonPressed")
-theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("PlayNormal")
+theme_override_styles/pressed = SubResource("PlayPressed")
+theme_override_styles/hover = SubResource("PlayHover")
 theme_override_styles/focus = SubResource("ButtonFocus")
 text = "PLAY"
+icon = SubResource("IconPlay")
+expand_icon = true
 
 [node name="Quit" type="Button" parent="MainLayer/CenterMenu" unique_id=638833762]
-custom_minimum_size = Vector2(240, 60)
+custom_minimum_size = Vector2(340, 72)
 layout_mode = 2
-focus_mode = 2
 theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
 theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_outline_color = Color(0.380392, 0.105882, 0.160784, 0.4)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 21
 theme_override_styles/normal = SubResource("QuitNormal")
-theme_override_styles/pressed = SubResource("ButtonPressed")
-theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/pressed = SubResource("QuitPressed")
+theme_override_styles/hover = SubResource("QuitHover")
 theme_override_styles/focus = SubResource("ButtonFocus")
 text = "QUIT"
+icon = SubResource("IconQuit")
+expand_icon = true
 
 [node name="Tooltip" type="PanelContainer" parent="MainLayer" unique_id=257164577]
 visible = false
@@ -664,13 +871,3 @@ text = "Settings, controls and dictionaries."
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
-
-[node name="CursorCritter" type="Control" parent="." unique_id=1493705781]
-z_index = 100
-anchors_preset = 0
-offset_left = 4.0
-offset_top = 85.0
-offset_right = 44.0
-offset_bottom = 167.0
-mouse_filter = 2
-script = ExtResource("3_cursor")

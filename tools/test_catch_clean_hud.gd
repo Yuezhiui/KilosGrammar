@@ -97,7 +97,7 @@ func _verify_window(packed: PackedScene, physical: Vector2i) -> void:
     await process_frame
     game.set_process(false)
     var hud := game.get_node_or_null("HUDLayer/HUD") as Control
-    var number := game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
+    var number := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
     var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
     var apples := game.get_node_or_null("CharacterRig/CollectedWords") as Node2D
     _check(hud != null and number != null and prompt != null and apples != null,
@@ -139,12 +139,12 @@ func _verify_hud(game: Control, hud: Control, prompt: Label, number: Label,
     var timer := hud.get_node_or_null("TimerPlaque") as TextureRect
     var lives := hud.get_node_or_null("LivesPlaque") as TextureRect
     var pause := hud.get_node_or_null("PausePlaque") as TextureRect
-    var score := hud.get_node_or_null("ScorePlaque") as TextureRect
+    var score := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect
     if title == null or timer == null or lives == null or pause == null or score == null:
         _fail(label + ": essential title/mode/pause/score plaques are missing")
         return
     for name in HUD_ART:
-        var plaque := hud.get_node_or_null(String(name)) as TextureRect
+        var plaque := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect if name == "ScorePlaque" else hud.get_node_or_null(String(name)) as TextureRect
         _check(plaque != null and plaque.texture != null
             and plaque.texture.resource_path == ART + String(HUD_ART[name]),
             label + ": authentic PNG for " + String(name))
@@ -182,6 +182,10 @@ func _verify_hud(game: Control, hud: Control, prompt: Label, number: Label,
         label + ": no legacy heart sprites overlay the static heart bitmap")
     var visible_labels: Array[Label] = []
     _collect_visible_labels(hud, visible_labels)
+    # The numeric score is on the gameplay canvas, while the other labels
+    # remain on the higher HUD canvas.
+    if number.is_visible_in_tree():
+        visible_labels.append(number)
     _check(visible_labels.size() == (3 if mode == "Seconds" else 2),
         "%s: only question, score%s remain visible (found %d)" %
         [label, ", timer" if mode == "Seconds" else "", visible_labels.size()])

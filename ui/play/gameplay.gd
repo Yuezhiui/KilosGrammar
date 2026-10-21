@@ -13,6 +13,10 @@ const GAME_SCENES := {
 
 var context: Dictionary = {}
 var active_game: Control
+var smooth_x := 0.0
+var last_pose_valid := false
+var arms_were_up := false
+var last_fire_ms := -2000
 
 
 func _ready() -> void:
@@ -71,7 +75,48 @@ func _relay_navigation(route: String, payload: Dictionary) -> void:
 	outgoing["activity"] = String(context.get("activity", "Catch the Word"))
 	outgoing["gameplay_implemented"] = true
 	outgoing["demo_mode"] = true
+	outgoing["camera_live"] = bool(context.get("camera_live", false)) and PoseService.active
 	requested.emit(route, outgoing)
+
+
+func _process(delta: float) -> void:
+	# Godot renders/smooths at up to 60 FPS independently of YOLO inference.
+	# No stale pose is allowed to keep moving the player.
+	if bool(context.get("keyboard_mode", false)) or not bool(context.get("camera_live", false)):
+		return
+	if not is_instance_valid(active_game):
+		return
+	if not PoseService.has_valid_pose() or not bool(PoseService.calibration.get("valid", false)):
+		if last_pose_valid:
+			if active_game.has_method("clear_body_input"):
+				active_game.call("clear_body_input")
+			else:
+				set_body_x(0.0)
+		last_pose_valid = false
+		arms_were_up = false
+		return
+	var raw_x := PoseService.normalized_body_x()
+	if not last_pose_valid:
+		smooth_x = raw_x
+	else:
+		smooth_x = lerpf(smooth_x, raw_x, 1.0 - exp(-maxf(delta, 0.0) * 14.0))
+	set_body_x(smooth_x)
+	last_pose_valid = true
+	# Avoid repeated shots while arms remain raised; lift both hands again
+	# after lowering them to trigger the next shot.
+	var both_raised := bool(PoseService.current_status.get("raised", false))
+	if String(context.get("activity", "")) == "Balloon Popping" and both_raised and not arms_were_up:
+		if Time.get_ticks_msec() - last_fire_ms >= 800 and active_game.has_method("_launch_projectile"):
+			active_game.call("_launch_projectile")
+			last_fire_ms = Time.get_ticks_msec()
+	arms_were_up = both_raised
+
+
+func _exit_tree() -> void:
+	# The router parks this live wrapper on Pause; it is only freed when
+	# the player leaves gameplay permanently.
+	if PoseService.active:
+		PoseService.stop_camera()
 
 
 func _finish_round() -> void:
