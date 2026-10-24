@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Validate Settings through the real menu host, with its real Music/SFX buses.
-const MENU := preload("res://main_menu.tscn")
+const MENU := "res://main_menu.tscn"
 const SETTINGS_FILE := "user://kilos_settings.cfg"
 var failures: Array[String] = []
 
@@ -27,7 +27,9 @@ func _run() -> void:
 
 	root.size = Vector2i(1280, 720)
 	root.content_scale_size = Vector2i(1280, 720)
-	var app := MENU.instantiate() as Control
+	# Autoload names are registered by the SceneTree before the menu is loaded.
+	# Preloading at script parse time can compile the menu too early.
+	var app := (load(MENU) as PackedScene).instantiate() as Control
 	root.add_child(app)
 	await create_timer(1.4).timeout
 	app.call("_on_panel_requested", "settings", {})

@@ -32,8 +32,15 @@ func _run() -> void:
 	_expect(route == "calibration", "Camera Play enters calibration without a separate Camera Check screen")
 	_expect(bool((app.get("session_state") as Dictionary).get("camera_requested", false)), "Camera request is explicit in Play payload")
 	var calibration := app.get("active_panel") as Control
-	_expect(calibration.get("guide_cursor") != null, "Automatic zone-guide boxes are mounted")
-	_expect((calibration.get("demo_button") as Button).text == "STOP CAMERA", "Visible stop camera button exists")
+	_expect(calibration.get_node_or_null("TutorialStage/CenterCalibrationLane") is Control,
+		"Editable center standing zone is mounted")
+	_expect(calibration.get_node_or_null("TutorialStage/LiveCameraInset") is TextureRect,
+		"Camera preview remains independently editor-authored")
+	for removed in ["DemoButton", "RetryButton", "SkipButton", "KeyboardButton"]:
+		_expect(calibration.get_node_or_null("TutorialStage/" + removed) == null,
+			"Calibration no longer exposes deleted action: " + removed)
+	_expect(calibration.get_node_or_null("TutorialStage/BackButton") is Button,
+		"Teacher Back to Main is available")
 	app.call("_return_to_main")
 	_expect(not service.active, "Returning home closes camera session")
 	app.free()

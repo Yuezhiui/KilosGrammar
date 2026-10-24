@@ -1,0 +1,558 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://ui/tutorial/spotlight_overlay.gd" id="1_script"]
+
+[ext_resource type="Texture2D" path="res://Components/TutorialSpotlight/right-arrow.png" id="2_arrow"]
+
+[ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="3_font"]
+
+[sub_resource type="Shader" id="Shader_mask"]
+code = "shader_type canvas_item;\nrender_mode unshaded;\nuniform vec2 hole_center = vec2(0.5, 0.5);\nuniform vec2 hole_half_size = vec2(0.15, 0.12);\nuniform float hole_roundness = 0.02;\nuniform float hole_feather = 0.004;\nvoid fragment() {\n  vec2 delta = abs(UV - hole_center) - hole_half_size + vec2(hole_roundness);\n  float sd = length(max(delta, vec2(0.0))) + min(max(delta.x, delta.y), 0.0) - hole_roundness;\n  float outside = smoothstep(0.0, max(0.00001, hole_feather), sd);\n  COLOR = vec4(0.012, 0.014, 0.058, 0.70 * outside);\n}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mask"]
+resource_local_to_scene = true
+shader = SubResource("Shader_mask")
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_card"]
+bg_color = Color(0.984, 0.935, 0.784, 0.985)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.29, 0.23, 0.38, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.10, 0.07, 0.16, 0.50)
+shadow_size = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_green"]
+bg_color = Color(0.11, 0.63, 0.40, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.17, 0.11, 0.22, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_blue"]
+bg_color = Color(0.23, 0.49, 0.79, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.17, 0.11, 0.22, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_purple"]
+bg_color = Color(0.54, 0.39, 0.74, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.17, 0.11, 0.22, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_red"]
+bg_color = Color(0.82, 0.31, 0.37, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.17, 0.11, 0.22, 1)
+
+[node name="SpotlightOverlay" type="CanvasLayer"]
+layer = 110
+process_mode = 3
+script = ExtResource("1_script")
+
+[node name="Overlay" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="DimMask" type="ColorRect" parent="Overlay"]
+material = SubResource("ShaderMaterial_mask")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="FocusRegions" type="Control" parent="Overlay"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CatchWord" type="Control" parent="Overlay/FocusRegions"]
+layout_mode = 0
+offset_left = 0
+offset_top = 0
+offset_right = 1280
+offset_bottom = 720
+mouse_filter = 2
+
+[node name="Prompt" type="Control" parent="Overlay/FocusRegions/CatchWord"]
+layout_mode = 0
+offset_left = 20
+offset_top = 10
+offset_right = 524
+offset_bottom = 165
+mouse_filter = 2
+
+[node name="PlayArea" type="Control" parent="Overlay/FocusRegions/CatchWord"]
+layout_mode = 0
+offset_left = 180
+offset_top = 270
+offset_right = 975
+offset_bottom = 720
+mouse_filter = 2
+
+[node name="Seconds" type="Control" parent="Overlay/FocusRegions/CatchWord"]
+layout_mode = 0
+offset_left = 1010
+offset_top = 12
+offset_right = 1207
+offset_bottom = 86
+mouse_filter = 2
+
+[node name="Lives" type="Control" parent="Overlay/FocusRegions/CatchWord"]
+layout_mode = 0
+offset_left = 1015
+offset_top = 10
+offset_right = 1210
+offset_bottom = 86
+mouse_filter = 2
+
+[node name="Score" type="Control" parent="Overlay/FocusRegions/CatchWord"]
+layout_mode = 0
+offset_left = 1000
+offset_top = 535
+offset_right = 1274
+offset_bottom = 710
+mouse_filter = 2
+
+[node name="Pause" type="Control" parent="Overlay/FocusRegions/CatchWord"]
+layout_mode = 0
+offset_left = 1188
+offset_top = 6
+offset_right = 1278
+offset_bottom = 97
+mouse_filter = 2
+
+[node name="BalloonPopping" type="Control" parent="Overlay/FocusRegions"]
+layout_mode = 0
+offset_left = 0
+offset_top = 0
+offset_right = 1280
+offset_bottom = 720
+mouse_filter = 2
+
+[node name="Prompt" type="Control" parent="Overlay/FocusRegions/BalloonPopping"]
+layout_mode = 0
+offset_left = 22
+offset_top = 12
+offset_right = 455
+offset_bottom = 169
+mouse_filter = 2
+
+[node name="PlayArea" type="Control" parent="Overlay/FocusRegions/BalloonPopping"]
+layout_mode = 0
+offset_left = 210
+offset_top = 310
+offset_right = 1070
+offset_bottom = 635
+mouse_filter = 2
+
+[node name="Seconds" type="Control" parent="Overlay/FocusRegions/BalloonPopping"]
+layout_mode = 0
+offset_left = 1005
+offset_top = 13
+offset_right = 1208
+offset_bottom = 88
+mouse_filter = 2
+
+[node name="Lives" type="Control" parent="Overlay/FocusRegions/BalloonPopping"]
+layout_mode = 0
+offset_left = 1020
+offset_top = 12
+offset_right = 1205
+offset_bottom = 87
+mouse_filter = 2
+
+[node name="Score" type="Control" parent="Overlay/FocusRegions/BalloonPopping"]
+layout_mode = 0
+offset_left = 1050
+offset_top = 555
+offset_right = 1261
+offset_bottom = 694
+mouse_filter = 2
+
+[node name="Pause" type="Control" parent="Overlay/FocusRegions/BalloonPopping"]
+layout_mode = 0
+offset_left = 1185
+offset_top = 9
+offset_right = 1274
+offset_bottom = 94
+mouse_filter = 2
+
+[node name="HumanPlane" type="Control" parent="Overlay/FocusRegions"]
+layout_mode = 0
+offset_left = 0
+offset_top = 0
+offset_right = 1280
+offset_bottom = 720
+mouse_filter = 2
+
+[node name="Prompt" type="Control" parent="Overlay/FocusRegions/HumanPlane"]
+layout_mode = 0
+offset_left = 180
+offset_top = 60
+offset_right = 930
+offset_bottom = 206
+mouse_filter = 2
+
+[node name="PlayArea" type="Control" parent="Overlay/FocusRegions/HumanPlane"]
+layout_mode = 0
+offset_left = 310
+offset_top = 175
+offset_right = 970
+offset_bottom = 605
+mouse_filter = 2
+
+[node name="Seconds" type="Control" parent="Overlay/FocusRegions/HumanPlane"]
+layout_mode = 0
+offset_left = 1050
+offset_top = 12
+offset_right = 1230
+offset_bottom = 95
+mouse_filter = 2
+
+[node name="Lives" type="Control" parent="Overlay/FocusRegions/HumanPlane"]
+layout_mode = 0
+offset_left = 1040
+offset_top = 12
+offset_right = 1225
+offset_bottom = 96
+mouse_filter = 2
+
+[node name="Score" type="Control" parent="Overlay/FocusRegions/HumanPlane"]
+layout_mode = 0
+offset_left = 1030
+offset_top = 550
+offset_right = 1255
+offset_bottom = 692
+mouse_filter = 2
+
+[node name="Pause" type="Control" parent="Overlay/FocusRegions/HumanPlane"]
+layout_mode = 0
+offset_left = 20
+offset_top = 19
+offset_right = 159
+offset_bottom = 77
+mouse_filter = 2
+
+[node name="GuideArrows" type="Control" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PromptArrow" type="TextureRect" parent="Overlay/GuideArrows"]
+visible = false
+layout_mode = 0
+offset_left = 493
+offset_top = 122
+offset_right = 594
+offset_bottom = 192
+rotation = 3.1415927
+mouse_filter = 2
+texture = ExtResource("2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CatchWordPromptArrow" type="TextureRect" parent="Overlay/GuideArrows"]
+visible = false
+layout_mode = 0
+offset_left = 15
+offset_top = 99
+offset_right = 106
+offset_bottom = 149
+mouse_filter = 2
+texture = ExtResource("2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PlayArrow" type="TextureRect" parent="Overlay/GuideArrows"]
+visible = false
+layout_mode = 0
+offset_left = 568
+offset_top = 148
+offset_right = 671
+offset_bottom = 218
+rotation = 1.5707963
+mouse_filter = 2
+texture = ExtResource("2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CatchWordPlayArrow" type="TextureRect" parent="Overlay/GuideArrows"]
+visible = false
+layout_mode = 0
+offset_left = 118
+offset_top = 430
+offset_right = 215
+offset_bottom = 490
+mouse_filter = 2
+texture = ExtResource("2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ModeArrow" type="TextureRect" parent="Overlay/GuideArrows"]
+visible = false
+layout_mode = 0
+offset_left = 910
+offset_top = 25
+offset_right = 1013
+offset_bottom = 95
+rotation = 0
+mouse_filter = 2
+texture = ExtResource("2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ScoreArrow" type="TextureRect" parent="Overlay/GuideArrows"]
+visible = false
+layout_mode = 0
+offset_left = 1090
+offset_top = 454
+offset_right = 1180
+offset_bottom = 518
+rotation = 1.5707963
+mouse_filter = 2
+texture = ExtResource("2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PauseArrow" type="TextureRect" parent="Overlay/GuideArrows"]
+visible = false
+layout_mode = 0
+offset_left = 1209
+offset_top = 178
+offset_right = 1299
+offset_bottom = 243
+rotation = -1.5707963
+mouse_filter = 2
+texture = ExtResource("2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PlanePauseArrow" type="TextureRect" parent="Overlay/GuideArrows"]
+visible = false
+layout_mode = 0
+offset_left = 161
+offset_top = 24
+offset_right = 261
+offset_bottom = 94
+rotation = 3.1415927
+mouse_filter = 2
+texture = ExtResource("2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CaptionCard" type="Panel" parent="Overlay"]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 138.0
+offset_right = 1078.0
+offset_bottom = 334.0
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBox_card")
+
+[node name="StepCounter" type="Label" parent="Overlay/CaptionCard"]
+layout_mode = 0
+offset_left = 18
+offset_top = 13
+offset_right = 524
+offset_bottom = 36
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.29, 0.25, 0.39, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 13
+text = "STEP 1 OF 5"
+
+
+[node name="Header" type="Label" parent="Overlay/CaptionCard"]
+layout_mode = 0
+offset_left = 18
+offset_top = 34
+offset_right = 524
+offset_bottom = 77
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.28, 0.22, 0.35, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 21
+text = "READ THE QUESTION"
+vertical_alignment = 1
+
+[node name="Caption" type="Label" parent="Overlay/CaptionCard"]
+layout_mode = 0
+offset_left = 19
+offset_top = 75
+offset_right = 520
+offset_bottom = 135
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.22, 0.21, 0.30, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 15
+text = "Read the question and get ready to play!"
+autowrap_mode = 3
+vertical_alignment = 1
+
+[node name="BackButton" type="Button" parent="Overlay/CaptionCard"]
+layout_mode = 0
+offset_left = 18
+offset_top = 140.0
+offset_right = 112
+offset_bottom = 185.0
+mouse_default_cursor_shape = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.8, 0.8, 0.8, 0.55)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBox_blue")
+theme_override_styles/hover = SubResource("StyleBox_blue")
+theme_override_styles/pressed = SubResource("StyleBox_blue")
+text = "←  BACK"
+
+[node name="ReplayButton" type="Button" parent="Overlay/CaptionCard"]
+layout_mode = 0
+offset_left = 120
+offset_top = 140.0
+offset_right = 272
+offset_bottom = 185.0
+mouse_default_cursor_shape = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.8, 0.8, 0.8, 0.55)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBox_purple")
+theme_override_styles/hover = SubResource("StyleBox_purple")
+theme_override_styles/pressed = SubResource("StyleBox_purple")
+text = "↻ REPLAY VOICE"
+
+[node name="SkipButton" type="Button" parent="Overlay/CaptionCard"]
+layout_mode = 0
+offset_left = 280
+offset_top = 140.0
+offset_right = 365
+offset_bottom = 185.0
+mouse_default_cursor_shape = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.8, 0.8, 0.8, 0.55)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBox_red")
+theme_override_styles/hover = SubResource("StyleBox_red")
+theme_override_styles/pressed = SubResource("StyleBox_red")
+text = "SKIP"
+
+[node name="NextButton" type="Button" parent="Overlay/CaptionCard"]
+layout_mode = 0
+offset_left = 373
+offset_top = 140.0
+offset_right = 522
+offset_bottom = 185.0
+mouse_default_cursor_shape = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.8, 0.8, 0.8, 0.55)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBox_green")
+theme_override_styles/hover = SubResource("StyleBox_green")
+theme_override_styles/pressed = SubResource("StyleBox_green")
+text = "NEXT  →"
+
+[node name="MovementFeedbackPanel" type="Panel" parent="Overlay"]
+visible = false
+layout_mode = 0
+offset_left = 985.0
+offset_top = 345.0
+offset_right = 1265.0
+offset_bottom = 510.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_card")
+
+[node name="MovementHeading" type="Label" parent="Overlay/MovementFeedbackPanel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 11.0
+offset_right = 268.0
+offset_bottom = 75.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.19, 0.28, 0.25, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "MOVE LEFT • CENTER • RIGHT"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="MovementStatus" type="Label" parent="Overlay/MovementFeedbackPanel"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 76.0
+offset_right = 270.0
+offset_bottom = 154.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.27, 0.23, 0.34, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 13
+text = "Practice with A / S / D keys.\n○ LEFT   ○ CENTER   ○ RIGHT"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="VoicePlayer" type="AudioStreamPlayer" parent="Overlay"]
+volume_db = 0.0

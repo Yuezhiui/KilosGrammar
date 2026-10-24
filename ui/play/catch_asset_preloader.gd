@@ -2,8 +2,9 @@ extends Node
 
 # Small, session-scoped resource holder owned by main_menu.gd. All requests
 # begin on the Ready screen, never during application/menu startup.
-# Resources are loaded on Godot's loader thread and retained until the next
-# selection or exit, so Catch's existing load(path) hits the imported cache.
+# Large textures and voices are loaded on Godot's loader thread and retained
+# until next selection/exit. The small scripted Catch PackedScene intentionally
+# loads through gameplay: threading that scene leaked two RefCounted objects.
 
 const MAPS := {
 	"City": "res://WordCatcherMaps/CityMap.png",
@@ -36,7 +37,6 @@ const VOICE_FILES := [
 	"You Missed.mp3", "Better Luck.mp3"
 ]
 const VOICE_DIR := "res://assets/audio/catch_voice/"
-const CATCH_SCENE_PATH := "res://ui/minigames/catch_word.tscn"
 
 var selection_character := ""
 var selection_map := ""
@@ -56,9 +56,10 @@ func prepare(character: String, map_name: String) -> void:
 	selection_character = character
 	selection_map = map_name
 	var desired: Dictionary = {}
-	# Also resolve the 10 KB PackedScene/script dependency on the loader thread,
-	# rather than parsing them when Ready's countdown emits "gameplay".
-	desired[CATCH_SCENE_PATH] = true
+		# The tiny Catch .tscn with scripted subresources loads during gameplay.
+		# Sending that PackedScene through load_threaded_request() reproducibly
+		# leaked two RefCounted objects on Godot 4.7.2 app exit. Keep the actual
+		# heavy textures and voice clips asynchronous instead.
 	for path in CHARACTERS[character]:
 		desired[path] = true
 	desired[MAPS[map_name]] = true
@@ -96,6 +97,26 @@ func clear_selection() -> void:
 	# In-flight engine requests cannot be cancelled. Drain their results without
 	# retaining obsolete textures once they report complete.
 	set_process(not _pending.is_empty())
+
+
+func finish_pending_for_shutdown() -> void:
+	# During NORMAL play, preloads must stay async. During final shutdown,
+		# however, freeing this node with outstanding ResourceLoader requests
+		# can leave their internal refs alive through engine teardown.
+	# The completion barrier runs only after the user explicitly exits; no
+	# selected textures, voice assets or PackedScene are retained afterward.
+	clear_selection()
+	for path in _pending.keys():
+		var state := ResourceLoader.load_threaded_get_status(path)
+		if state != ResourceLoader.THREAD_LOAD_FAILED and state != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			# Godot's threaded_get waits for this already-requested asset to finish
+			# and retrieves its engine-owned ref. We deliberately discard it.
+			var completed: Resource = ResourceLoader.load_threaded_get(path)
+			completed = null
+		_pending.erase(path)
+	_held.clear()
+	_wanted.clear()
+	set_process(false)
 
 
 func _process(_delta: float) -> void:

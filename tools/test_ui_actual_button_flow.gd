@@ -1,6 +1,7 @@
 extends SceneTree
 
-# Focused native Button.pressed route test; no camera is fabricated.
+# Focused native Button.pressed route test; synthetic pose state keeps the
+# real webcam closed. Gameplay/results are injected only after route testing.
 var failures: Array[String] = []
 
 func _initialize() -> void:
@@ -52,46 +53,37 @@ func _run() -> void:
 			failures.append("Selected %s lost: %s" % [key, state.get(key)])
 	var activity: Control = app.get("active_panel")
 	await _press(activity.get("activity_buttons")["Catch the Word"] as Button, "Catch activity")
-	# UI regression stays hardware-independent. A separate live-camera
-	# smoke test covers the new auto-calibration path; here use keyboard.
-	await _press(activity.get("keyboard_button") as Button, "Activity Keyboard Play")
-	var route := String(app.get("current_route"))
-	if route == "play_topic":
-		var topic: Control = app.get("active_panel")
-		await _press(topic.get("topic_buttons")["Noun"] as Button, "Topic Noun")
-		await _press(topic.get("next_button") as Button, "Topic Continue")
-		route = String(app.get("current_route"))
-	if route == "play_difficulty":
-		var difficulty: Control = app.get("active_panel")
-		await _press(difficulty.get("difficulty_buttons")["Easy"] as Button, "Difficulty Easy")
-		await _press(difficulty.get("next_button") as Button, "Difficulty Continue")
-		route = String(app.get("current_route"))
-	if route == "camera_check":
-		print("PASS native route reached camera_check; camera preview is not fabricated")
-		# Navigate using the native skip control, not an artificial camera signal.
-		var camera: Control = app.get("active_panel")
-		var skip := _button_by_text(camera, "CONTINUE")
-		if skip:
-			await _press(skip, "Camera Skip")
-		else:
-			print("INFO Camera continue button not reachable; stopping before fake camera navigation")
-			failures.append("Camera native Continue not found")
-			await _finish(app)
-			return
-	if String(app.get("current_route")) == "calibration":
-		var calibration: Control = app.get("active_panel")
-		var continue_button := _button_by_text(calibration, "CONTINUE")
-		if continue_button:
-			await _press(continue_button, "Calibration Continue")
-		else:
-			failures.append("Calibration native Continue not found")
-	if String(app.get("current_route")) == "ready":
-		var ready: Control = app.get("active_panel")
-		await _press(ready.get("start_button") as Button, "Ready Start")
-		await create_timer(3.5).timeout
-		_check(app, "gameplay", "Countdown")
+	if activity.has_method("_play_keyboard_now") or activity.get_node_or_null("LayoutMargins/Content/Footer/PlayKeyboardButton") != null:
+		failures.append("Game Selection still offers a keyboard shortcut")
+	var pose := root.get_node("PoseService")
+	# Mark a synthetic camera session active before Next to prevent opening
+	# hardware. This state never completes a calibration measurement.
+	pose.active = true
+	pose.player_x = -1.0
+	pose.current_status = {"state": "waiting", "pose": false}
+	await _press(activity.get("next_button") as Button, "Game Selection Next")
+	_check(app, "calibration", "Game Selection Next -> camera-only calibration")
+	var calibration_state := (app.get("session_state") as Dictionary).duplicate(true)
+	if bool(calibration_state.get("keyboard_mode", true)) or not bool(calibration_state.get("camera_requested", false)):
+		failures.append("Game Selection did not carry camera-only setup")
+	var calibration := app.get("active_panel") as Control
+	if calibration.get_node_or_null("TutorialStage/SkipButton") != null or _button_by_text(calibration, "SKIP") != null:
+		failures.append("Calibration still has a SKIP shortcut")
+	await _press(calibration.get_node_or_null("TutorialStage/IntroOverlay/IntroBackButton") as Button, "Calibration Back to Main")
+	_check(app, "main", "Calibration Back")
+	# Later pause/results tests use an explicit router injection. It is NOT a
+	# calibration completion, synthetic success signal, or keyboard bypass.
+	calibration_state["start_countdown"] = false
+	calibration_state["guided_tutorial"] = false
+	calibration_state["keyboard_mode"] = false
+	app.call("_on_panel_requested", "gameplay", calibration_state)
+	await process_frame
+	_check(app, "gameplay", "Explicit isolated gameplay fixture")
 	if String(app.get("current_route")) == "gameplay":
 		var game: Control = app.get("active_panel")
+		if String(game.get("guided_stage")) == "countdown":
+			await create_timer(3.5).timeout
+			_check(app, "gameplay", "Calibration automatic countdown")
 		game.call("_pause")
 		await process_frame
 		_check(app, "pause", "Catch Pause")

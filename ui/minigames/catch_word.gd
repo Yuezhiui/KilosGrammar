@@ -36,12 +36,15 @@ const TILE_COLORS := [
 const TILE_SIZE := Vector2(106.0, 109.0)
 const APPLE_SIZE := Vector2(106.0, 109.0)
 const APPLE_SPACING_MARGIN := 12.0
-const BASKET_SPEED := 760.0
-const BASKET_ACCELERATION := 2600.0
 const BODY_FOLLOW_SPEED := 10.0
-const CHARACTER_CANVAS_SIZE := Vector2(941.0, 1672.0)
-const CHARACTER_ANCHOR := Vector2(470.5, 1672.0)
-const CHARACTER_TARGET_HEIGHT_RATIO := 0.63
+# The CharacterRig and each character's Body/Basket offsets, crops and scales
+# are authored in catch_word.tscn. Gameplay only moves the shared rig on X.
+const CHARACTER_NODES := {
+	"Boy": ".",
+	"Girl": "Girl",
+	"Grandma": "Grandma",
+	"Grandpa": "Grandpa"
+}
 const COLLECTED_WORD_LIMIT := 3
 const SECONDS_ROUND_DURATION := 60.0
 
@@ -113,6 +116,9 @@ var spawn_interval := 0.0 # Waves now start moving immediately from above the sc
 var base_fall_speed := 105.0
 @export_range(1, 10) var default_lives: int = 3
 @export var default_duration: float = 60.0
+# The collision follows the selected Basket sprite's edited size and offset.
+@export_range(0.1, 1.0, 0.01) var basket_hitbox_width_ratio := 0.82
+@export_range(0.1, 1.0, 0.01) var basket_hitbox_height_ratio := 0.52
 var spawn_clock := 0.0
 var wave_phase := "idle" # idle, reading, falling, clearing
 var wave_index := 0
@@ -127,9 +133,13 @@ var body_target_normalized := 0.0
 
 var falling_tiles: Array[Dictionary] = []
 var collected_words: Array[String] = []
+# Every word displayed on an apple is retired for the entire round, whether
+# it was correct, wrong, caught, or missed. Keys are case-insensitive.
+var used_session_words: Dictionary = {}
 var selected_character := ""
 var selected_map := ""
-var character_scale := 0.213
+var character_editor_origin := Vector2.ZERO
+var character_editor_scale := Vector2.ONE
 
 var tile_style_cache: Dictionary = {}
 
@@ -171,6 +181,10 @@ var last_prompt_layout_text := ""
 func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# The scene editor owns the resting X/Y; do not recompute the rig's baseline
+	# from screen height and hide its lower body below the viewport.
+	character_editor_origin = character_rig.position
+	character_editor_scale = character_rig.scale
 	rng.randomize()
 	_initialize_voice_feedback()
 	_load_grammar_bank_if_available()
@@ -213,6 +227,25 @@ func set_context(value: Dictionary) -> void:
 	spawn_clock = 0.0
 	wave_phase = "idle"
 	wave_index = maxi(int(context.get("catch_wave_index", 0)), 0) if is_resume else 0
+	used_session_words.clear()
+	if is_resume:
+		var saved_words = context.get("catch_used_words", [])
+		if saved_words is Array:
+			for entry in saved_words:
+				var key := _word_key(String(entry))
+				if not key.is_empty():
+					used_session_words[key] = true
+		elif saved_words is Dictionary:
+			for entry in saved_words.keys():
+				var key := _word_key(String(entry))
+				if not key.is_empty():
+					used_session_words[key] = true
+		# Older pause snapshots did not record all displayed apples. At least
+		# exclude their collected words when restoring an older save.
+		for entry in context.get("catch_collected_words", []):
+			var key := _word_key(String(entry))
+			if not key.is_empty():
+				used_session_words[key] = true
 	_clear_falling_tiles()
 	_clear_transient_effects()
 	collected_words.clear()
@@ -430,14 +463,17 @@ func _apply_generated_reference_assets() -> void:
 func _place_score_behind_character() -> void:
 	# The HUD lives in CanvasLayer 20; score nodes inside it always cover the
 	# player, regardless of z_index. Keep the rest of the HUD on that layer.
+	# Same-canvas absolute draw order (all author-owned Sprite2D z values are
+	# relative to CharacterRig): score -3 < body -2 < collected -1 < basket 0
+	# < falling apples 1. Thus falling apples stay ABOVE even the front basket.
 	score_draw_layer = Control.new()
 	score_draw_layer.name = "ScoreDrawLayer"
 	score_draw_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(score_draw_layer)
 	score_plaque.reparent(score_draw_layer)
 	score_bottom_container.reparent(score_draw_layer)
-	score_draw_layer.z_index = 0
-	character_rig.z_index = 1
+	score_draw_layer.z_index = -3
+	character_rig.z_index = 0
 	_layout_controls()
 
 
@@ -534,10 +570,10 @@ func _apply_difficulty() -> void:
 	match difficulty:
 		"Hard":
 			spawn_interval = 0.0
-			base_fall_speed = 155.0
+			base_fall_speed = 245.0
 		"Normal":
 			spawn_interval = 0.0
-			base_fall_speed = 130.0
+			base_fall_speed = 185.0
 		_:
 			spawn_interval = 0.0
 			base_fall_speed = 105.0
@@ -568,56 +604,59 @@ func _select_round_art(source: Dictionary) -> void:
 
 func _apply_art_selection() -> void:
 	var map_path: String = MAP_ASSETS[selected_map]
-	var char_data := _selected_character_data()
-	var body_path: String = String(char_data["body"])
-	var basket_path: String = String(char_data["basket"])
 
 	if ResourceLoader.exists(map_path):
 		background.texture = load(map_path) as Texture2D
-	if ResourceLoader.exists(body_path):
-		body_sprite.texture = load(body_path) as Texture2D
-	if ResourceLoader.exists(basket_path):
-		basket_sprite.texture = load(basket_path) as Texture2D
-
-	body_sprite.region_rect = char_data["body_bbox"]
-	basket_sprite.region_rect = char_data["basket_bbox"]
-
-	_update_character_layout()
-
-
-func _update_character_layout() -> void:
-	var view := _view_size()
-	var target_char_height := view.y * CHARACTER_TARGET_HEIGHT_RATIO
-	character_scale = target_char_height / CHARACTER_CANVAS_SIZE.y
-
-	body_sprite.scale = Vector2(character_scale, character_scale)
-	basket_sprite.scale = Vector2(character_scale, character_scale)
-
-	var char_data := _selected_character_data()
-	var body_bbox: Rect2 = char_data["body_bbox"]
-	var basket_bbox: Rect2 = char_data["basket_bbox"]
-
-	var body_origin_offset := body_bbox.position - CHARACTER_ANCHOR
-	var body_visual_center := body_origin_offset + body_bbox.size * 0.5
-	body_sprite.position = body_visual_center * character_scale
-
-	var basket_origin_offset := basket_bbox.position - CHARACTER_ANCHOR
-	var basket_visual_center := basket_origin_offset + basket_bbox.size * 0.5
-	basket_sprite.position = basket_visual_center * character_scale
+	# All four artwork groups are editable independently in catch_word.tscn.
+	# Selecting a character only changes visibility, never its sprite transforms
+	# or textures. This also preserves artist-adjusted basket/body alignment.
+	for name in CHARACTER_NODES:
+		var rig_path: String = String(CHARACTER_NODES[name])
+		var group: Node2D = character_rig if rig_path == "." else character_rig.get_node_or_null(rig_path) as Node2D
+		if group == null:
+			push_error("Missing editor-authored Catch character: " + name)
+			continue
+		if name == "Boy":
+			(character_rig.get_node("Body") as Sprite2D).visible = selected_character == name
+			(character_rig.get_node("Basket") as Sprite2D).visible = selected_character == name
+		else:
+			group.visible = selected_character == name
+		if selected_character == name:
+			body_sprite = group.get_node("Body") as Sprite2D
+			basket_sprite = group.get_node("Basket") as Sprite2D
 
 
 func _character_baseline_y() -> float:
-	return _view_size().y * 1.13
+	return character_editor_origin.y * (_view_size().y / HUD_DESIGN_SIZE.y)
 
 
 func _basket_local_center() -> Vector2:
-	return basket_sprite.position
+	# Support dragging either the basket itself OR its character variant group.
+	return character_rig.to_local(basket_sprite.global_position)
 
 
 func _basket_visual_size() -> Vector2:
-	var char_data := _selected_character_data()
-	var basket_bbox: Rect2 = char_data["basket_bbox"]
-	return basket_bbox.size * character_scale
+	var artwork_size: Vector2 = basket_sprite.region_rect.size if basket_sprite.region_enabled else basket_sprite.texture.get_size()
+	var rig_scale: Vector2 = character_rig.global_scale
+	var sprite_scale: Vector2 = basket_sprite.global_scale
+	return artwork_size * Vector2(absf(sprite_scale.x / maxf(absf(rig_scale.x), 0.001)), absf(sprite_scale.y / maxf(absf(rig_scale.y), 0.001)))
+
+
+func _basket_world_size() -> Vector2:
+	return _basket_visual_size() * Vector2(absf(character_rig.scale.x), absf(character_rig.scale.y))
+
+
+func _basket_world_offset() -> Vector2:
+	return _basket_local_center() * character_rig.scale
+
+
+func _sync_character_scale() -> void:
+	# Scale the entire *editor-authored* rig with the design canvas, just like
+	# the other game HUD graphics. Child Sprite2Ds remain freely editable and
+	# are never resized/repositioned from code.
+	var view := _view_size()
+	var factor := minf(view.x / HUD_DESIGN_SIZE.x, view.y / HUD_DESIGN_SIZE.y)
+	character_rig.scale = character_editor_scale * factor
 
 
 func _selected_character_data() -> Dictionary:
@@ -628,12 +667,13 @@ func _selected_character_data() -> Dictionary:
 
 func _reset_round_geometry() -> void:
 	var field := _game_rect()
-	# The reference gameplay framing begins with the character at the
-	# lower-left, leaving the middle of the map and the falling words clear.
-	# The basket remains freely controllable over the whole playfield.
-	basket_x = field.position.x + field.size.x * 0.20
-	var half_basket_width := _basket_visual_size().x * 0.5
-	basket_x = clampf(basket_x, field.position.x + half_basket_width + 8.0, field.end.x - half_basket_width - 8.0)
+	# Drag CharacterRig in the .tscn to choose the starting position. Gameplay
+	# moves that rig horizontally while leaving all sprite offsets alone.
+	_sync_character_scale()
+	basket_x = character_editor_origin.x * (_view_size().x / HUD_DESIGN_SIZE.x)
+	var half_basket_width := _basket_world_size().x * 0.5
+	var sprite_center_offset := _basket_world_offset().x
+	basket_x = clampf(basket_x, field.position.x + half_basket_width + 8.0 - sprite_center_offset, field.end.x - half_basket_width - 8.0 - sprite_center_offset)
 	basket_velocity = 0.0
 	_sync_character_position()
 
@@ -643,28 +683,17 @@ func _sync_character_position() -> void:
 
 
 func _update_basket(delta: float) -> void:
-	var axis := Input.get_axis("ui_left", "ui_right")
-	if Input.is_key_pressed(KEY_A):
-		axis -= 1.0
-	if Input.is_key_pressed(KEY_D):
-		axis += 1.0
-	axis = clampf(axis, -1.0, 1.0)
-
+	# Camera/pose input is the only movement source. Never read A/D or the
+	# ui_left/ui_right actions: keyboard avatar movement is deliberately gone.
 	var field := _game_rect()
-	var visible_half_width := _basket_visual_size().x * 0.5
-	var min_x := field.position.x + visible_half_width + 8.0
-	var max_x := field.end.x - visible_half_width - 8.0
-	if absf(axis) > 0.001:
-		body_input_active = false
-		basket_velocity = move_toward(basket_velocity, axis * BASKET_SPEED, BASKET_ACCELERATION * delta)
-		basket_x += basket_velocity * delta
-	elif body_input_active:
-		basket_velocity = 0.0
+	var visible_half_width := _basket_world_size().x * 0.5
+	var center_offset_x := _basket_world_offset().x
+	var min_x := field.position.x + visible_half_width + 8.0 - center_offset_x
+	var max_x := field.end.x - visible_half_width - 8.0 - center_offset_x
+	basket_velocity = 0.0
+	if body_input_active:
 		var body_target_x := lerpf(min_x, max_x, (body_target_normalized + 1.0) * 0.5)
 		basket_x = lerpf(basket_x, body_target_x, 1.0 - exp(-BODY_FOLLOW_SPEED * delta))
-	else:
-		basket_velocity = move_toward(basket_velocity, 0.0, BASKET_ACCELERATION * delta)
-		basket_x += basket_velocity * delta
 	basket_x = clampf(basket_x, min_x, max_x)
 
 
@@ -742,19 +771,26 @@ func _wave_lane_positions() -> Array[float]:
 func _spawn_wave() -> void:
 	if round_finished or wave_phase != "idle" or not falling_tiles.is_empty():
 		return
+	# Reserve the complete three-word set before creating any apples. If one
+	# category runs dry, complete the round with its score intact rather than
+	# showing a repeat, a fake suffixed word, or an incomplete question.
+	var correct_lane := rng.randi_range(0, APPLES_PER_WAVE - 1)
+	var wave_words := _pick_unused_wave_words(correct_lane)
+	if wave_words.size() != APPLES_PER_WAVE:
+		finish_reason = "word_pool_exhausted"
+		_finish_round()
+		return
 	var field := _game_rect()
 	# Begin with the apple entirely above the viewport; let it descend into
 	# view naturally rather than materializing mid-screen and hovering.
 	var spawn_y := -APPLE_SIZE.y * 0.52
 	wave_speed = base_fall_speed * minf(WAVE_MAX_SPEED_MULTIPLIER,
 		1.0 + float(wave_index) * WAVE_SPEED_GAIN)
-	var correct_lane := rng.randi_range(0, APPLES_PER_WAVE - 1)
-	var used_words: Array[String] = []
 	var lanes := _wave_lane_positions()
 	for lane in range(APPLES_PER_WAVE):
 		var matching := lane == correct_lane
-		var word := _pick_unique_wave_word(matching, used_words)
-		used_words.append(word.to_lower())
+		var word: String = wave_words[lane]
+		used_session_words[_word_key(word)] = true
 		var color: Color = TILE_COLORS[rng.randi_range(0, TILE_COLORS.size() - 1)]
 		var tile := {
 			"word": word,
@@ -773,18 +809,21 @@ func _spawn_wave() -> void:
 	spawn_clock = (field.end.y + APPLE_SIZE.y - spawn_y) / maxf(wave_speed, 1.0)
 
 
-func _pick_unique_wave_word(matching: bool, used: Array[String]) -> String:
-	for attempt in range(24):
-		var candidate := _pick_word(matching)
-		if not used.has(candidate.to_lower()):
-			return candidate
-	# Ensure a unique printed choice even when a small grammar bank repeats.
-	var suffix := 1
-	var fallback := _pick_word(matching)
-	while used.has(fallback.to_lower()):
-		fallback = ("%s %d" % [_pick_word(matching), suffix])
-		suffix += 1
-	return fallback
+func _pick_unused_wave_words(correct_lane: int) -> Array[String]:
+	var reserved: Dictionary = used_session_words.duplicate()
+	var options: Array[String] = []
+	for lane in range(APPLES_PER_WAVE):
+		var candidate := _pick_word(lane == correct_lane, reserved)
+		var key := _word_key(candidate)
+		if key.is_empty() or reserved.has(key):
+			return []
+		reserved[key] = true
+		options.append(candidate)
+	return options
+
+
+func _word_key(word: String) -> String:
+	return word.strip_edges().to_lower()
 
 
 func _resolve_wave(caught: bool) -> void:
@@ -864,12 +903,19 @@ func _create_tile_node(word: String, _color: Color) -> Control:
 	label.name = "WordLabel"
 	label.text = word.to_upper()
 	label.add_theme_font_override("font", TITLE_FONT)
-	label.add_theme_font_size_override("font_size", 16)
+	# Hard vocabulary includes longer words. Fit the actual glyph width inside
+	# the original apple without resizing artwork or overlapping another lane.
+	var word_font_size := 16
+	while word_font_size > 7 and TITLE_FONT.get_string_size(
+			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, word_font_size).x > APPLE_SIZE.x - 14.0:
+		word_font_size -= 1
+	label.add_theme_font_size_override("font_size", word_font_size)
 	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_color_override("font_outline_color", Color(0.18, 0.1, 0.1, 0.95))
 	label.add_theme_constant_override("outline_size", 4)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.clip_text = true
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	label.offset_top = 10.0
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -907,24 +953,28 @@ func _clear_transient_effects() -> void:
 			child.queue_free()
 
 
-func _pick_word(matching: bool) -> String:
-	if grammar_bank != null:
-		var shared_word = grammar_bank.call("pick_word", topic, matching, rng)
-		if shared_word != null and not String(shared_word).strip_edges().is_empty():
-			return String(shared_word)
-	if matching:
-		var pool: Array = FALLBACK_WORDS[topic]
-		return String(pool[rng.randi_range(0, pool.size() - 1)])
-	var other_topics := TOPICS.duplicate()
-	other_topics.erase(topic)
-	var wrong_topic: String = other_topics[rng.randi_range(0, other_topics.size() - 1)]
-	var wrong_pool: Array = FALLBACK_WORDS[wrong_topic]
-	return String(wrong_pool[rng.randi_range(0, wrong_pool.size() - 1)])
+func _pick_word(matching: bool, excluded: Dictionary) -> String:
+	if grammar_bank != null and grammar_bank.has_method("pick_word"):
+		# GrammarBank owns difficulty pools and excludes every earlier apple.
+		# Empty means the appropriate pool is exhausted; never recycle it.
+		return String(grammar_bank.call("pick_word", topic, matching, rng, difficulty, excluded)).strip_edges()
+	# Offline fallback for a missing bank, with the same no-repeat guarantee.
+	var candidates: Array[String] = []
+	for source_topic in TOPICS:
+		if (source_topic == topic) != matching:
+			continue
+		for candidate in FALLBACK_WORDS[source_topic]:
+			var word := String(candidate)
+			if not excluded.has(_word_key(word)):
+				candidates.append(word)
+	if candidates.is_empty():
+		return ""
+	return candidates[rng.randi_range(0, candidates.size() - 1)]
 
 
 func _handle_catch(tile: Dictionary) -> void:
 	attempts += 1
-	var catch_pos := Vector2(basket_x, _character_baseline_y() + _basket_local_center().y - 40.0)
+	var catch_pos := Vector2(basket_x, _character_baseline_y()) + _basket_world_offset() + Vector2(0.0, -40.0)
 	if bool(tile["matching"]):
 		correct_count += 1
 		streak += 1
@@ -1124,6 +1174,7 @@ func _result_payload() -> Dictionary:
 	payload["catch_map"] = selected_map
 	payload["catch_collected_words"] = collected_words.duplicate()
 	payload["catch_wave_index"] = wave_index
+	payload["catch_used_words"] = used_session_words.keys()
 	return payload
 
 
@@ -1247,12 +1298,11 @@ func _game_rect() -> Rect2:
 
 
 func _basket_rect() -> Rect2:
-	var visual_size := _basket_visual_size()
-	var hitbox_size := Vector2(
-		clampf(visual_size.x * 0.82, 145.0, 260.0),
-		clampf(visual_size.y * 0.52, 46.0, 82.0)
-	)
-	var center := Vector2(basket_x, _character_baseline_y()) + _basket_local_center()
+	var visual_size := _basket_world_size()
+	var hitbox_size := visual_size * Vector2(basket_hitbox_width_ratio, basket_hitbox_height_ratio)
+	# basket_x is the authoritative movement position (including when camera
+	# or a gameplay test sets it before the next visual frame is synced).
+	var center := Vector2(basket_x, _character_baseline_y()) + _basket_world_offset()
 	center.y -= visual_size.y * 0.05
 	return Rect2(center - hitbox_size * 0.5, hitbox_size)
 
@@ -1286,10 +1336,11 @@ func _is_resume_snapshot(dict: Dictionary) -> bool:
 
 func _on_resized() -> void:
 	_layout_controls()
-	_update_character_layout()
+	_sync_character_scale()
 	var field := _game_rect()
-	var visible_half_width := _basket_visual_size().x * 0.5
-	basket_x = clampf(basket_x, field.position.x + visible_half_width + 8.0, field.end.x - visible_half_width - 8.0)
+	var visible_half_width := _basket_world_size().x * 0.5
+	var center_offset_x := _basket_world_offset().x
+	basket_x = clampf(basket_x, field.position.x + visible_half_width + 8.0 - center_offset_x, field.end.x - visible_half_width - 8.0 - center_offset_x)
 	_sync_character_position()
 	_refresh_collected_words()
 	_refresh_hud()

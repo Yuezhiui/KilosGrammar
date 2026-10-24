@@ -1,12 +1,10 @@
 extends SceneTree
 
-# Focus, navigation and compact-viewport regression for the six authentic-art screens.
+# Focus, navigation and compact-viewport regression for the current tutorial screens.
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const SCENES := {
 	"tutorial_home": "res://ui/tutorial/tutorial_home.tscn",
-	"tutorial_practice": "res://ui/tutorial/tutorial_practice.tscn",
 	"grammar_guide": "res://ui/tutorial/grammar_guide.tscn",
-	"tutorial_complete": "res://ui/tutorial/tutorial_complete.tscn",
 	"camera_check": "res://ui/vision/camera_check.tscn",
 	"calibration": "res://ui/vision/calibration.tscn"
 }
@@ -48,20 +46,35 @@ func _run() -> void:
 					and bounds.end.x <= viewport.x + 2.0 and bounds.end.y <= viewport.y + 2.0,
 					route + ": " + button.text + " fully onscreen at " + str(viewport))
 			if route == "tutorial_home" and stage != null:
-				# Painted buttons must be independent aspect-preserving images with
-				# accessible native hitboxes, never stretched StyleBoxTextures.
+				# Guided flow is authored in the editor as three independent
+				# native buttons with aspect-preserving PNG children.
 				var expected := {
-					"START GUIDED TUTORIAL": "camera_check",
-					"MOVEMENT PRACTICE": "tutorial_practice",
+					"START GUIDED TUTORIAL": "play_activity",
 					"GRAMMAR GUIDE": "grammar_guide",
 					"BACK TO MAIN": "main"
 				}
-				var requests: Array[String] = []
-				screen.requested.connect(func(target: String, _payload: Dictionary) -> void: requests.append(target))
+				_check(clickable.size() == expected.size(), "tutorial home: exactly three navigation buttons")
+				_check(stage.get_node_or_null("PracticeButton") == null, "tutorial home: no legacy movement practice button")
+				_check(stage.get_node_or_null("StepsArtwork") == null, "tutorial home: no baked legacy instructions")
+				var titles := {
+					"ChooseGameCard": "CHOOSE GAME",
+					"CameraCalibrateCard": "CAMERA & CALIBRATE",
+					"LearnPlayingCard": "LEARN WHILE PLAYING"
+				}
+				for card_name in titles:
+					var card := stage.get_node_or_null(card_name) as Panel
+					_check(card != null, card_name + " editable stage card")
+					if card != null:
+						var title := card.get_node_or_null("Title") as Label
+						_check(title != null and title.text == titles[card_name], card_name + " title")
+						_check(card.get_node_or_null("Icon") is TextureRect, card_name + " editable icon")
+				var requests: Array[Dictionary] = []
+				screen.requested.connect(func(target: String, payload: Dictionary) -> void:
+					requests.append({"target": target, "payload": payload})
+				)
 				for button in clickable:
-					var image_name := "ButtonArtwork_" + button.text.replace(" ", "_")
-					var art := stage.get_node_or_null(image_name) as TextureRect
-					_check(art != null, button.text + " uses separate PNG artwork")
+					var art := button.get_node_or_null("Artwork") as TextureRect
+					_check(art != null, button.text + " uses editor-authored PNG child artwork")
 					if art != null:
 						_check(art.texture != null and art.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED,
 							button.text + " preserves source image ratio")
@@ -69,12 +82,14 @@ func _run() -> void:
 					_check(button.get_theme_stylebox("normal") is StyleBoxEmpty,
 						button.text + " no longer stretches image through a stylebox")
 					button.pressed.emit()
-					_check(requests.size() > 0 and requests.back() == expected.get(button.text, ""),
+					_check(requests.size() > 0 and requests.back()["target"] == expected.get(button.text, ""),
 						button.text + " still requests correct navigation target")
-			if route == "tutorial_practice":
-				screen.call("_run_demo_step")
-				_check(int(screen.get("demo_step")) == 0, "practice advances first demo step")
-				_check(str(screen.get("status_label").text).contains("not being read"), "practice discloses no body tracking")
+				_check(requests.size() == 3, "all three navigation buttons emit requests")
+				if requests.size() > 0:
+					var guided: Dictionary = requests[0]["payload"]
+					_check(bool(guided.get("guided_tutorial", false)), "guided tutorial flag reaches game selection")
+					_check(guided.get("entry_source") == "tutorial", "guided tutorial entry source is preserved")
+					_check(bool(guided.get("fresh_setup", false)), "guided tutorial starts with fresh student setup")
 			if route == "calibration":
 				screen.call("_run_demo_step")
 				_check(int(screen.get("demo_index")) == 0, "calibration advances first preview step")
@@ -94,7 +109,7 @@ func _run() -> void:
 			await process_frame
 	root.size = Vector2i(1280, 720)
 	if issues.is_empty():
-		print("PASS tutorial redesign: %d checks across six routes and three viewport sizes" % checks)
+		print("PASS tutorial redesign: %d checks across four routes and three viewport sizes" % checks)
 		quit(0)
 	else:
 		for issue in issues:

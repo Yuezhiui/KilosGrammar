@@ -40,16 +40,12 @@ func _run() -> void:
 	await _test_pause_results_discards(app)
 	await _test_pause_main_discards(app)
 
-	var music: AudioStreamPlayer = app.get("title_music_player")
-	if music:
-		music.stop()
-		music.stream = null
+	await app.call("prepare_for_shutdown")
 	app.queue_free()
 	await process_frame
 	await process_frame
-	# Allow MP3 playback references from the fast pause/restart fixtures to
-	# release before shutting down the headless audio server.
-	await create_timer(0.5).timeout
+	# Mixer grace belongs to the live menu's shared shutdown implementation,
+	# before scene ownership/resources are released.
 	_finish()
 
 
@@ -200,21 +196,15 @@ func _test_catch_restart_clears_round(app: Control, mode: String) -> void:
 		return
 	pause_panel.call("_restart")
 	await process_frame
-	_assert(String(app.get("current_route")) == "ready", "Catch %s Restart Round opens Ready" % mode)
-	var ready := app.get("active_panel") as Control
-	if ready == null:
-		_fail("Catch restart %s has no Ready screen" % mode)
-		return
-	ready.call("_start_countdown")
-	await create_timer(2.8).timeout
-	await process_frame
-	_assert(String(app.get("current_route")) == "gameplay", "Catch %s restart enters gameplay again" % mode)
+	_assert(String(app.get("current_route")) == "gameplay", "Catch %s Restart creates new gameplay wrapper with countdown" % mode)
 	var new_wrapper := app.get("active_panel") as Control
+	_assert(String(new_wrapper.get("guided_stage")) == "countdown", "Catch %s restart begins fresh countdown" % mode)
 	var new_game := new_wrapper.get_node_or_null("ActiveMiniGame") as Control if new_wrapper else null
 	if new_game == null:
 		_fail("Catch restart %s did not create a new minigame" % mode)
 		return
 	_assert(new_game != old_game, "Catch %s restart uses a fresh minigame" % mode)
+	_assert(app.get("paused_game_panel") == null, "Catch %s restart clears old parked instance" % mode)
 	var new_context := _context_of(new_wrapper)
 	var apple_layer := new_game.get_node("CharacterRig/CollectedWords") as Node2D
 	_assert((new_context.get("catch_collected_words", []) as Array).is_empty(), "Catch %s restart clears saved apple words" % mode)

@@ -1,0 +1,10 @@
+# Windows CPython 3.11 x64 classroom release baseline.
+# Stage every transitive wheel; the release manifest pins their exact bytes.
+# For PyTorch, use the verified Windows CPU wheel and matching torchvision;
+# a CUDA build is optional and needs additional separately licensed payloads.
+psycopg[binary]==3.3.6
+ultralytics==8.4.142
+opencv-python==5.0.0.93
+lap==0.5.13
+torch==2.6.0
+torchvision==0.21.0

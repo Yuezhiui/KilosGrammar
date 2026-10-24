@@ -14,8 +14,8 @@ const APPLE_TEXTURE := "res://ui/minigames/catch_hud/generated/character/word_ap
 const COLLECTED_TEXTURE := "res://Components/Apple.png"
 const STATES := {
     "Easy": {"speed": 105.0},
-    "Normal": {"speed": 130.0},
-    "Hard": {"speed": 155.0}
+    "Normal": {"speed": 185.0},
+    "Hard": {"speed": 245.0}
 }
 const TICK := 0.025
 const IMMEDIATE_TICK := 0.05

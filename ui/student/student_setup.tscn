@@ -1,6 +1,200 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=36 format=3]
 
 [ext_resource type="Script" path="res://ui/student/student_setup.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="r1"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/shared/classroom_bg.png" id="r2"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/icon_player.png" id="r3"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/setup_heading.png" id="r4"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/setup_topic_caption.png" id="r5"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/setup_mode_caption.png" id="r6"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/setup_difficulty_caption.png" id="r7"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_noun.png" id="r8"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_pronoun.png" id="r9"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_verb.png" id="r10"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_adjective.png" id="r11"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_adverb.png" id="r12"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_preposition_locked.png" id="r13"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_conjunction_locked.png" id="r14"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_interjection_locked.png" id="r15"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/mode_seconds.png" id="r16"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/mode_lives.png" id="r17"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/difficulty_easy.png" id="r18"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/difficulty_normal.png" id="r19"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/difficulty_hard.png" id="r20"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/btn_back.png" id="r21"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/btn_continue.png" id="r22"]
+[ext_resource type="PackedScene" path="res://ui/student/existing_score_dialog.tscn" id="r23"]
+
+[sub_resource type="StyleBoxFlat" id="StudentProfile"]
+bg_color = Color(1, 0.94901961, 0.80784314, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.96078431, 0.78039216, 0.47843137, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_left = 22
+corner_radius_bottom_right = 22
+content_margin_left = 18
+content_margin_right = 18
+content_margin_top = 15
+content_margin_bottom = 15
+shadow_color = Color(0.15686275, 0.27058824, 0.40392157, 0.30196078)
+shadow_size = 5
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="GameSetup"]
+bg_color = Color(0.36470588, 0.61568627, 0.8745098, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.15686275, 0.36470588, 0.60784314, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_left = 22
+corner_radius_bottom_right = 22
+content_margin_left = 18
+content_margin_right = 18
+content_margin_top = 15
+content_margin_bottom = 15
+shadow_color = Color(0.15686275, 0.27058824, 0.40392157, 0.30196078)
+shadow_size = 5
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="DatabasePanel"]
+bg_color = Color(1, 0.96862745, 0.8745098, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.91764706, 0.71372549, 0.50980392, 1)
+corner_radius_top_left = 13
+corner_radius_top_right = 13
+corner_radius_bottom_left = 13
+corner_radius_bottom_right = 13
+content_margin_left = 12
+content_margin_right = 12
+content_margin_top = 9
+content_margin_bottom = 9
+
+[sub_resource type="StyleBoxFlat" id="ValidationPanel"]
+bg_color = Color(0.25098039, 0.4745098, 0.72156863, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.70588235, 0.86666667, 1, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_left = 14
+corner_radius_bottom_right = 14
+content_margin_left = 12
+content_margin_right = 12
+content_margin_top = 9
+content_margin_bottom = 9
+
+[sub_resource type="StyleBoxFlat" id="FieldNormal"]
+bg_color = Color(1, 0.99215686, 0.95686275, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.76078431, 0.65490196, 0.48235294, 1)
+corner_radius_top_left = 13
+corner_radius_top_right = 13
+corner_radius_bottom_left = 13
+corner_radius_bottom_right = 13
+content_margin_left = 14
+content_margin_right = 14
+content_margin_top = 8
+content_margin_bottom = 8
+
+[sub_resource type="StyleBoxFlat" id="FieldFocus"]
+bg_color = Color(1, 0.99215686, 0.95686275, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.89411765, 0.65882353, 0.24705882, 1)
+corner_radius_top_left = 13
+corner_radius_top_right = 13
+corner_radius_bottom_left = 13
+corner_radius_bottom_right = 13
+content_margin_left = 14
+content_margin_right = 14
+content_margin_top = 8
+content_margin_bottom = 8
+
+[sub_resource type="StyleBoxFlat" id="LookupNormal"]
+bg_color = Color(0.90196078, 0.75686275, 0.54117647, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_left = 11
+corner_radius_bottom_right = 11
+content_margin_left = 6
+content_margin_right = 6
+content_margin_top = 4
+content_margin_bottom = 4
+shadow_color = Color(0.15686275, 0.27058824, 0.40392157, 0.30196078)
+shadow_size = 5
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="LookupDisabled"]
+bg_color = Color(0.72156863, 0.79215686, 0.84313725, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.51372549, 0.62352941, 0.71764706, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_left = 11
+corner_radius_bottom_right = 11
+content_margin_left = 6
+content_margin_right = 6
+content_margin_top = 4
+content_margin_bottom = 4
+
+[sub_resource type="StyleBoxFlat" id="HintNormal"]
+bg_color = Color(0.15686275, 0.36470588, 0.60784314, 0.94117647)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.95686275, 0.78431373, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_left = 11
+corner_radius_bottom_right = 11
+content_margin_left = 7
+content_margin_right = 7
+content_margin_top = 4
+content_margin_bottom = 4
+
+[sub_resource type="StyleBoxFlat" id="FocusBorder"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.99215686, 0.95686275, 1)
+corner_radius_top_left = 13
+corner_radius_top_right = 13
+corner_radius_bottom_left = 13
+corner_radius_bottom_right = 13
+content_margin_left = 0
+content_margin_right = 0
+content_margin_top = 0
+content_margin_bottom = 0
+
+[sub_resource type="StyleBoxEmpty" id="EmptyButton"]
 
 [node name="StudentSetup" type="Control"]
 layout_mode = 3
@@ -10,3 +204,832 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
+
+[node name="StudentClassroomBackdrop" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r2")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="StudentReadabilityOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.90980392, 0.95686275, 1, 0.25882353)
+
+[node name="LayoutMargins" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 52
+theme_override_constants/margin_right = 52
+theme_override_constants/margin_top = 17
+theme_override_constants/margin_bottom = 17
+
+[node name="StudentSetupColumn" type="VBoxContainer" parent="LayoutMargins"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 9
+
+[node name="SetupHeader" type="HBoxContainer" parent="LayoutMargins/StudentSetupColumn"]
+layout_mode = 2
+
+[node name="SetupTitle" type="Label" parent="LayoutMargins/StudentSetupColumn/SetupHeader"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+theme_override_font_sizes/font_size = 34
+text = "STUDENT & GAME SETUP"
+theme_override_fonts/font = ExtResource("r1")
+custom_minimum_size = Vector2(0, 49)
+horizontal_alignment = 1
+
+[node name="Accent" type="HSeparator" parent="LayoutMargins/StudentSetupColumn"]
+layout_mode = 2
+
+[node name="StudentSetupScroll" type="ScrollContainer" parent="LayoutMargins/StudentSetupColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 3
+vertical_scroll_mode = 1
+
+[node name="SetupCardGrid" type="GridContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+theme_override_constants/h_separation = 18
+theme_override_constants/v_separation = 16
+
+[node name="StudentProfileCard" type="PanelContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StudentProfile")
+
+[node name="ProfileContent" type="VBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ProfileTitleRow" type="HBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent"]
+layout_mode = 2
+theme_override_constants/separation = 9
+
+[node name="StudentIcon" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/ProfileTitleRow"]
+mouse_filter = 2
+texture = ExtResource("r3")
+expand_mode = 1
+stretch_mode = 5
+custom_minimum_size = Vector2(39, 38)
+size_flags_horizontal = 0
+
+[node name="StudentCardTitle" type="Label" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/ProfileTitleRow"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+theme_override_font_sizes/font_size = 26
+text = "STUDENT PROFILE"
+theme_override_fonts/font = ExtResource("r1")
+custom_minimum_size = Vector2(0, 34)
+horizontal_alignment = 0
+
+[node name="StudentHelper" type="Label" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+theme_override_font_sizes/font_size = 13
+text = "Enter your student information"
+custom_minimum_size = Vector2(0, 24)
+horizontal_alignment = 0
+
+[node name="StudentIdGroup" type="VBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="StudentIdLabel" type="Label" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/StudentIdGroup"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.28627451, 0.26666667, 0.38823529, 1)
+theme_override_font_sizes/font_size = 13
+text = "STUDENT ID"
+theme_override_fonts/font = ExtResource("r1")
+custom_minimum_size = Vector2(0, 20)
+horizontal_alignment = 0
+
+[node name="StudentIdEdit" type="LineEdit" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/StudentIdGroup"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 43)
+focus_mode = 2
+placeholder_text = "Enter student ID"
+max_length = 32
+theme_override_colors/font_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+theme_override_colors/font_placeholder_color = Color(0.47843137, 0.56862745, 0.63921569, 1)
+theme_override_colors/caret_color = Color(0.15686275, 0.36470588, 0.60784314, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("FieldNormal")
+theme_override_styles/focus = SubResource("FieldFocus")
+
+[node name="StudentNameGroup" type="VBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="StudentNameLabel" type="Label" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/StudentNameGroup"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.28627451, 0.26666667, 0.38823529, 1)
+theme_override_font_sizes/font_size = 13
+text = "NAME"
+theme_override_fonts/font = ExtResource("r1")
+custom_minimum_size = Vector2(0, 20)
+horizontal_alignment = 0
+
+[node name="StudentNameEdit" type="LineEdit" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/StudentNameGroup"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 43)
+focus_mode = 2
+placeholder_text = "Enter student name"
+max_length = 64
+theme_override_colors/font_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+theme_override_colors/font_placeholder_color = Color(0.47843137, 0.56862745, 0.63921569, 1)
+theme_override_colors/caret_color = Color(0.15686275, 0.36470588, 0.60784314, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("FieldNormal")
+theme_override_styles/focus = SubResource("FieldFocus")
+
+[node name="GradeSectionGroup" type="VBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="GradeSectionLabel" type="Label" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/GradeSectionGroup"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.28627451, 0.26666667, 0.38823529, 1)
+theme_override_font_sizes/font_size = 13
+text = "GRADE & SECTION"
+theme_override_fonts/font = ExtResource("r1")
+custom_minimum_size = Vector2(0, 20)
+horizontal_alignment = 0
+
+[node name="GradeSectionEdit" type="LineEdit" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/GradeSectionGroup"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 43)
+focus_mode = 2
+placeholder_text = "Example: Grade 2 Apple"
+max_length = 64
+theme_override_colors/font_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+theme_override_colors/font_placeholder_color = Color(0.47843137, 0.56862745, 0.63921569, 1)
+theme_override_colors/caret_color = Color(0.15686275, 0.36470588, 0.60784314, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("FieldNormal")
+theme_override_styles/focus = SubResource("FieldFocus")
+
+[node name="DatabasePanel" type="PanelContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("DatabasePanel")
+
+[node name="DatabaseContent" type="VBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/DatabasePanel"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="DatabaseStatus" type="Label" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/DatabasePanel/DatabaseContent"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.30980392, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+text = "LOCAL POSTGRESQL • SEARCH / SAVE: NOT CONNECTED\nNo student record has been searched, loaded, or registered."
+custom_minimum_size = Vector2(0, 46)
+horizontal_alignment = 0
+autowrap_mode = 3
+
+[node name="LookupButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/DatabasePanel/DatabaseContent"]
+custom_minimum_size = Vector2(0, 42)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "LOOK UP ID • NOT CONNECTED"
+theme_override_colors/font_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+theme_override_styles/normal = SubResource("LookupNormal")
+theme_override_styles/disabled = SubResource("LookupDisabled")
+theme_override_styles/focus = SubResource("FocusBorder")
+
+[node name="DatabaseRecoveryButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/StudentProfileCard/ProfileContent/DatabasePanel/DatabaseContent"]
+visible = false
+custom_minimum_size = Vector2(0, 42)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "SET UP LOCAL DATABASE"
+theme_override_colors/font_color = Color(0.15686275, 0.29019608, 0.45098039, 1)
+theme_override_styles/normal = SubResource("LookupNormal")
+theme_override_styles/disabled = SubResource("LookupDisabled")
+theme_override_styles/focus = SubResource("FocusBorder")
+
+[node name="GameSetupCard" type="PanelContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("GameSetup")
+
+[node name="GameContent" type="VBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GameCardTitle" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent"]
+mouse_filter = 2
+texture = ExtResource("r4")
+expand_mode = 1
+stretch_mode = 5
+custom_minimum_size = Vector2(330, 55)
+size_flags_horizontal = 0
+
+[node name="TopicCaption" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent"]
+mouse_filter = 2
+texture = ExtResource("r5")
+expand_mode = 1
+stretch_mode = 5
+custom_minimum_size = Vector2(220, 27)
+size_flags_horizontal = 0
+
+[node name="GameStyleGrid" type="GridContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent"]
+layout_mode = 2
+columns = 4
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="NounButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "NOUN"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/NounButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r8")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PronounButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "PRONOUN"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/PronounButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r9")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VerbButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "VERB"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/VerbButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r10")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="AdjectiveButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "ADJECTIVE"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/AdjectiveButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r11")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="AdverbButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "ADVERB"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/AdverbButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r12")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PrepositionButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "PREPOSITION • SOON"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+disabled = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/PrepositionButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r13")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ConjunctionButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "CONJUNCTION • SOON"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+disabled = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/ConjunctionButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r14")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="InterjectionButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "INTERJECTION • SOON"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+disabled = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/InterjectionButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r15")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LowerSelections" type="HBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="ModeColumn" type="VBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ModeCaption" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/ModeColumn"]
+mouse_filter = 2
+texture = ExtResource("r6")
+expand_mode = 1
+stretch_mode = 5
+custom_minimum_size = Vector2(220, 27)
+size_flags_horizontal = 0
+
+[node name="ModeRow" type="HBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/ModeColumn"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SecondsButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/ModeColumn/ModeRow"]
+custom_minimum_size = Vector2(0, 58)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "60s"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/ModeColumn/ModeRow/SecondsButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r16")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LivesButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/ModeColumn/ModeRow"]
+custom_minimum_size = Vector2(0, 58)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "3 LIVES"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/ModeColumn/ModeRow/LivesButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r17")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DifficultyColumn" type="VBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DifficultyCaption" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/DifficultyColumn"]
+mouse_filter = 2
+texture = ExtResource("r7")
+expand_mode = 1
+stretch_mode = 5
+custom_minimum_size = Vector2(220, 27)
+size_flags_horizontal = 0
+
+[node name="DifficultyRow" type="HBoxContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/DifficultyColumn"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EasyButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow"]
+custom_minimum_size = Vector2(0, 58)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "EASY"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow/EasyButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r18")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NormalButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow"]
+custom_minimum_size = Vector2(0, 58)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "NORMAL"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow/NormalButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r19")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HardButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow"]
+custom_minimum_size = Vector2(0, 58)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "HARD"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow/HardButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r20")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ValidationPanel" type="PanelContainer" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("ValidationPanel")
+
+[node name="ValidationLabel" type="Label" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/ValidationPanel"]
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.96862745, 0.90196078, 0.74117647, 1)
+theme_override_font_sizes/font_size = 13
+text = ""
+custom_minimum_size = Vector2(0, 46)
+horizontal_alignment = 0
+autowrap_mode = 3
+
+[node name="GameSetupScrollHint" type="Button" parent="LayoutMargins/StudentSetupColumn"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+size_flags_horizontal = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+visible = false
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(1, 0.97254902, 0.87058824, 1)
+theme_override_styles/normal = SubResource("HintNormal")
+theme_override_styles/focus = SubResource("FocusBorder")
+text = "SCROLL DOWN FOR GAME SETUP ↓"
+
+[node name="SetupActions" type="HBoxContainer" parent="LayoutMargins/StudentSetupColumn"]
+layout_mode = 2
+alignment = 1
+custom_minimum_size = Vector2(0, 58)
+theme_override_constants/separation = 20
+
+[node name="BackButton" type="Button" parent="LayoutMargins/StudentSetupColumn/SetupActions"]
+custom_minimum_size = Vector2(194, 50)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "← BACK"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/SetupActions/BackButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r21")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ContinueButton" type="Button" parent="LayoutMargins/StudentSetupColumn/SetupActions"]
+custom_minimum_size = Vector2(240, 50)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_fonts/font = ExtResource("r1")
+theme_override_font_sizes/font_size = 14
+text = "CONTINUE →"
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("FocusBorder")
+
+[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/SetupActions/ContinueButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("r22")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ExistingScoreDialog" parent="." instance=ExtResource("r23")]

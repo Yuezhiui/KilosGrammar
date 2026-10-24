@@ -135,9 +135,27 @@ func _check_wave_resolution(game: Control, case_name: String) -> void:
 				[case_name, index, position.y, expected_y])
 		if absf(position.x - initial_xs[index]) > 0.01:
 			failures.append("%s: apple %d changed lanes while falling" % [case_name, index])
-	# Advance beyond the intentionally overlaid top banner before checking
-	# whether the exposed gameplay area is clear of HUD blockers.
-	game._update_tiles(2.8)
+	# Advance each difficulty to the same safe part of the upper playfield.
+	# A fixed 2.8s incorrectly carries faster Hard apples into the basket
+	# before this HUD clearance assertion can inspect them.
+	# Find the bottom of the actual visible HUD plaques, including the test's
+	# protective gutter, before positioning the top of the apples beneath them.
+	var hud := game.get_node("HUDLayer/HUD") as Control
+	var blocker_bottom := 0.0
+	for name in HUD_NAMES:
+		var plaque := hud.get_node_or_null(name) as Control
+		if plaque != null and plaque.is_visible_in_tree():
+			blocker_bottom = maxf(blocker_bottom, plaque.get_global_rect().end.y)
+	var target_y: float = maxf(
+		game._game_rect().position.y + game.APPLE_SIZE.y,
+		blocker_bottom + MARGIN + game.APPLE_SIZE.y * 0.5 + 1.0)
+	if target_y + game.APPLE_SIZE.y * 0.5 + MARGIN >= game._basket_rect().position.y:
+		failures.append(case_name + ": there is no clearance between the top HUD and basket")
+		return
+	var current_y: float = Vector2(game.falling_tiles[0]["pos"]).y
+	var speed: float = float(game.falling_tiles[0]["speed"])
+	var active_delta := maxf((target_y - current_y) / maxf(speed, 1.0), 0.0)
+	game._update_tiles(active_delta)
 	if game.falling_tiles.size() != WAVE_SIZE or game.wave_phase != "falling":
 		failures.append(case_name + ": all three apples must remain in flight across the upper playfield")
 		return

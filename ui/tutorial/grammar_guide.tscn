@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://ci15x41444d35"]
+[gd_scene load_steps=9 format=3 uid="uid://ci15x41444d35"]
 
 [ext_resource type="Script" path="res://ui/tutorial/grammar_guide.gd" id="1_script"]
 [ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="2_font"]
@@ -24,18 +24,6 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_active"]
-bg_color = Color(1, 0.992157, 0.956863, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.0705882, 0.541176, 0.431373, 1)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_red"]
 bg_color = Color(0.847059, 0.356863, 0.407843, 1)

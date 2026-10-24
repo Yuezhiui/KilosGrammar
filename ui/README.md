@@ -7,17 +7,55 @@ used throughout; no custom cat-shaped pointer overlays the UI.
 
 ## Main panel
 
-- **Tutorial** → Tutorial Home → Camera Check → Calibration → Movement Practice
-  → Tutorial Complete → Grammar Guide / Play / Main Panel.
+- **Tutorial** → editable Tutorial Home with exactly three buttons:
+  **START GUIDED TUTORIAL**, **GRAMMAR GUIDE**, and **BACK TO MAIN**.
+  The guided path starts at **Choose Game** (Catch the Word / Balloon Popping /
+  Human Plane), then asks for student/grammar setup, automatically starts
+  Camera & Calibration (CENTER → RIGHT → LEFT, 5-second holds), shows the
+  **in-game Spotlight guide**, and only then starts the **3–2–1 countdown**
+  and live round. The old standalone Movement Practice / completion panels
+  and their routes have been removed.
 - **Play** → Student & Game Setup (Student ID / Name / Grade & Section /
   Grammar Style / Quiz or Activity / Difficulty) → Select Activity
   → **Play Keyboard Now** → Ready → Playable 2D Game → Game Over.
-- Alternatively, **Next: Camera Check** still opens Camera Check → Calibration
-  Preview → Ready; those screens remain preview-only until vision integration.
+- Camera-based Play normally proceeds to auto calibration, with a keyboard
+  fallback when a camera is unavailable; the separate Camera Check panel
+  remains for earlier compatibility/tools, not a required guided step.
 - **Game Over → Retry** returns to Student & Game Setup with previous
   selections ready to edit; **Main Menu** exits the keyboard-playable round.
 - **Leaderboard**, **Settings**, **Credits** → standalone subpanels with Back.
 - **Quit** → exit the application.
+
+## Editing the Guided Tutorial visually (Godot 2D Inspector)
+
+- Open `res://ui/tutorial/tutorial_home.tscn`. The three independent native
+  buttons each own their own editable image child; the title, background, cat,
+  decorative images and three onboarding cards are all separate 2D scene nodes.
+  Reposition a node in Godot's **2D** editor; replace any image using the
+  respective `TextureRect.texture` property in the Inspector. No screenshots
+  have been flattened into a single hitbox.
+- Open `res://ui/play/play_activity.tscn` to edit the **Choose Game** screen,
+  its native activity buttons, captions and artwork. `ready.tscn` houses the
+  pre-game ready UI separately.
+- Open `res://ui/tutorial/spotlight_overlay.tscn` to change the overlay,
+  five step arrows, caption panel, Next/Back/Replay Voice/Skip buttons, and
+  each activity's named `FocusRegions`. The actual spotlight hole dynamically
+  follows the currently relevant game element at runtime; the scene-authored
+  regions are the fallback targets if an element is unavailable. Runtime
+  movement of the highlight does **not** override your saved editor layout.
+- The owner's arrow is copied unchanged to
+  `res://Components/TutorialSpotlight/right-arrow.png`. Swap this Texture2D
+  directly on an Arrow `TextureRect` in the scene; do not change it in Downloads.
+- `res://ui/play/guided_countdown.tscn` is the editor-authored 3–2–1 overlay.
+  The actual minigame remains frozen until after the countdown; camera
+  processing continues in parallel during onboarding.
+- For ElevenLabs, see `res://ui/tutorial/VOICEOVER_ELEVENLABS.md`. The
+  Spotlight node exports `voice_clips` (AudioStreams) and `voice_clip_paths`
+  (relative `res://` paths) dictionaries keyed by step ID. All captions remain
+  readable and Next/Skip work even without recording assets.
+- The guide explains **only the selected round rules**: Seconds means a
+  60-second timer, while Lives teaches the available three lives. Do not
+  assume these independent modes are simultaneously enabled.
 
 ## Credits and Settings visual system
 
@@ -47,7 +85,8 @@ used throughout; no custom cat-shaped pointer overlays the UI.
 
 - Activities: Catch the Word, Human Plane, Balloon Popping.
 - MVP grammar styles: Noun, Verb, Adjective, Adverb, Pronoun.
-- Mode choices: Quiz and Activity (frontend labels, gameplay modes not yet wired).
+- Mode choices: **Seconds** (60-second round) and **Lives** (three chances in
+  the guided instructions; Human Plane honors 3 lives across difficulties).
 - Difficulties: Easy, Normal, Hard.
 - Direct Play starts with **all student/configuration fields empty**, never
   silently defaults to a student or difficulty.
@@ -75,9 +114,12 @@ Plane still uses original programmatically drawn 2D visuals.
   hold their grammar labels, and descend out of view when a question ends.
   A swept-collision fallback prevents fast projectiles from skipping a balloon
   between physics samples at very low frame rates.
-- **Human Plane:** A/D or Left/Right moves the plane continuously (not by
-  teleport). Choose one of the one/two correct gates when the gates cross the
-  airplane's collision line; crossing lateral lanes early does not score.
+- **Human Plane:** Camera-only movement maps actual measured CENTER/RIGHT/LEFT
+  torso positions across the entire scene-authored path. Spreading BOTH arms
+  wide enables smooth left/right flight; lowering either arm freezes the plane
+  until both arms open again. No gyro tilt, keyboard movement or forced
+  auto-centering. Choose a correct gate when it crosses the airplane's
+  collision line; crossing lateral lanes early does not score.
 
 **Pause/Resume** keeps the actual gameplay scene suspended behind the Pause
 panel. RESUME reactivates that exact scene, retaining the current falling
@@ -114,9 +156,11 @@ their GDScript references. The existing scene router continues to load the
 same `.tscn` paths, so the Play flow is unchanged.
 
 Each activity exposes `set_body_x(normalized_x)` (-1.0 left through +1.0
-right) for a **future** calibrated body-tracking input adapter. Calling the
-method currently only changes the game's own movement target; it does not
-open a webcam or implement pose estimation. The five active grammar topics
+right) for keyboard and the **existing** `PoseService` calibrated-body adapter.
+The activity itself does not open a webcam: the camera starts through the
+calibration service, then its tracking values reach the game wrapper. Camera
+sensor/inference FPS depends on hardware; rendering at 60 FPS does not mean
+60 pose-inference updates per second. The five active grammar topics
 use the shared `ui/minigames/grammar_bank.gd`, tested separately for valid,
 unambiguous one- and two-answer sets.
 
@@ -143,13 +187,14 @@ activity, topic, difficulty, and any session-specific results.
 
 ## Feature status and honesty
 
-Current screens and the three keyboard minigames are playable prototypes.
-Their scores reflect real gameplay collisions, not fake Simulate Correct/Wrong
-buttons, but remain **UNSAVED**. Live camera capture, YOLO26n-Pose/ONNX,
-body tracking, per-pupil physical calibration, a production curriculum and
-adaptive grammar content, and **local PostgreSQL** student/score persistence
-are separate development milestones. There is no cloud score sync planned.
-Camera/Calibration screens remain clearly labeled PREVIEW/NOT CONNECTED.
+The three minigames are playable and their scores reflect actual collision/
+answer handling, but remain **UNSAVED**. `PoseService` already contains camera,
+YOLO pose processing and a guided calibration path, with a keyboard fallback
+when tracking is unavailable. Crowded-classroom identity-lock robustness,
+integrated-GPU acceleration, production curriculum/adaptive content and
+**local PostgreSQL** score persistence remain separate development milestones.
+There is no cloud score sync planned. Headless test passes do not substitute
+for testing with the intended classroom camera and real pupils.
 
 The future PostgreSQL score identity will be `(student_id, game_style,
 game_mode, difficulty)`, with the **latest completed score replacing** the

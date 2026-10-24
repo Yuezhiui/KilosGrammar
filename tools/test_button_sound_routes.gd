@@ -4,9 +4,9 @@ extends SceneTree
 # Exercises actual routed panels; verifies every BaseButton has one owner
 # for hover, keyboard focus and activation sounds after dynamic construction.
 const ROUTES := [
-	"tutorial_home", "tutorial_practice", "tutorial_complete", "grammar_guide",
+	"tutorial_home", "grammar_guide",
 	"student_setup", "play_activity", "play_topic", "play_difficulty",
-	"camera_check", "calibration", "ready", "gameplay", "pause",
+	"camera_check", "calibration", "gameplay", "pause",
 	"results", "leaderboard", "settings", "credits"
 ]
 var failures: Array[String] = []

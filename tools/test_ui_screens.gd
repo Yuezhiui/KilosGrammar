@@ -3,9 +3,9 @@ extends SceneTree
 # Run: Godot --headless --path . --script res://tools/test_ui_screens.gd
 # Fast smoke test: load every current UI scene in the real main menu host.
 const ROUTES := [
-	"tutorial_home", "tutorial_practice", "tutorial_complete", "grammar_guide",
+	"tutorial_home", "grammar_guide",
 	"student_setup", "play_activity", "play_topic", "play_difficulty",
-	"camera_check", "calibration", "ready", "gameplay", "pause",
+	"camera_check", "calibration", "gameplay", "pause",
 	"results", "leaderboard", "settings", "credits"
 ]
 
@@ -130,31 +130,42 @@ func _run() -> void:
 	(form.get("_name_edit") as LineEdit).text = "John D. Doe"
 	(form.get("_grade_edit") as LineEdit).text = "Grade 2 Apple"
 	form.call("_select_style", "Noun")
-	form.call("_select_mode", "Quiz")
+	form.call("_select_mode", "Seconds")
 	form.call("_select_difficulty", "Easy")
 	form.call("_continue")
 	await process_frame
 	_assert_route(app, "play_activity", "Student Setup -> Activity")
-	(app.get("active_panel") as Control).call("_select_activity", "Catch the Word")
-	(app.get("active_panel") as Control).call("_play_keyboard_now")
+	var game_select := app.get("active_panel") as Control
+	game_select.call("_select_activity", "Catch the Word")
+	if game_select.get_node_or_null("LayoutMargins/Content/Footer/PlayKeyboardButton") != null or game_select.has_method("_play_keyboard_now"):
+		failures.append("Game Selection still exposes removed keyboard shortcut")
+	# Synthetic camera presence prevents webcam startup during navigation,
+	# but provides no calibration samples or fake completion.
+	var pose_service := root.get_node("PoseService")
+	pose_service.active = true
+	pose_service.player_x = -1.0
+	pose_service.current_status = {"state": "waiting", "pose": false}
+	(game_select.get("next_button") as Button).pressed.emit()
 	await process_frame
-	_assert_route(app, "ready", "Activity -> Ready (skip camera for keyboard prototype)")
-	(app.get("active_panel") as Control).call("_go_back")
+	_assert_route(app, "calibration", "Game Selection Next -> camera-only Calibration")
+	var calibration_state := (app.get("session_state") as Dictionary).duplicate(true)
+	if bool(calibration_state.get("keyboard_mode", true)) or not bool(calibration_state.get("camera_requested", false)):
+		failures.append("Game Selection Next did not select camera-only calibration")
+	var calibration_panel := app.get("active_panel") as Control
+	if calibration_panel.get_node_or_null("TutorialStage/SkipButton") != null:
+		failures.append("Calibration still contains a SKIP control")
+	(calibration_panel.get_node("TutorialStage/IntroOverlay/IntroBackButton") as Button).pressed.emit()
 	await process_frame
-	_assert_route(app, "play_activity", "Keyboard Ready Back -> Game Selection")
-	(app.get("active_panel") as Control).call("_go_next")
-	await process_frame
-	_assert_route(app, "camera_check", "Activity -> Camera (no duplicate configuration)")
-	(app.get("active_panel") as Control).call("_go_back")
-	await process_frame
-	_assert_route(app, "play_activity", "Camera Back -> Game Selection for teacher flow")
+	_assert_route(app, "main", "Calibration Back -> Main for teacher to change game")
 	app.call("_on_panel_requested", "camera_check", {})
 	await process_frame
-	app.call("_on_panel_requested", "calibration", {"entry_source": "play"})
+	# Gameplay/results can be smoke-tested independently by explicit router
+	# injection. This does NOT signal a completed camera calibration.
+	calibration_state["keyboard_mode"] = false
+	calibration_state["start_countdown"] = false
+	app.call("_on_panel_requested", "gameplay", calibration_state)
 	await process_frame
-	(app.get("active_panel") as Control).call("_continue_flow", false)
-	await process_frame
-	_assert_route(app, "ready", "Play Calibration -> Ready")
+	_assert_route(app, "gameplay", "Explicit isolated gameplay fixture")
 	for activity in ["Catch the Word", "Balloon Popping", "Human Plane"]:
 		app.call("_on_panel_requested", "gameplay", {"activity": activity, "topic": "Noun", "game_style": "Noun", "difficulty": "Easy", "demo_mode": true})
 		await process_frame
@@ -186,33 +197,16 @@ func _run() -> void:
 
 	app.call("_on_panel_requested", "tutorial_home", {})
 	await process_frame
-	app.call("_on_panel_requested", "camera_check", {"entry_source": "tutorial"})
-	await process_frame
-	app.call("_on_panel_requested", "calibration", {})
-	await process_frame
-	(app.get("active_panel") as Control).call("_continue_flow", false)
-	await process_frame
-	_assert_route(app, "tutorial_practice", "Tutorial Calibration -> Practice")
-	(app.get("active_panel") as Control).call("_go_back")
-	await process_frame
-	_assert_route(app, "calibration", "Guided Practice Back -> Calibration")
-	app.call("_on_panel_requested", "tutorial_home", {})
-	await process_frame
-	app.call("_on_panel_requested", "tutorial_practice", {"from_calibration": false})
-	await process_frame
-	(app.get("active_panel") as Control).call("_go_back")
-	await process_frame
-	_assert_route(app, "tutorial_home", "Direct Practice Back -> Tutorial Home")
-	app.call("_on_panel_requested", "tutorial_practice", {"from_calibration": false})
-	await process_frame
-	(app.get("active_panel") as Control).call("_request", "tutorial_complete", {"tutorial_practiced": true})
-	await process_frame
-	_assert_route(app, "tutorial_complete", "Practice -> Tutorial Complete")
-	(app.get("active_panel") as Control).call("_request", "student_setup", {"fresh_setup": true})
-	await process_frame
-	_assert_route(app, "student_setup", "Tutorial Complete Play -> Student Setup")
-	if not (app.get("active_panel") as Control).get("_student_id_edit").text.is_empty():
-		failures.append("Tutorial-to-Play did not start with a blank student form")
+	var tutorial_panel: Control = app.get("active_panel") as Control
+	var tutorial_start: Button = tutorial_panel.get_node_or_null("TutorialStage/StartButton") as Button
+	if tutorial_start == null:
+		failures.append("Guided Tutorial has no scene-editable StartButton")
+	else:
+		tutorial_start.pressed.emit()
+		await process_frame
+		_assert_route(app, "play_activity", "Guided Tutorial begins with game selection")
+		if not bool((app.get("session_state") as Dictionary).get("guided_tutorial", false)):
+			failures.append("Guided Tutorial lost its flow flag at game selection")
 	app.call("_on_panel_requested", "camera_check", {"entry_source": "play", "setup_preview": false})
 	await process_frame
 	(app.get("active_panel") as Control).call("_go_back")

@@ -41,15 +41,19 @@ func _run() -> void:
 		var calib := calib_scene.instantiate() as Control
 		root.add_child(calib)
 		_check((calib.get("continue_button") as Button).disabled, "Calibration starts locked")
-		var marker := calib.get("guide_cursor") as ColorRect
+		var marker := calib.get("guide_cursor") as Control
 		_check(is_instance_valid(marker), "Moving player marker exists")
+		# New full-screen tutorial displays an introductory card before capture.
+		# Advance time without opening the physical webcam or waiting in real time.
+		calib.call("_process", 2.6)
+		_check(not bool(calib.get("intro_running")), "2.5s intro completes before first hold")
 		for position in [0.50, 0.78, 0.25]:
-			for sample in range(12):
+			for sample in range(10):
 				service.player_x = position + 0.002 * float(sample % 2)
 				service.packet_sequence += 1
 				service.last_pose_ms = Time.get_ticks_msec()
-				calib.call("_process", 0.5)
-		_check(bool(service.calibration.get("valid", false)), "5s Center-Right-Left creates calibration")
+				calib.call("_process", 0.4)
+		_check(bool(service.calibration.get("valid", false)), "3s Center-Right-Left creates calibration")
 		var next_button := calib.get("continue_button") as Button
 		_check(is_instance_valid(next_button) and not next_button.disabled, "Continue unlocked after all zones")
 		calib.free()

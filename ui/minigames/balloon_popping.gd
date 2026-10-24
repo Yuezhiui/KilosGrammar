@@ -38,6 +38,9 @@ const SWEPT_COLLISION_MIN_TRAVEL := (BALLOON_COLLISION_RADIUS + PROJECTILE_COLLI
 const UPPER_LINE_Y := 125.0
 const BALLOON_FLOAT_SPEED := 52.0
 const BALLOON_REVEAL_SECONDS := 1.15
+const HAND_RAISE_RELOAD_MS := 1500
+const HAND_RAISE_LOWER_CONFIRM_MS := 180
+const HAND_RAISE_UP_CONFIRM_MS := 80
 
 const TOPIC_PLURALS := {
 	"Noun": "NOUNS",
@@ -66,6 +69,7 @@ var round_active_before_pause := false
 var next_round_pending := false
 var finishing := false
 var round_completed := false
+var used_words: Dictionary = {}
 
 var game_mode := "Seconds"
 var is_seconds_mode := true
@@ -75,6 +79,8 @@ var projectile_speed := 1000.0
 var launcher_max_speed := 650.0
 var launcher_acceleration := 2300.0
 var round_time_limit := 7.0
+var balloon_float_speed := BALLOON_FLOAT_SPEED
+var balloon_reveal_seconds := BALLOON_REVEAL_SECONDS
 var wrong_penalty := 0
 var miss_costs_heart := false
 
@@ -90,6 +96,13 @@ var balloon_slots: Array[Area2D] = []
 var balloons: Array[Area2D] = []
 var projectiles: Array[Area2D] = []
 var projectile_velocities: Dictionary = {}
+var hand_raise_tracking_valid := false
+var hand_raise_raw_raised := false
+var hand_raise_sample_since_ms := 0
+var hand_raise_confirmed_raised := false
+var hand_raise_armed := false
+var hand_raise_last_shot_ms := -1
+var _hand_raise_firing_authorized := false
 var valid_lanes: Array[int] = []
 var pending_valid_lanes: Array[int] = []
 
@@ -184,6 +197,9 @@ func _layout_editor_preview() -> void:
 
 
 func set_context(new_context: Dictionary) -> void:
+	# A new setup clears words; a saved game snapshot may restore them.
+	if not new_context.has("balloon_used_words"):
+		context.erase("balloon_used_words")
 	for key in new_context:
 		context[key] = new_context[key]
 	if is_node_ready():
@@ -217,13 +233,74 @@ func get_context() -> Dictionary:
 func set_body_x(normalized_x: float) -> void:
 	var safe_x := clampf(normalized_x, -1.0, 1.0)
 	var unit_x := (safe_x + 1.0) * 0.5
-	body_target_x = lerpf(_play_left(), _play_right(), unit_x)
+	# Aim at the three ACTUAL balloon lanes, not the wider launcher travel
+	# bounds. At calibrated LEFT/RIGHT, the old 16%-84% travel endpoints
+	# missed the balloons centered at roughly 24%/76% by 100+ px at 1280.
+	# Read the scene's target positions so authored balloon locations remain
+	# the source of truth if their spacing changes.
+	var left_target_x := _lane_x(0)
+	var right_target_x := _lane_x(LANE_COUNT - 1)
+	if balloon_slots.size() == LANE_COUNT and is_instance_valid(balloon_slots[0]) \
+			and is_instance_valid(balloon_slots[LANE_COUNT - 1]):
+		left_target_x = balloon_slots[0].position.x
+		right_target_x = balloon_slots[LANE_COUNT - 1].position.x
+	body_target_x = lerpf(left_target_x, right_target_x, unit_x)
 	body_target_timer = 0.30
+
+
+# Caller supplies the combined (left OR right) hand-up state for each valid
+# camera frame, including repeated unchanged frames. Untracked frames must use
+# tracking_valid=false: missing pose data is never interpreted as lowering.
+# The optional clock lets headless tests verify the 1.5-second reload exactly.
+# Returns true only if this sample actually fired one projectile.
+func set_hand_raise_state(raised: bool, tracking_valid: bool = true, now_ms: int = -1) -> bool:
+	if not tracking_valid:
+		clear_hand_raise_tracking()
+		return false
+	if Engine.is_editor_hint() or finishing or not timer_running or not is_inside_tree():
+		return false
+	var now := Time.get_ticks_msec() if now_ms < 0 else now_ms
+	if not hand_raise_tracking_valid or raised != hand_raise_raw_raised:
+		hand_raise_tracking_valid = true
+		hand_raise_raw_raised = raised
+		hand_raise_sample_since_ms = now
+	if not raised:
+		# Ignore brief pose-estimation flicker: lowering must be sustained before
+		# a fresh raise can create another shot.
+		if now - hand_raise_sample_since_ms >= HAND_RAISE_LOWER_CONFIRM_MS:
+			hand_raise_confirmed_raised = false
+			hand_raise_armed = true
+		return false
+	if hand_raise_confirmed_raised or now - hand_raise_sample_since_ms < HAND_RAISE_UP_CONFIRM_MS:
+		return false
+	hand_raise_confirmed_raised = true
+	var can_fire := hand_raise_armed
+	# Every confirmed rise consumes its edge, even during reload or while a
+	# question is unavailable. Holding a hand high cannot queue a later shot.
+	hand_raise_armed = false
+	if not can_fire or (hand_raise_last_shot_ms >= 0 and now - hand_raise_last_shot_ms < HAND_RAISE_RELOAD_MS):
+		return false
+	_hand_raise_firing_authorized = true
+	var fired := _launch_projectile(now)
+	_hand_raise_firing_authorized = false
+	return fired
+
+
+func clear_hand_raise_tracking() -> void:
+	# Require a real, stable lowered pose before arming after a tracking dropout
+	# or a paused/tutorial screen. Preserve the latest shot's reload deadline.
+	hand_raise_tracking_valid = false
+	hand_raise_raw_raised = false
+	hand_raise_sample_since_ms = 0
+	hand_raise_confirmed_raised = false
+	hand_raise_armed = false
+	_hand_raise_firing_authorized = false
 
 
 func _finish_round() -> void:
 	if finishing:
 		return
+	clear_hand_raise_tracking()
 	_stop_voice_feedback()
 	finishing = true
 	round_completed = true
@@ -498,8 +575,22 @@ func _load_raw_png(path: String) -> Texture2D:
 
 
 func _apply_context() -> void:
+	clear_hand_raise_tracking()
+	hand_raise_last_shot_ms = -1
 	_stop_voice_feedback()
 	last_missed_shot_voice_msec = -100000
+	used_words.clear()
+	var previous_words: Variant = context.get("balloon_used_words", [])
+	if previous_words is Array:
+		for value in previous_words:
+			var key := String(value).strip_edges().to_lower()
+			if not key.is_empty():
+				used_words[key] = true
+	elif previous_words is Dictionary:
+		for value in previous_words.keys():
+			var key := String(value).strip_edges().to_lower()
+			if not key.is_empty() and bool(previous_words[value]):
+				used_words[key] = true
 	var raw_mode := String(context.get("game_mode", context.get("mode", "Seconds"))).to_lower()
 	if raw_mode in ["seconds", "60s", "sec", "quiz"]:
 		game_mode = "Seconds"
@@ -521,16 +612,25 @@ func _apply_context() -> void:
 			launcher_max_speed = 540.0
 			launcher_acceleration = 1900.0
 			round_time_limit = 9.0
+			balloon_float_speed = BALLOON_FLOAT_SPEED
+			balloon_reveal_seconds = BALLOON_REVEAL_SECONDS
+			float_start_delay = 0.55
 		"Hard":
-			projectile_speed = 1160.0
-			launcher_max_speed = 780.0
-			launcher_acceleration = 3000.0
+			projectile_speed = 1490.0
+			launcher_max_speed = 920.0
+			launcher_acceleration = 3700.0
 			round_time_limit = 5.0
+			balloon_float_speed = 154.0
+			balloon_reveal_seconds = 0.72
+			float_start_delay = 0.20
 		_:
-			projectile_speed = 1020.0
-			launcher_max_speed = 650.0
-			launcher_acceleration = 2350.0
+			projectile_speed = 1250.0
+			launcher_max_speed = 750.0
+			launcher_acceleration = 2900.0
 			round_time_limit = 7.0
+			balloon_float_speed = 98.0
+			balloon_reveal_seconds = 0.92
+			float_start_delay = 0.37
 
 	miss_costs_heart = false
 	wrong_penalty = 0
@@ -583,7 +683,7 @@ func _process(delta: float) -> void:
 			for lane in range(balloons.size()):
 				var balloon := balloons[lane]
 				if balloon != null and is_instance_valid(balloon) and balloon.visible:
-					balloon.position.y -= BALLOON_FLOAT_SPEED * delta
+					balloon.position.y -= balloon_float_speed * delta
 					if balloon.position.y < -120.0:
 						balloon.visible = false
 						balloon.monitoring = false
@@ -619,9 +719,6 @@ func _input(event: InputEvent) -> void:
 			return
 		if not timer_running:
 			return
-		if key_event.keycode in [KEY_SPACE, KEY_ENTER, KEY_KP_ENTER]:
-			_launch_projectile()
-			get_viewport().set_input_as_handled()
 
 
 func _physics_process(delta: float) -> void:
@@ -632,18 +729,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_launcher(delta: float) -> void:
-	var axis := Input.get_axis("ui_left", "ui_right")
-	if Input.is_key_pressed(KEY_A):
-		axis -= 1.0
-	if Input.is_key_pressed(KEY_D):
-		axis += 1.0
-	axis = clampf(axis, -1.0, 1.0)
-
-	if absf(axis) > 0.01:
-		body_target_timer = 0.0
-		launcher_velocity = move_toward(launcher_velocity, axis * launcher_max_speed, launcher_acceleration * delta)
-		launcher_x += launcher_velocity * delta
-	elif body_target_timer > 0.0:
+	# Steering is camera-only. The last pose target is held while tracking
+	# briefly recovers instead of falling back to unrelated keyboard input.
+	if body_target_timer > 0.0:
 		body_target_timer = maxf(body_target_timer - delta, 0.0)
 		var desired_velocity := clampf((body_target_x - launcher_x) * 7.0, -launcher_max_speed, launcher_max_speed)
 		launcher_velocity = move_toward(launcher_velocity, desired_velocity, launcher_acceleration * delta)
@@ -656,10 +744,19 @@ func _update_launcher(delta: float) -> void:
 	launcher.position = Vector2(launcher_x, _launcher_y())
 
 
-func _launch_projectile() -> void:
-	if not timer_running or not round_active or projectiles.size() >= 2:
-		return
+func _launch_projectile(now_ms: int = -1) -> bool:
+	# Only the gesture edge above may authorize a launch. This also blocks old
+	# or duplicate callers of _launch_projectile from bypassing the reload.
+	if not _hand_raise_firing_authorized or finishing or not timer_running or not round_active \
+			or projectiles.size() >= 2 or not is_instance_valid(projectile_layer) \
+			or not is_instance_valid(launcher):
+		return false
+	var now := Time.get_ticks_msec() if now_ms < 0 else now_ms
+	if hand_raise_last_shot_ms >= 0 and now - hand_raise_last_shot_ms < HAND_RAISE_RELOAD_MS:
+		return false
 	var projectile := STONE_SCENE.instantiate() as Area2D
+	if projectile == null:
+		return false
 	projectile.name = "StoneProjectile"
 	projectile.position = Vector2(launcher_x, launcher.position.y - 145.0)
 	projectile.z_index = 10
@@ -667,6 +764,8 @@ func _launch_projectile() -> void:
 	projectile.area_entered.connect(_on_projectile_area_entered.bind(projectile))
 	projectiles.append(projectile)
 	projectile_velocities[projectile] = Vector2(0.0, -projectile_speed)
+	hand_raise_last_shot_ms = now
+	return true
 
 
 func _update_projectiles(delta: float) -> void:
@@ -853,11 +952,17 @@ func _start_new_round() -> void:
 	next_round_pending = false
 	_clear_balloons()
 	_clear_projectiles()
-	round_index += 1
 	var data := _request_round_data()
-	var prompt := String(data.get("prompt", "WHICH WORD IS A %s?" % _topic().to_upper()))
 	var normalized := _normalize_round(data)
+	if normalized.is_empty():
+		# No fair question remains: avoid repeating earlier displayed words.
+		_finish_round()
+		return
 	var options: Array[String] = normalized["options"]
+	for word in options:
+		used_words[word.strip_edges().to_lower()] = true
+	round_index += 1
+	var prompt := String(data.get("prompt", "WHICH WORD IS A %s?" % _topic().to_upper()))
 	valid_lanes = normalized["valid_indices"]
 	var negative_prompt := _difficulty() == "Hard" or (_difficulty() == "Normal" and round_index % 3 == 0)
 	if negative_prompt:
@@ -876,102 +981,32 @@ func _start_new_round() -> void:
 
 
 func _request_round_data() -> Dictionary:
-	var result: Dictionary = GRAMMAR_BANK.lane_round(_topic(), _difficulty(), rng)
-	if not result.is_empty():
-		return result
-	return _fallback_round()
+	return GRAMMAR_BANK.lane_round(_topic(), _difficulty(), rng, used_words)
 
 
 func _normalize_round(data: Dictionary) -> Dictionary:
 	var raw_options: Array = data.get("options", [])
 	var raw_valid: Array = data.get("valid_indices", [])
-	var selected_source_indices: Array[int] = []
-	var source_valid: Array[int] = []
+	if raw_options.size() != LANE_COUNT:
+		return {}
+	var options: Array[String] = []
+	var round_words: Dictionary = {}
+	for value in raw_options:
+		var word := String(value).strip_edges()
+		var key := word.to_lower()
+		if key.is_empty() or used_words.has(key) or round_words.has(key):
+			return {}
+		round_words[key] = true
+		options.append(word)
+	var valid: Array[int] = []
 	for value in raw_valid:
 		var index := int(value)
-		if index >= 0 and index < raw_options.size() and not source_valid.has(index):
-			source_valid.append(index)
-	for index in source_valid:
-		if selected_source_indices.size() >= 2:
-			break
-		selected_source_indices.append(index)
-	for index in range(raw_options.size()):
-		if selected_source_indices.size() >= LANE_COUNT:
-			break
-		if not selected_source_indices.has(index):
-			selected_source_indices.append(index)
-
-	var options: Array[String] = []
-	var valid: Array[int] = []
-	for source_index in selected_source_indices:
-		if options.size() >= LANE_COUNT:
-			break
-		var lane := options.size()
-		options.append(String(raw_options[source_index]))
-		if source_valid.has(source_index):
-			valid.append(lane)
-
-	while options.size() < LANE_COUNT:
-		var make_matching := valid.is_empty()
-		var word := _request_word(make_matching)
-		var lane := options.size()
-		options.append(word)
-		if make_matching:
-			valid.append(lane)
-
-	var pair_data: Array[Dictionary] = []
-	for lane in range(options.size()):
-		pair_data.append({"word": options[lane], "valid": valid.has(lane)})
-	pair_data.shuffle()
-	options.clear()
-	valid.clear()
-	for lane in range(pair_data.size()):
-		options.append(String(pair_data[lane]["word"]))
-		if bool(pair_data[lane]["valid"]):
-			valid.append(lane)
+		if index < 0 or index >= LANE_COUNT or valid.has(index):
+			return {}
+		valid.append(index)
+	if valid.is_empty() or valid.size() == LANE_COUNT:
+		return {}
 	return {"options": options, "valid_indices": valid}
-
-
-func _request_word(matching: bool) -> String:
-	var word := String(GRAMMAR_BANK.pick_word(_topic(), matching, rng)).strip_edges()
-	if not word.is_empty():
-		return word
-	var pools := _fallback_pools()
-	var match_pool: Array = pools["match"] if matching else pools["other"]
-	return String(match_pool[rng.randi_range(0, match_pool.size() - 1)])
-
-
-func _fallback_round() -> Dictionary:
-	var pools := _fallback_pools()
-	var match_pool: Array = pools["match"]
-	var other_pool: Array = pools["other"]
-	var target_count := 2 if rng.randf() < 0.34 else 1
-	var options: Array[String] = []
-	var valid: Array[int] = []
-	for i in range(target_count):
-		valid.append(options.size())
-		options.append(String(match_pool[rng.randi_range(0, match_pool.size() - 1)]))
-	while options.size() < LANE_COUNT:
-		options.append(String(other_pool[rng.randi_range(0, other_pool.size() - 1)]))
-	return {
-		"prompt": "POP THE %s WORD%s" % [_topic().to_upper(), "S" if target_count > 1 else ""],
-		"options": options,
-		"valid_indices": valid
-	}
-
-
-func _fallback_pools() -> Dictionary:
-	match _topic():
-		"Verb":
-			return {"match": ["RUN", "JUMP", "WRITE", "SING"], "other": ["APPLE", "KIND", "QUICKLY", "SHE"]}
-		"Adjective":
-			return {"match": ["BRIGHT", "HAPPY", "SMALL", "KIND"], "other": ["RUN", "PENCIL", "SHE", "QUICKLY"]}
-		"Adverb":
-			return {"match": ["QUICKLY", "QUIETLY", "TODAY", "HERE"], "other": ["DOG", "BLUE", "THEY", "DANCE"]}
-		"Pronoun":
-			return {"match": ["SHE", "THEY", "WE", "IT"], "other": ["TEACHER", "HAPPY", "RUN", "SOFTLY"]}
-		_:
-			return {"match": ["APPLE", "TEACHER", "PARK", "PENCIL"], "other": ["RUN", "BRIGHT", "QUICKLY", "THEY"]}
 
 
 func _spawn_balloons(options: Array[String]) -> void:
@@ -995,11 +1030,22 @@ func _spawn_balloons(options: Array[String]) -> void:
 		balloon.monitorable = false
 		var label := balloon.get_node("WordLabel") as Label
 		label.text = options[lane]
+		_fit_balloon_word_label(label)
 		balloon.position = Vector2(_lane_x(lane), _balloon_hidden_y())
 		balloon.visible = true
-		balloon_motion_tween.tween_property(balloon, "position:y", _balloon_y(), BALLOON_REVEAL_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		balloon_motion_tween.tween_property(balloon, "position:y", _balloon_y(), balloon_reveal_seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	balloon_motion_tween.finished.connect(_on_balloon_reveal_finished)
 	_layout_scene()
+
+
+func _fit_balloon_word_label(label: Label) -> void:
+	# Keep longer Normal/Hard vocabulary centered inside the authored balloons.
+	# Scale just the text; the artist-provided label geometry stays editable.
+	var max_width := minf(label.size.x - 12.0, 145.0)
+	var font_size := 18
+	while font_size > 8 and FONT.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size).x > max_width:
+		font_size -= 1
+	label.add_theme_font_size_override("font_size", font_size)
 
 
 func _on_balloon_reveal_finished() -> void:
@@ -1286,6 +1332,7 @@ func _toggle_pause() -> void:
 func _pause() -> void:
 	if finishing or not timer_running:
 		return
+	clear_hand_raise_tracking()
 	_stop_voice_feedback()
 	round_active_before_pause = round_active
 	timer_running = false
@@ -1320,6 +1367,7 @@ func _resume() -> void:
 func _exit_to_results() -> void:
 	if finishing:
 		return
+	clear_hand_raise_tracking()
 	_stop_voice_feedback()
 	finishing = true
 	timer_running = false
@@ -1369,6 +1417,7 @@ func _stop_voice_feedback() -> void:
 
 
 func _exit_tree() -> void:
+	clear_hand_raise_tracking()
 	_stop_voice_feedback()
 	balloon_voice_streams.clear()
 

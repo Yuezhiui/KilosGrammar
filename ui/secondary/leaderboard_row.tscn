@@ -55,10 +55,11 @@ offset_right = 628.0
 offset_bottom = 38.0
 theme_override_colors/font_color = Color(0.12, 0.17, 0.35, 1)
 theme_override_fonts/font = ExtResource("1_font")
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 clip_text = true
 text = "STYLE"
 vertical_alignment = 1
+tooltip_text = "Minigame / Grammar topic"
 
 [node name="GameMode" type="Label" parent="."]
 unique_name_in_owner = true

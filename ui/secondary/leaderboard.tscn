@@ -14,6 +14,9 @@
 [ext_resource type="Texture2D" uid="uid://btx18k13xe61q" path="res://Components/Leaderboard/new_star.png" id="12_star"]
 [ext_resource type="Texture2D" uid="uid://evc4q7n8rym3" path="res://Components/Leaderboard/new_books.png" id="13_books"]
 [ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="14_font"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/button_blue.png" id="15_import"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/button_green.png" id="16_export"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/button_red.png" id="17_delete"]
 
 [sub_resource type="StyleBoxTexture" id="BackImageStyle"]
 texture = ExtResource("6_back")
@@ -59,6 +62,106 @@ texture_margin_left = 16.0
 texture_margin_top = 10.0
 texture_margin_right = 16.0
 texture_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxTexture" id="ImportActionStyle"]
+texture = ExtResource("15_import")
+texture_margin_left = 17.0
+texture_margin_top = 7.0
+texture_margin_right = 17.0
+texture_margin_bottom = 7.0
+
+[sub_resource type="StyleBoxTexture" id="ExportActionStyle"]
+texture = ExtResource("16_export")
+texture_margin_left = 17.0
+texture_margin_top = 7.0
+texture_margin_right = 17.0
+texture_margin_bottom = 7.0
+
+[sub_resource type="StyleBoxTexture" id="DeleteActionStyle"]
+texture = ExtResource("17_delete")
+texture_margin_left = 17.0
+texture_margin_top = 7.0
+texture_margin_right = 17.0
+texture_margin_bottom = 7.0
+
+[sub_resource type="StyleBoxFlat" id="TransferStatusBackground"]
+bg_color = Color(0.992, 0.94, 0.79, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.55, 0.32, 0.15, 0.9)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="DeleteConfirmBackground"]
+bg_color = Color(1, 0.953, 0.833, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.67, 0.24, 0.21, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="DeleteCancelStyle"]
+bg_color = Color(0.235, 0.47, 0.67, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="DeleteFinalStyle"]
+bg_color = Color(0.74, 0.17, 0.19, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="DeleteFinalDisabledStyle"]
+bg_color = Color(0.62, 0.57, 0.56, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="ConfirmInputStyle"]
+bg_color = Color(1, 1, 0.97, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45, 0.34, 0.34, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 12.0
+content_margin_right = 12.0
+content_margin_top = 7.0
+content_margin_bottom = 7.0
+
+[sub_resource type="StyleBoxFlat" id="ConfirmInputFocusStyle"]
+bg_color = Color(1, 1, 0.97, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.2, 0.47, 0.75, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 12.0
+content_margin_right = 12.0
+content_margin_top = 7.0
+content_margin_bottom = 7.0
 
 [node name="Leaderboard" type="Control" unique_id=502061973]
 layout_mode = 3
@@ -251,6 +354,52 @@ popup/item_2/id = 2
 popup/item_3/text = "HARD"
 popup/item_3/id = 3
 
+[node name="MinigameFilter" type="OptionButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 278.0
+offset_top = 234.0
+offset_right = 579.0
+offset_bottom = 281.0
+tooltip_text = "Filter saved scores by minigame, independently of grammar topic"
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 0.965, 0.87, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.965, 0.87, 1)
+theme_override_colors/font_hover_color = Color(1, 0.965, 0.87, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("FilterButtonNormal")
+theme_override_styles/pressed = SubResource("FilterButtonHover")
+theme_override_styles/hover = SubResource("FilterButtonHover")
+selected = 0
+item_count = 5
+popup/item_0/text = "ALL MINIGAMES"
+popup/item_0/id = 0
+popup/item_1/text = "CATCH THE WORD"
+popup/item_1/id = 1
+popup/item_2/text = "BALLOON POPPING"
+popup/item_2/id = 2
+popup/item_3/text = "HUMAN PLANE"
+popup/item_3/id = 3
+popup/item_4/text = "LEGACY"
+popup/item_4/id = 4
+
+[node name="MinigameTopicGuide" type="Label" parent="."]
+layout_mode = 0
+offset_left = 606.0
+offset_top = 237.0
+offset_right = 1125.0
+offset_bottom = 279.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.196, 0.173, 0.349, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 13
+text = "GAME STYLE shows MINIGAME / GRAMMAR TOPIC"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
 [node name="TableHeaderArt" type="TextureRect" parent="." unique_id=1597921345]
 layout_mode = 0
 offset_left = 113.0
@@ -276,7 +425,7 @@ anchors_preset = 0
 offset_left = 133.0
 offset_top = 369.0
 offset_right = 1148.0
-offset_bottom = 570.0
+offset_bottom = 541.0
 mouse_filter = 1
 
 [node name="EmptyMessage" type="Label" parent="TableContent" unique_id=1278223115]
@@ -330,6 +479,98 @@ theme_override_styles/pressed = SubResource("DownloadImageStyle")
 theme_override_styles/hover = SubResource("DownloadImageStyle")
 theme_override_styles/disabled = SubResource("DownloadImageStyle")
 
+[node name="ImportCsvButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 195.0
+offset_top = 575.0
+offset_right = 409.0
+offset_bottom = 625.0
+tooltip_text = "Import student profiles and completed scores from a CSV file (teacher action)"
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("ImportActionStyle")
+theme_override_styles/hover = SubResource("ImportActionStyle")
+theme_override_styles/pressed = SubResource("ImportActionStyle")
+theme_override_styles/disabled = SubResource("ImportActionStyle")
+text = "IMPORT CSV"
+
+[node name="ExportCsvButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 431.0
+offset_top = 575.0
+offset_right = 645.0
+offset_bottom = 625.0
+tooltip_text = "Request a full database CSV export of ALL students and completed scores"
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("ExportActionStyle")
+theme_override_styles/hover = SubResource("ExportActionStyle")
+theme_override_styles/pressed = SubResource("ExportActionStyle")
+theme_override_styles/disabled = SubResource("ExportActionStyle")
+text = "EXPORT CSV"
+
+[node name="DeleteAllButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 667.0
+offset_top = 575.0
+offset_right = 923.0
+offset_bottom = 625.0
+tooltip_text = "Teacher only • permanently delete ALL student profiles AND ALL completed scores"
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("DeleteActionStyle")
+theme_override_styles/hover = SubResource("DeleteActionStyle")
+theme_override_styles/pressed = SubResource("DeleteActionStyle")
+theme_override_styles/disabled = SubResource("DeleteActionStyle")
+text = "DELETE ALL DATA"
+
+[node name="TransferStatusPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 195.0
+offset_top = 638.0
+offset_right = 705.0
+offset_bottom = 704.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("TransferStatusBackground")
+
+[node name="TransferStatus" type="Label" parent="TransferStatusPanel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 4.0
+offset_right = -12.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.245, 0.218, 0.32, 1)
+theme_override_font_sizes/font_size = 14
+text = "Database CSV tools • Choose an action above."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
 [node name="DecorativeBooks" type="TextureRect" parent="." unique_id=1894635513]
 layout_mode = 0
 offset_left = 1107.0
@@ -352,4 +593,148 @@ unique_name_in_owner = true
 title = "Export leaderboard as CSV"
 size = Vector2i(760, 500)
 access = 2
+file_mode = 4
 filters = PackedStringArray("*.csv ; CSV Files")
+
+[node name="ImportCsvDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Import student profiles and scores from CSV"
+size = Vector2i(840, 560)
+access = 2
+file_mode = 0
+filters = PackedStringArray("*.csv ; CSV Files")
+
+[node name="ImportReviewDialog" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Review CSV import request"
+size = Vector2i(660, 295)
+ok_button_text = "CONFIRM IMPORT"
+dialog_text = "Importing will send these student profiles and scores to the local database for validation. Verify that the selected file and its contents are correct before continuing."
+
+[node name="ExportDatabaseCsvDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Export ALL student profiles and completed scores"
+size = Vector2i(840, 560)
+access = 2
+file_mode = 4
+filters = PackedStringArray("*.csv ; CSV Files")
+current_file = "kilos_grammar_students_and_scores.csv"
+
+[node name="DeleteFirstWarning" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "WARNING • Delete every student and score?"
+size = Vector2i(670, 320)
+ok_button_text = "SHOW FINAL CONFIRMATION"
+dialog_text = "This will PERMANENTLY erase ALL student profiles AND ALL completed scores in the local database, for every class, activity and difficulty. This cannot be undone. Export a backup first. Continue to typed confirmation?"
+
+[node name="DeleteFinalOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="DimBackground" type="ColorRect" parent="DeleteFinalOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.05, 0.08, 0.82)
+
+[node name="ConfirmPanel" type="Panel" parent="DeleteFinalOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -396.0
+offset_top = -171.0
+offset_right = 396.0
+offset_bottom = 171.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("DeleteConfirmBackground")
+
+[node name="Heading" type="Label" parent="DeleteFinalOverlay/ConfirmPanel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 20.0
+offset_right = 764.0
+offset_bottom = 66.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.64, 0.13, 0.14, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 25
+text = "FINAL CONFIRMATION: DELETE ALL DATA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WarningText" type="Label" parent="DeleteFinalOverlay/ConfirmPanel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 68.0
+offset_right = 760.0
+offset_bottom = 149.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.31, 0.19, 0.24, 1)
+theme_override_font_sizes/font_size = 17
+text = "ALL STUDENT PROFILES + ALL COMPLETED SCORES will be permanently erased. This affects every student. Type DELETE ALL DATA exactly to authorize the request."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="TypedConfirmationEdit" type="LineEdit" parent="DeleteFinalOverlay/ConfirmPanel"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 127.0
+offset_top = 157.0
+offset_right = 665.0
+offset_bottom = 206.0
+placeholder_text = "Type DELETE ALL DATA"
+max_length = 32
+alignment = 1
+clear_button_enabled = true
+theme_override_colors/font_color = Color(0.18, 0.15, 0.2, 1)
+theme_override_colors/font_placeholder_color = Color(0.42, 0.38, 0.41, 1)
+theme_override_colors/caret_color = Color(0.19, 0.42, 0.71, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("ConfirmInputStyle")
+theme_override_styles/focus = SubResource("ConfirmInputFocusStyle")
+
+[node name="FinalCancelButton" type="Button" parent="DeleteFinalOverlay/ConfirmPanel"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 100.0
+offset_top = 242.0
+offset_right = 334.0
+offset_bottom = 299.0
+focus_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("DeleteCancelStyle")
+text = "CANCEL"
+
+[node name="FinalDeleteButton" type="Button" parent="DeleteFinalOverlay/ConfirmPanel"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 455.0
+offset_top = 242.0
+offset_right = 690.0
+offset_bottom = 299.0
+focus_mode = 2
+disabled = true
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.86, 0.84, 0.83, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("DeleteFinalStyle")
+theme_override_styles/disabled = SubResource("DeleteFinalDisabledStyle")
+text = "PERMANENTLY DELETE"

@@ -1,9 +1,9 @@
 extends SceneTree
 
-# Integrated 17-route redesign smoke and graphical captures.
+# Integrated active-route redesign smoke and graphical captures.
 # Headless: Godot --headless --path . --script res://tools/test_ui_redesign_integrated.gd
 # Graphical: Godot --path . --rendering-method gl_compatibility --script res://tools/test_ui_redesign_integrated.gd
-const ROUTES := ["tutorial_home", "tutorial_practice", "tutorial_complete", "grammar_guide", "student_setup", "play_activity", "play_topic", "play_difficulty", "camera_check", "calibration", "ready", "gameplay", "pause", "results", "leaderboard", "settings", "credits"]
+const ROUTES := ["tutorial_home", "grammar_guide", "student_setup", "play_activity", "play_topic", "play_difficulty", "camera_check", "calibration", "gameplay", "pause", "results", "leaderboard", "settings", "credits"]
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const OUTPUT := "res://showcase/ui_redesign_20261016/final"
 var failures: Array[String] = []
@@ -80,7 +80,7 @@ func _run() -> void:
         app.queue_free()
         await process_frame
         await process_frame
-        print("CHECK %s: 17 routes" % viewport_size)
+        print("CHECK %s: %d routes" % [viewport_size, ROUTES.size()])
     await create_timer(0.5).timeout
     print("TIMINGS viewport,route,load_ms")
     for item in route_timings:

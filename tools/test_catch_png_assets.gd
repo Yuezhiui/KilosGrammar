@@ -205,9 +205,10 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		await process_frame
 		await process_frame
 		var ctx := "%s %s" % [viewport_size, character_name]
-		var body := game.get_node_or_null("CharacterRig/Body") as Sprite2D
-		var basket := game.get_node_or_null("CharacterRig/Basket") as Sprite2D
+		var body := game.body_sprite as Sprite2D
+		var basket := game.basket_sprite as Sprite2D
 		var collected := game.get_node_or_null("CharacterRig/CollectedWords") as Node2D
+		var rig := game.get_node_or_null("CharacterRig") as Node2D
 		var prefix: String = String(character_name).to_upper()
 		_check(String(game.get("selected_character")) == character_name,
 			ctx + ": requested character selected")
@@ -228,11 +229,21 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 				ctx + ": falling word AppleSprite uses glossy PNG")
 			spawned.queue_free()
 		if body != null and basket != null and collected != null:
-			_check(body.get_parent() == basket.get_parent()
-				and collected.get_parent() == body.get_parent(),
-				ctx + ": body, caught apples and basket are independent siblings")
+			var sprite_group := body.get_parent()
+			_check(sprite_group == basket.get_parent()
+				and (sprite_group == rig or sprite_group.get_parent() == rig)
+				and collected.get_parent() == rig,
+				ctx + ": active body and basket are independent editor-authored sprites under the rig")
+			_check(body.is_visible_in_tree() and basket.is_visible_in_tree(),
+				ctx + ": selected character body and basket are visible")
 			_check(body.z_index < collected.z_index and collected.z_index < basket.z_index,
 				ctx + ": body < collected apples < basket/hands draw order")
+			var screen := Rect2(Vector2.ZERO, Vector2(viewport_size))
+			for sprite in [body, basket]:
+				var visual_rect := _sprite_visual_rect(sprite)
+				_check(visual_rect.has_area() and screen.encloses(visual_rect.grow(-0.5)),
+					"%s: active %s is fully inside %s (actual %s)" %
+					[ctx, sprite.name, viewport_size, visual_rect])
 			# The original cropped body/basket art must retain comparable
 			# displayed widths, even though their source crop sizes differ.
 			var body_width := body.region_rect.size.x * absf(body.get_global_transform().get_scale().x)
@@ -256,6 +267,24 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	await process_frame
 	await process_frame
 	_check(root.get_child_count() == initial_children, "%s: scene cleans up" % viewport_size)
+
+
+func _sprite_visual_rect(sprite: Sprite2D) -> Rect2:
+	# Region, offset, scale and the editor-authored parent group all contribute
+	# to the actual screen bounds; the 1920x1080 character rig also scales.
+	var local_rect := sprite.get_rect()
+	var transform := sprite.get_global_transform()
+	var min_corner := transform * local_rect.position
+	var max_corner := min_corner
+	for corner in [
+		Vector2(local_rect.end.x, local_rect.position.y),
+		local_rect.end,
+		Vector2(local_rect.position.x, local_rect.end.y)
+	]:
+		var point: Vector2 = transform * corner
+		min_corner = min_corner.min(point)
+		max_corner = max_corner.max(point)
+	return Rect2(min_corner, max_corner - min_corner)
 
 
 func _check_prompt_legibility(label: Label, title_board: Control, context: String) -> void:

@@ -1,0 +1,5 @@
+# Binary installers, model weights, wheels, and local export outputs are staged
+# by the developer and may have licenses/distribution restrictions.
+/offline/
+/out/
+/staging/

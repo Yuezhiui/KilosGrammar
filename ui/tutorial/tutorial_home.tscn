@@ -2,22 +2,92 @@
 
 [ext_resource type="Script" uid="uid://craeflyi3pcg" path="res://ui/tutorial/tutorial_home.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://qaqbhp7hlw4a" path="res://ui/redesign/assets/tutorial/bg_classroom.png" id="2_bg"]
-[ext_resource type="Texture2D" uid="uid://47ow82lo8f3j" path="res://Components/0e12567d-88f7-49e6-9bce-06cc27a6d16b.png" id="3_m41oy"]
-[ext_resource type="Texture2D" uid="uid://cbo2svdetld00" path="res://ui/redesign/assets/tutorial/title_whole_body.png" id="3_title"]
-[ext_resource type="Texture2D" uid="uid://ccw7y6pr8pury" path="res://Components/Cat.png" id="4_dwqbx"]
-[ext_resource type="Texture2D" uid="uid://cbckgn1piui21" path="res://ui/redesign/assets/tutorial/steps_three.png" id="4_steps"]
-[ext_resource type="Texture2D" uid="uid://ce378w565nitc" path="res://ui/redesign/assets/tutorial/camera_advisory.png" id="5_advisory"]
-[ext_resource type="Texture2D" uid="uid://t2o2o3ibu3v4" path="res://ui/redesign/assets/tutorial/button_guided.png" id="6_btn_guided"]
-[ext_resource type="Texture2D" uid="uid://cpt87v0ylj8ki" path="res://Components/Grad_hat.png" id="6_qt1rd"]
-[ext_resource type="Texture2D" uid="uid://dkqbwdqfycx5i" path="res://ui/redesign/assets/tutorial/button_movement.png" id="7_btn_move"]
-[ext_resource type="Texture2D" uid="uid://dr4eosum1gp2e" path="res://ui/redesign/assets/tutorial/icon_books.png" id="7_uffpo"]
-[ext_resource type="Texture2D" uid="uid://cmmgk6mmlxdyl" path="res://ui/redesign/assets/tutorial/button_grammar.png" id="8_btn_gram"]
-[ext_resource type="Texture2D" uid="uid://bif31vbwthy5f" path="res://ui/redesign/assets/tutorial/button_back.png" id="9_btn_back"]
-[ext_resource type="Texture2D" uid="uid://duaiigwf0rcew" path="res://ui/redesign/assets/tutorial/icon_star.png" id="13_2g8hc"]
+[ext_resource type="Texture2D" uid="uid://47ow82lo8f3j" path="res://Components/0e12567d-88f7-49e6-9bce-06cc27a6d16b.png" id="3_board"]
+[ext_resource type="Texture2D" uid="uid://cbo2svdetld00" path="res://ui/redesign/assets/tutorial/title_whole_body.png" id="4_title"]
+[ext_resource type="Texture2D" uid="uid://ccw7y6pr8pury" path="res://Components/Cat.png" id="5_cat"]
+[ext_resource type="Texture2D" uid="uid://duaiigwf0rcew" path="res://ui/redesign/assets/tutorial/icon_star.png" id="6_star"]
+[ext_resource type="Texture2D" uid="uid://dr4eosum1gp2e" path="res://ui/redesign/assets/tutorial/icon_books.png" id="7_books"]
+[ext_resource type="Texture2D" uid="uid://cpt87v0ylj8ki" path="res://Components/Grad_hat.png" id="8_hat"]
+[ext_resource type="Texture2D" uid="uid://423arvq4tw8j" path="res://ui/redesign/assets/tutorial/icon_controller.png" id="9_controller"]
+[ext_resource type="Texture2D" uid="uid://bgo6m4rdmg8rg" path="res://ui/redesign/assets/tutorial/icon_camera.png" id="10_camera"]
+[ext_resource type="Texture2D" uid="uid://e4laqb5s2gqy" path="res://ui/redesign/assets/tutorial/icon_play.png" id="11_play"]
+[ext_resource type="Texture2D" uid="uid://t2o2o3ibu3v4" path="res://ui/redesign/assets/tutorial/button_guided.png" id="12_guided"]
+[ext_resource type="Texture2D" uid="uid://cmmgk6mmlxdyl" path="res://ui/redesign/assets/tutorial/button_grammar.png" id="13_grammar"]
+[ext_resource type="Texture2D" uid="uid://bif31vbwthy5f" path="res://ui/redesign/assets/tutorial/button_back.png" id="14_back"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="15_font"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_btn"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_choose"]
+bg_color = Color(0, 0.48, 0.38, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.012, 0.41, 0.36, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.15, 0.22, 0.26, 0.24)
+shadow_size = 5
+shadow_offset = Vector2(2, 4)
 
-[node name="TutorialHome" type="Control" unique_id=1655207804]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_check"]
+bg_color = Color(1, 0.82, 0.23, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.91, 0.51, 0.11, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.15, 0.22, 0.26, 0.24)
+shadow_size = 5
+shadow_offset = Vector2(2, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_play"]
+bg_color = Color(0.28, 0.73, 0.98, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.05, 0.4, 0.85, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+shadow_color = Color(0.15, 0.22, 0.26, 0.24)
+shadow_size = 5
+shadow_offset = Vector2(2, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_notice"]
+bg_color = Color(0.71, 0.89, 1, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.15, 0.59, 0.94, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_focus"]
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 0.978, 0.64, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[node name="TutorialHome" type="Control" unique_id=1311784034]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,7 +96,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="ClassroomArtwork" type="TextureRect" parent="." unique_id=277844695]
+[node name="ClassroomArtwork" type="TextureRect" parent="." unique_id=103935162]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -38,210 +108,394 @@ texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="TutorialStage" type="Control" parent="." unique_id=982374651]
+[node name="TutorialStage" type="Control" parent="." unique_id=1387684139]
 anchors_preset = 0
 offset_right = 1280.0
 offset_bottom = 720.0
 mouse_filter = 2
 
-[node name="Background" type="TextureRect" parent="TutorialStage" unique_id=433746805]
+[node name="Background" type="TextureRect" parent="TutorialStage" unique_id=1607791105]
 layout_mode = 0
 offset_left = 130.0
-offset_top = 102.7062
-offset_right = 1160.0
+offset_top = 136.0
+offset_right = 1156.0
 offset_bottom = 687.7062
-texture = ExtResource("3_m41oy")
+mouse_filter = 2
+texture = ExtResource("3_board")
 expand_mode = 1
 
-[node name="CAT" type="TextureRect" parent="TutorialStage" unique_id=1587583605]
+[node name="CAT" type="TextureRect" parent="TutorialStage" unique_id=426051580]
 layout_mode = 0
-offset_left = 218.452
-offset_top = 33.730545
-offset_right = 408.51892
-offset_bottom = 163.70177
-rotation = -0.019628812
-texture = ExtResource("4_dwqbx")
+offset_left = 214.0
+offset_top = 63.0
+offset_right = 404.06702
+offset_bottom = 192.9715
+rotation = -0.0196288
+mouse_filter = 2
+texture = ExtResource("5_cat")
 expand_mode = 1
 
-[node name="TitleArtwork" type="TextureRect" parent="TutorialStage" unique_id=769674574]
+[node name="TitleArtwork" type="TextureRect" parent="TutorialStage" unique_id=2029139944]
 layout_mode = 0
 offset_left = 267.0
 offset_top = 62.7062
 offset_right = 1025.0
 offset_bottom = 222.7062
 mouse_filter = 2
-texture = ExtResource("3_title")
+texture = ExtResource("4_title")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Star" type="TextureRect" parent="TutorialStage" unique_id=1186331739]
+[node name="Star" type="TextureRect" parent="TutorialStage" unique_id=1706970897]
 layout_mode = 0
 offset_left = 950.0
 offset_top = 42.7062
 offset_right = 1011.0
 offset_bottom = 98.7062
-texture = ExtResource("13_2g8hc")
+mouse_filter = 2
+texture = ExtResource("6_star")
 expand_mode = 1
 
-[node name="Book" type="TextureRect" parent="TutorialStage" unique_id=1427926501]
+[node name="Book" type="TextureRect" parent="TutorialStage" unique_id=1599409123]
 layout_mode = 0
-offset_left = 975.0
-offset_top = 100.00001
-offset_right = 1106.3865
-offset_bottom = 194.0
+offset_left = 981.00006
+offset_top = 118.00001
+offset_right = 1112.3865
+offset_bottom = 212.0
 rotation = 0.111336
-texture = ExtResource("7_uffpo")
+mouse_filter = 2
+texture = ExtResource("7_books")
 expand_mode = 1
 
-[node name="GradHat" type="TextureRect" parent="TutorialStage" unique_id=189638789]
+[node name="GradHat" type="TextureRect" parent="TutorialStage" unique_id=983401109]
 layout_mode = 0
-offset_left = 831.00006
+offset_left = 831.0
 offset_top = 35.7062
-offset_right = 957.00006
-offset_bottom = 125.70621
-rotation = 0.19154775
-scale = Vector2(1.0847186, 1.0174738)
-texture = ExtResource("6_qt1rd")
+offset_right = 957.0
+offset_bottom = 125.7062
+rotation = 0.191548
+scale = Vector2(1.08472, 1.01747)
+mouse_filter = 2
+texture = ExtResource("8_hat")
 expand_mode = 1
 
-[node name="StepsArtwork" type="TextureRect" parent="TutorialStage" unique_id=1516256599]
+[node name="ChooseGameCard" type="Panel" parent="TutorialStage" unique_id=2005535250]
 layout_mode = 0
 offset_left = 267.0
-offset_top = 223.7062
+offset_top = 224.0
+offset_right = 514.0
+offset_bottom = 437.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_choose")
+
+[node name="Number" type="Label" parent="TutorialStage/ChooseGameCard" unique_id=1472995281]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 26.0
+offset_right = 56.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 30
+text = "1"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="TutorialStage/ChooseGameCard" unique_id=53047581]
+layout_mode = 0
+offset_left = 78.0
+offset_top = 5.0
+offset_right = 168.0
+offset_bottom = 100.0
+mouse_filter = 2
+texture = ExtResource("9_controller")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="TutorialStage/ChooseGameCard" unique_id=465330984]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 100.0
+offset_right = 233.0
+offset_bottom = 139.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 22
+text = "CHOOSE GAME"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Description" type="Label" parent="TutorialStage/ChooseGameCard" unique_id=1537791508]
+layout_mode = 0
+offset_left = 19.0
+offset_top = 143.0
+offset_right = 227.0
+offset_bottom = 201.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 15
+text = "Pick a game mode and get ready to move!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="CameraCalibrateCard" type="Panel" parent="TutorialStage" unique_id=2033307692]
+layout_mode = 0
+offset_left = 541.0
+offset_top = 224.0
+offset_right = 788.0
+offset_bottom = 437.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_check")
+
+[node name="Number" type="Label" parent="TutorialStage/CameraCalibrateCard" unique_id=2063806208]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 26.0
+offset_right = 56.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(0.43, 0.19, 0.06, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 30
+text = "2"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="TutorialStage/CameraCalibrateCard" unique_id=164050941]
+layout_mode = 0
+offset_left = 78.0
+offset_top = 5.0
+offset_right = 168.0
+offset_bottom = 100.0
+mouse_filter = 2
+texture = ExtResource("10_camera")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="TutorialStage/CameraCalibrateCard" unique_id=1225084132]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 98.0
+offset_right = 235.0
+offset_bottom = 143.0
+theme_override_colors/font_color = Color(0.4, 0.17, 0.045, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 18
+text = "CAMERA & CALIBRATE"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Description" type="Label" parent="TutorialStage/CameraCalibrateCard" unique_id=495717476]
+layout_mode = 0
+offset_left = 19.0
+offset_top = 143.0
+offset_right = 227.0
+offset_bottom = 201.0
+theme_override_colors/font_color = Color(0.4, 0.17, 0.045, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 15
+text = "Stand in view for a quick camera position check."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="LearnPlayingCard" type="Panel" parent="TutorialStage" unique_id=635594314]
+layout_mode = 0
+offset_left = 815.0
+offset_top = 224.0
+offset_right = 1062.0
+offset_bottom = 437.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_play")
+
+[node name="Number" type="Label" parent="TutorialStage/LearnPlayingCard" unique_id=1592702243]
+layout_mode = 0
+offset_left = 17.0
+offset_top = 26.0
+offset_right = 56.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(0.03, 0.21, 0.52, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 30
+text = "3"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="TutorialStage/LearnPlayingCard" unique_id=87085542]
+layout_mode = 0
+offset_left = 78.0
+offset_top = 5.0
+offset_right = 168.0
+offset_bottom = 100.0
+mouse_filter = 2
+texture = ExtResource("11_play")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="TutorialStage/LearnPlayingCard" unique_id=622158788]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 98.0
+offset_right = 235.0
+offset_bottom = 143.0
+theme_override_colors/font_color = Color(0.03, 0.21, 0.52, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 19
+text = "LEARN WHILE PLAYING"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Description" type="Label" parent="TutorialStage/LearnPlayingCard" unique_id=705485329]
+layout_mode = 0
+offset_left = 19.0
+offset_top = 143.0
+offset_right = 227.0
+offset_bottom = 201.0
+theme_override_colors/font_color = Color(0.03, 0.21, 0.52, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 15
+text = "Follow the spotlight tips, then play!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="FirstArrow" type="Label" parent="TutorialStage" unique_id=2016954451]
+layout_mode = 0
+offset_left = 510.0
+offset_top = 305.0
+offset_right = 546.0
+offset_bottom = 347.0
+theme_override_colors/font_color = Color(0.94, 0.48, 0.05, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 28
+text = "→"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SecondArrow" type="Label" parent="TutorialStage" unique_id=513296427]
+layout_mode = 0
+offset_left = 784.0
+offset_top = 305.0
+offset_right = 820.0
+offset_bottom = 347.0
+theme_override_colors/font_color = Color(0.94, 0.48, 0.05, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 28
+text = "→"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GuideNotice" type="Panel" parent="TutorialStage" unique_id=2017420836]
+layout_mode = 0
+offset_left = 267.0
+offset_top = 445.0
 offset_right = 1066.0
-offset_bottom = 438.7062
+offset_bottom = 502.0
 mouse_filter = 2
-texture = ExtResource("4_steps")
-expand_mode = 1
-stretch_mode = 5
+theme_override_styles/panel = SubResource("StyleBoxFlat_notice")
 
-[node name="CameraAdvisoryArtwork" type="TextureRect" parent="TutorialStage" unique_id=768267039]
+[node name="NoticeText" type="Label" parent="TutorialStage/GuideNotice" unique_id=171395766]
 layout_mode = 0
-offset_left = 267.0
-offset_top = 446.7062
-offset_right = 1065.0
-offset_bottom = 506.7062
-mouse_filter = 2
-texture = ExtResource("5_advisory")
-expand_mode = 1
-stretch_mode = 5
+offset_left = 24.0
+offset_top = 4.0
+offset_right = 775.0
+offset_bottom = 53.0
+theme_override_colors/font_color = Color(0.03, 0.18, 0.48, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 16
+text = "Choose a game, check your camera, and follow the spotlight guide before the timer starts!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
 
-[node name="ButtonArtwork_START_GUIDED_TUTORIAL" type="TextureRect" parent="TutorialStage" unique_id=1013942095]
+[node name="StartButton" type="Button" parent="TutorialStage" unique_id=1888156776]
 layout_mode = 0
-offset_left = 334.0
-offset_top = 514.7062
-offset_right = 634.0
-offset_bottom = 585.7062
-mouse_filter = 2
-texture = ExtResource("6_btn_guided")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="StartButton" type="Button" parent="TutorialStage" unique_id=508359589]
-layout_mode = 0
-offset_left = 334.0
-offset_top = 514.7062
-offset_right = 634.0
-offset_bottom = 585.7062
+offset_left = 456.0
+offset_top = 513.0
+offset_right = 836.0
+offset_bottom = 582.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
 theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_styles/normal = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_btn")
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
 text = "START GUIDED TUTORIAL"
 
-[node name="ButtonArtwork_MOVEMENT_PRACTICE" type="TextureRect" parent="TutorialStage" unique_id=986710230]
-layout_mode = 0
-offset_left = 698.0
-offset_top = 513.7062
-offset_right = 998.0
-offset_bottom = 584.7062
+[node name="Artwork" type="TextureRect" parent="TutorialStage/StartButton" unique_id=1824091277]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("7_btn_move")
+texture = ExtResource("12_guided")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PracticeButton" type="Button" parent="TutorialStage" unique_id=384947297]
+[node name="GrammarButton" type="Button" parent="TutorialStage" unique_id=948984821]
 layout_mode = 0
-offset_left = 698.0
-offset_top = 513.7062
-offset_right = 998.0
-offset_bottom = 584.7062
+offset_left = 338.0
+offset_top = 590.0
+offset_right = 638.0
+offset_bottom = 655.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
 theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_styles/normal = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_btn")
-text = "MOVEMENT PRACTICE"
-
-[node name="ButtonArtwork_GRAMMAR_GUIDE" type="TextureRect" parent="TutorialStage" unique_id=227744817]
-layout_mode = 0
-offset_left = 335.0
-offset_top = 572.7062
-offset_right = 635.0
-offset_bottom = 641.7062
-mouse_filter = 2
-texture = ExtResource("8_btn_gram")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="GrammarButton" type="Button" parent="TutorialStage" unique_id=1047822498]
-layout_mode = 0
-offset_left = 335.0
-offset_top = 572.7062
-offset_right = 635.0
-offset_bottom = 641.7062
-mouse_default_cursor_shape = 2
-theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
 theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
-theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_styles/normal = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_btn")
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
 text = "GRAMMAR GUIDE"
 
-[node name="ButtonArtwork_BACK_TO_MAIN" type="TextureRect" parent="TutorialStage" unique_id=1342513006]
-layout_mode = 0
-offset_left = 698.0
-offset_top = 572.7062
-offset_right = 998.0
-offset_bottom = 641.7062
+[node name="Artwork" type="TextureRect" parent="TutorialStage/GrammarButton" unique_id=1477872548]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("9_btn_back")
+texture = ExtResource("13_grammar")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="BackButton" type="Button" parent="TutorialStage" unique_id=1444911622]
+[node name="BackButton" type="Button" parent="TutorialStage" unique_id=1612087920]
 layout_mode = 0
-offset_left = 698.0
-offset_top = 572.7062
-offset_right = 998.0
-offset_bottom = 641.7062
+offset_left = 694.0
+offset_top = 590.0
+offset_right = 994.0
+offset_bottom = 655.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
 theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_styles/normal = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_btn")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_btn")
+theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_button")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_button")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
 text = "BACK TO MAIN"
+
+[node name="Artwork" type="TextureRect" parent="TutorialStage/BackButton" unique_id=1485292101]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("14_back")
+expand_mode = 1
+stretch_mode = 5

@@ -33,21 +33,28 @@ still unsaved until local PostgreSQL integration.
    box, reposition the active pupil nearer to the camera.
    Follow the highlighted **CENTER → RIGHT → LEFT** position boxes. The moving
    white marker represents the mirrored camera's measured torso center.
-6. **Stay still for 5 seconds** inside each zone. The timer restarts on
+6. **Stay still for 3 seconds** inside each zone. The timer restarts on
    tracking loss or excessive movement, and each hold requires at least
    eight fresh pose frames. Move to the next zone when the new box lights
    up. No mouse clicks are needed.
 7. After all three holds, the game validates the recorded positions and
-   proceeds to Ready in about 2 seconds (or press CONTINUE).
+   automatically enters the 3-2-1 gameplay countdown.
 8. In camera mode, the minigame uses smoothed body position for horizontal
-   movement. **Balloon Popping:** raise **both** hands once to fire,
-   then lower before firing again. Keyboard input remains available.
-   **STOP CAMERA**, **RESET PLAYER**, **SKIP**, **BACK**, and exiting
-   gameplay offer ways to stop or restart the setup.
-   **RESET PLAYER** restarts tracking and clears the previous lock.
+   movement. **Balloon Popping:** raise either LEFT or RIGHT hand to fire
+   one shot, with a 1.5-second reload. Hold it down briefly and raise again
+   for the next shot; continuously holding a hand up never auto-fires.
+   **Human Plane:** after CENTER/RIGHT/LEFT calibration, spread BOTH arms
+   sideways like wings to enable body-position steering. Step left/right to
+   fly smoothly across the whole path; CENTER moves the plane to the middle.
+   Lower either arm to freeze, and raise both again to resume. Arm TILT and
+   gyroscope-style controls are no longer used. Gesture
+   classification uses the SAME locked player and survives brief tracking
+   interruptions without changing the saved CENTER/RIGHT/LEFT calibration.
+   Teachers can use **BACK TO MAIN** or exit gameplay to restart setup;
+   there is no keyboard, STOP/RESET or SKIP calibration bypass.
    If the locked student is lost for longer than 0.8 seconds or appears
    to switch identity, the game stops accepting pose controls rather
-   than silently handing control to a bystander. **SKIP** selects keyboard.
+   than silently handing control to a bystander.
 
 If your camera is unavailable, Windows **Settings → Privacy & security →
 Camera** must permit desktop apps to use it, and no other application should

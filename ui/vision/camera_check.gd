@@ -40,9 +40,6 @@ func _bind_scene_nodes(stage: Control) -> void:
 	var check := stage.get_node_or_null("CheckStatusButton") as Button
 	if check:
 		check.pressed.connect(_toggle_live_camera)
-	var skip := stage.get_node_or_null("SkipSetupButton") as Button
-	if skip:
-		skip.pressed.connect(_skip_setup)
 	var next := stage.get_node_or_null("ContinuePreviewButton") as Button
 	if next:
 		next.pressed.connect(_continue_to_calibration)
@@ -81,8 +78,6 @@ func _build_redesign() -> void:
 	back.pressed.connect(_go_back)
 	var check := ART.button(stage, "CHECK STATUS", Rect2(323, 542, 215, 54), ART.BLUE, 15)
 	check.pressed.connect(_toggle_live_camera)
-	var skip := ART.button(stage, "SKIP SETUP", Rect2(573, 542, 215, 54), ART.YELLOW, 15)
-	skip.pressed.connect(_skip_setup)
 	var next := ART.button(stage, "CONTINUE PREVIEW", Rect2(825, 542, 215, 54), ART.GREEN, 15)
 	next.pressed.connect(_continue_to_calibration)
 	next.call_deferred("grab_focus")
@@ -257,9 +252,6 @@ func _build_ui() -> void:
 	var refresh := _button("CHECK STATUS", BLUE, 185)
 	refresh.pressed.connect(_refresh_preview_status)
 	actions.add_child(refresh)
-	var skip := _button("SKIP SETUP", YELLOW, 165)
-	skip.pressed.connect(_skip_setup)
-	actions.add_child(skip)
 	var continue_button := _button("CONTINUE IN PREVIEW", MINT, 235)
 	continue_button.pressed.connect(_request.bind("calibration", {"preview_mode": true, "camera_live": false}))
 	actions.add_child(continue_button)
@@ -273,11 +265,6 @@ func _refresh_preview_status() -> void:
 		"Preview navigation is ready. No player position has been measured."
 	]
 	info_label.text = messages[(refresh_count - 1) % messages.size()]
-
-func _skip_setup() -> void:
-	var entry_source := String(context.get("entry_source", "tutorial"))
-	var target := "tutorial_practice" if entry_source == "tutorial" else "ready"
-	requested.emit(target, {"preview_mode": true, "camera_live": false, "setup_skipped": true, "from_calibration": false})
 
 func _go_back() -> void:
 	var entry_source := String(context.get("entry_source", "tutorial"))

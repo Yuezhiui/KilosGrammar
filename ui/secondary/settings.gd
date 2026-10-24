@@ -22,6 +22,7 @@ const MASTER_BUS := "Master"
 const MUSIC_BUS := "KilosMusic"
 const EFFECTS_BUS := "KilosSFX"
 const SETTINGS_FILE := "user://kilos_settings.cfg"
+const WINDOWED_SIZE := Vector2i(1600, 900)
 
 var _context: Dictionary = {}
 var _active_tab := "settings"
@@ -576,11 +577,16 @@ func _sync_from_system() -> void:
 	else:
 		_mute_check.text = "UNAVAILABLE"
 
+	sync_fullscreen_state()
+
+
+func sync_fullscreen_state() -> void:
+	# Keep Settings in sync if the player pressed F11/Alt+Enter while it was
+	# open, without firing the CheckButton's toggled signal a second time.
+	if not is_instance_valid(_fullscreen_check):
+		return
 	var mode := DisplayServer.window_get_mode()
 	var fullscreen := mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
-	var config := ConfigFile.new()
-	if config.load(SETTINGS_FILE) == OK and config.has_section_key("display", "fullscreen"):
-		fullscreen = bool(config.get_value("display", "fullscreen"))
 	_fullscreen_check.set_pressed_no_signal(fullscreen)
 	_update_toggle_text(_fullscreen_check)
 
@@ -634,32 +640,52 @@ func _on_mute_toggled(enabled: bool) -> void:
 
 
 func _on_fullscreen_toggled(enabled: bool) -> void:
-	var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED
-	DisplayServer.window_set_mode(mode)
+	apply_display_mode(enabled)
 	_update_toggle_text(_fullscreen_check)
 	_save_preferences()
 
 
 func _restore_preferences() -> void:
-	restore_saved_preferences(true)
+	# Opening Settings must not unexpectedly switch the running game back to
+	# windowed mode because of an older saved preference.
+	restore_saved_preferences(false)
 
 
 static func toggle_fullscreen() -> bool:
 	var config := ConfigFile.new()
-	var was_full := false
-	if config.load(SETTINGS_FILE) == OK and config.has_section_key("display", "fullscreen"):
-		was_full = bool(config.get_value("display", "fullscreen"))
-	else:
-		var current := DisplayServer.window_get_mode()
-		was_full = current == DisplayServer.WINDOW_MODE_FULLSCREEN or current == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	config.load(SETTINGS_FILE)
+	# F11 and Alt+Enter toggle the ACTUAL current mode, even when the last
+	# saved state was windowed and this launch started fullscreen.
+	var current := DisplayServer.window_get_mode()
+	var was_full := current == DisplayServer.WINDOW_MODE_FULLSCREEN or current == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
 	var new_full := not was_full
-	var new_mode := DisplayServer.WINDOW_MODE_FULLSCREEN if new_full else DisplayServer.WINDOW_MODE_WINDOWED
-	DisplayServer.window_set_mode(new_mode)
+	apply_display_mode(new_full)
 	config.set_value("display", "fullscreen", new_full)
 	var error := config.save(SETTINGS_FILE)
 	if error != OK:
 		push_warning("Unable to save fullscreen preference: %s" % error)
 	return new_full
+
+
+static func apply_display_mode(fullscreen: bool) -> void:
+	# Only this shared settings helper owns display transitions. Opening a
+	# Tutorial, Play, Calibration or Settings panel must never change modes.
+	# The fullscreen frame uses the monitor's native physical resolution
+	# (1920x1080 on the classroom display); the editable window is 1600x900.
+	if DisplayServer.get_name() == "headless":
+		return
+	if fullscreen:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		return
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, false)
+	DisplayServer.window_set_size(WINDOWED_SIZE)
+	# Center the smaller window without moving it off the current display.
+	var screen := DisplayServer.window_get_current_screen()
+	var screen_position := DisplayServer.screen_get_position(screen)
+	var screen_size := DisplayServer.screen_get_size(screen)
+	var actual_window := DisplayServer.window_get_size()
+	DisplayServer.window_set_position(screen_position + (screen_size - actual_window) / 2)
 
 
 static func restore_saved_preferences(apply_display: bool = true) -> void:
@@ -676,7 +702,7 @@ static func restore_saved_preferences(apply_display: bool = true) -> void:
 		AudioServer.set_bus_mute(master_index, bool(config.get_value("audio", "mute")))
 	if apply_display and config.has_section_key("display", "fullscreen"):
 		var enabled := bool(config.get_value("display", "fullscreen"))
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED)
+		apply_display_mode(enabled)
 
 
 func _save_preferences() -> void:

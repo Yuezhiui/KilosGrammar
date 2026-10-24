@@ -10,6 +10,12 @@
 [ext_resource type="Texture2D" uid="uid://ba4ccsha5ri3j" path="res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png" id="9_lives"]
 [ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://ui/minigames/catch_hud/generated/pause_badge.png" id="10_pause"]
 [ext_resource type="Texture2D" uid="uid://d13sn4nsevrgu" path="res://ui/minigames/catch_hud/generated/score_board.png" id="11_score"]
+[ext_resource type="Texture2D" uid="uid://dg0tutsq1toyk" path="res://WordCatcherCharacters/GIRL BODY.png" id="12_girl_body"]
+[ext_resource type="Texture2D" uid="uid://cuclurf6ragjc" path="res://WordCatcherCharacters/GIRL BASKET.png" id="13_girl_basket"]
+[ext_resource type="Texture2D" uid="uid://by3p4sdj5qubq" path="res://WordCatcherCharacters/GRANDMA BODY.png" id="14_grandma_body"]
+[ext_resource type="Texture2D" uid="uid://bovj22xahx3iq" path="res://WordCatcherCharacters/GRANDMA BASKET.png" id="15_grandma_basket"]
+[ext_resource type="Texture2D" uid="uid://dbkou2qn33t0h" path="res://WordCatcherCharacters/GRANDPA BODY.png" id="16_grandpa_body"]
+[ext_resource type="Texture2D" uid="uid://ci1k0unp5jvhd" path="res://WordCatcherCharacters/GRANDPA BASKET.png" id="17_grandpa_basket"]
 
 [node name="CatchTheWord" type="Control" unique_id=1403184396]
 layout_mode = 3
@@ -38,25 +44,80 @@ stretch_mode = 6
 z_index = 1
 
 [node name="CharacterRig" type="Node2D" parent="." unique_id=669911193]
-position = Vector2(640, 813.6)
+position = Vector2(256, 490)
 
 [node name="Body" type="Sprite2D" parent="CharacterRig" unique_id=1516257554]
-position = Vector2(0.136, -209.87)
+visible = false
+z_index = -2
+position = Vector2(3.793396, -0.15722656)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("3_body")
 region_enabled = true
 region_rect = Rect2(97, 125, 748, 1547)
 
 [node name="CollectedWords" type="Node2D" parent="CharacterRig" unique_id=883634018]
-z_index = 2
+z_index = -1
 
 [node name="Basket" type="Sprite2D" parent="CharacterRig" unique_id=956352649]
-z_index = 3
-position = Vector2(0.136, -149.89)
+visible = false
+position = Vector2(5.793396, 59.842896)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("4_basket")
 region_enabled = true
 region_rect = Rect2(11, 890, 920, 459)
+
+[node name="Girl" type="Node2D" parent="CharacterRig" unique_id=311705792]
+visible = false
+
+[node name="Body" type="Sprite2D" parent="CharacterRig/Girl" unique_id=1490883895]
+z_index = -2
+position = Vector2(3.7930298, 4.8430176)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("12_girl_body")
+region_enabled = true
+region_rect = Rect2(106, 130, 722, 1542)
+
+[node name="Basket" type="Sprite2D" parent="CharacterRig/Girl" unique_id=803945287]
+position = Vector2(5.79303, 60.843018)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("13_girl_basket")
+region_enabled = true
+region_rect = Rect2(8, 878, 920, 459)
+
+[node name="Grandma" type="Node2D" parent="CharacterRig" unique_id=764711831]
+visible = false
+
+[node name="Body" type="Sprite2D" parent="CharacterRig/Grandma" unique_id=170348412]
+z_index = -2
+position = Vector2(-0.9500122, 9.843018)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("14_grandma_body")
+region_enabled = true
+region_rect = Rect2(94, 125, 750, 1547)
+
+[node name="Basket" type="Sprite2D" parent="CharacterRig/Grandma" unique_id=1205466285]
+position = Vector2(-0.2709961, 61.843018)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("15_grandma_basket")
+region_enabled = true
+region_rect = Rect2(8, 870, 923, 448)
+
+[node name="Grandpa" type="Node2D" parent="CharacterRig" unique_id=2090389336]
+
+[node name="Body" type="Sprite2D" parent="CharacterRig/Grandpa" unique_id=1737243803]
+z_index = -2
+position = Vector2(-0.5430298, 5.8430176)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("16_grandpa_body")
+region_enabled = true
+region_rect = Rect2(97, 130, 743, 1542)
+
+[node name="Basket" type="Sprite2D" parent="CharacterRig/Grandpa" unique_id=1205801394]
+position = Vector2(-0.40698242, 60.843018)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("17_grandpa_basket")
+region_enabled = true
+region_rect = Rect2(10, 873, 918, 456)
 
 [node name="HUDLayer" type="CanvasLayer" parent="." unique_id=1797021309]
 layer = 20
@@ -260,7 +321,7 @@ theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0
 theme_override_constants/outline_size = 3
 theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 12
-text = "KEYBOARD PLAY: A / D OR ARROWS • CAMERA TRACKING: NOT CONNECTED"
+text = "CAMERA TRACKING: MOVE LEFT OR RIGHT TO CATCH WORDS"
 vertical_alignment = 1
 
 [node name="FinishButton" type="Button" parent="HUDLayer/HUD" unique_id=177983020]
@@ -288,7 +349,7 @@ layout_mode = 0
 offset_left = 1066.0
 offset_top = 609.0
 offset_right = 1240.0
-offset_bottom = 673.0
+offset_bottom = 669.0
 mouse_filter = 2
 theme_override_constants/separation = -4
 

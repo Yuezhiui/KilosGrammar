@@ -68,6 +68,12 @@ blocking Godot's 60-FPS render loop with synchronous database operations.
 Keep PostgreSQL **local only** with parameterized queries and credentials
 outside Git and source code; do not add Supabase, Firebase, or cloud sync.
 
+The local HTTP API uses `http://127.0.0.1:18765` by default. Port `8765` is
+used by Chat On Steroids on the development machine. Set the Godot process
+environment variable `KILOSGRAMMAR_DB_PORT` to override `18765` if the local
+API is configured for another port. The HTTP API port is separate from
+PostgreSQL's database port (normally `5432`).
+
 ## Acceptance cases
 
 1. Same ID / style / mode / difficulty: score `10` then `20` becomes `20`.

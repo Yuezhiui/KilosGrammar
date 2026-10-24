@@ -4,11 +4,23 @@ extends Control
 ## positions, textures and styles are authored in leaderboard.tscn.
 ## Drag them in Godot's 2D editor; no script assigns node coordinates.
 signal requested(target: String, payload: Dictionary)
+## Only the host/backend may execute these operations. Paths are user-selected.
+signal database_import_csv_requested(path: String)
+signal database_export_csv_requested(path: String)
+signal database_delete_all_requested(confirmation: String)
 
-const CSV_FIELDS := ["STUDENT ID", "NAME", "GRADE", "GAME STYLE", "GAME MODE", "DIFFICULTY", "SCORE"]
+## Local filtered Download CSV is a display-only extract, distinct from the
+## backend's canonical 8-column import/export (underscore field identifiers).
+const CSV_FIELDS := ["STUDENT ID", "NAME", "GRADE", "MINIGAME", "GAME STYLE", "GAME MODE", "DIFFICULTY", "SCORE"]
+const FILTERED_CSV_KEYS := ["student_id", "student_name", "grade", "minigame", "game_style", "game_mode", "difficulty", "score"]
 const FIELD_KEYS := ["student_id", "student_name", "grade", "game_style", "game_mode", "difficulty", "score"]
 const ROW_SCENE := preload("res://ui/secondary/leaderboard_row.tscn")
 const ROW_LABELS := ["StudentId", "StudentName", "Grade", "GameStyle", "GameMode", "Difficulty", "Score"]
+const DELETE_CONFIRMATION := "DELETE ALL DATA"
+const MAX_IMPORT_BYTES := 1000000
+const MAX_IMPORT_RECORDS := 5000
+const LEGACY_IMPORT_CSV_FIELDS := ["student_id", "student_name", "grade_section", "game_style", "game_mode", "difficulty", "score"]
+const IMPORT_CSV_FIELDS := ["student_id", "student_name", "grade_section", "minigame", "game_style", "game_mode", "difficulty", "score"]
 
 var _context: Dictionary = {}
 var _all_rows: Array[Dictionary] = []
@@ -17,6 +29,7 @@ var _visible_rows: Array[Dictionary] = []
 @onready var back_button: Button = %BackButton
 @onready var download_button: Button = %DownloadButton
 @onready var style_filter: OptionButton = %StyleFilter
+@onready var minigame_filter: OptionButton = %MinigameFilter
 @onready var mode_filter: OptionButton = %ModeFilter
 @onready var difficulty_filter: OptionButton = %DifficultyFilter
 @onready var empty_message: Label = %EmptyMessage
@@ -24,14 +37,45 @@ var _visible_rows: Array[Dictionary] = []
 @onready var rows_container: VBoxContainer = %ScoreRows
 @onready var empty_dialog: AcceptDialog = %EmptyNotice
 @onready var csv_dialog: FileDialog = %SaveCsvDialog
+@onready var import_button: Button = %ImportCsvButton
+@onready var export_button: Button = %ExportCsvButton
+@onready var delete_button: Button = %DeleteAllButton
+@onready var import_dialog: FileDialog = %ImportCsvDialog
+@onready var import_review_dialog: ConfirmationDialog = %ImportReviewDialog
+@onready var database_export_dialog: FileDialog = %ExportDatabaseCsvDialog
+@onready var delete_first_warning: ConfirmationDialog = %DeleteFirstWarning
+@onready var delete_final_overlay: Control = %DeleteFinalOverlay
+@onready var typed_confirmation_edit: LineEdit = %TypedConfirmationEdit
+@onready var final_cancel_button: Button = %FinalCancelButton
+@onready var final_delete_button: Button = %FinalDeleteButton
+@onready var transfer_status: Label = %TransferStatus
+
+var _delete_first_confirmed := false
+var _transfer_pending := false
+var _pending_import_path := ""
 
 
 func _ready() -> void:
 	back_button.pressed.connect(_request_main)
 	download_button.pressed.connect(_download_csv)
-	for selector in [style_filter, mode_filter, difficulty_filter]:
+	for selector in [style_filter, mode_filter, difficulty_filter, minigame_filter]:
 		selector.item_selected.connect(_on_filter_changed.unbind(1))
 	csv_dialog.file_selected.connect(_write_csv)
+	import_button.pressed.connect(_choose_import_csv)
+	export_button.pressed.connect(_choose_database_export_csv)
+	delete_button.pressed.connect(_begin_delete_all)
+	import_dialog.file_selected.connect(_on_import_file_selected)
+	import_review_dialog.confirmed.connect(_confirm_import_csv)
+	import_review_dialog.canceled.connect(_cancel_import_csv)
+	database_export_dialog.file_selected.connect(_on_export_file_selected)
+	delete_first_warning.confirmed.connect(_on_delete_first_confirmed)
+	delete_first_warning.canceled.connect(_reset_delete_confirmation)
+	typed_confirmation_edit.text_changed.connect(_on_typed_confirmation_changed)
+	typed_confirmation_edit.text_submitted.connect(_on_typed_confirmation_submitted)
+	final_cancel_button.pressed.connect(_cancel_delete_all)
+	final_delete_button.pressed.connect(_on_final_delete_pressed)
+	delete_final_overlay.visible = false
+	_on_typed_confirmation_changed("")
 	call_deferred("_focus_back")
 	_on_filter_changed()
 
@@ -43,9 +87,13 @@ func _focus_back() -> void:
 
 func set_context(context: Dictionary) -> void:
 	_context = context.duplicate(true)
+	# A new database state must revoke a pending destructive confirmation.
+	_cancel_delete_all()
+	if not _teacher_authorized():
+		_cancel_import_csv()
 	_all_rows.clear()
-	# Only an actual provided data source is shown. Local database storage
-	# is not installed yet; an empty Leaderboard is the truthful default.
+	# Rows are supplied by the local PostgreSQL client. Never synthesize scores
+	# while the service is unavailable, and keep all scene-authored layout.
 	var source: Variant = _context.get("leaderboard_rows", [])
 	if source is Array:
 		for item in source:
@@ -64,10 +112,13 @@ func _request_main() -> void:
 
 func _on_filter_changed() -> void:
 	_visible_rows.clear()
+	var selected_minigame := minigame_filter.get_item_text(minigame_filter.selected)
 	var selected_style := style_filter.get_item_text(style_filter.selected).to_upper()
 	var selected_mode := mode_filter.get_item_text(mode_filter.selected).to_upper()
 	var selected_difficulty := difficulty_filter.get_item_text(difficulty_filter.selected).to_upper()
 	for record in _all_rows:
+		if selected_minigame != "ALL MINIGAMES" and _minigame_name(record).to_upper() != selected_minigame.to_upper():
+			continue
 		if selected_style != "ALL STYLES" and _record_text(record, 3).to_upper() != selected_style:
 			continue
 		if selected_mode != "ALL MODES" and _record_text(record, 4).to_upper() != selected_mode:
@@ -85,14 +136,65 @@ func _redraw_rows() -> void:
 	scroll.visible = not _visible_rows.is_empty()
 	empty_message.visible = _visible_rows.is_empty()
 	if empty_message.visible:
-		empty_message.text = "No saved scores yet • database pending" if _all_rows.is_empty() else "No scores match these filters"
+		if not _all_rows.is_empty():
+			empty_message.text = "No scores match these filters"
+		elif bool(_context.get("database_loading", false)):
+			empty_message.text = "Loading saved student scores..."
+		elif not bool(_context.get("database_connected", false)):
+			empty_message.text = "Local database unavailable • Ask your teacher for help"
+		else:
+			empty_message.text = "No completed scores saved yet"
 	for record in _visible_rows:
 		var row: Control = ROW_SCENE.instantiate()
 		rows_container.add_child(row)
 		for col in range(FIELD_KEYS.size()):
 			var cell := row.get_node_or_null(ROW_LABELS[col]) as Label
 			if cell != null:
-				cell.text = _record_text(record, col)
+				if FIELD_KEYS[col] == "game_style":
+					var topic := _record_text(record, col)
+					var minigame := _minigame_name(record)
+					cell.text = "%s / %s" % [_minigame_short(minigame), _topic_short(topic)]
+					cell.tooltip_text = "%s • Grammar topic: %s" % [minigame, topic]
+				else:
+					cell.text = _record_text(record, col)
+
+
+func _minigame_name(record: Dictionary) -> String:
+	# The additive database migration explicitly marks old scores as Legacy.
+	var label := str(record.get("minigame", "Legacy")).strip_edges()
+	return "Legacy" if label.is_empty() else label
+
+
+func _minigame_short(minigame: String) -> String:
+	match minigame.to_upper():
+		"CATCH THE WORD":
+			return "CATCH"
+		"BALLOON POPPING":
+			return "POP"
+		"HUMAN PLANE":
+			return "PLANE"
+		"LEGACY":
+			return "LEGACY"
+		_:
+			return minigame.left(8).to_upper()
+
+
+func _topic_short(topic: String) -> String:
+	match topic.to_upper():
+		"PRONOUN":
+			return "PRON"
+		"ADJECTIVE":
+			return "ADJ"
+		"ADVERB":
+			return "ADV"
+		"PREPOSITION":
+			return "PREP"
+		"CONJUNCTION":
+			return "CONJ"
+		"INTERJECTION":
+			return "INTERJ"
+		_:
+			return topic.left(8).to_upper()
 
 
 func _record_text(record: Dictionary, column: int) -> String:
@@ -122,8 +224,259 @@ func _write_csv(filepath: String) -> void:
 	file.store_string(",".join(CSV_FIELDS) + "\r\n")
 	for record in _visible_rows:
 		var cells: PackedStringArray = []
-		for col in range(FIELD_KEYS.size()):
-			var raw := _record_text(record, col).replace("\r", " ").replace("\n", " ")
-			cells.append('"' + raw.replace('"', '""') + '"')
+		for key in FILTERED_CSV_KEYS:
+			var raw := _filtered_csv_text(record, key).replace("\r", " ").replace("\n", " ")
+			cells.append('"' + _protect_spreadsheet_cell(raw).replace('"', '""') + '"')
 		file.store_string(",".join(cells) + "\r\n")
 	file.close()
+	set_transfer_status("Filtered leaderboard CSV saved.", true)
+
+
+func _filtered_csv_text(record: Dictionary, key: String) -> String:
+	if key == "minigame":
+		return _minigame_name(record)
+	if key == "student_name":
+		return str(record.get("student_name", record.get("name", "")))
+	if key == "grade":
+		return str(record.get("grade", record.get("grade_section", "")))
+	if key == "game_style":
+		return str(record.get("game_style", record.get("topic", "")))
+	return str(record.get(key, ""))
+
+
+func _protect_spreadsheet_cell(value: String) -> String:
+	# Spreadsheet apps evaluate cells beginning with =, +, -, or @ as formulas.
+	# The legacy Download button exports the visible rows on this device;
+	# database-wide Import/Export are handled by the server via signals.
+	var probe := value.strip_edges(true, false)
+	if probe.begins_with("=") or probe.begins_with("+") or probe.begins_with("-") or probe.begins_with("@"):
+		return "'" + value
+	return value
+
+
+func _choose_import_csv() -> void:
+	if _transfer_pending:
+		_show_status("Finish the pending database transfer before importing another file.")
+		return
+	if not _teacher_authorized():
+		set_transfer_status("Teacher authorization required to import student records.")
+		return
+	_cancel_import_csv()
+	import_dialog.popup_centered()
+
+
+func _choose_database_export_csv() -> void:
+	if _transfer_pending:
+		_show_status("A database transfer is already pending. Please finish it first.")
+		return
+	_show_status("Export ALL profiles and completed scores. The existing Download CSV only saves filtered leaderboard scores.")
+	database_export_dialog.popup_centered()
+
+
+func _on_import_file_selected(path: String) -> void:
+	import_dialog.hide()
+	if _transfer_pending:
+		_show_status("Another database transfer is still pending.")
+		return
+	if not _teacher_authorized():
+		set_transfer_status("Teacher authorization expired. Import canceled.")
+		return
+	var validation := _validate_import_csv(path)
+	if not validation.is_empty():
+		set_transfer_status(validation)
+		return
+	_pending_import_path = path
+	import_review_dialog.dialog_text = (
+		"Selected CSV: %s\n\nThis may create or update student profiles and completed scores. "
+		+ "The local database must validate each row before saving. Confirm only if "
+		+ "you recognize this file and intend to import its contents."
+	) % path.get_file()
+	import_review_dialog.popup_centered()
+
+
+func _confirm_import_csv() -> void:
+	import_review_dialog.hide()
+	var path := _pending_import_path
+	_pending_import_path = ""
+	if _transfer_pending:
+		_show_status("CSV import canceled because another database operation is pending.")
+		return
+	if not _teacher_authorized() or path.is_empty():
+		set_transfer_status("CSV import canceled: teacher authorization required.")
+		return
+	# Recheck because the file could be replaced while the review window opens.
+	var validation := _validate_import_csv(path)
+	if not validation.is_empty():
+		set_transfer_status(validation)
+		return
+	set_transfer_pending("Import requested. The database must validate records before saving anything.")
+	database_import_csv_requested.emit(path)
+
+
+func _cancel_import_csv() -> void:
+	_pending_import_path = ""
+	if is_instance_valid(import_review_dialog):
+		import_review_dialog.hide()
+
+
+func _on_export_file_selected(path: String) -> void:
+	database_export_dialog.hide()
+	if _transfer_pending:
+		_show_status("Another database transfer is still pending.")
+		return
+	if not _is_csv_path(path):
+		set_transfer_status("Choose a .csv filename for the full database export.")
+		return
+	set_transfer_pending("Full CSV export requested for ALL student profiles and completed scores.")
+	database_export_csv_requested.emit(path)
+
+
+func _begin_delete_all() -> void:
+	if _transfer_pending:
+		_show_status("Finish the pending database operation before deleting records.")
+		return
+	if not _teacher_authorized():
+		set_transfer_status("Teacher authorization required before deleting ALL students and scores.")
+		return
+	_reset_delete_confirmation()
+	_show_status("Deletion requires TWO confirmations and exact typed DELETE ALL DATA.")
+	delete_first_warning.popup_centered()
+
+
+func _on_delete_first_confirmed() -> void:
+	delete_first_warning.hide()
+	if _transfer_pending:
+		_reset_delete_confirmation()
+		_show_status("Cannot continue deletion during a pending database operation.")
+		return
+	if not _teacher_authorized():
+		_reset_delete_confirmation()
+		set_transfer_status("Teacher authorization is required for deletion.")
+		return
+	_delete_first_confirmed = true
+	typed_confirmation_edit.clear()
+	delete_final_overlay.show()
+	_on_typed_confirmation_changed("")
+	typed_confirmation_edit.call_deferred("grab_focus")
+
+
+func _on_typed_confirmation_changed(value: String) -> void:
+	final_delete_button.disabled = value != DELETE_CONFIRMATION or not _delete_first_confirmed or not _teacher_authorized() or _transfer_pending
+
+
+func _on_typed_confirmation_submitted(value: String) -> void:
+	if value == DELETE_CONFIRMATION:
+		_on_final_delete_pressed()
+
+
+func _on_final_delete_pressed() -> void:
+	# Check everything again even when called directly or through keyboard
+	# activation; a disabled visual button is not an authorization boundary.
+	if not delete_final_overlay.visible or not _delete_first_confirmed:
+		return
+	if not _teacher_authorized() or _transfer_pending or typed_confirmation_edit.text != DELETE_CONFIRMATION:
+		_on_typed_confirmation_changed(typed_confirmation_edit.text)
+		return
+	_cancel_delete_all()
+	set_transfer_pending("Permanent deletion requested for ALL student profiles and completed scores.")
+	database_delete_all_requested.emit(DELETE_CONFIRMATION)
+
+
+func _cancel_delete_all() -> void:
+	delete_final_overlay.hide()
+	_reset_delete_confirmation()
+
+
+func _reset_delete_confirmation() -> void:
+	_delete_first_confirmed = false
+	if is_instance_valid(delete_first_warning):
+		delete_first_warning.hide()
+	if is_instance_valid(typed_confirmation_edit):
+		typed_confirmation_edit.clear()
+	if is_instance_valid(final_delete_button):
+		final_delete_button.disabled = true
+
+
+func _teacher_authorized() -> bool:
+	# A trusted app host must set this only after teacher authentication.
+	# The server must independently enforce teacher privileges for mutations.
+	return bool(_context.get("teacher_authorized", false))
+
+
+func _is_csv_path(path: String) -> bool:
+	return not path.is_empty() and path.to_lower().ends_with(".csv") and not path.contains("\n") and not path.contains("\r")
+
+
+func _validate_import_csv(path: String) -> String:
+	if not _is_csv_path(path):
+		return "Import requires a .csv file."
+	if not FileAccess.file_exists(path):
+		return "Selected CSV file does not exist or cannot be read."
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return "Cannot open the selected CSV file."
+	if file.get_length() <= 0 or file.get_length() > MAX_IMPORT_BYTES:
+		return "Import CSV must be non-empty and no larger than 1,000,000 bytes."
+	var headings := file.get_csv_line()
+	var expected_fields: Array = IMPORT_CSV_FIELDS if headings.size() == IMPORT_CSV_FIELDS.size() else LEGACY_IMPORT_CSV_FIELDS
+	if headings.size() != expected_fields.size():
+		return "Import requires eight database columns (including minigame), or the original seven-column backup. Filtered Download CSV uses another format."
+	for index in range(expected_fields.size()):
+		var heading := str(headings[index]).trim_prefix("\uFEFF").strip_edges().to_lower()
+		if heading != expected_fields[index]:
+			return "CSV headers must be: " + ",".join(expected_fields)
+	var records := 0
+	while not file.eof_reached():
+		var columns := file.get_csv_line()
+		if columns.size() == 1 and str(columns[0]).strip_edges().is_empty():
+			continue
+		records += 1
+		if records > MAX_IMPORT_RECORDS:
+			return "CSV contains too many records. Import limit is 5,000 rows."
+		if columns.size() != headings.size():
+			return "CSV row %d has an unexpected number of columns." % records
+		for cell in columns:
+			var value := str(cell)
+			var probe := value.strip_edges(true, false)
+			if probe.begins_with("=") or probe.begins_with("+") or probe.begins_with("-") or probe.begins_with("@"):
+				return "CSV row %d contains a spreadsheet formula. Import canceled." % records
+			if value.to_utf8_buffer().has(0):
+				return "CSV row %d contains an invalid control character." % records
+	if records == 0:
+		return "CSV contains no student records."
+	return ""
+
+
+func _show_status(message: String) -> void:
+	transfer_status.text = message
+	transfer_status.add_theme_color_override("font_color", Color("#38334F"))
+
+
+func set_transfer_status(message: String, success: bool = false) -> void:
+	## Main menu should call this when the backend acknowledges an operation.
+	## A failed call keeps database state unchanged; show the actual server error.
+	_set_transfer_pending_state(false)
+	transfer_status.text = message
+	transfer_status.add_theme_color_override("font_color", Color("#217046") if success else Color("#9D2930"))
+	if success:
+		# The host will provide freshly queried rows using set_context().
+		_cancel_delete_all()
+
+
+func set_transfer_pending(message: String) -> void:
+	## Host calls this for "Preparing..." and other interim database progress.
+	## Buttons remain locked until set_transfer_status indicates completion.
+	_set_transfer_pending_state(true)
+	_show_status(message)
+
+
+func set_processing(message: String) -> void:
+	# Compatible shorthand for status reporters that already use this name.
+	set_transfer_pending(message)
+
+
+func _set_transfer_pending_state(pending: bool) -> void:
+	_transfer_pending = pending
+	import_button.disabled = pending
+	export_button.disabled = pending
+	delete_button.disabled = pending

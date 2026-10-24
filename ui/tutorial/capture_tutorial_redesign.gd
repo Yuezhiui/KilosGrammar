@@ -1,14 +1,12 @@
 extends SceneTree
 
-# Real Godot frame captures for the six preview-only tutorial and camera screens.
+# Real Godot frame captures for the current tutorial and camera screens.
 # Match the project's native 1280x720 canvas_items stretch. Borderless QA avoids
 # Windows work-area clamping of the requested 1920x1080 capture dimensions.
 const OUTPUT := "res://showcase/ui_redesign_m1"
 const DIMENSIONS := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const SCREENS := {
 	"tutorial_home": "res://ui/tutorial/tutorial_home.tscn",
-	"tutorial_practice": "res://ui/tutorial/tutorial_practice.tscn",
-	"tutorial_complete": "res://ui/tutorial/tutorial_complete.tscn",
 	"grammar_guide": "res://ui/tutorial/grammar_guide.tscn",
 	"camera_check": "res://ui/vision/camera_check.tscn",
 	"calibration": "res://ui/vision/calibration.tscn"

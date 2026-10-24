@@ -1,6 +1,79 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=10 format=3]
 
-[ext_resource type="Script" path="res://ui/play/ready.gd" id="1"]
+[ext_resource type="Script" path="res://ui/play/ready.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="2_font"]
+[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/setup_main_panel.png" id="3_background"]
+
+[sub_resource type="StyleBoxFlat" id="ReadyCard"]
+bg_color = Color(0.282353, 0.266667, 0.388235, 0.92)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.968627, 0.901961, 0.741176, 0.8)
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
+content_margin_left = 25.0
+content_margin_top = 22.0
+content_margin_right = 25.0
+content_margin_bottom = 22.0
+
+[sub_resource type="StyleBoxFlat" id="BackButton"]
+bg_color = Color(0.282353, 0.266667, 0.388235, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.968627, 0.901961, 0.741176, 0.8)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StartButton"]
+bg_color = Color(0.411765, 0.745098, 0.603922, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.968627, 0.901961, 0.741176, 0.8)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="HoverButton"]
+bg_color = Color(0.568627, 0.831373, 0.698039, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.945098, 0.768627, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="FocusButton"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.945098, 0.768627, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="DisabledButton"]
+bg_color = Color(0.44, 0.50, 0.53, 0.8)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [node name="Ready" type="Control"]
 layout_mode = 3
@@ -9,4 +82,157 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1")
+script = ExtResource("1_script")
+
+[node name="CleanBackdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0313725, 0.494118, 0.458824, 1)
+
+[node name="SetupArtworkBackground" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_background")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LayoutMargins" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="LayoutMargins"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Kicker" type="Label" parent="LayoutMargins/Content"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 0.82)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "READY CHECK"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Title" type="Label" parent="LayoutMargins/Content"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 42
+text = "GET IN POSITION"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Subtitle" type="Label" parent="LayoutMargins/Content"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 0.9)
+theme_override_font_sizes/font_size = 18
+text = "Stand comfortably inside the play area before starting."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Center" type="CenterContainer" parent="LayoutMargins/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ReadyCard" type="PanelContainer" parent="LayoutMargins/Content/Center"]
+custom_minimum_size = Vector2(720, 235)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("ReadyCard")
+
+[node name="ReadyCardContent" type="VBoxContainer" parent="LayoutMargins/Content/Center/ReadyCard"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="CountdownLabel" type="Label" parent="LayoutMargins/Content/Center/ReadyCard/ReadyCardContent"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.760784, 0.239216, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 72
+text = "READY?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SummaryLabel" type="Label" parent="LayoutMargins/Content/Center/ReadyCard/ReadyCardContent"]
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
+theme_override_font_sizes/font_size = 20
+text = "Game • Topic • Difficulty"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ControlsHint" type="Label" parent="LayoutMargins/Content/Center/ReadyCard/ReadyCardContent"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 0.78)
+theme_override_font_sizes/font_size = 16
+text = "Move with your body. Balloon Popping: raise one hand to shoot. Human Plane: stretch both arms like wings."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Footer" type="HBoxContainer" parent="LayoutMargins/Content"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="BackButton" type="Button" parent="LayoutMargins/Content/Footer"]
+custom_minimum_size = Vector2(205, 56)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("BackButton")
+theme_override_styles/hover = SubResource("HoverButton")
+theme_override_styles/pressed = SubResource("StartButton")
+theme_override_styles/focus = SubResource("FocusButton")
+text = "BACK"
+
+[node name="FooterSpacer" type="Control" parent="LayoutMargins/Content/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="StartButton" type="Button" parent="LayoutMargins/Content/Footer"]
+custom_minimum_size = Vector2(280, 56)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StartButton")
+theme_override_styles/hover = SubResource("HoverButton")
+theme_override_styles/pressed = SubResource("BackButton")
+theme_override_styles/disabled = SubResource("DisabledButton")
+theme_override_styles/focus = SubResource("FocusButton")
+text = "START COUNTDOWN"

@@ -4,7 +4,7 @@ extends SceneTree
 #   Godot --headless --path . --script res://tools/test_settings_button_visuals.gd
 # Checks real routed Settings controls at each supported QA viewport.
 # Restores mixer values, window mode, and the original user settings file.
-const MENU := preload("res://main_menu.tscn")
+const MENU := "res://main_menu.tscn"
 const HOVER_SOUND := preload("res://assets/audio/lexispell_intro/button_hover.wav")
 const CLICK_SOUND := preload("res://assets/audio/lexispell_intro/button_click.wav")
 const SETTINGS_FILE := "user://kilos_settings.cfg"
@@ -35,7 +35,8 @@ func _run() -> void:
 		if idx >= 0:
 			saved_buses[bus_name] = [AudioServer.get_bus_volume_db(idx), AudioServer.is_bus_mute(idx)]
 
-	var app := MENU.instantiate() as Control
+	# Resolve after the SceneTree registers autoloads such as PoseService.
+	var app := (load(MENU) as PackedScene).instantiate() as Control
 	if app == null or not app.has_method("_on_panel_requested"):
 		push_error("Cannot instantiate scripted main menu; check concurrent Settings/main menu parse errors")
 		if app != null:

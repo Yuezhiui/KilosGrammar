@@ -126,10 +126,8 @@ func _resume() -> void:
 
 
 func _restart() -> void:
-	var payload := context.duplicate(true)
-	for key in ["score", "streak", "best_streak", "correct", "attempts", "total", "accuracy", "time_remaining", "lives", "misses", "round_completed", "completion_reason", "round_reason", "body_x", "catch_collected_words", "round_running"]:
-		payload.erase(key)
-	requested.emit("ready", payload)
+	# Restart means a fresh minigame, not Resume of the paused instance.
+	requested.emit("restart", context.duplicate(true))
 
 
 func _change_setup() -> void:

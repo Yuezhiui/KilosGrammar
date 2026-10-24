@@ -1,11 +1,23 @@
 [gd_scene format=3 uid="uid://t84rkfytcor7"]
 
 [ext_resource type="Script" uid="uid://ckrgapgprd8xk" path="res://main_menu.gd" id="1_menu"]
-[ext_resource type="Script" path="res://main_menu_art.gd" id="2_art"]
-[ext_resource type="Texture2D" uid="uid://48q7scyb0ywi" path="res://assets/ui/kilos_curved.png" id="4_kilos_curved"]
-[ext_resource type="Script" path="res://main_menu_tile_fx.gd" id="5_tile_fx"]
+[ext_resource type="Texture2D" uid="uid://5d1piligatke" path="res://Components/MainMenu/background.png" id="2_art"]
+[ext_resource type="Texture2D" uid="uid://c4bryfob62w4n" path="res://Components/MainMenu/KILOS GRAMMAR.png" id="4_kilos_curved"]
+[ext_resource type="Script" uid="uid://fl5qixkal657" path="res://main_menu_tile_fx.gd" id="5_tile_fx"]
 [ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="6_title_font"]
-[ext_resource type="Texture2D" path="res://assets/ui/main_panel_buttons.png" id="7_main_buttons"]
+[ext_resource type="Texture2D" uid="uid://cdknwc1ea87eq" path="res://Components/MainMenu/credits.png" id="new_credits"]
+[ext_resource type="Texture2D" uid="uid://4jegvjejp23g" path="res://Components/MainMenu/A.png" id="new_grammara1"]
+[ext_resource type="Texture2D" uid="uid://cfp6ndvk7suxq" path="res://Components/MainMenu/A-.png" id="new_grammara2"]
+[ext_resource type="Texture2D" uid="uid://csihb6yytkdd6" path="res://Components/MainMenu/G.png" id="new_grammarg"]
+[ext_resource type="Texture2D" uid="uid://og2b2ynpxd8k" path="res://Components/MainMenu/M-.png" id="new_grammarm1"]
+[ext_resource type="Texture2D" uid="uid://bmy7kbbc8w6ya" path="res://Components/MainMenu/M.png" id="new_grammarm2"]
+[ext_resource type="Texture2D" uid="uid://c3vcr3bnaicgl" path="res://Components/MainMenu/R.png" id="new_grammarr1"]
+[ext_resource type="Texture2D" uid="uid://bbbk3gubmifbt" path="res://Components/MainMenu/R-.png" id="new_grammarr2"]
+[ext_resource type="Texture2D" uid="uid://bhdojkiicq44l" path="res://Components/MainMenu/leaderboard.png" id="new_leaderboard"]
+[ext_resource type="Texture2D" uid="uid://gvucfrfpyfhw" path="res://Components/MainMenu/green-play.png" id="new_play"]
+[ext_resource type="Texture2D" uid="uid://bsunmyu7vtaor" path="res://Components/MainMenu/red-quit.png" id="new_quit"]
+[ext_resource type="Texture2D" uid="uid://bj7fg7vjousnv" path="res://Components/MainMenu/setting-large.png" id="new_settings"]
+[ext_resource type="Texture2D" uid="uid://crkyuq1isvgyw" path="res://Components/MainMenu/purple-tutorial.png" id="new_tutorial"]
 
 [sub_resource type="StyleBoxFlat" id="FallingTile"]
 bg_color = Color(0.411765, 0.745098, 0.603922, 1)
@@ -22,172 +34,8 @@ shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
 shadow_size = 4
 shadow_offset = Vector2(5, 7)
 
-[sub_resource type="StyleBoxFlat" id="TileGreen"]
-bg_color = Color(0.411765, 0.745098, 0.603922, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.913725, 0.741176, 0.45)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
-shadow_size = 5
-shadow_offset = Vector2(7, 9)
-
-[sub_resource type="SystemFont" id="ChunkyFont"]
-font_names = PackedStringArray("Arial Rounded MT Bold", "Arial Black", "Arial")
-font_weight = 800
-subpixel_positioning = 0
-
-[sub_resource type="StyleBoxFlat" id="TileRed"]
-bg_color = Color(1, 0.309804, 0.4, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.913725, 0.741176, 0.45)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
-shadow_size = 5
-shadow_offset = Vector2(7, 9)
-
-[sub_resource type="StyleBoxFlat" id="TileYellow"]
-bg_color = Color(1, 0.760784, 0.239216, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.913725, 0.741176, 0.45)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
-shadow_size = 5
-shadow_offset = Vector2(7, 9)
-
-[sub_resource type="StyleBoxFlat" id="TileBlue"]
-bg_color = Color(0.482353, 0.788235, 0.937255, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.913725, 0.741176, 0.45)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
-shadow_size = 5
-shadow_offset = Vector2(7, 9)
-
-[sub_resource type="StyleBoxFlat" id="TilePurple"]
-bg_color = Color(0.756863, 0.443137, 0.811765, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.913725, 0.741176, 0.45)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
-shadow_size = 5
-shadow_offset = Vector2(7, 9)
-
-[sub_resource type="StyleBoxFlat" id="TileOrange"]
-bg_color = Color(0.956863, 0.596078, 0.372549, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.913725, 0.741176, 0.45)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
-shadow_size = 5
-shadow_offset = Vector2(7, 9)
-
-[sub_resource type="StyleBoxFlat" id="TileBlueDeep"]
-bg_color = Color(0.352941, 0.627451, 0.843137, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.913725, 0.741176, 0.45)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
-shadow_size = 5
-shadow_offset = Vector2(7, 9)
-
-[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
-content_margin_left = 18.0
-content_margin_top = 10.0
-content_margin_right = 18.0
-content_margin_bottom = 10.0
-bg_color = Color(0.286275, 0.239216, 0.403922, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.203922, 0.164706, 0.298039, 0.95)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-shadow_color = Color(0.0784314, 0.2, 0.180392, 0.52)
-shadow_size = 5
-shadow_offset = Vector2(0, 6)
-
-[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
-content_margin_left = 18.0
-content_margin_top = 12.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
-bg_color = Color(0.219608, 0.180392, 0.32549, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.968627, 0.890196, 0.741176, 0.8)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-shadow_color = Color(0.0784314, 0.2, 0.180392, 0.35)
-shadow_size = 2
-shadow_offset = Vector2(0, 3)
-
-[sub_resource type="StyleBoxFlat" id="ButtonHover"]
-content_margin_left = 18.0
-content_margin_top = 10.0
-content_margin_right = 18.0
-content_margin_bottom = 10.0
-bg_color = Color(0.356863, 0.301961, 0.494118, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.968627, 0.890196, 0.741176, 0.88)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-shadow_color = Color(0.0784314, 0.2, 0.180392, 0.5)
-shadow_size = 6
-shadow_offset = Vector2(0, 7)
+[sub_resource type="StyleBoxTexture" id="NewLeaderboardSkin"]
+texture = ExtResource("new_leaderboard")
 
 [sub_resource type="StyleBoxFlat" id="ButtonFocus"]
 bg_color = Color(0, 0, 0, 0)
@@ -197,200 +45,20 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[sub_resource type="AtlasTexture" id="IconTrophy"]
-atlas = ExtResource("7_main_buttons")
-region = Rect2(1062, 760, 155, 151)
+[sub_resource type="StyleBoxTexture" id="NewSettingsSkin"]
+texture = ExtResource("new_settings")
 
-[sub_resource type="AtlasTexture" id="IconGear"]
-atlas = ExtResource("7_main_buttons")
-region = Rect2(1263, 755, 188, 160)
+[sub_resource type="StyleBoxTexture" id="NewCreditsSkin"]
+texture = ExtResource("new_credits")
 
-[sub_resource type="AtlasTexture" id="IconStar"]
-atlas = ExtResource("7_main_buttons")
-region = Rect2(1449, 753, 152, 156)
+[sub_resource type="StyleBoxTexture" id="NewTutorialSkin"]
+texture = ExtResource("new_tutorial")
 
-[sub_resource type="StyleBoxFlat" id="TutorialNormal"]
-content_margin_left = 22.0
-content_margin_top = 13.0
-content_margin_right = 22.0
-content_margin_bottom = 13.0
-bg_color = Color(0.603922, 0.313726, 0.858824, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.811765, 0.619608, 0.968627, 0.82)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.215686, 0.137255, 0.313726, 0.58)
-shadow_size = 7
-shadow_offset = Vector2(0, 8)
+[sub_resource type="StyleBoxTexture" id="NewPlaySkin"]
+texture = ExtResource("new_play")
 
-[sub_resource type="StyleBoxFlat" id="TutorialPressed"]
-content_margin_left = 22.0
-content_margin_top = 16.0
-content_margin_right = 22.0
-content_margin_bottom = 10.0
-bg_color = Color(0.505882, 0.235294, 0.745098, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.92549, 0.788235, 0.9)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.215686, 0.137255, 0.313726, 0.38)
-shadow_size = 3
-shadow_offset = Vector2(0, 4)
-
-[sub_resource type="StyleBoxFlat" id="TutorialHover"]
-content_margin_left = 22.0
-content_margin_top = 13.0
-content_margin_right = 22.0
-content_margin_bottom = 13.0
-bg_color = Color(0.682353, 0.392157, 0.917647, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(1, 0.92549, 0.788235, 0.95)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.215686, 0.137255, 0.313726, 0.62)
-shadow_size = 8
-shadow_offset = Vector2(0, 9)
-
-[sub_resource type="AtlasTexture" id="IconBook"]
-atlas = ExtResource("7_main_buttons")
-region = Rect2(473, 772, 168, 139)
-
-[sub_resource type="StyleBoxFlat" id="PlayNormal"]
-content_margin_left = 22.0
-content_margin_top = 13.0
-content_margin_right = 22.0
-content_margin_bottom = 13.0
-bg_color = Color(0.184314, 0.807843, 0.443137, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.505882, 0.956863, 0.658824, 0.84)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.0470588, 0.321569, 0.25098, 0.6)
-shadow_size = 7
-shadow_offset = Vector2(0, 8)
-
-[sub_resource type="StyleBoxFlat" id="PlayPressed"]
-content_margin_left = 22.0
-content_margin_top = 16.0
-content_margin_right = 22.0
-content_margin_bottom = 10.0
-bg_color = Color(0.121569, 0.698039, 0.356863, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.92549, 0.788235, 0.9)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.0470588, 0.321569, 0.25098, 0.4)
-shadow_size = 3
-shadow_offset = Vector2(0, 4)
-
-[sub_resource type="StyleBoxFlat" id="PlayHover"]
-content_margin_left = 22.0
-content_margin_top = 13.0
-content_margin_right = 22.0
-content_margin_bottom = 13.0
-bg_color = Color(0.286275, 0.87451, 0.537255, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(1, 0.92549, 0.788235, 0.95)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.0470588, 0.321569, 0.25098, 0.64)
-shadow_size = 8
-shadow_offset = Vector2(0, 9)
-
-[sub_resource type="AtlasTexture" id="IconPlay"]
-atlas = ExtResource("7_main_buttons")
-region = Rect2(713, 758, 122, 149)
-
-[sub_resource type="StyleBoxFlat" id="QuitNormal"]
-content_margin_left = 22.0
-content_margin_top = 13.0
-content_margin_right = 22.0
-content_margin_bottom = 13.0
-bg_color = Color(1, 0.309804, 0.4, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.654902, 0.690196, 0.8)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.215686, 0.137255, 0.235294, 0.55)
-shadow_size = 7
-shadow_offset = Vector2(0, 8)
-
-[sub_resource type="StyleBoxFlat" id="QuitPressed"]
-content_margin_left = 22.0
-content_margin_top = 16.0
-content_margin_right = 22.0
-content_margin_bottom = 10.0
-bg_color = Color(0.901961, 0.254902, 0.341176, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.92549, 0.788235, 0.9)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.215686, 0.137255, 0.235294, 0.4)
-shadow_size = 3
-shadow_offset = Vector2(0, 4)
-
-[sub_resource type="StyleBoxFlat" id="QuitHover"]
-content_margin_left = 22.0
-content_margin_top = 13.0
-content_margin_right = 22.0
-content_margin_bottom = 13.0
-bg_color = Color(1, 0.411765, 0.486275, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(1, 0.92549, 0.788235, 0.95)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.215686, 0.137255, 0.235294, 0.62)
-shadow_size = 8
-shadow_offset = Vector2(0, 9)
-
-[sub_resource type="AtlasTexture" id="IconQuit"]
-atlas = ExtResource("7_main_buttons")
-region = Rect2(880, 756, 125, 151)
+[sub_resource type="StyleBoxTexture" id="NewQuitSkin"]
+texture = ExtResource("new_quit")
 
 [sub_resource type="StyleBoxFlat" id="TooltipStyle"]
 bg_color = Color(0.976471, 0.894118, 0.741176, 1)
@@ -406,6 +74,11 @@ corner_radius_bottom_left = 7
 shadow_color = Color(0.152941, 0.129412, 0.2, 0.35)
 shadow_size = 3
 shadow_offset = Vector2(0, 4)
+
+[sub_resource type="SystemFont" id="ChunkyFont"]
+font_names = PackedStringArray("Arial Rounded MT Bold", "Arial Black", "Arial")
+font_weight = 800
+subpixel_positioning = 0
 
 [node name="MainMenu" type="Control" unique_id=1178804453]
 layout_mode = 3
@@ -426,7 +99,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.120969854, 0.5510978, 0.79400885, 1)
 
-[node name="Background" type="Control" parent="." unique_id=314484285]
+[node name="Background" type="TextureRect" parent="." unique_id=314484285]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -434,7 +107,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("2_art")
+texture = ExtResource("2_art")
+expand_mode = 1
+stretch_mode = 6
 
 [node name="FallingLayer" type="Control" parent="." unique_id=843971288]
 layout_mode = 1
@@ -482,125 +157,62 @@ grow_vertical = 2
 
 [node name="LogoGroup" type="Control" parent="MainLayer" unique_id=1772862414]
 anchors_preset = 0
-offset_left = 194.0
-offset_top = 60.0
-offset_right = 1174.0
-offset_bottom = 462.0
+offset_left = 164.0
+offset_top = 29.0
+offset_right = 1144.0
+offset_bottom = 431.0
 
 [node name="Kilos" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=824369719]
 layout_mode = 0
-offset_left = 116.0
-offset_top = -45.0
-offset_right = 810.0
-offset_bottom = 214.0
+offset_left = 145.0
+offset_top = -18.0
+offset_right = 775.0
+offset_bottom = 193.0
 mouse_default_cursor_shape = 2
 texture = ExtResource("4_kilos_curved")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="GrammarG" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=1995916991]
+[node name="GrammarG" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=1995916991]
 layout_mode = 0
-offset_left = 15.0
-offset_top = 150.0
-offset_right = 135.0
+offset_left = 46.0
+offset_top = 150.00002
+offset_right = 166.0
 offset_bottom = 270.0
 rotation = -0.0698132
 pivot_offset = Vector2(71, 75)
-theme_override_styles/panel = SubResource("TileGreen")
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarg")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarG" unique_id=2030540118]
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("5_tile_fx")
-
-[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarG" unique_id=990728519]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_fonts/font = ExtResource("6_title_font")
-theme_override_font_sizes/font_size = 76
-text = "G"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarG" unique_id=2042944773]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 9
-text = "5"
-horizontal_alignment = 2
-vertical_alignment = 2
-
-[node name="GrammarR1" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=933265998]
+[node name="GrammarR1" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=933265998]
 layout_mode = 0
-offset_left = 145.0
-offset_top = 150.0
-offset_right = 265.0
+offset_left = 170.0
+offset_top = 150.00002
+offset_right = 290.0
 offset_bottom = 270.0
 rotation = 0.0872665
 pivot_offset = Vector2(71, 75)
-theme_override_styles/panel = SubResource("TileRed")
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarr1")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarR1" unique_id=1733598962]
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("5_tile_fx")
-
-[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarR1" unique_id=270135832]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_fonts/font = ExtResource("6_title_font")
-theme_override_font_sizes/font_size = 76
-text = "R"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarR1" unique_id=1831190639]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 9
-text = "4"
-horizontal_alignment = 2
-vertical_alignment = 2
-
-[node name="GrammarA1" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=112494732]
+[node name="GrammarA1" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=112494732]
 layout_mode = 0
-offset_left = 280.0
+offset_left = 295.00003
 offset_top = 150.0
-offset_right = 400.0
+offset_right = 415.00003
 offset_bottom = 270.0
 rotation = -0.0698132
 pivot_offset = Vector2(71, 75)
-theme_override_styles/panel = SubResource("TileYellow")
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammara1")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarA1" unique_id=1990027756]
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("5_tile_fx")
-
-[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarA1" unique_id=490210561]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_fonts/font = ExtResource("6_title_font")
-theme_override_font_sizes/font_size = 76
-text = "A"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarA1" unique_id=609858240]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 9
-text = "8"
-horizontal_alignment = 2
-vertical_alignment = 2
-
-[node name="GrammarM1" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=1511730324]
+[node name="GrammarM1" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=1511730324]
 layout_mode = 0
 offset_left = 415.0
 offset_top = 150.0
@@ -608,251 +220,144 @@ offset_right = 535.0
 offset_bottom = 270.0
 rotation = 0.0523599
 pivot_offset = Vector2(71, 75)
-theme_override_styles/panel = SubResource("TileBlue")
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarm1")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarM1" unique_id=1734719172]
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("5_tile_fx")
-
-[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarM1" unique_id=687116492]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_fonts/font = ExtResource("6_title_font")
-theme_override_font_sizes/font_size = 76
-text = "M"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarM1" unique_id=1568240075]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 9
-text = "10"
-horizontal_alignment = 2
-vertical_alignment = 2
-
-[node name="GrammarM2" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=1958823084]
+[node name="GrammarM2" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=1958823084]
 layout_mode = 0
-offset_left = 550.0
-offset_top = 150.0
-offset_right = 670.0
+offset_left = 540.99994
+offset_top = 150.00002
+offset_right = 660.99994
 offset_bottom = 270.0
 rotation = -0.0523599
 pivot_offset = Vector2(71, 75)
-theme_override_styles/panel = SubResource("TilePurple")
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarm2")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarM2" unique_id=1293526709]
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("5_tile_fx")
-
-[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarM2" unique_id=1199591641]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_fonts/font = ExtResource("6_title_font")
-theme_override_font_sizes/font_size = 76
-text = "M"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarM2" unique_id=1687611029]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 9
-text = "10"
-horizontal_alignment = 2
-vertical_alignment = 2
-
-[node name="GrammarA2" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=462738204]
+[node name="GrammarA2" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=462738204]
 layout_mode = 0
-offset_left = 685.0
+offset_left = 663.99994
 offset_top = 150.0
-offset_right = 805.0
+offset_right = 783.99994
 offset_bottom = 270.0
 rotation = 0.0698132
 pivot_offset = Vector2(71, 75)
-theme_override_styles/panel = SubResource("TileOrange")
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammara2")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarA2" unique_id=731347204]
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("5_tile_fx")
-
-[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarA2" unique_id=1376579001]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_fonts/font = ExtResource("6_title_font")
-theme_override_font_sizes/font_size = 76
-text = "A"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarA2" unique_id=239402047]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 9
-text = "8"
-horizontal_alignment = 2
-vertical_alignment = 2
-
-[node name="GrammarR2" type="PanelContainer" parent="MainLayer/LogoGroup" unique_id=1680663106]
+[node name="GrammarR2" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=1680663106]
 layout_mode = 0
-offset_left = 820.0
-offset_top = 150.0
-offset_right = 940.0
+offset_left = 787.0
+offset_top = 149.99997
+offset_right = 907.0
 offset_bottom = 270.0
 rotation = -0.0523599
 pivot_offset = Vector2(71, 75)
-theme_override_styles/panel = SubResource("TileBlueDeep")
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarr2")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="FX" type="Control" parent="MainLayer/LogoGroup/GrammarR2" unique_id=2009637445]
-layout_mode = 2
-mouse_filter = 2
-script = ExtResource("5_tile_fx")
-
-[node name="Label" type="Label" parent="MainLayer/LogoGroup/GrammarR2" unique_id=2053006930]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_fonts/font = ExtResource("6_title_font")
-theme_override_font_sizes/font_size = 76
-text = "R"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Score" type="Label" parent="MainLayer/LogoGroup/GrammarR2" unique_id=37253202]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 0.9)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 9
-text = "4"
-horizontal_alignment = 2
-vertical_alignment = 2
-
-[node name="LeftMenu" type="VBoxContainer" parent="MainLayer" unique_id=670607935]
-layout_mode = 0
+[node name="LeftMenu" type="Control" parent="MainLayer" unique_id=670607935]
+anchors_preset = 0
 offset_left = 44.0
 offset_top = 474.0
 offset_right = 269.0
 offset_bottom = 678.0
-theme_override_constants/separation = 10
 
 [node name="Leaderboard" type="Button" parent="MainLayer/LeftMenu" unique_id=893965103]
-custom_minimum_size = Vector2(225, 55)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_outline_color = Color(0.141176, 0.113725, 0.215686, 0.42)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 15
-theme_override_styles/normal = SubResource("ButtonNormal")
-theme_override_styles/pressed = SubResource("ButtonPressed")
-theme_override_styles/hover = SubResource("ButtonHover")
+layout_mode = 0
+offset_top = -12.0
+offset_right = 225.0
+offset_bottom = 55.0
+tooltip_text = "Leaderboard"
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewLeaderboardSkin")
+theme_override_styles/pressed = SubResource("NewLeaderboardSkin")
+theme_override_styles/hover = SubResource("NewLeaderboardSkin")
+theme_override_styles/disabled = SubResource("NewLeaderboardSkin")
 theme_override_styles/focus = SubResource("ButtonFocus")
-text = "LEADERBOARD"
-icon = SubResource("IconTrophy")
-expand_icon = true
 
 [node name="Settings" type="Button" parent="MainLayer/LeftMenu" unique_id=1888547398]
-custom_minimum_size = Vector2(225, 55)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_outline_color = Color(0.141176, 0.113725, 0.215686, 0.42)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 15
-theme_override_styles/normal = SubResource("ButtonNormal")
-theme_override_styles/pressed = SubResource("ButtonPressed")
-theme_override_styles/hover = SubResource("ButtonHover")
+layout_mode = 0
+offset_top = 55.0
+offset_right = 225.0
+offset_bottom = 122.0
+tooltip_text = "Settings"
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewSettingsSkin")
+theme_override_styles/pressed = SubResource("NewSettingsSkin")
+theme_override_styles/hover = SubResource("NewSettingsSkin")
+theme_override_styles/disabled = SubResource("NewSettingsSkin")
 theme_override_styles/focus = SubResource("ButtonFocus")
-text = "SETTINGS"
-icon = SubResource("IconGear")
-expand_icon = true
 
 [node name="Credits" type="Button" parent="MainLayer/LeftMenu" unique_id=794054224]
-custom_minimum_size = Vector2(225, 55)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_outline_color = Color(0.141176, 0.113725, 0.215686, 0.42)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 15
-theme_override_styles/normal = SubResource("ButtonNormal")
-theme_override_styles/pressed = SubResource("ButtonPressed")
-theme_override_styles/hover = SubResource("ButtonHover")
-theme_override_styles/focus = SubResource("ButtonFocus")
-text = "CREDITS"
-icon = SubResource("IconStar")
-expand_icon = true
-
-[node name="CenterMenu" type="VBoxContainer" parent="MainLayer" unique_id=1750835866]
 layout_mode = 0
+offset_top = 122.0
+offset_right = 225.0
+offset_bottom = 189.0
+tooltip_text = "Credits"
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewCreditsSkin")
+theme_override_styles/pressed = SubResource("NewCreditsSkin")
+theme_override_styles/hover = SubResource("NewCreditsSkin")
+theme_override_styles/disabled = SubResource("NewCreditsSkin")
+theme_override_styles/focus = SubResource("ButtonFocus")
+
+[node name="CenterMenu" type="Control" parent="MainLayer" unique_id=1750835866]
+anchors_preset = 0
 offset_left = 470.0
 offset_top = 435.0
 offset_right = 810.0
 offset_bottom = 681.0
-theme_override_constants/separation = 10
 
 [node name="Tutorial" type="Button" parent="MainLayer/CenterMenu" unique_id=1106129653]
-custom_minimum_size = Vector2(340, 72)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_outline_color = Color(0.270588, 0.137255, 0.388235, 0.4)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 21
-theme_override_styles/normal = SubResource("TutorialNormal")
-theme_override_styles/pressed = SubResource("TutorialPressed")
-theme_override_styles/hover = SubResource("TutorialHover")
+layout_mode = 0
+offset_left = 59.0
+offset_top = -3.0
+offset_right = 332.0
+offset_bottom = 80.0
+tooltip_text = "Tutorial"
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewTutorialSkin")
+theme_override_styles/pressed = SubResource("NewTutorialSkin")
+theme_override_styles/hover = SubResource("NewTutorialSkin")
+theme_override_styles/disabled = SubResource("NewTutorialSkin")
 theme_override_styles/focus = SubResource("ButtonFocus")
-text = "TUTORIAL"
-icon = SubResource("IconBook")
-expand_icon = true
 
 [node name="Play" type="Button" parent="MainLayer/CenterMenu" unique_id=1153098940]
-custom_minimum_size = Vector2(340, 72)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_outline_color = Color(0.0392157, 0.286275, 0.188235, 0.38)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 22
-theme_override_styles/normal = SubResource("PlayNormal")
-theme_override_styles/pressed = SubResource("PlayPressed")
-theme_override_styles/hover = SubResource("PlayHover")
+layout_mode = 0
+offset_left = 59.0
+offset_top = 79.0
+offset_right = 332.0
+offset_bottom = 162.0
+tooltip_text = "Play"
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewPlaySkin")
+theme_override_styles/pressed = SubResource("NewPlaySkin")
+theme_override_styles/hover = SubResource("NewPlaySkin")
+theme_override_styles/disabled = SubResource("NewPlaySkin")
 theme_override_styles/focus = SubResource("ButtonFocus")
-text = "PLAY"
-icon = SubResource("IconPlay")
-expand_icon = true
 
 [node name="Quit" type="Button" parent="MainLayer/CenterMenu" unique_id=638833762]
-custom_minimum_size = Vector2(340, 72)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_hover_color = Color(0.968627, 0.890196, 0.741176, 1)
-theme_override_colors/font_outline_color = Color(0.380392, 0.105882, 0.160784, 0.4)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 21
-theme_override_styles/normal = SubResource("QuitNormal")
-theme_override_styles/pressed = SubResource("QuitPressed")
-theme_override_styles/hover = SubResource("QuitHover")
+layout_mode = 0
+offset_left = 59.0
+offset_top = 163.0
+offset_right = 332.0
+offset_bottom = 246.0
+tooltip_text = "Quit"
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewQuitSkin")
+theme_override_styles/pressed = SubResource("NewQuitSkin")
+theme_override_styles/hover = SubResource("NewQuitSkin")
+theme_override_styles/disabled = SubResource("NewQuitSkin")
 theme_override_styles/focus = SubResource("ButtonFocus")
-text = "QUIT"
-icon = SubResource("IconQuit")
-expand_icon = true
 
 [node name="Tooltip" type="PanelContainer" parent="MainLayer" unique_id=257164577]
 visible = false

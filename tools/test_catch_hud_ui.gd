@@ -94,14 +94,17 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	_check(game.get_node_or_null("HUDLayer") is CanvasLayer, "%s: HUD is on its own CanvasLayer" % viewport_size)
 	_check(game.get_node_or_null("Background") is TextureRect, "%s: background remains editable" % viewport_size)
 	var character := game.get_node_or_null("CharacterRig") as Node2D
-	var body := game.get_node_or_null("CharacterRig/Body") as Sprite2D
+	var body := game.body_sprite as Sprite2D
 	var apples := game.get_node_or_null("CharacterRig/CollectedWords") as Node2D
-	var basket := game.get_node_or_null("CharacterRig/Basket") as Sprite2D
+	var basket := game.basket_sprite as Sprite2D
 	_check(character != null, "%s: separate CharacterRig exists" % viewport_size)
 	_check(body != null and apples != null and basket != null, "%s: Body, CollectedWords, Basket are distinct scene nodes" % viewport_size)
 	if body != null and apples != null and basket != null:
-		_check(body != basket and body.get_parent() == character and apples.get_parent() == character and basket.get_parent() == character,
-			"%s: Body, collected apples and Basket are independently editable siblings" % viewport_size)
+		var sprite_group := body.get_parent()
+		_check(body != basket and sprite_group == basket.get_parent()
+			and (sprite_group == character or sprite_group.get_parent() == character)
+			and apples.get_parent() == character,
+			"%s: active body/basket are independently editable alongside the caught-apple layer" % viewport_size)
 		_check(body.texture != null and basket.texture != null, "%s: Body and Basket have their own sprite textures" % viewport_size)
 
 	var plaques: Dictionary = {}
@@ -227,7 +230,7 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 					_check_mode_alignment(viewport_size, game.get_viewport_rect().size, mode, plaques,
 						prompt, score, timer, hearts, pause_button)
 
-		await _test_character_and_map_combinations(game, viewport_size, body, apples, basket)
+		await _test_character_and_map_combinations(game, viewport_size, apples)
 		_test_pause_button(game, pause_button, viewport_size)
 
 	host.queue_free()
@@ -300,8 +303,8 @@ func _baked_labels_not_rendered(node: Node) -> bool:
 
 
 func _test_character_and_map_combinations(game: Control, viewport_size: Vector2i,
-		body: Sprite2D, apples: Node2D, basket: Sprite2D) -> void:
-	if body == null or apples == null or basket == null:
+		apples: Node2D) -> void:
+	if apples == null:
 		return
 	var backdrop := game.get_node_or_null("Background") as TextureRect
 	var rig := game.get_node_or_null("CharacterRig") as Node2D
@@ -326,6 +329,14 @@ func _test_character_and_map_combinations(game: Control, viewport_size: Vector2i
 			await process_frame
 			await process_frame
 			_check_initial_wave(game, ctx)
+			# Character selection changes the active Sprite2D pair, while each
+			# variant's editor-authored body/basket transforms remain independent.
+			var body := game.body_sprite as Sprite2D
+			var basket := game.basket_sprite as Sprite2D
+			_check(body != null and basket != null,
+				"%s: selected character exposes both active Sprite2Ds" % ctx)
+			if body == null or basket == null:
+				continue
 
 			_check(String(game.get("selected_character")) == character_name,
 				"%s: requested character is selected" % ctx)
@@ -341,8 +352,13 @@ func _test_character_and_map_combinations(game: Control, viewport_size: Vector2i
 			_check(basket.texture != null and basket.texture.resource_path == expected_basket,
 				"%s: original character BASKET PNG loaded even if generated alternative exists" % ctx)
 			_check(body.texture != basket.texture, "%s: body and basket use different images" % ctx)
-			_check(body.get_parent() == rig and apples.get_parent() == rig and basket.get_parent() == rig,
-				"%s: rig keeps three independent layers" % ctx)
+			var sprite_group := body.get_parent()
+			_check(sprite_group == basket.get_parent()
+				and (sprite_group == rig or sprite_group.get_parent() == rig)
+				and apples.get_parent() == rig,
+				"%s: rig keeps independent active body/basket and caught-apple layers" % ctx)
+			_check(body.is_visible_in_tree() and basket.is_visible_in_tree(),
+				"%s: selected character sprites are visible" % ctx)
 			_check(backdrop.z_index < body.z_index
 				and body.z_index < apples.z_index
 				and apples.z_index < basket.z_index,
@@ -381,9 +397,30 @@ func _test_character_and_map_combinations(game: Control, viewport_size: Vector2i
 				_check(glossy_sprite != null and glossy_sprite.texture == glossy,
 					"%s: actual falling sprite selects glossy PNG" % ctx)
 				demo_falling.queue_free()
-			var bottom_y := body.global_position.y + body.region_rect.size.y * body.scale.y * 0.5
-			_check(bottom_y > float(viewport_size.y),
-				"%s: lower body stays below viewport for half-body framing" % ctx)
+			var screen := Rect2(Vector2.ZERO, Vector2(viewport_size))
+			for sprite in [body, basket]:
+				var visual_rect := _sprite_visual_rect(sprite)
+				_check(visual_rect.has_area() and screen.encloses(visual_rect.grow(-0.5)),
+					"%s: selected %s is fully inside %s (actual %s)" %
+					[ctx, sprite.name, viewport_size, visual_rect])
+
+
+func _sprite_visual_rect(sprite: Sprite2D) -> Rect2:
+	# Include cropped region, sprite offsets and any scale on the selected
+	# character group or shared CharacterRig, not just its local dimensions.
+	var local_rect := sprite.get_rect()
+	var transform := sprite.get_global_transform()
+	var min_corner := transform * local_rect.position
+	var max_corner := min_corner
+	for corner in [
+		Vector2(local_rect.end.x, local_rect.position.y),
+		local_rect.end,
+		Vector2(local_rect.position.x, local_rect.end.y)
+	]:
+		var point: Vector2 = transform * corner
+		min_corner = min_corner.min(point)
+		max_corner = max_corner.max(point)
+	return Rect2(min_corner, max_corner - min_corner)
 
 
 func _check_mode_alignment(viewport_size: Vector2i, logical_viewport_size: Vector2,

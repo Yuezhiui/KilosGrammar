@@ -75,11 +75,15 @@ func _refresh() -> void:
 	var activity := _context_text(["activity"], "")
 	%ActivityValue.text = activity
 	%ActivityValue.visible = not activity.is_empty()
-	var show_unsaved := bool(_context.get("demo_mode", false))
-	if _context.has("database_connected"):
-		show_unsaved = show_unsaved or not bool(_context["database_connected"])
-	%SaveStatus.text = "PLAYABLE KEYBOARD ROUND  -  SCORE NOT SAVED" if bool(_context.get("gameplay_implemented", false)) else "DEMO ROUND  -  SCORE NOT SAVED"
-	%SaveStatus.visible = show_unsaved
+	if bool(_context.get("score_saved", false)):
+		%SaveStatus.text = "SCORE SAVED TO LOCAL POSTGRESQL"
+	elif bool(_context.get("database_saving", false)):
+		%SaveStatus.text = "SAVING COMPLETED SCORE TO LOCAL POSTGRESQL..."
+	elif bool(_context.get("round_completed", false)):
+		%SaveStatus.text = "SCORE NOT SAVED • LOCAL DATABASE UNAVAILABLE" if not bool(_context.get("database_connected", false)) else "SCORE NOT SAVED • ASK YOUR TEACHER FOR HELP"
+	else:
+		%SaveStatus.text = "ROUND NOT COMPLETED • NO SCORE WAS SAVED"
+	%SaveStatus.visible = true
 
 
 func _set_optional_row(row: Control, value_label: Label, keys: Array[String]) -> void:

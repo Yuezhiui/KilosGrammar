@@ -4,9 +4,9 @@ extends SceneTree
 # Run with Godot 4.7.2: --headless --path . --script res://tools/test_ui_layout.gd
 const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const ROUTES: Array[String] = [
-	"tutorial_home", "tutorial_practice", "tutorial_complete", "grammar_guide",
+	"tutorial_home", "grammar_guide",
 	"student_setup", "play_activity", "play_topic", "play_difficulty",
-	"camera_check", "calibration", "ready", "gameplay", "pause",
+	"camera_check", "calibration", "gameplay", "pause",
 	"results", "leaderboard", "settings", "credits"
 ]
 

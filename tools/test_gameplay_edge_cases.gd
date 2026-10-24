@@ -39,10 +39,22 @@ func _new_balloon() -> Control:
 	return game
 
 
+func _raise_one_hand_to_fire(game: Control) -> bool:
+	# The old direct `_launch_projectile()` bypass is deliberately restricted.
+	# Exercise the new legitimate 180ms lower / 80ms raise gesture instead,
+	# then keep the original physics/collision assertions unchanged.
+	var now := Time.get_ticks_msec()
+	game.call("set_hand_raise_state", false, true, now)
+	game.call("set_hand_raise_state", false, true, now + 200)
+	game.call("set_hand_raise_state", true, true, now + 220)
+	return bool(game.call("set_hand_raise_state", true, true, now + 320))
+
+
 func _balloon_pause_guard() -> void:
 	var game := _new_balloon()
 	await process_frame
-	game.call("_launch_projectile")
+	if not _raise_one_hand_to_fire(game):
+		failures.append("Verified hand raise could not launch physics projectile before Pause")
 	var projectiles: Array = game.get("projectiles")
 	if projectiles.is_empty():
 		failures.append("Could not launch physics projectile before pause")
@@ -113,7 +125,8 @@ func _balloon_swept_low_fps_hit() -> void:
 		await _dispose(game)
 		return
 	game.set("launcher_x", target.position.x)
-	game.call("_launch_projectile")
+	if not _raise_one_hand_to_fire(game):
+		failures.append("Low-FPS collision test could not fire an authorized hand-raised projectile")
 	if int(game.get("score")) != 0 or int(game.get("attempts")) != 0:
 		failures.append("Balloon registered a hit at projectile launch instead of impact")
 	# At 5 physics FPS the projectile can traverse the entire target between
@@ -167,13 +180,14 @@ func _plane_hitbox_alignment() -> void:
 	game.call("set_context", {"activity": "Human Plane", "topic": "Noun", "difficulty": "Normal"})
 	await process_frame
 	await process_frame
-	# The selectable gate must reach the actual airplane hitbox vertically,
-	# not score at a separate floating line before touching the airplane.
+	# The redesigned Human Plane scores when an approaching gate reaches the
+	# plane's NOSE area, intentionally ahead of its body center. The gate then
+	# fades rather than visibly passing across and obscuring the airplane.
 	var line_y: float = game.call("_answer_line_y")
 	var plane_y: float = game.call("_plane_y")
-	var half_hitbox := 10.0 * game.size.y / 720.0
-	if absf(line_y - plane_y) > half_hitbox + 1.0:
-		failures.append("Plane gate answer line is %.1f px from the airplane hitbox" % absf(line_y - plane_y))
+	var clearance := plane_y - line_y
+	if clearance < game.size.y * 0.045 or clearance > game.size.y * 0.28:
+		failures.append("Plane gate answer line must stay near the forward airplane approach, got %.1f px ahead" % clearance)
 	await _dispose(game)
 
 
