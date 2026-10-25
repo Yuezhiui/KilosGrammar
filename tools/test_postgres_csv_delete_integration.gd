@@ -72,7 +72,7 @@ func _run() -> void:
 		"Import uses a native editor-authored Open CSV FileDialog")
 	_check(_find(board, ["ImportButton", "ImportCsvButton"]) is Button,
 		"Import CSV button is editor-authored")
-	_check(_find(board, ["ExportButton", "DownloadButton", "ExportCsvButton"]) is Button,
+	_check(_find(board, ["ExportButton", "ExportCsvButton"]) is Button,
 		"Export CSV button is editor-authored")
 	_check(_find(board, ["DeleteAllButton", "DeleteAllDataButton"]) is Button,
 		"Delete All Data button is editor-authored")
@@ -97,23 +97,16 @@ func _run() -> void:
 
 
 func _test_minigame_display_and_filters() -> void:
-	var selector := _find(board, ["MinigameFilter"]) as OptionButton
-	_check(selector != null, "MinigameFilter is editor-authored and distinct from grammar style filter")
-	if selector == null:
-		return
-	_check(not selector.is_visible_in_tree(),
-		"minigame filter remains hidden after FILTERS popover removal")
+	_check(_find(board, ["MinigameFilter", "DownloadButton", "TransferStatusPanel", "TransferStatus"]) == null,
+		"unused hidden selector/download/status nodes removed from the editor-authored leaderboard")
 	for old_node in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
 		_check(board.find_child(old_node, true, false) == null,
 			"removed FILTERS/popover cannot be reopened: " + old_node)
 	_check(board.has_method("set_minigame_filter") and board.has_method("request_filtered_csv_export"),
 		"hidden minigame and CSV preserve explicit non-popover host APIs")
-	var expected := ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE", "LEGACY"]
-	var actual: Array[String] = []
-	for i in selector.item_count:
-		actual.append(selector.get_item_text(i).to_upper())
-	_check(actual == expected, "Minigame filter offers all three modes and explicit Legacy records")
-	var authored_position := selector.position
+	var expected := ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE"]
+	_check(not board.has_node("MinigameFilter") and board.has_method("set_minigame_filter"),
+		"script-only minigame selection retains host filtering without a hidden native OptionButton")
 	var same_topic: Array = []
 	for spec in [
 		{"minigame": "Catch the Word", "score": 11},
@@ -139,8 +132,9 @@ func _test_minigame_display_and_filters() -> void:
 		_check(style_cell.tooltip_text.contains("Grammar topic: Noun"),
 			"Ranking cell tooltip distinguishes minigame name from grammar topic")
 	_check(visible_styles.has("CATCH / NOUN") and visible_styles.has("POP / NOUN")
-		and visible_styles.has("PLANE / NOUN") and visible_styles.has("LEGACY / NOUN"),
-		"Same grammar topic visibly distinguishes Catch, Balloon Popping, Human Plane, Legacy")
+		and visible_styles.has("PLANE / NOUN") and visible_styles.has("NOUN")
+		and not visible_styles.has("LEGACY / NOUN"),
+		"Same topic retains four independent records; legacy rank displays topic only without misleading prefix")
 	for index in range(1, expected.size()):
 		_check(bool(board.call("set_minigame_filter", expected[index])),
 			"public API sets hidden minigame filter " + expected[index])
@@ -148,16 +142,20 @@ func _test_minigame_display_and_filters() -> void:
 			"Minigame filter '%s' selects exactly its backend row" % expected[index])
 		if _count_rows() == 1:
 			var row_style := (rows.get_child(0).get_node("GameStyle") as Label).text
-			var starts := ["", "CATCH", "POP", "PLANE", "LEGACY"]
+			var starts := ["", "CATCH", "POP", "PLANE"]
 			_check(row_style.begins_with(starts[index] + " / "),
 				"Filtered record displays its accurate activity: " + expected[index])
+	_check(bool(board.call("set_minigame_filter", "Legacy")) and _count_rows() == 1,
+		"Historical Legacy records remain queryable through compatibility host API without a visible menu option")
+	if _count_rows() == 1:
+		var historic_style := (rows.get_child(0).get_node("GameStyle") as Label).text
+		_check(historic_style == "NOUN", "Historical score retains grammar topic alone, with no Legacy prefix")
 	# The older green Download button saves a display extract; its header must
 	# not be confused with the server's canonical full backup field names.
-	var download := _find(board, ["DownloadButton"]) as Button
 	var local_save := _find(board, ["SaveCsvDialog"]) as FileDialog
-	_check(download != null and local_save != null,
-		"Filtered local Download and its file dialog remain editor-authored")
-	if download != null and local_save != null:
+	_check(_find(board, ["DownloadButton"]) == null and local_save != null,
+		"filtered CSV host API retains SaveCsvDialog, with unused DownloadButton physically removed")
+	if local_save != null:
 		board.call("request_filtered_csv_export")
 		_check(local_save.visible, "Filtered Download launches its native SaveCsvDialog")
 		local_save.file_selected.emit(ProjectSettings.globalize_path(FILTERED_PATH))
@@ -173,9 +171,9 @@ func _test_minigame_display_and_filters() -> void:
 	_check(bool(board.call("set_minigame_filter", "ALL MINIGAMES")),
 		"public API resets hidden minigame filter")
 	_check(_count_rows() == 4, "Restoring ALL MINIGAMES shows all four independent scores")
-	_check(selector.position == authored_position, "Minigame filter layout stays editor-authored during filtering")
-	_check(not selector.is_visible_in_tree() and not download.is_visible_in_tree(),
-		"hidden filters stay hidden after host requests; no FILTERS popover returns")
+	_check(board.find_child("MinigameFilter", true, false) == null
+		and board.find_child("DownloadButton", true, false) == null,
+		"hidden controls remain absent after host requests; no FILTERS popover returns")
 	# Restore a predictable single, fully identified live minigame ranking for
 	# the existing export/import/delete safety checks.
 	_authorize_mock_teacher()
@@ -209,8 +207,8 @@ func _test_export() -> void:
 	}), "Backend may reject export without a local teacher authorization token")
 	_check(not FileAccess.file_exists(EXPORT_PATH),
 		"Rejected unauthorized export leaves no CSV file behind")
-	var denied_status := _find(board, ["TransferStatus"]) as Label
-	_check(denied_status != null and denied_status.text.contains("failed"),
+	var denied_status := _find(board, ["EmptyNotice"]) as AcceptDialog
+	_check(denied_status != null and denied_status.dialog_text.contains("failed"),
 		"Denied export does not claim saved CSV success")
 	export_button.pressed.emit()
 	chooser.file_selected.emit(ProjectSettings.globalize_path(EXPORT_PATH))
@@ -231,8 +229,8 @@ func _test_export() -> void:
 		_check(text_csv.contains("\"Ada, \"\"Quoted\"\"\""),
 			"Quoted student name is not corrupted by export")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(EXPORT_PATH))
-	var transfer_status := _find(board, ["TransferStatus"]) as Label
-	_check(transfer_status != null and transfer_status.text.contains("saved: 1 students, 1 scores"),
+	var transfer_status := _find(board, ["EmptyNotice"]) as AcceptDialog
+	_check(transfer_status != null and transfer_status.dialog_text.contains("saved: 1 students, 1 scores"),
 		"Export success is explicitly displayed only after confirmed backend response")
 
 
@@ -311,8 +309,8 @@ func _test_import() -> void:
 	}), "Malformed CSV response is delivered")
 	_check(_count_rows() == 1,
 		"Rejected malformed CSV never replaces previously saved scores")
-	var status := _find(board, ["TransferStatus"]) as Label
-	_check(status != null and status.text.contains("failed"),
+	var status := _find(board, ["EmptyNotice"]) as AcceptDialog
+	_check(status != null and status.dialog_text.contains("failed"),
 		"Malformed CSV response displays a failure, never a success message")
 	button.pressed.emit()
 	picker.file_selected.emit(ProjectSettings.globalize_path(IMPORT_PATH))
@@ -324,7 +322,7 @@ func _test_import() -> void:
 	}), "Duplicate record rejection is delivered")
 	_check(_count_rows() == 1,
 		"Duplicate-rejected CSV does not change leaderboard")
-	_check(status.text.contains("failed") and not status.text.contains("CSV imported"),
+	_check(status.dialog_text.contains("failed") and not status.dialog_text.contains("CSV imported"),
 		"Duplicate records cannot result in a misleading import-success status")
 	button.pressed.emit()
 	picker.file_selected.emit(ProjectSettings.globalize_path(IMPORT_PATH))
@@ -336,7 +334,7 @@ func _test_import() -> void:
 	}), "Valid import confirmation is delivered")
 	_check(int(client.call("count", "get_leaderboard")) == fetches + 1,
 		"Successful import refreshes authoritative leaderboard from server")
-	_check(status.text.contains("CSV imported"), "Only successful API import shows import-success notice")
+	_check(status.dialog_text.contains("CSV imported"), "Only successful API import shows import-success notice")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(IMPORT_PATH))
 	# In-flight import results must not navigate back into the abandoned screen.
 	var count_before_missing: int = client.call("count", "import_data_csv")
@@ -406,14 +404,17 @@ func _test_legacy_import() -> void:
 		}]},
 	}, "leaderboard"), "Server-supplied Legacy minigame record reaches native leaderboard")
 	_check(_count_rows() == 1
-		and (board.get_node("%ScoreRows").get_child(0).get_node("GameStyle") as Label).text == "LEGACY / NOUN",
-		"Post-import leaderboard visibly labels seven-column historical score as Legacy")
+		and (board.get_node("%ScoreRows").get_child(0).get_node("GameStyle") as Label).text == "NOUN",
+		"Post-import historical score is still present while visible style omits misleading Legacy prefix")
+	var raw_records: Array = board.get("_all_rows")
+	_check(raw_records.size() == 1 and raw_records[0].get("minigame") == "Legacy"
+		and raw_records[0].get("game_style") == "Noun" and int(raw_records[0].get("score", -1)) == 4,
+		"Historical backend record retains original Legacy minigame, Noun topic, and score without rewriting data")
 	var minigame_filter := _find(board, ["MinigameFilter"]) as OptionButton
 	if minigame_filter != null:
-		minigame_filter.select(4)
-		minigame_filter.item_selected.emit(4)
-		_check(_count_rows() == 1,
-			"Historical seven-column backup rank is retrievable using LEGACY minigame filter")
+		_check(minigame_filter.item_count == 4, "Historical Legacy not exposed in native MinigameFilter options")
+		_check(bool(board.call("set_minigame_filter", "Legacy")) and _count_rows() == 1,
+			"Historical seven-column backup rank is still retrievable through Legacy compatibility API")
 		minigame_filter.select(1)
 		minigame_filter.item_selected.emit(1)
 		_check(_count_rows() == 0,
@@ -429,9 +430,14 @@ func _test_delete() -> void:
 	if button == null:
 		return
 	_authorize_mock_teacher()
-	var confirm := _find(board, ["DeleteFirstWarning"]) as ConfirmationDialog
-	_check(confirm != null, "Delete All uses an editor-authored confirmation dialog")
-	if confirm == null:
+	var first := _find(board, ["DeleteFirstOverlay"]) as Control
+	var first_cancel := _delete_first_button(first, "CANCEL")
+	var first_continue := _delete_first_button(first, "SHOW FINAL CONFIRMATION")
+	_check(first != null and first_cancel != null and first_continue != null,
+		"Delete All has a custom, editor-authored first overlay with two native buttons")
+	_check(_find(board, ["DeleteFirstWarning"]) == null,
+		"Obsolete Godot ConfirmationDialog is physically removed")
+	if first == null or first_cancel == null or first_continue == null:
 		return
 	var overlay := _find(board, ["DeleteFinalOverlay"]) as Control
 	var final_button := _find(board, ["FinalDeleteButton"]) as Button
@@ -444,18 +450,19 @@ func _test_delete() -> void:
 		return
 	var before: int = client.call("count", "delete_all_data")
 	button.pressed.emit()
-	_check(confirm.visible, "Delete All first opens confirmation; does not execute deletion")
+	_check(first.visible and not overlay.visible,
+		"Delete All first opens the custom warning only; does not execute deletion")
 	_check(int(client.call("count", "delete_all_data")) == before,
 		"Opening Delete All cannot delete records")
-	confirm.canceled.emit()
-	confirm.hide()
+	first_cancel.pressed.emit()
 	_check(int(client.call("count", "delete_all_data")) == before
-		and _count_rows() == 1, "Cancel Delete leaves saved results untouched")
+		and _count_rows() == 1 and not first.visible and not overlay.visible,
+		"First-stage Cancel closes warning without altering saved results")
 	button.pressed.emit()
-	confirm.confirmed.emit()
-	confirm.hide()
+	first_continue.pressed.emit()
 	await process_frame
-	_check(overlay.visible, "First confirmation leads to a separate final destructive overlay")
+	_check(not first.visible and overlay.visible,
+		"First-stage native continue button switches to a separate final destructive overlay")
 	confirmation_input.text = "DELETE ALL DAT"
 	confirmation_input.text_changed.emit(confirmation_input.text)
 	final_button.pressed.emit()
@@ -465,10 +472,13 @@ func _test_delete() -> void:
 	cancel_button.pressed.emit()
 	_check(not overlay.visible and int(client.call("count", "delete_all_data")) == before,
 		"Cancel from final overlay revokes confirmation and keeps data intact")
+	_check(confirmation_input.text.is_empty() and final_button.disabled,
+		"Final-stage Cancel clears typed confirmation and disabled state")
 	button.pressed.emit()
-	confirm.confirmed.emit()
-	confirm.hide()
+	first_continue.pressed.emit()
 	await process_frame
+	_check(confirmation_input.text.is_empty() and final_button.disabled,
+		"Reopened confirmation never retains previously typed content")
 	confirmation_input.text = "DELETE ALL DATA"
 	confirmation_input.text_changed.emit(confirmation_input.text)
 	_check(not final_button.disabled, "Exact DELETE ALL DATA phrase enables final confirmation")
@@ -483,8 +493,7 @@ func _test_delete() -> void:
 	_check(int(client.call("count", "delete_all_data")) == before,
 		"Unauthorized challenge never issues destructive endpoint call")
 	button.pressed.emit()
-	confirm.confirmed.emit()
-	confirm.hide()
+	first_continue.pressed.emit()
 	await process_frame
 	confirmation_input.text = "DELETE ALL DATA"
 	confirmation_input.text_changed.emit(confirmation_input.text)
@@ -503,13 +512,12 @@ func _test_delete() -> void:
 		"ok": false, "status": 503, "error": "database_unavailable", "data": null,
 	}), "Failed deletion can return from the backend")
 	_check(_count_rows() == 1, "Failed deletion preserves existing scores and no false success")
-	var status := _find(board, ["TransferStatus"]) as Label
-	_check(status != null and status.text.contains("failed"),
+	var status := _find(board, ["EmptyNotice"]) as AcceptDialog
+	_check(status != null and status.dialog_text.contains("failed"),
 		"Failed deletion displays failure rather than a destructive success")
 	var before_fetches: int = client.call("count", "get_leaderboard")
 	button.pressed.emit()
-	confirm.confirmed.emit()
-	confirm.hide()
+	first_continue.pressed.emit()
 	await process_frame
 	confirmation_input.text = "DELETE ALL DATA"
 	confirmation_input.text_changed.emit(confirmation_input.text)
@@ -523,8 +531,17 @@ func _test_delete() -> void:
 	}), "Confirmed backend delete response is received")
 	_check(int(client.call("count", "get_leaderboard")) == before_fetches + 1,
 		"Only confirmed deletion refreshes leaderboard state")
-	_check(status.text.contains("Deleted 1 student profiles and 1 saved scores"),
-		"Delete success text appears only after backend confirmation")
+	var success_overlay := _find(board, ["DeleteSuccessOverlay"]) as Control
+	var success_message := _find(board, ["SuccessMessage"]) as Label
+	var success_okay := _find(board, ["SuccessOkayButton"]) as Button
+	_check(success_overlay != null and success_overlay.visible and success_message != null
+		and success_message.text.contains("Deleted 1 student profiles and 1 saved scores")
+		and success_okay != null and not status.visible,
+		"Confirmed backend deletion shows wood-board success with actual counts, not old dark notice")
+	if success_okay != null:
+		success_okay.pressed.emit()
+		_check(not success_overlay.visible and not status.visible,
+			"Custom green OK dismisses completed-delete art without opening the old dialog")
 	_check(int(client.call("mutation_count")) >= 1,
 		"Mock observes endpoint intent without altering any PostgreSQL tables")
 
@@ -641,6 +658,15 @@ func _find(parent: Node, alternatives: Array[String]) -> Node:
 		if node != null:
 			return node
 	return null
+
+
+func _delete_first_button(overlay: Control, caption: String) -> Button:
+	if overlay == null:
+		return null
+	# Captions are baked into the user-supplied original PNG button artwork;
+	# the native Godot buttons intentionally have no text overlay.
+	var node_name := "FirstCancelButton" if caption == "CANCEL" else "FirstContinueButton"
+	return overlay.find_child(node_name, true, false) as Button
 
 
 func _check(condition: bool, description: String) -> void:

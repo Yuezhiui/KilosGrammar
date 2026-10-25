@@ -24,38 +24,40 @@ func _run() -> void:
 	board.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await process_frame
 
-	var original := board.get_node("%DownloadButton") as Button
+	var original := board.get_node_or_null("%DownloadButton") as Button
 	var import_button := board.get_node_or_null("%ImportCsvButton") as Button
 	var export_button := board.get_node_or_null("%ExportCsvButton") as Button
 	var delete_button := board.get_node_or_null("%DeleteAllButton") as Button
 	var imports_dialog := board.get_node_or_null("%ImportCsvDialog") as FileDialog
 	var review_import := board.get_node_or_null("%ImportReviewDialog") as ConfirmationDialog
 	var exports_dialog := board.get_node_or_null("%ExportDatabaseCsvDialog") as FileDialog
-	var first_warning := board.get_node_or_null("%DeleteFirstWarning") as ConfirmationDialog
+	var first_warning := board.get_node_or_null("%DeleteFirstOverlay") as Control
+	var first_cancel := _delete_first_button(first_warning, "CANCEL")
+	var first_continue := _delete_first_button(first_warning, "SHOW FINAL CONFIRMATION")
 	var final_overlay := board.get_node_or_null("%DeleteFinalOverlay") as Control
 	var edit := board.get_node_or_null("%TypedConfirmationEdit") as LineEdit
 	var final_button := board.get_node_or_null("%FinalDeleteButton") as Button
 	var cancel_button := board.get_node_or_null("%FinalCancelButton") as Button
-	var status := board.get_node_or_null("%TransferStatus") as Label
+	var status := board.get_node_or_null("%EmptyNotice") as AcceptDialog
 	var filters := [board.get_node_or_null("%StyleFilter"), board.get_node_or_null("%ModeFilter"), board.get_node_or_null("%DifficultyFilter")]
 	var new_buttons := [import_button, export_button, delete_button]
 	for obsolete in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
 		_check(board.find_child(obsolete, true, false) == null,
 			"FILTERS and popover physically removed: " + obsolete)
-	_check(not original.is_visible_in_tree() and board.has_method("request_filtered_csv_export"),
-		"hidden filtered CSV remains accessible through explicit host API")
+	_check(original == null and board.has_method("request_filtered_csv_export"),
+		"deleted filtered CSV Button leaves explicit host API intact")
 	for item in [import_button, export_button, delete_button]:
 		_check(item is Button and item.is_visible_in_tree(), "permanent native action is visible")
 		_check(item.focus_mode == Control.FOCUS_ALL, "action accessible by keyboard")
 		_check(item.get_global_rect().size.x >= 44.0 and item.get_global_rect().size.y >= 44.0, "button large enough for classroom use")
-	_check(not original.is_visible_in_tree(), "obsolete secondary Download CSV has no visible or clickable hitbox")
+	_check(original == null, "obsolete secondary Download CSV has no node or clickable hitbox")
 	for selector in filters:
 		_check(selector is OptionButton and selector.item_count > 1, "existing leaderboard filter preserved")
 	for i in range(new_buttons.size()):
 		var action := new_buttons[i] as Button
 		for j in range(i + 1, new_buttons.size()):
 			_check(not action.get_global_rect().intersects((new_buttons[j] as Button).get_global_rect()), "new drag/drop action hitboxes do not overlap")
-		_check(not original.is_visible_in_tree(), "new actions are not obscured by hidden filtered Download")
+		_check(original == null, "new actions are not obscured by removed filtered Download")
 		var prior_position: Vector2 = action.position
 		action.position += Vector2(5, 2)
 		await process_frame
@@ -65,9 +67,19 @@ func _run() -> void:
 	_check(imports_dialog.file_mode == FileDialog.FILE_MODE_OPEN_FILE and imports_dialog.access == FileDialog.ACCESS_FILESYSTEM, "Import uses Windows-compatible filesystem open dialog")
 	_check(review_import.ok_button_text == "CONFIRM IMPORT", "import requires a second deliberate confirmation")
 	_check(exports_dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE and exports_dialog.access == FileDialog.ACCESS_FILESYSTEM, "Full export uses Windows-compatible filesystem save dialog")
-	_check(first_warning.dialog_text.contains("ALL student profiles") and first_warning.dialog_text.contains("ALL completed scores"), "stage-one warning explains both deletion scopes")
-	_check(final_overlay.get_node("ConfirmPanel/WarningText").text.contains("ALL STUDENT PROFILES") and final_overlay.get_node("ConfirmPanel/WarningText").text.contains("ALL COMPLETED SCORES"), "stage-two warning repeats irreversible scope")
-	_check(not final_overlay.visible and final_button.disabled, "delete overlay initially hidden and confirmation locked")
+	_check(first_warning != null and first_cancel != null and first_continue != null,
+		"first delete warning uses an editor-authored Control and two real Buttons")
+	_check(board.find_child("DeleteFirstWarning", true, false) == null,
+		"stock first-stage ConfirmationDialog has been removed")
+	_check(_overlay_contains_scope(first_warning, ["ALL", "STUDENT", "SCORE"]),
+		"stage-one warning explains deletion of all student profiles and scores")
+	_check(_overlay_contains_scope(final_overlay, ["ALL STUDENT PROFILES", "ALL COMPLETED SCORES"]),
+		"stage-two warning repeats irreversible scope")
+	_check(not first_warning.visible and not final_overlay.visible and final_button.disabled,
+		"both custom delete overlays start hidden and confirmation locked")
+	if first_cancel == null or first_continue == null or final_button == null:
+		quit(1)
+		return
 
 	board.database_import_csv_requested.connect(func(path: String) -> void: imports.append(path))
 	board.database_export_csv_requested.connect(func(path: String) -> void: exports.append(path))
@@ -78,18 +90,20 @@ func _run() -> void:
 	delete_button.pressed.emit()
 	_check(not imports_dialog.visible and not first_warning.visible, "teacher-only import and delete blocked without authority")
 	_check(imports.is_empty() and deletions.is_empty(), "unauthorized actions emit no database request")
-	first_warning.confirmed.emit()
+	first_continue.pressed.emit()
 	_check(not final_overlay.visible, "forged first-stage confirmation cannot bypass authorization")
 	board.call("_on_final_delete_pressed")
 	_check(deletions.is_empty(), "direct final callback cannot bypass two stages")
 
 	board.set_context({"teacher_authorized": true, "database_connected": true})
 	delete_button.pressed.emit()
-	_check(first_warning.visible, "authorized delete opens stage-one warning")
-	first_warning.canceled.emit()
-	_check(not final_overlay.visible and deletions.is_empty(), "canceling stage one emits no delete")
+	_check(first_warning.visible and not final_overlay.visible,
+		"authorized delete opens custom stage-one warning")
+	first_cancel.pressed.emit()
+	_check(not first_warning.visible and not final_overlay.visible and deletions.is_empty(),
+		"canceling first custom modal emits no delete")
 	delete_button.pressed.emit()
-	first_warning.confirmed.emit()
+	first_continue.pressed.emit()
 	_check(final_overlay.visible and final_button.disabled, "stage two requires typed text")
 	if OS.get_environment("CAPTURE_LEADERBOARD_TRANSFER") == "1" and DisplayServer.get_name() != "headless":
 		await process_frame
@@ -102,12 +116,19 @@ func _run() -> void:
 	_check(final_button.disabled, "partial typed confirmation cannot authorize deletion")
 	board.call("_on_final_delete_pressed")
 	_check(deletions.is_empty(), "direct callback refuses partial confirmation")
+	edit.text = "DELETE ALL DATA "
+	edit.text_changed.emit(edit.text)
+	_check(final_button.disabled and deletions.is_empty(),
+		"trailing whitespace is rejected; exact confirmation phrase is mandatory")
 	cancel_button.pressed.emit()
-	_check(not final_overlay.visible and edit.text.is_empty(), "cancel clears confirmation and closes overlay")
+	_check(not first_warning.visible and not final_overlay.visible and edit.text.is_empty(),
+		"cancel clears confirmation and closes both overlays")
 	board.call("_on_final_delete_pressed")
 	_check(deletions.is_empty(), "post-cancel callback cannot delete")
 	delete_button.pressed.emit()
-	first_warning.confirmed.emit()
+	first_continue.pressed.emit()
+	_check(edit.text.is_empty() and final_button.disabled,
+		"reopened final stage resets typed text and disabled state")
 	edit.text = CONFIRMATION
 	edit.text_changed.emit(edit.text)
 	_check(not final_button.disabled, "exact phrase enables final button only after both stages")
@@ -116,8 +137,13 @@ func _run() -> void:
 	_check(not final_overlay.visible and final_button.disabled, "successful dispatch resets confirmation")
 	final_button.pressed.emit()
 	_check(deletions.size() == 1, "double-click cannot duplicate a delete request")
+	_check(board.get("_transfer_pending"), "final confirmation holds pending-transfer lock until backend reply")
+	delete_button.pressed.emit()
+	first_continue.pressed.emit()
+	_check(deletions.size() == 1 and not first_warning.visible and not final_overlay.visible,
+		"pending transfer blocks reopening either delete modal")
 	board.set_transfer_status("Backend rejected delete: teacher permissions required", false)
-	_check(status.text.contains("Backend rejected") and not board.get("_transfer_pending"), "backend failure status clears pending state")
+	_check(status.dialog_text.contains("Backend rejected") and not board.get("_transfer_pending"), "backend failure appears in notice dialog and clears pending state")
 
 	var csv_header := "student_id,student_name,grade_section,game_style,game_mode,difficulty,score\n"
 	var valid_file := _make_csv("valid", csv_header + "KG-01,Student A,Grade 2,Noun,Seconds,Easy,12\n")
@@ -140,14 +166,15 @@ func _run() -> void:
 	review_import.confirmed.emit()
 	_check(imports == [valid_file] and board.get("_transfer_pending"), "teacher-confirmed CSV dispatched once as selected path")
 	board.set_transfer_pending("Database checking imported rows...")
-	_check(board.get("_transfer_pending") and status.text.contains("checking"), "intermediate import progress does not release pending lock")
+	_check(board.get("_transfer_pending") and not status.dialog_text.contains("Database checking imported rows"),
+		"intermediate import progress holds lock without an obstructing status popup")
 	_check(import_button.disabled and export_button.disabled and delete_button.disabled, "all transfer buttons disabled throughout pending operation")
 	board.set_context({"teacher_authorized": false, "database_connected": false})
 	_check(board.get("_transfer_pending") and import_button.disabled and delete_button.disabled, "health/auth refresh cannot unlock pending operation")
 	imports_dialog.file_selected.emit(import_selected)
 	_check(imports.size() == 1, "pending transfer blocks double-import")
 	board.set_transfer_status("Imported 1 student", true)
-	_check(status.text == "Imported 1 student" and not board.get("_transfer_pending"), "import success status is shown")
+	_check(status.dialog_text == "Imported 1 student" and not board.get("_transfer_pending"), "import success notice shows genuine result")
 	_check(not import_button.disabled and not export_button.disabled and not delete_button.disabled, "transfer buttons recover after completion")
 	board.set_context({"teacher_authorized": false, "database_connected": true})
 	imports_dialog.file_selected.emit(valid_file)
@@ -159,12 +186,13 @@ func _run() -> void:
 	_check(exports_dialog.visible, "Export opens filesystem Save File dialog")
 	exports_dialog.file_selected.emit(export_path)
 	_check(exports == [export_path], "full export emits user path exactly once")
-	_check(status.text.contains("ALL student profiles") and status.text.contains("completed scores"), "full export scope explicitly says ALL records")
+	_check(board.get("_transfer_pending") and exports == [export_path],
+		"full export action requests exactly one full database backup, never a filtered CSV")
 	board.set_transfer_pending("Database assembling complete student backup...")
 	_check(board.get("_transfer_pending"), "intermediate full export progress retains pending lock")
 	_check(not FileAccess.file_exists(export_path), "UI export did not fabricate database output")
 	board.set_transfer_status("Database unavailable: export failed", false)
-	_check(status.text.contains("failed") and not board.get("_transfer_pending"), "failed export displays server error and unlocks UI")
+	_check(status.dialog_text.contains("failed") and not board.get("_transfer_pending"), "failed export notice displays server error and unlocks UI")
 	exports_dialog.file_selected.emit(ProjectSettings.globalize_path("user://bad_export.txt"))
 	_check(exports.size() == 1, "bad extension never reaches backend export")
 
@@ -213,3 +241,26 @@ func _check(passed: bool, description: String) -> void:
 	checks += 1
 	if not passed:
 		issues.append(description)
+
+
+func _delete_first_button(overlay: Control, caption: String) -> Button:
+	if overlay == null:
+		return null
+	# Original reference PNGs contain the wording; these Godot Buttons have
+	# blank text to avoid drawing a duplicate caption over the supplied artwork.
+	var node_name := "FirstCancelButton" if caption == "CANCEL" else "FirstContinueButton"
+	return overlay.find_child(node_name, true, false) as Button
+
+
+func _overlay_contains_scope(overlay: Control, words: Array[String]) -> bool:
+	if overlay == null:
+		return false
+	var texts := ""
+	for child in overlay.find_children("*", "Label", true, false):
+		texts += " " + (child as Label).text.to_upper()
+	for child in overlay.find_children("*", "RichTextLabel", true, false):
+		texts += " " + (child as RichTextLabel).text.to_upper()
+	for word in words:
+		if not texts.contains(word):
+			return false
+	return true

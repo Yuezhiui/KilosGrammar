@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://ui/tutorial/spotlight_overlay.gd" id="1_script"]
 
-[ext_resource type="Texture2D" path="res://Components/TutorialSpotlight/right-arrow.png" id="2_arrow"]
+[ext_resource type="Texture2D" path="res://Components/Tutorial/Spotlight/right-arrow.png" id="2_arrow"]
 
 [ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="3_font"]
 

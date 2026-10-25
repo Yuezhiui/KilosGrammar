@@ -4,7 +4,7 @@ extends SceneTree
 # Godot --path . --rendering-method gl_compatibility --script res://tools/test_human_plane_asset_visual.gd
 # Output files are disposable and may be removed after visual inspection.
 const SCENE := preload("res://ui/minigames/human_plane.tscn")
-const OUTPUT := "res://Components/HumanPlaneAssets/_qa_visual_"
+const OUTPUT := "res://Components/Gameplay/Human Plane/_qa_visual_"
 
 
 func _initialize() -> void:

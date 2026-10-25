@@ -15,9 +15,9 @@ const HUD_PLAQUES: Array[String] = [
 	"LivesPlaque", "PausePlaque", "ScorePlaque",
 ]
 const STATIC_LIVES_PNGS := {
-	1: "res://ui/minigames/catch_hud/generated/replacement/lives_state_1.png",
-	2: "res://ui/minigames/catch_hud/generated/replacement/lives_state_2.png",
-	3: "res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png",
+	1: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png",
+	2: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png",
+	3: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png",
 }
 
 var failures: Array[String] = []
@@ -119,7 +119,7 @@ func _run() -> void:
 					_check(String(game.get("game_mode")) == mode, label + ": chosen mode")
 					_check(String(game.get("selected_map")) == map_name,
 						label + ": requested map was selected")
-					var expected_map := "res://WordCatcherMaps/%sMap.png" % map_name
+					var expected_map := "res://Components/Gameplay/Catch the Word/Maps/%sMap.png" % map_name
 					var actual_map := background.texture.resource_path if background.texture != null else ""
 					_check(actual_map == expected_map, label + ": correct map PNG texture (got " + actual_map + ")")
 					selected_map_paths[actual_map] = true

@@ -2,7 +2,9 @@
 
 Use `cartoon_widgets.gd` to build native controls styled with the
 user-supplied extracted art. All sprites are separate PNGs under
-`ui/redesign/assets/`; no runtime extractor, injected screenshots,
+`Components/<screen>/Redesign/` (such as `Components/Settings/Redesign/`);
+`ui/redesign/assets/` now keeps the extraction scripts and manifests only;
+no runtime extractor, injected screenshots,
 or generated fake art.
 
 Typical scene script:

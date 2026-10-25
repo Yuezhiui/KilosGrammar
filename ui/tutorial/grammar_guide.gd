@@ -56,7 +56,7 @@ func _populate_cards(grid: GridContainer) -> void:
 		visual.custom_minimum_size = Vector2(458, 139)
 		card.add_child(visual)
 		var key := String(item[0]).to_lower()
-		var icon_path := "res://ui/redesign/assets/student/topic_" + key + ".png"
+		var icon_path := "res://Components/Student Setup/Redesign/topic_" + key + ".png"
 		ART.icon(visual, icon_path, Rect2(12, 22, 91, 92))
 		ART.label(visual, item[0], Rect2(110, 12, 335, 38), 19, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
 		ART.label(visual, item[1], Rect2(110, 47, 328, 42), 13, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
@@ -97,7 +97,7 @@ func _build_redesign() -> void:
 		visual.custom_minimum_size = Vector2(458, 139)
 		card.add_child(visual)
 		var key := String(item[0]).to_lower()
-		var icon_path := "res://ui/redesign/assets/student/topic_" + key + ".png"
+		var icon_path := "res://Components/Student Setup/Redesign/topic_" + key + ".png"
 		ART.icon(visual, icon_path, Rect2(12, 22, 91, 92))
 		ART.label(visual, item[0], Rect2(110, 12, 335, 38), 19, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)
 		ART.label(visual, item[1], Rect2(110, 47, 328, 42), 13, ART.INK, HORIZONTAL_ALIGNMENT_LEFT)

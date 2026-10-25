@@ -46,7 +46,7 @@ func _build_ui() -> void:
 	var background := TextureRect.new()
 	background.name = "SetupArtworkBackground"
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.texture = load("res://ui/redesign/assets/student/setup_main_panel.png")
+	background.texture = load("res://Components/Student Setup/Redesign/setup_main_panel.png")
 	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE

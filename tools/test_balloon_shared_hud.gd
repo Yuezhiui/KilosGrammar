@@ -5,8 +5,8 @@ extends SceneTree
 # Godot --headless --path . --script res://tools/test_balloon_shared_hud.gd
 
 const SCENE := preload("res://ui/minigames/balloon_popping.tscn")
-const TIMER := "res://ui/minigames/catch_hud/generated/timer_badge.png"
-const LIVES := "res://ui/minigames/catch_hud/generated/replacement/lives_state_%d.png"
+const TIMER := "res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png"
+const LIVES := "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_%d.png"
 const RESOLUTIONS := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const MODES := ["Seconds", "Lives"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]

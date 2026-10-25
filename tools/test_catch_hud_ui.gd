@@ -5,8 +5,8 @@ extends SceneTree
 # Covers all topics, modes, viewports, characters and map choices.
 
 const SCENE_PATH := "res://ui/minigames/catch_word.tscn"
-const GENERATED_HUD_DIR := "res://ui/minigames/catch_hud/generated/"
-const REFERENCE_PNG_READY := "res://ui/minigames/catch_hud/generated/title_board.png"
+const GENERATED_HUD_DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/"
+const REFERENCE_PNG_READY := "res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png"
 const SIZES: Array[Vector2i] = [
 	Vector2i(1280, 720),
 	Vector2i(1600, 900),
@@ -31,7 +31,7 @@ const STATIC_LIVES := {
 	3: GENERATED_HUD_DIR + "replacement/lives_state_3.png",
 }
 const FALLING_APPLE := GENERATED_HUD_DIR + "character/word_apple.png"
-const CAUGHT_APPLE := "res://Components/Apple.png"
+const CAUGHT_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
 const CHARACTERS: Array[String] = ["Boy", "Girl", "Grandma", "Grandpa"]
 const MAPS: Array[String] = ["City", "Forest", "Mountain"]
 
@@ -134,7 +134,7 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 					_check(plaque.stretch_mode == TextureRect.STRETCH_SCALE,
 						"%s: %s scales the generated bitmap with its layout" % [viewport_size, name])
 				else:
-					_check(path.begins_with("res://ui/minigames/catch_hud/") and path.ends_with(".svg"),
+					_check(path.begins_with("res://Components/Gameplay/Catch the Word/HUD/") and path.ends_with(".svg"),
 						"%s: %s uses the temporary SVG fallback pending PNG pack (got %s)" % [viewport_size, name, path])
 				_check(not plaque_textures.has(path), "%s: %s has its own HUD image" % [viewport_size, name])
 				plaque_textures[path] = true
@@ -343,10 +343,10 @@ func _test_character_and_map_combinations(game: Control, viewport_size: Vector2i
 			_check(String(game.get("selected_map")) == map_name,
 				"%s: requested map is selected" % ctx)
 			_check(backdrop.texture != null and backdrop.texture.resource_path ==
-				"res://WordCatcherMaps/%sMap.png" % map_name,
+				"res://Components/Gameplay/Catch the Word/Maps/%sMap.png" % map_name,
 				"%s: correct separately editable PNG background loaded" % ctx)
-			var expected_body := "res://WordCatcherCharacters/%s BODY.png" % character_name.to_upper()
-			var expected_basket := "res://WordCatcherCharacters/%s BASKET.png" % character_name.to_upper()
+			var expected_body := "res://Components/Gameplay/Catch the Word/Characters/%s BODY.png" % character_name.to_upper()
+			var expected_basket := "res://Components/Gameplay/Catch the Word/Characters/%s BASKET.png" % character_name.to_upper()
 			_check(body.texture != null and body.texture.resource_path == expected_body,
 				"%s: original character BODY PNG loaded even if generated alternative exists" % ctx)
 			_check(basket.texture != null and basket.texture.resource_path == expected_basket,
@@ -386,7 +386,7 @@ func _test_character_and_map_combinations(game: Control, viewport_size: Vector2i
 						"%s: caught apple %d retains its word text" % [ctx, index + 1])
 					_check(apple != null and apple.texture != null
 						and apple.texture.resource_path == CAUGHT_APPLE,
-						"%s: caught apple %d uses ORIGINAL Components/Apple.png" % [ctx, index + 1])
+						"%s: caught apple %d uses ORIGINAL Components/Gameplay/Catch the Word/Items/Apple.png" % [ctx, index + 1])
 			var glossy: Texture2D = game.get("gameplay_apple_texture") as Texture2D
 			_check(glossy != null and glossy.resource_path == FALLING_APPLE,
 				"%s: falling apples use generated glossy word_apple.png" % ctx)

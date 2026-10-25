@@ -38,18 +38,20 @@ func _run() -> void:
 	var focus_style: StyleBoxFlat = play_button.get_theme_stylebox("focus") as StyleBoxFlat
 	if focus_style == null or focus_style.bg_color.a > 0.01 or focus_style.corner_radius_top_left < 8:
 		failures.append("Play focus still has a rectangular opaque background")
-	var settings_button: Button = app.get_node("MainLayer/LeftMenu/Settings")
-	app.call("_show_tooltip", settings_button, "Settings tooltip test")
-	await process_frame
-	var tip: PanelContainer = app.get_node("MainLayer/Tooltip")
-	if not tip.visible or tip.global_position.x < settings_button.get_global_rect().end.x + 18.0:
-		failures.append("Settings tooltip hidden or too close to button")
-	app.call("_hide_tooltip")
-	app.call("_show_tooltip", app.get_node("MainLayer/LeftMenu/Credits"), "Credits tooltip test")
-	await create_timer(0.14).timeout
-	if not tip.visible or not String(app.get_node("MainLayer/Tooltip/Text").text).contains("Credits tooltip"):
-		failures.append("Tooltip disappeared during quick hover change")
-	app.call("_hide_tooltip")
+	# Leaderboard / Settings / Credits still animate on hover, but the old
+	# beige description bubble and native OS tooltip must never appear.
+	if app.get_node_or_null("MainLayer/Tooltip") != null:
+		failures.append("Obsolete Main Menu description popup remains in scene")
+	for name in ["Leaderboard", "Settings", "Credits"]:
+		var button := app.get_node("MainLayer/LeftMenu/" + name) as Button
+		if not button.tooltip_text.is_empty():
+			failures.append(name + " still has a native hover tooltip")
+		button.mouse_entered.emit()
+		await create_timer(0.16).timeout
+		if button.scale.x <= 1.0:
+			failures.append(name + " lost its original hover animation")
+		button.mouse_exited.emit()
+		await create_timer(0.22).timeout
 	app.get_node("MainLayer/CenterMenu/Play").emit_signal("pressed")
 	await process_frame
 	_assert_route(app, "student_setup", "Main Panel Play button -> Student Setup")

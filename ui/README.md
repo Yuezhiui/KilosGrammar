@@ -44,7 +44,7 @@ used throughout; no custom cat-shaped pointer overlays the UI.
   regions are the fallback targets if an element is unavailable. Runtime
   movement of the highlight does **not** override your saved editor layout.
 - The owner's arrow is copied unchanged to
-  `res://Components/TutorialSpotlight/right-arrow.png`. Swap this Texture2D
+  `res://Components/Tutorial/Spotlight/right-arrow.png`. Swap this Texture2D
   directly on an Arrow `TextureRect` in the scene; do not change it in Downloads.
 - `res://ui/play/guided_countdown.tscn` is the editor-authored 3–2–1 overlay.
   The actual minigame remains frozen until after the countdown; camera
@@ -132,9 +132,9 @@ discard the suspended scene instead of letting it run in the background.
 Open `res://ui/minigames/catch_word.tscn` in the Godot 2D editor:
 
 - `Background` is the editable full-screen map TextureRect. The active map
-  texture is randomized on a new run from `res://WordCatcherMaps/`.
+  texture is randomized on a new run from `res://Components/Gameplay/Catch the Word/Maps/`.
 - `CharacterRig/Body` and `CharacterRig/Basket` are independent Sprite2D
-  layers driven by the matching images under `res://WordCatcherCharacters/`.
+  layers driven by the matching images under `res://Components/Gameplay/Catch the Word/Characters/`.
 - `CharacterRig/CollectedWords` sits behind Basket and displays up to three
   collected word cards; `FallingWordLayer` holds active falling words.
 - `HUDLayer/HUD` contains editor-adjustable labels and Pause/Finish buttons.

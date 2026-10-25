@@ -21,6 +21,7 @@ const LANE_COLORS := [PURPLE, MINT, BLUE]
 const LANE_NAMES := ["LEFT", "CENTER", "RIGHT"]
 const SECONDS_ROUND_DURATION := 60.0
 const LIVES_ROUND_ALLOWANCE := 3
+const POINTS_PER_CORRECT_GATE := 100
 # Show the next question shortly after crossing the answer line. It glides
 # toward the player at a slower distant pace, then continues at normal pace
 # after handoff. Keeping the same Control nodes avoids teleporting sprites.
@@ -37,17 +38,17 @@ const BODY_MAX_MOTION_STEP := 0.10
 # Reuse Catch the Word's original LivesPlaque as a mode-specific alternative
 # to its TimerPlaque. The scene-authored Catch HUD positions are never moved.
 const LIVES_PLAQUE_STATES := {
-	0: preload("res://ui/minigames/catch_hud/generated/lives_badge.png"),
-	1: preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_1.png"),
-	2: preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_2.png"),
-	3: preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png")
+	0: preload("res://Components/Gameplay/Catch the Word/HUD/generated/lives_badge.png"),
+	1: preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png"),
+	2: preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png"),
+	3: preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png")
 }
 
 const DIFFICULTY_CONFIG := {
 	# Calm, readable waves with meaningful yet controlled difficulty progression.
-	"Easy": {"waves": 12, "gate_speed": 0.20, "inter_wave_delay": 0.62, "bonus": 0},
-	"Normal": {"waves": 14, "gate_speed": 0.27, "inter_wave_delay": 0.46, "bonus": 20},
-	"Hard": {"waves": 16, "gate_speed": 0.34, "inter_wave_delay": 0.34, "bonus": 40},
+	"Easy": {"waves": 12, "gate_speed": 0.20, "inter_wave_delay": 0.62},
+	"Normal": {"waves": 14, "gate_speed": 0.27, "inter_wave_delay": 0.46},
+	"Hard": {"waves": 16, "gate_speed": 0.34, "inter_wave_delay": 0.34},
 }
 
 const FALLBACK_WORDS := {
@@ -574,10 +575,8 @@ func _resolve_at_answer_line() -> void:
 	if selected_was_correct:
 		correct_count += 1
 		streak += 1
-		var config: Dictionary = DIFFICULTY_CONFIG[difficulty]
-		var gained := 100 + int(config["bonus"]) + maxi(streak - 1, 0) * 10
-		score += gained
-		feedback_text = "+%d  CORRECT!" % gained
+		score += POINTS_PER_CORRECT_GATE
+		feedback_text = "+%d  CORRECT!" % POINTS_PER_CORRECT_GATE
 		feedback_color = GREEN
 	elif selected_lane >= 0:
 		streak = 0

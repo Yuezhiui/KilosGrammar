@@ -7,15 +7,15 @@ extends SceneTree
 # heart-panel PNGs (1/2/3 lives), with no objective plaque or feedback UI.
 
 const SCENE := "res://ui/minigames/catch_word.tscn"
-const ART := "res://ui/minigames/catch_hud/generated/"
-const OLD_CHAR := "res://WordCatcherCharacters/"
-const OLD_BASKET_APPLE := "res://Components/Apple.png"
+const ART := "res://Components/Gameplay/Catch the Word/HUD/generated/"
+const OLD_CHAR := "res://Components/Gameplay/Catch the Word/Characters/"
+const OLD_BASKET_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
 const NEW_FALLING_APPLE := ART + "character/word_apple.png"
 const HEART_STATE_DIR := ART + "replacement/"
 const HEART_STATE_PATHS := {
-	1: "res://ui/minigames/catch_hud/generated/replacement/lives_state_1.png",
-	2: "res://ui/minigames/catch_hud/generated/replacement/lives_state_2.png",
-	3: "res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png",
+	1: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png",
+	2: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png",
+	3: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png",
 }
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
@@ -252,7 +252,7 @@ func _check_falling_and_basket_apples(game: Control, physical_size: Vector2i) ->
 	for index in range(caught_layer.get_child_count()):
 		var apple := caught_layer.get_child(index) as TextureRect
 		_check(apple != null and _texture_path(apple.texture) == OLD_BASKET_APPLE,
-			"%s: caught apple %d MUST use original Components/Apple.png (actual %s)" %
+			"%s: caught apple %d MUST use original Components/Gameplay/Catch the Word/Items/Apple.png (actual %s)" %
 			[physical_size, index + 1, _texture_path(apple.texture) if apple != null else "missing"])
 		_check(apple != null and apple.get_child_count() > 0
 			and apple.get_child(0) is Label,

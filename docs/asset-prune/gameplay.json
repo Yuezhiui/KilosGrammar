@@ -1,0 +1,754 @@
+{
+  "scope": "Components/Gameplay/**",
+  "status": "completed",
+  "baseline": {
+    "artwork": 102,
+    "sidecars": 102,
+    "source_json": 0
+  },
+  "deleted_artwork_count": 37,
+  "deleted_sidecar_count": 37,
+  "worker_audit_snapshot": "These counts and the 37 hashed entries below record worker-2's initial, independently verified deletion pass; the two additional final-pass removals appear under post_audit_deletions below.",
+  "post_audit_deletions": [
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Balloons/red.png",
+      "import": "res://Components/Gameplay/Balloon Popping/Balloons/red.png.import",
+      "reason": "Later prime audit verified this color is not loaded by the currently implemented balloon game, scripts, scenes, tests or image constructors; active balloon colors are blue, green and purple."
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/CAT MEOW.png",
+      "import": "res://Components/Gameplay/Calibration/CAT MEOW.png.import",
+      "reason": "Later prime audit verified no runtime or scene use; the sole remaining consumer was an outdated test-only static expected-image list, which was changed to cover live calibration art."
+    }
+  ],
+  "final_total_deleted_artwork": 39,
+  "final_total_deleted_sidecars": 39,
+  "final_artwork_remaining": 63,
+  "final_sidecars_remaining": 63,
+  "deleted_bytes": 20489498,
+  "categories": {
+    "byte_identical_legacy_backup": 14,
+    "obsolete_reference_panel": 3,
+    "superseded_character_experiment": 8,
+    "unused_replaced_objective_panel": 1,
+    "unused_vector_variant_not_read_by_build_or_scene": 11
+  },
+  "deletions": [
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Background/Previous Root Copies/0826b13c-250f-42e1-9398-a83d2922a1d8.png",
+      "import": "res://Components/Gameplay/Balloon Popping/Background/Previous Root Copies/0826b13c-250f-42e1-9398-a83d2922a1d8.png.import",
+      "sha256": "2a4d2fa0815477b81131816fce67a4a5b3435bbee8273fbfd8f6a75df55c8eb6",
+      "bytes": 1588884,
+      "uid": "uid://dn87xkpkl38ek",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Background/Previous Root Copies/95ae2a22-302d-48f7-9b5f-e12b0104c822.png",
+      "import": "res://Components/Gameplay/Balloon Popping/Background/Previous Root Copies/95ae2a22-302d-48f7-9b5f-e12b0104c822.png.import",
+      "sha256": "7802188d9aae555d561c04096c0f2eb03614f0398c0e3e8a2b9a4a3d1d89d92c",
+      "bytes": 1300258,
+      "uid": "uid://b1ubgpxts2uhf",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Balloons/Previous Root Copies/BlueBalloon.png",
+      "import": "res://Components/Gameplay/Balloon Popping/Balloons/Previous Root Copies/BlueBalloon.png.import",
+      "sha256": "b0fc246e3a5e4cc911b8dee14b1d6546ce7e58a77634c04d135fad2540ba2c9b",
+      "bytes": 53576,
+      "uid": "uid://b4n7p2mfhg3ks",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Balloons/Previous Root Copies/GreenBalloon.png",
+      "import": "res://Components/Gameplay/Balloon Popping/Balloons/Previous Root Copies/GreenBalloon.png.import",
+      "sha256": "5aaff5fe31b95b2e9cf8a14ef0aa8b944bc9f8a2f854e4c83c1a4812c802f0df",
+      "bytes": 61475,
+      "uid": "uid://ci6qd25c0aawd",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Balloons/Previous Root Copies/PurpleBalloon.png",
+      "import": "res://Components/Gameplay/Balloon Popping/Balloons/Previous Root Copies/PurpleBalloon.png.import",
+      "sha256": "891e90d09a33cdb02994dfa3478b5be9860622baf957d5234c477f4ebbe30063",
+      "bytes": 63512,
+      "uid": "uid://c61404gnbixgy",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Balloons/Previous Root Copies/RedBalloon.png",
+      "import": "res://Components/Gameplay/Balloon Popping/Balloons/Previous Root Copies/RedBalloon.png.import",
+      "sha256": "c3870bda5b244d2d9b5569b7f026017e6c41b24674a626cc643369af17cef3bc",
+      "bytes": 68889,
+      "uid": "uid://bdjlt6ighoq8p",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/boy_basket_hands.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Generated/boy_basket_hands.png.import",
+      "sha256": "7053397375115a54b9f82fd2300bd50e93fb1c901c92d4cffa4acb948dae62c6",
+      "bytes": 377773,
+      "uid": "uid://ba05ommcn3388",
+      "reason": "superseded_character_experiment",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/boy_body.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Generated/boy_body.png.import",
+      "sha256": "03d82b16595bc374ffb42ea1683d44b941a2ba21b386cb78e2409d28f79e55c2",
+      "bytes": 336705,
+      "uid": "uid://bnl8he4ipwp1f",
+      "reason": "superseded_character_experiment",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/girl_basket_hands.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Generated/girl_basket_hands.png.import",
+      "sha256": "70073a891cceb7fa90ee906f37e7230dd7fc0159399a940fcecebee8c362b768",
+      "bytes": 1855294,
+      "uid": "uid://bawstnc4imamp",
+      "reason": "superseded_character_experiment",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/girl_body.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Generated/girl_body.png.import",
+      "sha256": "2649ec32cf9d6b918c35921c32cd0f6dcae36ceec00c08bdf34954fcd346af3e",
+      "bytes": 1104490,
+      "uid": "uid://decgjpx0jysg3",
+      "reason": "superseded_character_experiment",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/grandma_basket_hands.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Generated/grandma_basket_hands.png.import",
+      "sha256": "0128cfd0561b0620c0dcd8fa232b90f0e330db3d5a950ff6555099fed654a501",
+      "bytes": 1762269,
+      "uid": "uid://bhu2cix48ifc5",
+      "reason": "superseded_character_experiment",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/grandma_body.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Generated/grandma_body.png.import",
+      "sha256": "267ed66df0c9360fadc2914e229dfbc3b7515a8e0993c11bceb80a650a385749",
+      "bytes": 1100018,
+      "uid": "uid://b8lr05wqka30k",
+      "reason": "superseded_character_experiment",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/grandpa_basket_hands.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Generated/grandpa_basket_hands.png.import",
+      "sha256": "7d1af2f318a6e9d98da90e856b0d27234ad6b81cbab66b6b45692d53bf579348",
+      "bytes": 1688810,
+      "uid": "uid://cowod68stjqce",
+      "reason": "superseded_character_experiment",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/grandpa_body.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Generated/grandpa_body.png.import",
+      "sha256": "4840288180d1c9522a8cdbfc1f9c82b8d38f42dc01d0fa4d4c0f81cd0369145c",
+      "bytes": 1114895,
+      "uid": "uid://nwk1f2fgyofh",
+      "reason": "superseded_character_experiment",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/BOY BASKET.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/BOY BASKET.png.import",
+      "sha256": "a32c10b0d1e28d52721be768ca4d5fda5dd78a221689101e4378eb171e6b67bd",
+      "bytes": 454701,
+      "uid": "uid://dr6ueuypuy7ip",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/BOY BODY.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/BOY BODY.png.import",
+      "sha256": "05919cc87f240518cdb01ac4e1eccd8a133c5d189aa4812218c71f6d3d5e8a31",
+      "bytes": 601544,
+      "uid": "uid://0ef0gt0ey7x7",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GIRL BASKET.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GIRL BASKET.png.import",
+      "sha256": "547d041e26a29022f27ec59f942940b5db450bbcd157cbc317e1de7b4d9e3aa0",
+      "bytes": 465390,
+      "uid": "uid://ck2txldccqs38",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GIRL BODY.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GIRL BODY.png.import",
+      "sha256": "f2315213220737922594eac8af59d5518b35f6231a6c9985bcf40fe9c24458e6",
+      "bytes": 569629,
+      "uid": "uid://dgw8tjcfu2f37",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GRANDMA BASKET.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GRANDMA BASKET.png.import",
+      "sha256": "097d2b341ed990c95931193bd723de38c9c38dacc029d606636a6624356e370d",
+      "bytes": 449452,
+      "uid": "uid://criua8ugdf8h7",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GRANDMA BODY.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GRANDMA BODY.png.import",
+      "sha256": "70fef7a212fe1f6e04d9fc9caddb98a7cf794b2c465f305b24d9503899087e0e",
+      "bytes": 548893,
+      "uid": "uid://cing6ur6kryby",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GRANDPA BASKET.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GRANDPA BASKET.png.import",
+      "sha256": "25f3faf601e957176cbbdb44d74bde643a2e7200adb4ebddf729fbff23be9ed1",
+      "bytes": 462988,
+      "uid": "uid://cse3xmedg6rpk",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GRANDPA BODY.png",
+      "import": "res://Components/Gameplay/Catch the Word/Characters/Previous Root Copies/GRANDPA BODY.png.import",
+      "sha256": "a46c5e5058078f8e9e0e523ff899c165b7d68f89d5b01b1ada6e29bd91205e57",
+      "bytes": 493202,
+      "uid": "uid://bwlk7y2tnp540",
+      "reason": "byte_identical_legacy_backup",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/objective_banner.png",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/generated/objective_banner.png.import",
+      "sha256": "4df25a8417f8786dd877af839d40f59a79f7475debcbe332672e62162edce77f",
+      "bytes": 225982,
+      "uid": "uid://ic5yrgbc0s7u",
+      "reason": "unused_replaced_objective_panel",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/hearts_1_reference.png",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/hearts_1_reference.png.import",
+      "sha256": "7be5afa8c885a6236249f1749a0fbfbe7568f1f2dfeaba4b38c78f6991c33f9a",
+      "bytes": 1236718,
+      "uid": "uid://dl6klek5u0vgu",
+      "reason": "obsolete_reference_panel",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/hearts_2_reference.png",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/hearts_2_reference.png.import",
+      "sha256": "ddf7efa45658a743f71adf0bf89e90b3a8d33a4dfb2dbc0984dfe6d9acd7774b",
+      "bytes": 1239399,
+      "uid": "uid://dif0imupmairp",
+      "reason": "obsolete_reference_panel",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/hearts_3_reference.png",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/hearts_3_reference.png.import",
+      "sha256": "2948769b95ec0bf1f144014638aa87d189f725fec4bce1c0a409da78c181083f",
+      "bytes": 1244837,
+      "uid": "uid://cfcy7o13uukmj",
+      "reason": "obsolete_reference_panel",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/lives_badge.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/lives_badge.svg.import",
+      "sha256": "b0be9ff25613590ec6455c2b905b337097ab119b0d39aa63d99277351718bf6d",
+      "bytes": 837,
+      "uid": "uid://dnpapiu14jpmh",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/objective_banner.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/objective_banner.svg.import",
+      "sha256": "d2c1538ef6421639cf08987155a715adff4bd4624e1878b224213d4f2d76e5cb",
+      "bytes": 1788,
+      "uid": "uid://4t4dhcw5xpg8",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/pause_badge.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/pause_badge.svg.import",
+      "sha256": "e76695e75592ce23bdcd168ca3ae29add5bfeaab4949d2ad8780055e0b1cbcc7",
+      "bytes": 1336,
+      "uid": "uid://dvn8edcbox70f",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/score_board.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/score_board.svg.import",
+      "sha256": "c5ace9a40ac942787dc859f01c0b55e321fa3541454ceffe2c4978564f0a3dfe",
+      "bytes": 2273,
+      "uid": "uid://c22yyq1isfk5y",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/timer_badge.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/timer_badge.svg.import",
+      "sha256": "08f319cdd5179f6bcca9a76f64a10c7843ac5222da8eba61845a8e47e867c66d",
+      "bytes": 1553,
+      "uid": "uid://bqophm0n48lt1",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/title_board.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/title_board.svg.import",
+      "sha256": "dd7f69e21c34c1e71361a579600591293132777eb574383f7fb4f469cb8f8283",
+      "bytes": 2897,
+      "uid": "uid://ba0egyk7wwqhb",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/topics/adjective.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/topics/adjective.svg.import",
+      "sha256": "bc02a552b1200edf4e22c6edb9733021bb3d879d9f6283b3cfd43229bb5bad14",
+      "bytes": 1888,
+      "uid": "uid://4gmhaj11i0af",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/topics/adverb.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/topics/adverb.svg.import",
+      "sha256": "7121493b75a7bf625478b4c7d5d6dff1e12653cfde6bf67357a593a251960ab5",
+      "bytes": 1947,
+      "uid": "uid://bnnfakjawbev6",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/topics/noun.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/topics/noun.svg.import",
+      "sha256": "4d692421a41d685ac3ac665a0f073af728cfec4bc2f59ffa4c728bc4004d23f7",
+      "bytes": 1796,
+      "uid": "uid://x4n5r8cw0h21",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/topics/pronoun.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/topics/pronoun.svg.import",
+      "sha256": "2e8744912cd033fda40ee7e30bf8c1387ea6d1b424e9da246b1883ec5d11b2d6",
+      "bytes": 1880,
+      "uid": "uid://c6hfjb6jkjjlv",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/topics/verb.svg",
+      "import": "res://Components/Gameplay/Catch the Word/HUD/topics/verb.svg.import",
+      "sha256": "093ac15683251c5e95b69bae2c50f643d7ef69dfd274e1e8998999d31768f15a",
+      "bytes": 1720,
+      "uid": "uid://tbbjgt8rh02h",
+      "reason": "unused_vector_variant_not_read_by_build_or_scene",
+      "verification": "zero current literal res:// path or uid:// consumer, after excluding own import and historical migration records"
+    }
+  ],
+  "retained_artwork_count": 63,
+  "retained": [
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/balloon_blue.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/balloon_green.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/balloon_purple.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/cannon_front.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/contact_sheet.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/objective_panel.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/prompt_blank.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/score_plaque_blank.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Art/reference/title_marquee.png",
+      "reason": "Retained: runtime CARNIVAL_ART filename composition and/or original artwork extraction source"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Background/0826b13c-250f-42e1-9398-a83d2922a1d8.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Background/95ae2a22-302d-48f7-9b5f-e12b0104c822.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Balloons/blue.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Balloons/green.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Balloons/purple.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Effects/Pop.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Balloon Popping/Launcher/Gun.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/1.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/2.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/3.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/ARROW.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/BACK.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/BACKGROUND.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/BORDER.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/MOVE TO HIGHLIGHTED AREA.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/PARAMETERS.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/STARS.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/STAY IN THE CENTER.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/STAY OF THE LEFT.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/STAY ON THE RIGHT.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/STEP 1.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/STEP 2.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Calibration/STEP 3.png",
+      "reason": "Retained: calibration scene or checksum/source-pack QA"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/BOY BASKET.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/BOY BODY.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/GIRL BASKET.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/GIRL BODY.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/GRANDMA BASKET.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/GRANDMA BODY.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/GRANDPA BASKET.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Characters/GRANDPA BODY.png",
+      "reason": "Retained: live character or generated falling apple"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/lives_badge.png",
+      "reason": "Retained: live HUD or fallback/reference validated by scripts and tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/pause_badge.png",
+      "reason": "Retained: live HUD or fallback/reference validated by scripts and tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png",
+      "reason": "Retained: live HUD or fallback/reference validated by scripts and tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png",
+      "reason": "Retained: live HUD or fallback/reference validated by scripts and tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png",
+      "reason": "Retained: live HUD or fallback/reference validated by scripts and tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/score_board.png",
+      "reason": "Retained: live HUD or fallback/reference validated by scripts and tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png",
+      "reason": "Retained: live HUD or fallback/reference validated by scripts and tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png",
+      "reason": "Retained: live HUD or fallback/reference validated by scripts and tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Items/Apple.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Maps/CityMap.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Maps/ForestMap.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Catch the Word/Maps/MountainMap.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Controls/pause_white.svg",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Controls/play_white.svg",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Human Plane/BACKGROUND.png",
+      "reason": "Retained: Human Plane scene and exact artwork regression tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Human Plane/human_plane_gate_blue_RIGHT.png",
+      "reason": "Retained: Human Plane scene and exact artwork regression tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Human Plane/human_plane_gate_green_CENTER.png",
+      "reason": "Retained: Human Plane scene and exact artwork regression tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Human Plane/human_plane_gate_purple_LEFT.png",
+      "reason": "Retained: Human Plane scene and exact artwork regression tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Human Plane/PLANE.png",
+      "reason": "Retained: Human Plane scene and exact artwork regression tests"
+    },
+    {
+      "asset": "res://Components/Gameplay/Shared/Hearts/HeartBlack.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Shared/Hearts/HeartRed.png",
+      "reason": "Retained: active gameplay scene/script/test dependency"
+    },
+    {
+      "asset": "res://Components/Gameplay/Unsorted User Uploads/5e404e45-74fb-4f27-b5e9-eaf8aadb98e3.png",
+      "reason": "Retained: untracked user-uploaded artwork, ownership uncertain"
+    }
+  ],
+  "retained_rationale": [
+    "Live .gd/.tscn/.tres and test references, import UIDs, dynamic CARNIVAL_ART, map and character name construction",
+    "Human Plane originals preserve source pixels; the older CAT MEOW and alternate red balloon were removed after a separate prime audit",
+    "Do not remove the untracked user image or original reference contact sheet/cannon needed for reproduction"
+  ],
+  "notes": [
+    "Historical docs/asset-migration/*.json may retain paths to pruned files as migration history; not runtime references.",
+    "No generated/source JSON files existed inside Components/Gameplay at audit time.",
+    "No production .gd/.tscn/.tres/.py or tests are edited.",
+    "Godot tests must run after removals; results appended later.",
+    "Catch word-apple PNG is retained under res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png, which the live catch_word.gd loads dynamically. Several legacy tests still hardcode its former HUD/generated/character location.",
+    "Existing calibration overlay test issues and Catch clipping/old projectile fixture issues were not caused by these deletions. Worker-2 made no production scene/script changes; the prime subsequently updated the calibration test-only asset fixture."
+  ],
+  "validation": {
+    "editor_import": {
+      "exit_code": 0,
+      "parse_or_import_errors": 0,
+      "details": "Godot 4.7.2 --headless --editor --path . --import"
+    },
+    "resource_integrity": {
+      "snapshot": "Worker-2 earlier validated 65 images before the separate prime removal of two additional source assets; final totals of 63 appear above and in verification_files.",
+      "images_remaining": 65,
+      "imports_remaining": 65,
+      "all_import_sources_match": true,
+      "unique_import_uids": 65,
+      "missing_deleted_paths": 0,
+      "json_files_inside_gameplay": 0
+    },
+    "passed_tests": [
+      {
+        "name": "test_minigames.gd",
+        "checks": 88
+      },
+      {
+        "name": "test_catch_spawn_hud_safety.gd",
+        "status": "pass"
+      },
+      {
+        "name": "test_catch_duplicate_labels.gd",
+        "checks": 1151
+      },
+      {
+        "name": "test_balloon_smooth_reveal.gd",
+        "checks": 388
+      },
+      {
+        "name": "test_balloon_hand_raise_gesture.gd",
+        "checks": 161
+      },
+      {
+        "name": "test_balloon_fixed_score_speed.gd",
+        "checks": 180
+      },
+      {
+        "name": "test_balloon_shared_hud.gd",
+        "checks": 2466
+      },
+      {
+        "name": "test_human_plane_continuous_flight.gd",
+        "checks": 1212
+      },
+      {
+        "name": "test_human_plane_visual_gate_depth.gd",
+        "checks": 368
+      },
+      {
+        "name": "test_human_plane_assets_pose.gd",
+        "checks": 107
+      },
+      {
+        "name": "test_catch_three_apple_waves.gd",
+        "checks": 10200
+      }
+    ],
+    "failing_tests_not_attributed_to_asset_deletion": [
+      {
+        "name": "test_asset_cleanup_integrity.gd",
+        "failures": 2,
+        "checks": 651,
+        "reason": "Pre-existing temporary PNG ui/secondary/_tmp_leaderboard_delete_compare.png outside Components; delete overlay initial visibility. All 29 scenes loaded, texture deps 148; zero missing resource paths or IDs."
+      },
+      {
+        "name": "test_catch_clean_hud.gd",
+        "failures": 160,
+        "checks": 4818,
+        "reason": "Legacy fixture expects HUD/generated/character/word_apple.png; active game correctly loads Characters/Generated/word_apple.png (preserved)."
+      },
+      {
+        "name": "test_catch_png_assets.gd",
+        "failures": 1,
+        "checks": 86,
+        "reason": "Legacy FALLING_APPLE expected HUD/generated/character/word_apple.png; game uses Characters/Generated/word_apple.png."
+      },
+      {
+        "name": "test_calibration_assets_layering.gd",
+        "failures": 21,
+        "checks": 559,
+        "reason": "Artwork presentation/overlay expectations including CAT MEOW scene node and guide visibility; calibration artwork assets retained."
+      },
+      {
+        "name": "test_art_scenes.gd",
+        "status": "fail",
+        "reason": "Previously known old projectile stone/gesture collision fixture assumptions."
+      },
+      {
+        "name": "test_catch_hud_ui.gd",
+        "failures": 91,
+        "checks": 2958,
+        "reason": "Previously known character clipping/framing (not removed art)."
+      },
+      {
+        "name": "test_catch_revert_hud.gd",
+        "failures": 5,
+        "checks": 620,
+        "reason": "Legacy word_apple.png original HUD/generated/character path assertions."
+      }
+    ],
+    "no_live_database_calls": true,
+    "no_production_code_or_scene_changes_by_worker": true
+  },
+  "verification_files": {
+    "artwork_remaining": 63,
+    "sidecars_remaining": 63,
+    "deleted_artwork_absent": 39,
+    "deleted_sidecars_absent": 39,
+    "orphan_imports": 0,
+    "missing_retained_artwork": 0
+  }
+}

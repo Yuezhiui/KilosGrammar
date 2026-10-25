@@ -6,14 +6,14 @@ const UI = preload("res://ui/play/play_ui.gd")
 const TITLE_FONT: Font = preload("res://assets/fonts/TitanOne-Regular.ttf")
 const GRAMMAR_BANK_PATH := "res://ui/minigames/grammar_bank.gd"
 
-const APPLE_TEXTURE: Texture2D = preload("res://Components/Apple.png")
-const HEART_RED: Texture2D = preload("res://Components/HeartRed.png")
-const HEART_BLACK: Texture2D = preload("res://Components/HeartBlack.png")
-const PAUSE_ICON: Texture2D = preload("res://assets/icons/pause_white.svg")
-const PLAY_ICON: Texture2D = preload("res://assets/icons/play_white.svg")
-const REFERENCE_PNG_DIR := "res://ui/minigames/catch_hud/generated/"
-const REFERENCE_BOY_DIR := "res://ui/minigames/catch_hud/generated/character/"
-const LIVES_STATE_DIR := "res://ui/minigames/catch_hud/generated/replacement/"
+const APPLE_TEXTURE: Texture2D = preload("res://Components/Gameplay/Catch the Word/Items/Apple.png")
+const HEART_RED: Texture2D = preload("res://Components/Gameplay/Shared/Hearts/HeartRed.png")
+const HEART_BLACK: Texture2D = preload("res://Components/Gameplay/Shared/Hearts/HeartBlack.png")
+const PAUSE_ICON: Texture2D = preload("res://Components/Gameplay/Controls/pause_white.svg")
+const PLAY_ICON: Texture2D = preload("res://Components/Gameplay/Controls/play_white.svg")
+const REFERENCE_PNG_DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/"
+const REFERENCE_BOY_DIR := "res://Components/Gameplay/Catch the Word/Characters/Generated/"
+const LIVES_STATE_DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/"
 const HUD_DESIGN_SIZE := Vector2(1280.0, 720.0)
 const HUD_INK := Color("#57321F")
 
@@ -42,35 +42,36 @@ const BODY_FOLLOW_SPEED := 10.0
 const CHARACTER_NODES := ["Boy", "Girl", "Grandma", "Grandpa"]
 const COLLECTED_WORD_LIMIT := 3
 const SECONDS_ROUND_DURATION := 60.0
+const CORRECT_ANSWER_POINTS := 100
 
 const MAP_ASSETS := {
-	"City": "res://WordCatcherMaps/CityMap.png",
-	"Forest": "res://WordCatcherMaps/ForestMap.png",
-	"Mountain": "res://WordCatcherMaps/MountainMap.png"
+	"City": "res://Components/Gameplay/Catch the Word/Maps/CityMap.png",
+	"Forest": "res://Components/Gameplay/Catch the Word/Maps/ForestMap.png",
+	"Mountain": "res://Components/Gameplay/Catch the Word/Maps/MountainMap.png"
 }
 
 const CHARACTER_ASSETS := {
 	"Boy": {
-		"body": "res://WordCatcherCharacters/BOY BODY.png",
-		"basket": "res://WordCatcherCharacters/BOY BASKET.png",
+		"body": "res://Components/Gameplay/Catch the Word/Characters/BOY BODY.png",
+		"basket": "res://Components/Gameplay/Catch the Word/Characters/BOY BASKET.png",
 		"body_bbox": Rect2(97, 125, 748, 1547),
 		"basket_bbox": Rect2(11, 890, 920, 459)
 	},
 	"Girl": {
-		"body": "res://WordCatcherCharacters/GIRL BODY.png",
-		"basket": "res://WordCatcherCharacters/GIRL BASKET.png",
+		"body": "res://Components/Gameplay/Catch the Word/Characters/GIRL BODY.png",
+		"basket": "res://Components/Gameplay/Catch the Word/Characters/GIRL BASKET.png",
 		"body_bbox": Rect2(106, 130, 722, 1542),
 		"basket_bbox": Rect2(8, 878, 920, 459)
 	},
 	"Grandma": {
-		"body": "res://WordCatcherCharacters/GRANDMA BODY.png",
-		"basket": "res://WordCatcherCharacters/GRANDMA BASKET.png",
+		"body": "res://Components/Gameplay/Catch the Word/Characters/GRANDMA BODY.png",
+		"basket": "res://Components/Gameplay/Catch the Word/Characters/GRANDMA BASKET.png",
 		"body_bbox": Rect2(94, 125, 750, 1547),
 		"basket_bbox": Rect2(8, 870, 923, 448)
 	},
 	"Grandpa": {
-		"body": "res://WordCatcherCharacters/GRANDPA BODY.png",
-		"basket": "res://WordCatcherCharacters/GRANDPA BASKET.png",
+		"body": "res://Components/Gameplay/Catch the Word/Characters/GRANDPA BODY.png",
+		"basket": "res://Components/Gameplay/Catch the Word/Characters/GRANDPA BASKET.png",
 		"body_bbox": Rect2(97, 130, 743, 1542),
 		"basket_bbox": Rect2(10, 873, 918, 456)
 	}
@@ -103,6 +104,14 @@ const APPLES_PER_WAVE := 3
 const WAVE_CLEAR_SECONDS := 0.75
 const WAVE_SPEED_GAIN := 0.045
 const WAVE_MAX_SPEED_MULTIPLIER := 1.55
+# Difficulty affects how quickly the word apples fall, never how many points
+# a correct catch earns. Preserve the existing 105/185/245 px/s pacing.
+const BASE_EASY_FALL_SPEED := 105.0
+const DIFFICULTY_SPEED_MULTIPLIER := {
+	"Easy": 1.0,
+	"Normal": 185.0 / 105.0,
+	"Hard": 245.0 / 105.0
+}
 const CATCH_VOICE_DIR := "res://assets/audio/catch_voice/"
 const POSITIVE_VOICE_CUES := ["GoodJob.mp3", "niceee.mp3", "Awesome.mp3", "Perfect.mp3", "You Nailed it.mp3"]
 const NEGATIVE_VOICE_CUES := ["Awww.mp3", "Wrong Answer.mp3", "You Missed.mp3"]
@@ -571,16 +580,8 @@ func _apply_difficulty() -> void:
 		default_duration = float(context.get("time_remaining", 999.0))
 		default_lives = int(context.get("lives", default_lives))
 
-	match difficulty:
-		"Hard":
-			spawn_interval = 0.0
-			base_fall_speed = 245.0
-		"Normal":
-			spawn_interval = 0.0
-			base_fall_speed = 185.0
-		_:
-			spawn_interval = 0.0
-			base_fall_speed = 105.0
+	spawn_interval = 0.0
+	base_fall_speed = BASE_EASY_FALL_SPEED * float(DIFFICULTY_SPEED_MULTIPLIER.get(difficulty, 1.0))
 	wave_speed = base_fall_speed
 
 	lives = default_lives
@@ -1004,7 +1005,9 @@ func _handle_catch(tile: Dictionary) -> void:
 		correct_count += 1
 		streak += 1
 		best_streak = maxi(best_streak, streak)
-		var gain := 100 + mini(streak - 1, 8) * 15
+		# Every correct apple earns the same amount at every difficulty and
+		# streak length. Difficulty changes falling speed, not score value.
+		var gain := CORRECT_ANSWER_POINTS
 		score += gain
 		if collected_words.size() < COLLECTED_WORD_LIMIT:
 			collected_words.append(String(tile["word"]))

@@ -4,8 +4,8 @@ extends SceneTree
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_visual_cleanup.gd
 const SCENE := preload("res://ui/minigames/human_plane.tscn")
 const CATCH := preload("res://ui/minigames/catch_word.tscn")
-const LIVES_STATE_3 := preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png")
-const LIVES_STATE_2 := preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_2.png")
+const LIVES_STATE_3 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png")
+const LIVES_STATE_2 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png")
 const ORIGINAL_SHA256 := {
 	"BACKGROUND.png": "719c02bc595678295c3f8a48b61b1748dc65bbd6b600fc3fe278299fb630dee0",
 	"PLANE.png": "81826ebd6e13131793ff6bf8dafe4f03499b94661a1953ec24b2351189944b0e",
@@ -31,7 +31,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	for file in ORIGINAL_SHA256:
-		_check(FileAccess.get_sha256("res://Components/HumanPlaneAssets/" + file) == ORIGINAL_SHA256[file], file + " exact original checksum")
+		_check(FileAccess.get_sha256("res://Components/Gameplay/Human Plane/" + file) == ORIGINAL_SHA256[file], file + " exact original checksum")
 	for dims in [Vector2i(1280, 720), Vector2i(1920, 1080)]:
 		for mode in ["Seconds", "Lives"]:
 			await _verify(dims, mode)

@@ -9,11 +9,11 @@ extends SceneTree
 const SCENE := preload("res://ui/minigames/balloon_popping.tscn")
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const ART_PATHS := [
-    "res://BalloonPoppingBalloons/purple.png",
-    "res://BalloonPoppingBalloons/green.png",
-    "res://BalloonPoppingBalloons/blue.png"
+    "res://Components/Gameplay/Balloon Popping/Balloons/purple.png",
+    "res://Components/Gameplay/Balloon Popping/Balloons/green.png",
+    "res://Components/Gameplay/Balloon Popping/Balloons/blue.png"
 ]
-const COUNTER_PATH := "res://BalloonPoppingBackground/95ae2a22-302d-48f7-9b5f-e12b0104c822.png"
+const COUNTER_PATH := "res://Components/Gameplay/Balloon Popping/Background/95ae2a22-302d-48f7-9b5f-e12b0104c822.png"
 const LABELS: Array[String] = ["PURPLE", "GREEN", "BLUE"]
 const EPS := 0.75
 

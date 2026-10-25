@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Safely replace redundant 45MB Godot scene-embedded pixels with source PNG refs.
 
-The original PNGs already live in BalloonPoppingBackground/ and are separately
+The original PNGs already live in Components/Gameplay/Balloon Popping/Background/ and are separately
 loaded by balloon_popping.gd at runtime/editor preview. This changes *only*
 the resource serialization; no scene nodes, collision or artwork bytes.
 
@@ -28,10 +28,10 @@ TEMP = SCENE.with_suffix(".tscn.tmp")
 IMAGES = (
     ("8_booth", ROOT / "BalloonPoppingBackground" /
      "0826b13c-250f-42e1-9398-a83d2922a1d8.png",
-     "res://BalloonPoppingBackground/0826b13c-250f-42e1-9398-a83d2922a1d8.png"),
+     "res://Components/Gameplay/Balloon Popping/Background/0826b13c-250f-42e1-9398-a83d2922a1d8.png"),
     ("9_counter", ROOT / "BalloonPoppingBackground" /
      "95ae2a22-302d-48f7-9b5f-e12b0104c822.png",
-     "res://BalloonPoppingBackground/95ae2a22-302d-48f7-9b5f-e12b0104c822.png"),
+     "res://Components/Gameplay/Balloon Popping/Background/95ae2a22-302d-48f7-9b5f-e12b0104c822.png"),
 )
 RESOURCE_IDS = {
     'Image_wvuog', 'ImageTexture_8sdty',

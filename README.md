@@ -128,10 +128,10 @@ kilos-grammar/
 ├── assets/                   # Fonts, audio, icons, and UI assets
 ├── database/                 # Local HTTP API, PostgreSQL schema and QA tests
 ├── Components/               # Shared visual assets
-├── WordCatcherCharacters/    # Catch the Word character art
-├── WordCatcherMaps/          # Catch the Word environments
-├── BalloonPoppingBackground/ # Balloon Popping backgrounds
-├── BalloonPoppingBalloons/   # Balloon sprite art
+├── Components/Gameplay/Catch the Word/Characters/    # Catch the Word character art
+├── Components/Gameplay/Catch the Word/Maps/          # Catch the Word environments
+├── Components/Gameplay/Balloon Popping/Background/ # Balloon Popping backgrounds
+├── Components/Gameplay/Balloon Popping/Balloons/   # Balloon sprite art
 ├── docs/                     # Development notes and planned integrations
 └── tools/                    # Test, capture, and diagnostic scripts
 ```

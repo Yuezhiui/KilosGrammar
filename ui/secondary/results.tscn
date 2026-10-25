@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dqd7qnqtwifrg" path="res://ui/secondary/results.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://nkuj848galqf" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
-[ext_resource type="Texture2D" uid="uid://dmqye0exgd5o8" path="res://ui/redesign/assets/game_over/bg_teal_clean.png" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://dmqye0exgd5o8" path="res://Components/Results/Redesign/bg_teal_clean.png" id="3_bg"]
 
 [sub_resource type="StyleBoxFlat" id="InfoCard"]
 bg_color = Color(1, 0.968627, 0.862745, 0.94)

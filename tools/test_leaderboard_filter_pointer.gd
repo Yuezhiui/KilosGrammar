@@ -32,8 +32,8 @@ func _run() -> void:
 				_failed("Real mouse click did not open " + name + " popup", viewport)
 			popup.hide()
 			await process_frame
-		if board.get_node("%MinigameFilter").is_visible_in_tree() or board.get_node("%DownloadButton").is_visible_in_tree():
-			_failed("Hidden advanced controls leaked into pointer layout", viewport)
+		if board.find_child("MinigameFilter", true, false) != null or board.find_child("DownloadButton", true, false) != null:
+			_failed("Removed advanced controls leaked back into pointer layout", viewport)
 		board.queue_free()
 		await process_frame
 	print("LEADERBOARD POINTER QA: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])

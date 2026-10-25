@@ -33,7 +33,9 @@ func _run() -> void:
 	_check(background.anchor_right == 1.0 and background.anchor_bottom == 1.0,
 		"Background stays fixed and full-window")
 	var original_texture := background.texture
-	background.texture = load("res://Components/MainMenu/green-button.png") as Texture2D
+	# Swap with an artwork image that is actually used by the current menu;
+	# do not retain an orphan prototype PNG solely for this test.
+	background.texture = load("res://Components/Main Panel/Original/green-play.png") as Texture2D
 	_check(background.texture != original_texture, "Background texture can be swapped in the Inspector")
 	background.texture = original_texture
 	_check(not (menu.get_node("FallTimer") as Timer).is_stopped(),

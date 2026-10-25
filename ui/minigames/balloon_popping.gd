@@ -8,29 +8,30 @@ const FONT: Font = preload("res://assets/fonts/TitanOne-Regular.ttf")
 const GRAMMAR_BANK = preload("res://ui/minigames/grammar_bank.gd")
 const STONE_SCENE: PackedScene = preload("res://ui/minigames/balloon_art/stone.tscn")
 
-const BOOTH_PNG := "res://BalloonPoppingBackground/0826b13c-250f-42e1-9398-a83d2922a1d8.png"
-const COUNTER_PNG := "res://BalloonPoppingBackground/95ae2a22-302d-48f7-9b5f-e12b0104c822.png"
+const BOOTH_PNG := "res://Components/Gameplay/Balloon Popping/Background/0826b13c-250f-42e1-9398-a83d2922a1d8.png"
+const COUNTER_PNG := "res://Components/Gameplay/Balloon Popping/Background/95ae2a22-302d-48f7-9b5f-e12b0104c822.png"
 const BALLOON_PNGS := [
-	"res://BalloonPoppingBalloons/purple.png",
-	"res://BalloonPoppingBalloons/green.png",
-	"res://BalloonPoppingBalloons/blue.png"
+	"res://Components/Gameplay/Balloon Popping/Balloons/purple.png",
+	"res://Components/Gameplay/Balloon Popping/Balloons/green.png",
+	"res://Components/Gameplay/Balloon Popping/Balloons/blue.png"
 ]
-const POP_TEXTURE: Texture2D = preload("res://Components/Pop.png")
-const HEART_RED: Texture2D = preload("res://Components/HeartRed.png")
-const HEART_BLACK: Texture2D = preload("res://Components/HeartBlack.png")
-const SHARED_TIMER_BADGE: Texture2D = preload("res://ui/minigames/catch_hud/generated/timer_badge.png")
-const SHARED_LIVES_STATE_1: Texture2D = preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_1.png")
-const SHARED_LIVES_STATE_2: Texture2D = preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_2.png")
-const SHARED_LIVES_STATE_3: Texture2D = preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png")
-const CARNIVAL_ART := "res://ui/minigames/balloon_art/reference/"
-const PAUSE_ICON: Texture2D = preload("res://assets/icons/pause_white.svg")
-const PLAY_ICON: Texture2D = preload("res://assets/icons/play_white.svg")
+const POP_TEXTURE: Texture2D = preload("res://Components/Gameplay/Balloon Popping/Effects/Pop.png")
+const HEART_RED: Texture2D = preload("res://Components/Gameplay/Shared/Hearts/HeartRed.png")
+const HEART_BLACK: Texture2D = preload("res://Components/Gameplay/Shared/Hearts/HeartBlack.png")
+const SHARED_TIMER_BADGE: Texture2D = preload("res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png")
+const SHARED_LIVES_STATE_1: Texture2D = preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png")
+const SHARED_LIVES_STATE_2: Texture2D = preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png")
+const SHARED_LIVES_STATE_3: Texture2D = preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png")
+const CARNIVAL_ART := "res://Components/Gameplay/Balloon Popping/Art/reference/"
+const PAUSE_ICON: Texture2D = preload("res://Components/Gameplay/Controls/pause_white.svg")
+const PLAY_ICON: Texture2D = preload("res://Components/Gameplay/Controls/play_white.svg")
 const CATCH_VOICE_DIR := "res://assets/audio/catch_voice/"
 const POSITIVE_VOICE_CUES := ["GoodJob.mp3", "niceee.mp3", "Awesome.mp3", "Perfect.mp3", "You Nailed it.mp3"]
 const NEGATIVE_VOICE_CUES := ["Awww.mp3", "Wrong Answer.mp3", "You Missed.mp3"]
 const MISSED_SHOT_VOICE_COOLDOWN_MS := 1400
 
 const ACTIVITY := "Balloon Popping"
+const CORRECT_POP_SCORE := 100
 const LANE_COUNT := 3
 const BALLOON_COLLISION_RADIUS := 58.0
 const PROJECTILE_COLLISION_RADIUS := 9.0
@@ -1433,10 +1434,7 @@ func _difficulty() -> String:
 
 
 func _correct_award() -> int:
-	match _difficulty():
-		"Easy": return 100
-		"Hard": return 175
-		_: return 125
+	return CORRECT_POP_SCORE
 
 
 func _lane_x(lane: int) -> float:

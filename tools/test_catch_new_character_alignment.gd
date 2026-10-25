@@ -65,8 +65,8 @@ func _check_game(viewport: SubViewport, resolution: Vector2i, character: String,
 			continue
 		var other_group := game.get_node(other) as Node2D
 		check(not other_group.visible, tag + " inactive " + other + " group is visible")
-	var original_body := "res://WordCatcherCharacters/%s BODY.png" % character.to_upper()
-	var original_basket := "res://WordCatcherCharacters/%s BASKET.png" % character.to_upper()
+	var original_body := "res://Components/Gameplay/Catch the Word/Characters/%s BODY.png" % character.to_upper()
+	var original_basket := "res://Components/Gameplay/Catch the Word/Characters/%s BASKET.png" % character.to_upper()
 	check(body.texture != null and body.texture.resource_path == original_body, tag + " body is not its ORIGINAL PNG")
 	check(basket.texture != null and basket.texture.resource_path == original_basket, tag + " basket is not its ORIGINAL PNG")
 	check(body.region_enabled and basket.region_enabled, tag + " alpha crop must remain scene-authored")

@@ -3,8 +3,8 @@ extends SceneTree
 const FONT := preload("res://assets/fonts/TitanOne-Regular.ttf")
 const TITLE_FONT_PATH := "res://assets/fonts/Comic Lemon.otf"
 const BACKDROP_SCENE := preload("res://ui/shared/lexi_reference_backdrop.tscn")
-const SETTINGS_ART := "res://ui/redesign/assets/settings/"
-const CLASSROOM_ART := "res://ui/redesign/assets/shared/classroom_bg.png"
+const SETTINGS_ART := "res://Components/Settings/Redesign/"
+const CLASSROOM_ART := "res://Components/Shared/Redesign/classroom_bg.png"
 const OUT_PATH := "res://ui/secondary/settings.tscn"
 
 const INK := Color("#474660")

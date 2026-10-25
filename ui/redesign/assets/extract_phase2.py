@@ -20,7 +20,16 @@ import json
 import os
 from pathlib import Path
 
-ASSET_ROOT = Path(__file__).resolve().parent
+# Keep extraction scripts/manifests in ui/redesign/assets, but write UI image
+# output into the same organized Components/<screen>/Redesign folders as the
+# editable Godot screens. Rerunning extraction must not recreate old art trees.
+SOURCE_MANIFEST_DIR = Path(__file__).resolve().parent
+ASSET_ROOT = SOURCE_MANIFEST_DIR.parents[2] / "Components"
+ASSET_FOLDERS = {
+    "main": "Main Panel/Redesign",
+    "student": "Student Setup/Redesign",
+    "shared": "Shared/Redesign",
+}
 
 SOURCES = {
     "main_decor": ("MAIN", "16e2cc3e-574f-409e-a3bb-f7bc4cb27b58.png"),
@@ -140,7 +149,7 @@ def isolate_source_components(img: Image.Image, bboxes: list[tuple[int, int, int
 def extract(folder: str, source_root: Path) -> list[dict]:
     from PIL import Image
 
-    dest = ASSET_ROOT / folder
+    dest = ASSET_ROOT / ASSET_FOLDERS[folder]
     dest.mkdir(parents=True, exist_ok=True)
     cache: dict[str, Image.Image] = {}
     report: list[dict] = []
@@ -162,7 +171,7 @@ def extract(folder: str, source_root: Path) -> list[dict]:
         dst = dest / f"{name}.png"
         cropped.save(dst, optimize=True)
         report.append({
-            "target": f"res://ui/redesign/assets/{folder}/{name}.png",
+            "target": f"res://Components/{ASSET_FOLDERS[folder]}/{name}.png",
             "source": source.relative_to(source_root).as_posix(),
             "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
             "crop_xyxy": list(box), "size": [cropped.width, cropped.height],
@@ -193,7 +202,7 @@ if __name__ == "__main__":
     if not source_root.is_dir():
         parser.error(f"Source directory not found: {source_root}. Supply --source-dir.")
     which = args.folders or ["main", "student"]
-    manifest_file = ASSET_ROOT / "asset_manifest.json"
+    manifest_file = SOURCE_MANIFEST_DIR / "asset_manifest.json"
     old = json.loads(manifest_file.read_text(encoding="utf-8")) if manifest_file.exists() else {}
     for folder in which:
         old[folder] = extract(folder, source_root)

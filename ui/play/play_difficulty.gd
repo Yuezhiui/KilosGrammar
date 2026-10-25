@@ -10,7 +10,7 @@ const DIFFICULTY_COPY := {
 	"Hard": "UI preview preset\nFast pacing"
 }
 const DIFFICULTY_COLORS := [UI.GREEN, UI.YELLOW, UI.RED]
-const ART := "res://ui/redesign/assets/student/"
+const ART := "res://Components/Student Setup/Redesign/"
 
 var context: Dictionary = {}
 var difficulty_buttons: Dictionary = {}

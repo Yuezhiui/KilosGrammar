@@ -4,7 +4,7 @@ The live scene is `res://ui/minigames/catch_word.tscn`, with layout and round
 logic in `catch_word.gd`. The PNG assets are **already installed and imported**;
 the UI is made from independently positioned images, not a screenshot.
 
-Current active HUD art in `generated/`:
+Current active HUD art in `res://Components/Gameplay/Catch the Word/HUD/generated/`:
 
 | Resource | Current use |
 | --- | --- |
@@ -26,11 +26,11 @@ reused `CatchVoicePlayer`. Completed low-scoring Catch rounds play the existing
 `Better Luck.mp3` in the Results panel (or the standalone preview dialog),
 not in the gameplay scene that is immediately freed on navigation.
 
-The approved character art remains `WordCatcherCharacters/<CHARACTER> BODY.png`
-and `WordCatcherCharacters/<CHARACTER> BASKET.png` for Boy, Girl, Grandma, and
-Grandpa. Each collected basket apple uses `res://Components/Apple.png`; only
+The approved character art remains `Components/Gameplay/Catch the Word/Characters/<CHARACTER> BODY.png`
+and `Components/Gameplay/Catch the Word/Characters/<CHARACTER> BASKET.png` for Boy, Girl, Grandma, and
+Grandpa. Each collected basket apple uses `res://Components/Gameplay/Catch the Word/Items/Apple.png`; only
 three labeled caught apples are kept visible. City, Forest, and Mountain maps
-remain separate selectable assets under `WordCatcherMaps/`.
+remain separate selectable assets under `Components/Gameplay/Catch the Word/Maps/`.
 
 To validate the current state, use Godot 4.7.2 scripts such as
 `res://tools/test_catch_clean_hud.gd`, `test_catch_png_assets.gd`,

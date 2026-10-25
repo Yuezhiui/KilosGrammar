@@ -2,18 +2,18 @@
 
 [ext_resource type="Script" uid="uid://cxteldxcjtbbn" path="res://ui/minigames/human_plane.gd" id="1_script"]
 [ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="2_font"]
-[ext_resource type="Texture2D" uid="uid://gl1oeatt1hsx" path="res://Components/HumanPlaneAssets/BACKGROUND.png" id="r_background"]
-[ext_resource type="Texture2D" uid="uid://f87aeimycygk" path="res://Components/HumanPlaneAssets/human_plane_gate_green_CENTER.png" id="r_gate_center"]
-[ext_resource type="Texture2D" uid="uid://1183yyysfqau" path="res://Components/HumanPlaneAssets/human_plane_gate_purple_LEFT.png" id="r_gate_left"]
-[ext_resource type="Texture2D" uid="uid://dscev25f7jrqr" path="res://Components/HumanPlaneAssets/human_plane_gate_blue_RIGHT.png" id="r_gate_right"]
-[ext_resource type="Texture2D" uid="uid://ba4ccsha5ri3j" path="res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png" id="r_lives"]
-[ext_resource type="Texture2D" uid="uid://cxpokqd8myy66" path="res://Components/HumanPlaneAssets/PLANE.png" id="r_plane"]
-[ext_resource type="Texture2D" uid="uid://d13sn4nsevrgu" path="res://ui/minigames/catch_hud/generated/score_board.png" id="r_score"]
-[ext_resource type="Texture2D" uid="uid://fnw2gdx3u22i" path="res://ui/minigames/catch_hud/generated/timer_badge.png" id="r_timer"]
+[ext_resource type="Texture2D" uid="uid://gl1oeatt1hsx" path="res://Components/Gameplay/Human Plane/BACKGROUND.png" id="r_background"]
+[ext_resource type="Texture2D" uid="uid://f87aeimycygk" path="res://Components/Gameplay/Human Plane/human_plane_gate_green_CENTER.png" id="r_gate_center"]
+[ext_resource type="Texture2D" uid="uid://1183yyysfqau" path="res://Components/Gameplay/Human Plane/human_plane_gate_purple_LEFT.png" id="r_gate_left"]
+[ext_resource type="Texture2D" uid="uid://dscev25f7jrqr" path="res://Components/Gameplay/Human Plane/human_plane_gate_blue_RIGHT.png" id="r_gate_right"]
+[ext_resource type="Texture2D" uid="uid://ba4ccsha5ri3j" path="res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png" id="r_lives"]
+[ext_resource type="Texture2D" uid="uid://cxpokqd8myy66" path="res://Components/Gameplay/Human Plane/PLANE.png" id="r_plane"]
+[ext_resource type="Texture2D" uid="uid://d13sn4nsevrgu" path="res://Components/Gameplay/Catch the Word/HUD/generated/score_board.png" id="r_score"]
+[ext_resource type="Texture2D" uid="uid://fnw2gdx3u22i" path="res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png" id="r_timer"]
 
 
-[ext_resource type="Texture2D" uid="uid://boxmkr4bvdvqu" path="res://ui/minigames/catch_hud/generated/title_board.png" id="clone_title"]
-[ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://ui/minigames/catch_hud/generated/pause_badge.png" id="clone_pause"]
+[ext_resource type="Texture2D" uid="uid://boxmkr4bvdvqu" path="res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png" id="clone_title"]
+[ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://Components/Gameplay/Catch the Word/HUD/generated/pause_badge.png" id="clone_pause"]
 
 [node name="HumanPlane" type="Control" unique_id=877560333]
 layout_mode = 3

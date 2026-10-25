@@ -10,8 +10,8 @@ const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
 const MODES := ["Seconds", "Lives"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
-const APPLE_TEXTURE := "res://ui/minigames/catch_hud/generated/character/word_apple.png"
-const COLLECTED_TEXTURE := "res://Components/Apple.png"
+const APPLE_TEXTURE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
+const COLLECTED_TEXTURE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
 const STATES := {
     "Easy": {"speed": 105.0},
     "Normal": {"speed": 185.0},

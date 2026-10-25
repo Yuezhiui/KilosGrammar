@@ -8,11 +8,11 @@ extends SceneTree
 # under Components/CalibrationV2. This test NEVER edits production files,
 # student preferences, or the Python pose worker.
 const SCENE_PATH := "res://ui/vision/calibration.tscn"
-const INSTALLED_ART := "res://Components/CalibrationV2/"
+const INSTALLED_ART := "res://Components/Gameplay/Calibration/"
 const SOURCE_ART := "C:/Users/Yue/Downloads/CALIB/"
 const ART_NAMES := [
 	"1.png", "2.png", "3.png", "ARROW.png", "BACKGROUND.png",
-	"BORDER.png", "CAT MEOW.png", "MOVE TO HIGHLIGHTED AREA.png",
+	"BORDER.png", "MOVE TO HIGHLIGHTED AREA.png",
 	"PARAMETERS.png", "STARS.png", "STAY IN THE CENTER.png",
 	"STAY OF THE LEFT.png", "STAY ON THE RIGHT.png",
 	"STEP 1.png", "STEP 2.png", "STEP 3.png"

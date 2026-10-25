@@ -3,7 +3,16 @@
 ## remain native Godot controls. No screenshots or flattened buttons at runtime.
 extends RefCounted
 
-const ART_BASE := "res://ui/redesign/assets/"
+## All raster UI art is organized beneath Components by screen, while this
+## reusable image-backed control implementation stays in ui/redesign/shared.
+const ART_FOLDERS := {
+	"main": "res://Components/Main Panel/Redesign/",
+	"student": "res://Components/Student Setup/Redesign/",
+	"shared": "res://Components/Shared/Redesign/",
+	"game_over": "res://Components/Results/Redesign/",
+	"tutorial": "res://Components/Tutorial/Redesign/",
+	"settings": "res://Components/Settings/Redesign/"
+}
 const ASPECT_FACE = preload("res://ui/redesign/shared/aspect_button_face.gd")
 const STAGE_DESIGN_SIZE := Vector2(1280.0, 720.0)
 const CATEGORIES := ["main", "student", "shared", "game_over", "tutorial", "settings"]
@@ -12,7 +21,7 @@ const CATEGORIES := ["main", "student", "shared", "game_over", "tutorial", "sett
 static func art_path(category: String, sprite: String) -> String:
 	if not category in CATEGORIES or sprite.is_empty() or sprite.contains("/") or sprite.contains("\\"):
 		return ""
-	return "%s%s/%s.png" % [ART_BASE, category, sprite]
+	return String(ART_FOLDERS[category]) + sprite + ".png"
 
 
 static func art(category: String, sprite: String) -> Texture2D:

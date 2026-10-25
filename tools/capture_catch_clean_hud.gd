@@ -164,9 +164,9 @@ func _assert_retained_hud(game: Control, viewport_size: Vector2i, entry: Diction
 	var background := game.get_node_or_null("Background") as TextureRect
 	var body := game.get_node_or_null("CharacterRig/Body") as Sprite2D
 	var basket := game.get_node_or_null("CharacterRig/Basket") as Sprite2D
-	var expected_map := "res://WordCatcherMaps/%sMap.png" % entry["map"]
-	var expected_body := "res://WordCatcherCharacters/%s BODY.png" % String(entry["character"]).to_upper()
-	var expected_basket := "res://WordCatcherCharacters/%s BASKET.png" % String(entry["character"]).to_upper()
+	var expected_map := "res://Components/Gameplay/Catch the Word/Maps/%sMap.png" % entry["map"]
+	var expected_body := "res://Components/Gameplay/Catch the Word/Characters/%s BODY.png" % String(entry["character"]).to_upper()
+	var expected_basket := "res://Components/Gameplay/Catch the Word/Characters/%s BASKET.png" % String(entry["character"]).to_upper()
 	if background == null or background.texture == null or background.texture.resource_path != expected_map:
 		_fail(label + ": wrong/missing original map " + expected_map)
 	if body == null or body.texture == null or body.texture.resource_path != expected_body:

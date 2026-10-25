@@ -29,7 +29,7 @@ func _run() -> void:
 	root.size = Vector2i(1280, 720)
 	for name in ASSETS:
 		var expected: Array = ASSETS[name]
-		var path: String = "res://Components/HumanPlaneAssets/" + name
+		var path: String = "res://Components/Gameplay/Human Plane/" + name
 		var hex_hash := FileAccess.get_sha256(path)
 		_check(hex_hash == String(expected[0]).replace(" ", ""), name + " SHA256 matches original file")
 	var panel := SCENE.instantiate() as Control
@@ -185,7 +185,7 @@ func _verify_visible_gate_alignment(resolution: Vector2i) -> void:
 		game.set("plane_x_norm", normalized)
 		_check(int(game.call("_lane_hit_at_answer_line")) == -1,
 			label + " %.0f-side isolated invisible center letterbox cannot be hit" % side)
-	# Center still registers as correct (including the untouched scoring API).
+	# Center still registers as correct and awards the same 100 points as all modes.
 	var centered_norm := (drawn_box.get_center().x - left_bound - authored_shift - hitbox_center_offset) / maxf(right_bound - left_bound, 1.0)
 	game.set("plane_x_norm", centered_norm)
 	_check(int(game.call("_lane_hit_at_answer_line")) == 1, label + " actual visible center gate correctly selects lane 1")
@@ -195,7 +195,7 @@ func _verify_visible_gate_alignment(resolution: Vector2i) -> void:
 	var previous_lives := int(game.get("lives"))
 	game.call("_resolve_at_answer_line")
 	_check(bool(game.get("selected_was_correct")), label + " visible center gate still scores as correct")
-	_check(int(game.get("score")) == 140 and int(game.get("correct_count")) == 1, label + " Hard center gate preserves 140-point scoring")
+	_check(int(game.get("score")) == 100 and int(game.get("correct_count")) == 1, label + " Hard center gate awards fixed 100 points")
 	_check(int(game.get("lives")) == previous_lives, label + " correct visible center gate preserves lives")
 	game.queue_free()
 	await process_frame

@@ -5,11 +5,11 @@ extends SceneTree
 # Godot --headless --path . --script res://tools/profile_balloon_startup.gd
 const SCENE_PATH := "res://ui/minigames/balloon_popping.tscn"
 const ART_PATHS := [
-    "res://BalloonPoppingBackground/0826b13c-250f-42e1-9398-a83d2922a1d8.png",
-    "res://BalloonPoppingBackground/95ae2a22-302d-48f7-9b5f-e12b0104c822.png",
-    "res://BalloonPoppingBalloons/purple.png",
-    "res://BalloonPoppingBalloons/green.png",
-    "res://BalloonPoppingBalloons/blue.png"
+    "res://Components/Gameplay/Balloon Popping/Background/0826b13c-250f-42e1-9398-a83d2922a1d8.png",
+    "res://Components/Gameplay/Balloon Popping/Background/95ae2a22-302d-48f7-9b5f-e12b0104c822.png",
+    "res://Components/Gameplay/Balloon Popping/Balloons/purple.png",
+    "res://Components/Gameplay/Balloon Popping/Balloons/green.png",
+    "res://Components/Gameplay/Balloon Popping/Balloons/blue.png"
 ]
 
 

@@ -7,7 +7,7 @@ extends SceneTree
 # replace the three legacy dynamic red/black heart TextureRects.
 
 const SCENE_PATH := "res://ui/minigames/catch_word.tscn"
-const DIR := "res://ui/minigames/catch_hud/generated/"
+const DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const PLAQUES := {
 	"TitlePlaque": "title_board.png",
 	"TimerPlaque": "timer_badge.png",
@@ -16,8 +16,8 @@ const PLAQUES := {
 	"ScorePlaque": "score_board.png",
 }
 const FALLING_APPLE := DIR + "character/word_apple.png"
-const CAUGHT_APPLE := "res://Components/Apple.png"
-const ORIGINAL_CHAR_DIR := "res://WordCatcherCharacters/"
+const CAUGHT_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
+const ORIGINAL_CHAR_DIR := "res://Components/Gameplay/Catch the Word/Characters/"
 const HEART_STATES := {
 	1: DIR + "replacement/lives_state_1.png",
 	2: DIR + "replacement/lives_state_2.png",
@@ -258,7 +258,7 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 				if child is TextureRect:
 					var caught := child as TextureRect
 					_check(caught.texture != null and caught.texture.resource_path == CAUGHT_APPLE,
-						ctx + ": collected apple retains original Components/Apple.png")
+						ctx + ": collected apple retains original Components/Gameplay/Catch the Word/Items/Apple.png")
 					_check(caught.get_child_count() > 0 and caught.get_child(0) is Label,
 						ctx + ": caught apple has editable word label")
 

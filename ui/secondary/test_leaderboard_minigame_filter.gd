@@ -27,32 +27,27 @@ func _run() -> void:
 	var mode := panel.get_node_or_null("%ModeFilter") as OptionButton
 	var difficulty := panel.get_node_or_null("%DifficultyFilter") as OptionButton
 	var rows := panel.get_node_or_null("%ScoreRows") as VBoxContainer
-	var csv_button := panel.get_node_or_null("%DownloadButton") as Button
-	_check(minigame != null and panel.has_method("set_minigame_filter"),
-		"minigame filter is retained through host API despite removal of FILTERS popover")
-	if minigame == null or rows == null:
+	_check(minigame == null and panel.get_node_or_null("%DownloadButton") == null
+		and panel.has_method("set_minigame_filter"),
+		"unused MinigameFilter/DownloadButton removed; host filter API remains")
+	if rows == null:
 		panel.queue_free()
 		quit(1)
 		return
-	_check(minigame.item_count == 5 and minigame.selected == 0, "exactly five inspector-authored minigame options")
-	for index in range(5):
-		_check(minigame.get_item_text(index) == ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE", "LEGACY"][index], "minigame menu option %d" % index)
-	_check(not minigame.is_visible_in_tree() and not csv_button.is_visible_in_tree(),
-		"advanced minigame and filtered CSV controls do not crowd the default reference")
+	_check(bool(panel.call("set_minigame_filter", "ALL MINIGAMES")),
+		"public host selection has default ALL even without hidden OptionButton")
 	for obsolete in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
 		_check(panel.find_child(obsolete, true, false) == null, "obsolete FILTERS/popover removed from authored UI: " + obsolete)
-	_check(not minigame.is_visible_in_tree() and not csv_button.is_visible_in_tree(),
-		"minigame and filtered CSV hidden with no popup hitbox")
+	_check(panel.find_child("MinigameFilter", true, false) == null
+		and panel.find_child("DownloadButton", true, false) == null,
+		"advanced minigame/Download controls no longer exist or intercept clicks")
 	_check(panel.has_method("request_filtered_csv_export"),
 		"hidden filtered CSV continues to work through public host API")
-	var original_position := minigame.position
-	minigame.position += Vector2(10, 5)
-	await process_frame
-	_check(minigame.position == original_position + Vector2(10, 5), "filter can be moved independently, no runtime geometry override")
-	minigame.position = original_position
+	_check(panel.has_method("set_transfer_status") and panel.has_method("set_transfer_pending"),
+		"status host API survives removal of transfer panel")
 	for selector in [style, mode, difficulty]:
 		_check(selector.item_count > 1 and selector.is_visible_in_tree(), "original grammar/mode/difficulty filters preserved")
-	_check(not csv_button.is_visible_in_tree() and panel.get_node_or_null("%ImportCsvButton") is Button and panel.get_node_or_null("%ExportCsvButton") is Button and panel.get_node_or_null("%DeleteAllButton") is Button, "hidden filtered Download and three visible database actions preserved")
+	_check(panel.get_node_or_null("%ImportCsvButton") is Button and panel.get_node_or_null("%ExportCsvButton") is Button and panel.get_node_or_null("%DeleteAllButton") is Button, "three visible authorized database actions preserved")
 
 	var records := [
 		{"student_id": "ID-1", "student_name": "One", "grade_section": "Grade 5", "minigame": "Catch the Word", "game_style": "Noun", "game_mode": "Seconds", "difficulty": "Easy", "score": 19},
@@ -74,19 +69,37 @@ func _run() -> void:
 			var font := cell.get_theme_font("font") as Font
 			var rendered_size := font.get_string_size(cell.text, HORIZONTAL_ALIGNMENT_LEFT, -1, cell.get_theme_font_size("font_size")).x
 			_check(rendered_size <= cell.size.x, "abbreviated minigame/topic fits in %d px cell: %s" % [int(cell.size.x), cell.text])
-	_check(displayed.has("CATCH / NOUN") and displayed.has("POP / NOUN") and displayed.has("PLANE / NOUN") and displayed.has("LEGACY / NOUN") and displayed.has("POP / ADJ"), "distinct minigames and grammar topics visible on rows")
+	_check(displayed.has("CATCH / NOUN") and displayed.has("POP / NOUN") and displayed.has("PLANE / NOUN")
+		and displayed.has("NOUN") and displayed.has("POP / ADJ") and not displayed.has("LEGACY / NOUN"),
+		"all five original scores render; historical grammar-only entry has no misleading Legacy prefix")
+	var legacy_displayed := false
+	for item in rows.get_children():
+		if (item.get_node("Score") as Label).text == "16":
+			legacy_displayed = true
+			var historic := item.get_node("GameStyle") as Label
+			_check(historic.text == "NOUN" and historic.tooltip_text.contains("Grammar topic: Noun")
+				and not historic.tooltip_text.to_upper().contains("LEGACY"),
+				"historical row keeps Noun topic but does not expose internal Legacy classification")
+	_check(legacy_displayed, "historical record score 16 is not removed by visual cleanup")
+	var original_rows: Array = panel.get("_all_rows")
+	_check(original_rows.size() == 5 and original_rows.any(func(item: Dictionary) -> bool:
+		return item.get("minigame") == "Legacy" and int(item.get("score", -1)) == 16),
+		"historical backend score and exact Legacy source metadata survive presentation cleanup")
 	_check((rows.get_child(1).get_node("GameStyle") as Label).tooltip_text.contains("Catch the Word"), "full minigame name available via tooltip")
 
 	for item in [
-		{"index": 1, "expected": 1, "code": "CATCH / NOUN"},
-		{"index": 2, "expected": 2, "code": "POP /"},
-		{"index": 3, "expected": 1, "code": "PLANE / NOUN"},
-		{"index": 4, "expected": 1, "code": "LEGACY / NOUN"},
+		{"name": "CATCH THE WORD", "expected": 1, "code": "CATCH / NOUN"},
+		{"name": "BALLOON POPPING", "expected": 2, "code": "POP /"},
+		{"name": "HUMAN PLANE", "expected": 1, "code": "PLANE / NOUN"},
 	]:
-		_check(bool(panel.call("set_minigame_filter", minigame.get_item_text(item["index"]))), "public hidden minigame filter accepts authorized selection")
-		_check(rows.get_child_count() == item["expected"], "filter %s shows only matching backend minigame rows" % minigame.get_item_text(item["index"]))
+		_check(bool(panel.call("set_minigame_filter", item["name"])), "public filter API accepts active minigame name")
+		_check(rows.get_child_count() == item["expected"], "filter %s shows only matching backend minigame rows" % item["name"])
 		if rows.get_child_count() > 0:
 			_check((rows.get_child(0).get_node("GameStyle") as Label).text.begins_with(item["code"]), "visible result matches selected minigame")
+	_check(bool(panel.call("set_minigame_filter", "Legacy")),
+		"internal API still supports querying historical records despite removing Legacy menu option")
+	_check(rows.get_child_count() == 1 and (rows.get_child(0).get_node("GameStyle") as Label).text == "NOUN",
+		"Legacy compatibility selection returns only old record without misleading label")
 
 	_check(bool(panel.call("set_minigame_filter", "BALLOON POPPING")), "public minigame filter sets Balloon Popping")
 	style.select(1)

@@ -4,8 +4,8 @@ extends RefCounted
 
 const FONT: Font = preload("res://assets/fonts/TitanOne-Regular.ttf")
 const BOARD := Vector2(1120.0, 640.0)
-const CLASSROOM := "res://ui/redesign/assets/tutorial/bg_classroom.png"
-const TUTORIAL_ART := "res://ui/redesign/assets/tutorial/"
+const CLASSROOM := "res://Components/Tutorial/Redesign/bg_classroom.png"
+const TUTORIAL_ART := "res://Components/Tutorial/Redesign/"
 const CREAM := Color("#FFF0CA")
 const PAPER := Color("#FFF4D8")
 const INK := Color("#423C54")

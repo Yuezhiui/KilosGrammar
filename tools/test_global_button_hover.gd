@@ -427,10 +427,14 @@ func _test_main_menu_no_double_animation() -> void:
         _check(_signal_method_count(button, "mouse_entered", app, "_hover_button") == 1,
             "Main Menu preserves exactly one local ANIMATION listener: " + path)
         if path.contains("LeftMenu/"):
-            _check(_signal_method_count(button, "mouse_entered", app, "_show_tooltip") == 1,
-                "Main Menu's separate native tooltip listener is retained: " + path)
+            _check(_signal_method_count(button, "mouse_entered", app, "_show_tooltip") == 0,
+                "Main Menu no longer connects description popups: " + path)
+            _check(button.tooltip_text.is_empty(),
+                "Main Menu left buttons do not show native tooltips: " + path)
         _check(_global_signal_count(button, "mouse_entered") == 0,
             "Global hover excludes Main Menu own animated button: " + path)
+    _check(app.get_node_or_null("MainLayer/Tooltip") == null,
+        "Retired beige tooltip popup is completely absent from the editor scene")
     app.call("_return_to_main")
     app.queue_free()
     await process_frame

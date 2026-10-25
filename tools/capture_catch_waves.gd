@@ -302,9 +302,9 @@ func _check_art(game: Control, entry: Dictionary, label: String) -> void:
 	var background := game.get_node_or_null("Background") as TextureRect
 	var body := game.get_node_or_null("CharacterRig/Body") as Sprite2D
 	var basket := game.get_node_or_null("CharacterRig/Basket") as Sprite2D
-	var map_path := "res://WordCatcherMaps/%sMap.png" % entry["map"]
-	var body_path := "res://WordCatcherCharacters/%s BODY.png" % String(entry["character"]).to_upper()
-	var basket_path := "res://WordCatcherCharacters/%s BASKET.png" % String(entry["character"]).to_upper()
+	var map_path := "res://Components/Gameplay/Catch the Word/Maps/%sMap.png" % entry["map"]
+	var body_path := "res://Components/Gameplay/Catch the Word/Characters/%s BODY.png" % String(entry["character"]).to_upper()
+	var basket_path := "res://Components/Gameplay/Catch the Word/Characters/%s BASKET.png" % String(entry["character"]).to_upper()
 	if background == null or background.texture == null or background.texture.resource_path != map_path:
 		_fail(label + ": original map not in use: " + map_path)
 	if body == null or body.texture == null or body.texture.resource_path != body_path:

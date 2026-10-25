@@ -66,7 +66,7 @@ func _check_character(scene: PackedScene, viewport_size: Vector2i, selected: Str
 		_check(body.texture != null and basket.texture != null,
 			tag + ": %s sprites have real assigned artwork in the editor" % name)
 		if body.texture != null and basket.texture != null:
-			var base: String = "res://WordCatcherCharacters/" + String(name).to_upper()
+			var base: String = "res://Components/Gameplay/Catch the Word/Characters/" + String(name).to_upper()
 			_check(body.texture.resource_path == base + " BODY.png"
 				and basket.texture.resource_path == base + " BASKET.png",
 				tag + ": %s retains its ORIGINAL two art layers" % name)

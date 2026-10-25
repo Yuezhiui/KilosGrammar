@@ -1,23 +1,23 @@
 [gd_scene format=3 uid="uid://t84rkfytcor7"]
 
 [ext_resource type="Script" uid="uid://ckrgapgprd8xk" path="res://main_menu.gd" id="1_menu"]
-[ext_resource type="Texture2D" uid="uid://5d1piligatke" path="res://Components/MainMenu/background.png" id="2_art"]
-[ext_resource type="Texture2D" uid="uid://c4bryfob62w4n" path="res://Components/MainMenu/KILOS GRAMMAR.png" id="4_kilos_curved"]
+[ext_resource type="Texture2D" uid="uid://5d1piligatke" path="res://Components/Main Panel/Original/background.png" id="2_art"]
+[ext_resource type="Texture2D" uid="uid://c4bryfob62w4n" path="res://Components/Main Panel/Original/KILOS GRAMMAR.png" id="4_kilos_curved"]
 [ext_resource type="Script" uid="uid://fl5qixkal657" path="res://main_menu_tile_fx.gd" id="5_tile_fx"]
 [ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="6_title_font"]
-[ext_resource type="Texture2D" uid="uid://cdknwc1ea87eq" path="res://Components/MainMenu/credits.png" id="new_credits"]
-[ext_resource type="Texture2D" uid="uid://4jegvjejp23g" path="res://Components/MainMenu/A.png" id="new_grammara1"]
-[ext_resource type="Texture2D" uid="uid://cfp6ndvk7suxq" path="res://Components/MainMenu/A-.png" id="new_grammara2"]
-[ext_resource type="Texture2D" uid="uid://csihb6yytkdd6" path="res://Components/MainMenu/G.png" id="new_grammarg"]
-[ext_resource type="Texture2D" uid="uid://og2b2ynpxd8k" path="res://Components/MainMenu/M-.png" id="new_grammarm1"]
-[ext_resource type="Texture2D" uid="uid://bmy7kbbc8w6ya" path="res://Components/MainMenu/M.png" id="new_grammarm2"]
-[ext_resource type="Texture2D" uid="uid://c3vcr3bnaicgl" path="res://Components/MainMenu/R.png" id="new_grammarr1"]
-[ext_resource type="Texture2D" uid="uid://bbbk3gubmifbt" path="res://Components/MainMenu/R-.png" id="new_grammarr2"]
-[ext_resource type="Texture2D" uid="uid://bhdojkiicq44l" path="res://Components/MainMenu/leaderboard.png" id="new_leaderboard"]
-[ext_resource type="Texture2D" uid="uid://gvucfrfpyfhw" path="res://Components/MainMenu/green-play.png" id="new_play"]
-[ext_resource type="Texture2D" uid="uid://bsunmyu7vtaor" path="res://Components/MainMenu/red-quit.png" id="new_quit"]
-[ext_resource type="Texture2D" uid="uid://bj7fg7vjousnv" path="res://Components/MainMenu/setting-large.png" id="new_settings"]
-[ext_resource type="Texture2D" uid="uid://crkyuq1isvgyw" path="res://Components/MainMenu/purple-tutorial.png" id="new_tutorial"]
+[ext_resource type="Texture2D" uid="uid://cdknwc1ea87eq" path="res://Components/Main Panel/Original/credits.png" id="new_credits"]
+[ext_resource type="Texture2D" uid="uid://4jegvjejp23g" path="res://Components/Main Panel/Original/A.png" id="new_grammara1"]
+[ext_resource type="Texture2D" uid="uid://cfp6ndvk7suxq" path="res://Components/Main Panel/Original/A-.png" id="new_grammara2"]
+[ext_resource type="Texture2D" uid="uid://csihb6yytkdd6" path="res://Components/Main Panel/Original/G.png" id="new_grammarg"]
+[ext_resource type="Texture2D" uid="uid://og2b2ynpxd8k" path="res://Components/Main Panel/Original/M-.png" id="new_grammarm1"]
+[ext_resource type="Texture2D" uid="uid://bmy7kbbc8w6ya" path="res://Components/Main Panel/Original/M.png" id="new_grammarm2"]
+[ext_resource type="Texture2D" uid="uid://c3vcr3bnaicgl" path="res://Components/Main Panel/Original/R.png" id="new_grammarr1"]
+[ext_resource type="Texture2D" uid="uid://bbbk3gubmifbt" path="res://Components/Main Panel/Original/R-.png" id="new_grammarr2"]
+[ext_resource type="Texture2D" uid="uid://bhdojkiicq44l" path="res://Components/Main Panel/Original/leaderboard.png" id="new_leaderboard"]
+[ext_resource type="Texture2D" uid="uid://gvucfrfpyfhw" path="res://Components/Main Panel/Original/green-play.png" id="new_play"]
+[ext_resource type="Texture2D" uid="uid://bsunmyu7vtaor" path="res://Components/Main Panel/Original/red-quit.png" id="new_quit"]
+[ext_resource type="Texture2D" uid="uid://bj7fg7vjousnv" path="res://Components/Main Panel/Original/setting-large.png" id="new_settings"]
+[ext_resource type="Texture2D" uid="uid://crkyuq1isvgyw" path="res://Components/Main Panel/Original/purple-tutorial.png" id="new_tutorial"]
 
 [sub_resource type="StyleBoxFlat" id="FallingTile"]
 bg_color = Color(0.411765, 0.745098, 0.603922, 1)
@@ -59,26 +59,6 @@ texture = ExtResource("new_play")
 
 [sub_resource type="StyleBoxTexture" id="NewQuitSkin"]
 texture = ExtResource("new_quit")
-
-[sub_resource type="StyleBoxFlat" id="TooltipStyle"]
-bg_color = Color(0.976471, 0.894118, 0.741176, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.247059, 0.215686, 0.313725, 1)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_right = 7
-corner_radius_bottom_left = 7
-shadow_color = Color(0.152941, 0.129412, 0.2, 0.35)
-shadow_size = 3
-shadow_offset = Vector2(0, 4)
-
-[sub_resource type="SystemFont" id="ChunkyFont"]
-font_names = PackedStringArray("Arial Rounded MT Bold", "Arial Black", "Arial")
-font_weight = 800
-subpixel_positioning = 0
 
 [node name="MainMenu" type="Control" unique_id=1178804453]
 layout_mode = 3
@@ -276,7 +256,6 @@ layout_mode = 0
 offset_top = -12.0
 offset_right = 225.0
 offset_bottom = 55.0
-tooltip_text = "Leaderboard"
 mouse_default_cursor_shape = 2
 theme_override_styles/normal = SubResource("NewLeaderboardSkin")
 theme_override_styles/pressed = SubResource("NewLeaderboardSkin")
@@ -289,7 +268,6 @@ layout_mode = 0
 offset_top = 55.0
 offset_right = 225.0
 offset_bottom = 122.0
-tooltip_text = "Settings"
 mouse_default_cursor_shape = 2
 theme_override_styles/normal = SubResource("NewSettingsSkin")
 theme_override_styles/pressed = SubResource("NewSettingsSkin")
@@ -302,7 +280,6 @@ layout_mode = 0
 offset_top = 122.0
 offset_right = 225.0
 offset_bottom = 189.0
-tooltip_text = "Credits"
 mouse_default_cursor_shape = 2
 theme_override_styles/normal = SubResource("NewCreditsSkin")
 theme_override_styles/pressed = SubResource("NewCreditsSkin")
@@ -358,21 +335,3 @@ theme_override_styles/pressed = SubResource("NewQuitSkin")
 theme_override_styles/hover = SubResource("NewQuitSkin")
 theme_override_styles/disabled = SubResource("NewQuitSkin")
 theme_override_styles/focus = SubResource("ButtonFocus")
-
-[node name="Tooltip" type="PanelContainer" parent="MainLayer" unique_id=257164577]
-visible = false
-layout_mode = 0
-offset_right = 192.0
-offset_bottom = 62.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("TooltipStyle")
-
-[node name="Text" type="Label" parent="MainLayer/Tooltip" unique_id=249133200]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.247059, 0.215686, 0.313725, 1)
-theme_override_fonts/font = SubResource("ChunkyFont")
-theme_override_font_sizes/font_size = 12
-text = "Settings, controls and dictionaries."
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 2

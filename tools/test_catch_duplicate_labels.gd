@@ -9,7 +9,7 @@ extends SceneTree
 # game-mode value, and live numeric score labels visible.
 
 const GAME_SCENE := "res://ui/minigames/catch_word.tscn"
-const PNG_DIR := "res://ui/minigames/catch_hud/generated/"
+const PNG_DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const FONT_PATH := "res://assets/fonts/TitanOne-Regular.ttf"
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const MODES := ["Seconds", "Lives"]

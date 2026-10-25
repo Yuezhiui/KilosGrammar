@@ -4,7 +4,8 @@ Run from project root:
     py ui/minigames/balloon_art/reference/extract_reference.py
     py ui/minigames/balloon_art/reference/extract_reference.py "D:/art/my_sheets"
 
-This script reads the user's original images. It writes ONLY to this folder.
+This script reads the user's original images. It writes ONLY to
+Components/Gameplay/Balloon Popping/Art/reference.
 It deliberately preserves baked static 'BALLOON POPPING' and 'SCORE' lettering;
 all changing scores, timer numbers, grammar prompts, and balloon words stay blank.
 """
@@ -15,7 +16,8 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-DEST = Path(__file__).resolve().parent
+DEST = (Path(__file__).resolve().parents[4] / "Components" / "Gameplay"
+        / "Balloon Popping" / "Art" / "reference")
 SOURCE = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "Downloads" / "New folder (2)"
 FILES = {
     "hud": "775303c9-5f98-418b-9807-915a2cc2b3a6.png",

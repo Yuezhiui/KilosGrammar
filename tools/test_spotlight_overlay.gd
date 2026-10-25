@@ -4,7 +4,7 @@ extends SceneTree
 # Focused tests for the reusable editor-authored tutorial; no camera required.
 
 const TUTORIAL := preload("res://ui/tutorial/spotlight_overlay.tscn")
-const ARROW_PATH := "res://Components/TutorialSpotlight/right-arrow.png"
+const ARROW_PATH := "res://Components/Tutorial/Spotlight/right-arrow.png"
 
 var failures: Array[String] = []
 var checks: int = 0

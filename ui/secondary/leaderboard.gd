@@ -21,8 +21,9 @@ const MAX_IMPORT_BYTES := 1000000
 const MAX_IMPORT_RECORDS := 5000
 const LEGACY_IMPORT_CSV_FIELDS := ["student_id", "student_name", "grade_section", "game_style", "game_mode", "difficulty", "score"]
 const IMPORT_CSV_FIELDS := ["student_id", "student_name", "grade_section", "minigame", "game_style", "game_mode", "difficulty", "score"]
+const MINIGAME_FILTER_OPTIONS := ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE"]
 const EDITOR_CANVAS_SIZE := Vector2(1280, 720)
-const FILTER_INVISIBLE_ARROW := preload("res://ui/secondary/transparent_dropdown_arrow.png")
+const FILTER_INVISIBLE_ARROW := preload("res://Components/Leaderboard/Secondary/transparent_dropdown_arrow.png")
 ## Inspector-editable selected-state artwork. Index 0 is the original ALL image.
 ## Every element is an authored StyleBoxTexture from leaderboard.tscn.
 @export var style_filter_skins: Array[StyleBoxTexture] = []
@@ -33,19 +34,19 @@ const FILTER_INVISIBLE_ARROW := preload("res://ui/secondary/transparent_dropdown
 const RESPONSIVE_NODE_NAMES := [
 	"BoardArtwork", "TitleArt", "BackButton",
 	"StyleFilter", "ModeFilter", "DifficultyFilter",
-	"MinigameFilter", "DownloadButton", "TableHeaderArt", "TableBodyArt",
+	"TableHeaderArt", "TableBodyArt",
 	"TableContent", "ImportCsvButton", "ExportCsvButton",
-	"DeleteAllButton", "TransferStatusPanel"
+	"DeleteAllButton"
 ]
 
 var _context: Dictionary = {}
 var _all_rows: Array[Dictionary] = []
 var _visible_rows: Array[Dictionary] = []
+var _selected_minigame := "ALL MINIGAMES"
+var _filter_historical_minigame_only := false
 
 @onready var back_button: Button = %BackButton
-@onready var download_button: Button = %DownloadButton
 @onready var style_filter: OptionButton = %StyleFilter
-@onready var minigame_filter: OptionButton = %MinigameFilter
 @onready var mode_filter: OptionButton = %ModeFilter
 @onready var difficulty_filter: OptionButton = %DifficultyFilter
 @onready var empty_message: Label = %EmptyMessage
@@ -59,16 +60,23 @@ var _visible_rows: Array[Dictionary] = []
 @onready var import_dialog: FileDialog = %ImportCsvDialog
 @onready var import_review_dialog: ConfirmationDialog = %ImportReviewDialog
 @onready var database_export_dialog: FileDialog = %ExportDatabaseCsvDialog
-@onready var delete_first_warning: ConfirmationDialog = %DeleteFirstWarning
+@onready var delete_first_overlay: Control = %DeleteFirstOverlay
+@onready var first_cancel_button: Button = %FirstCancelButton
+@onready var first_continue_button: Button = %FirstContinueButton
 @onready var delete_final_overlay: Control = %DeleteFinalOverlay
 @onready var typed_confirmation_edit: LineEdit = %TypedConfirmationEdit
 @onready var final_cancel_button: Button = %FinalCancelButton
 @onready var final_delete_button: Button = %FinalDeleteButton
-@onready var transfer_status: Label = %TransferStatus
+@onready var delete_success_overlay: Control = %DeleteSuccessOverlay
+@onready var success_message: Label = %SuccessMessage
+@onready var success_okay_button: Button = %SuccessOkayButton
 
 var _delete_first_confirmed := false
 var _transfer_pending := false
 var _pending_import_path := ""
+var _queued_transfer_notice := ""
+var _queued_transfer_success := false
+var _last_transfer_notice_text := ""
 var _authored_ui_transforms: Dictionary = {}
 
 
@@ -77,12 +85,17 @@ func _ready() -> void:
 	resized.connect(_apply_viewport_layout)
 	call_deferred("_apply_viewport_layout")
 	back_button.pressed.connect(_request_main)
-	# Minigame-specific filter and filtered CSV stay callable by the host.
-	# Their native controls are hidden since the FILTERS popup was removed.
-	download_button.pressed.connect(request_filtered_csv_export)
-	for selector in [style_filter, mode_filter, difficulty_filter, minigame_filter]:
+	# Filtered CSV and minigame filtering remain host-callable without hidden
+	# native controls. The three visible selection filters remain editor-authored.
+	for selector in [style_filter, mode_filter, difficulty_filter]:
 		selector.item_selected.connect(_on_filter_changed.unbind(1))
 	csv_dialog.file_selected.connect(_write_csv)
+	# Native Windows File Explorer dialogs use the actual Downloads folder,
+	# instead of Godot's default project directory. Do not change the CSV
+	# security/authorization callbacks or their selected absolute paths.
+	for dialog in [csv_dialog, import_dialog, database_export_dialog]:
+		dialog.use_native_dialog = OS.get_name() == "Windows" and DisplayServer.get_name() != "headless"
+		_set_csv_start_directory(dialog)
 	import_button.pressed.connect(_choose_import_csv)
 	export_button.pressed.connect(_choose_database_export_csv)
 	delete_button.pressed.connect(_begin_delete_all)
@@ -90,24 +103,43 @@ func _ready() -> void:
 	import_review_dialog.confirmed.connect(_confirm_import_csv)
 	import_review_dialog.canceled.connect(_cancel_import_csv)
 	database_export_dialog.file_selected.connect(_on_export_file_selected)
-	delete_first_warning.confirmed.connect(_on_delete_first_confirmed)
-	delete_first_warning.canceled.connect(_reset_delete_confirmation)
+	first_cancel_button.pressed.connect(_cancel_delete_all)
+	first_continue_button.pressed.connect(_on_delete_first_confirmed)
 	typed_confirmation_edit.text_changed.connect(_on_typed_confirmation_changed)
 	typed_confirmation_edit.text_submitted.connect(_on_typed_confirmation_submitted)
 	final_cancel_button.pressed.connect(_cancel_delete_all)
 	final_delete_button.pressed.connect(_on_final_delete_pressed)
-	delete_final_overlay.visible = false
+	success_okay_button.pressed.connect(_dismiss_delete_success)
+	# These full-screen overlays capture pointer events while a destructive
+	# confirmation is open, including clicks outside the artwork.
+	delete_first_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	delete_final_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	delete_first_overlay.hide()
+	delete_final_overlay.hide()
+	delete_success_overlay.hide()
+	# Context and transfer progress may be injected before add_child()/ _ready().
+	_set_transfer_pending_state(_transfer_pending)
 	_on_typed_confirmation_changed("")
 	call_deferred("_focus_back")
 	_on_filter_changed()
+	if not _queued_transfer_notice.is_empty():
+		call_deferred("_flush_queued_transfer_notice")
 
 
 func set_minigame_filter(minigame: String) -> bool:
-	## Host/API entry point, retained without a visible FILTERS popup.
+	## Host/API entry point, retained without a hidden FILTERS popup.
+	## Historical rows have no known activity. Accept the old "Legacy" request
+	## internally without presenting Legacy as a playable minigame.
 	var wanted := minigame.strip_edges().to_upper()
-	for index in minigame_filter.item_count:
-		if minigame_filter.get_item_text(index).to_upper() == wanted:
-			minigame_filter.select(index)
+	if wanted == "LEGACY":
+		_filter_historical_minigame_only = true
+		_selected_minigame = MINIGAME_FILTER_OPTIONS[0]
+		_on_filter_changed()
+		return true
+	for option in MINIGAME_FILTER_OPTIONS:
+		if option == wanted:
+			_filter_historical_minigame_only = false
+			_selected_minigame = option
 			_on_filter_changed()
 			return true
 	return false
@@ -174,18 +206,24 @@ func set_context(context: Dictionary) -> void:
 
 
 func _request_main() -> void:
+	_cancel_delete_all()
+	if is_instance_valid(delete_success_overlay):
+		delete_success_overlay.hide()
 	requested.emit("main", _context.duplicate(true))
 
 
 func _on_filter_changed() -> void:
 	_update_filter_appearance()
 	_visible_rows.clear()
-	var selected_minigame := minigame_filter.get_item_text(minigame_filter.selected)
+	var selected_minigame := _selected_minigame
 	var selected_style := style_filter.get_item_text(style_filter.selected).to_upper()
 	var selected_mode := mode_filter.get_item_text(mode_filter.selected).to_upper()
 	var selected_difficulty := difficulty_filter.get_item_text(difficulty_filter.selected).to_upper()
 	for record in _all_rows:
-		if selected_minigame != "ALL MINIGAMES" and _minigame_name(record).to_upper() != selected_minigame.to_upper():
+		var actual_minigame := _minigame_name(record).to_upper()
+		if _filter_historical_minigame_only and actual_minigame != "LEGACY":
+			continue
+		if not _filter_historical_minigame_only and selected_minigame != "ALL MINIGAMES" and actual_minigame != selected_minigame.to_upper():
 			continue
 		if selected_style != "ALL STYLES" and _record_text(record, 3).to_upper() != selected_style:
 			continue
@@ -242,8 +280,14 @@ func _redraw_rows() -> void:
 				if FIELD_KEYS[col] == "game_style":
 					var topic := _record_text(record, col)
 					var minigame := _minigame_name(record)
-					cell.text = "%s / %s" % [_minigame_short(minigame), _topic_short(topic)]
-					cell.tooltip_text = "%s • Grammar topic: %s" % [minigame, topic]
+					if minigame.to_upper() == "LEGACY":
+						# The pre-migration activity is unknown; only its grammar topic
+						# was recorded. Never imply that Legacy was a game mode.
+						cell.text = _topic_short(topic)
+						cell.tooltip_text = "Grammar topic: %s" % topic
+					else:
+						cell.text = "%s / %s" % [_minigame_short(minigame), _topic_short(topic)]
+						cell.tooltip_text = "%s • Grammar topic: %s" % [minigame, topic]
 				else:
 					cell.text = _record_text(record, col)
 
@@ -262,8 +306,6 @@ func _minigame_short(minigame: String) -> String:
 			return "POP"
 		"HUMAN PLANE":
 			return "PLANE"
-		"LEGACY":
-			return "LEGACY"
 		_:
 			return minigame.left(8).to_upper()
 
@@ -288,6 +330,11 @@ func _topic_short(topic: String) -> String:
 
 func _record_text(record: Dictionary, column: int) -> String:
 	var key: String = FIELD_KEYS[column]
+	if key == "score":
+		# PostgreSQL/JSON may supply a decimal representation (e.g. 1660.0)
+		# of an integer score. Keep the source value intact for sorting/CSV,
+		# but show a clean whole-number score in the leaderboard rows.
+		return str(roundi(float(record.get("score", 0))))
 	if key == "student_name":
 		return str(record.get("student_name", record.get("name", "")))
 	if key == "grade":
@@ -301,10 +348,34 @@ func _download_csv() -> void:
 	if _visible_rows.is_empty():
 		empty_dialog.popup_centered()
 	else:
-		csv_dialog.popup_centered()
+		_open_csv_dialog(csv_dialog, "kilosgrammar_filtered_scores.csv")
+
+
+func _set_csv_start_directory(dialog: FileDialog) -> void:
+	# Windows' Known Folder API resolves Downloads even when the user moved it
+	# away from C:/Users/<account>/Downloads. FileDialog requires filesystem
+	# access for both Windows' native chooser and Godot's non-Windows fallback.
+	var downloads := OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
+	if not downloads.is_empty() and DirAccess.dir_exists_absolute(downloads):
+		dialog.current_dir = downloads
+
+
+func _open_csv_dialog(dialog: FileDialog, suggested_filename: String = "") -> void:
+	# Reset on EVERY open: the prior user-selected folder must not override the
+	# requested Downloads default for the next import or export.
+	_set_csv_start_directory(dialog)
+	dialog.current_file = suggested_filename
+	# The previous backend result must not remain an exclusive native window
+	# over a new CSV file chooser.
+	if empty_dialog.visible:
+		empty_dialog.hide()
+	dialog.popup_centered()
 
 
 func _write_csv(filepath: String) -> void:
+	# Godot's file_selected signal can arrive before the native save window is
+	# fully dismissed; close it before presenting an outcome notice.
+	csv_dialog.hide()
 	var file := FileAccess.open(filepath, FileAccess.WRITE)
 	if file == null:
 		empty_dialog.dialog_text = "Could not write CSV to the selected location."
@@ -335,7 +406,7 @@ func _filtered_csv_text(record: Dictionary, key: String) -> String:
 
 func _protect_spreadsheet_cell(value: String) -> String:
 	# Spreadsheet apps evaluate cells beginning with =, +, -, or @ as formulas.
-	# The legacy Download button exports the visible rows on this device;
+	# The optional filtered CSV API exports the visible rows on this device;
 	# database-wide Import/Export are handled by the server via signals.
 	var probe := value.strip_edges(true, false)
 	if probe.begins_with("=") or probe.begins_with("+") or probe.begins_with("-") or probe.begins_with("@"):
@@ -351,15 +422,14 @@ func _choose_import_csv() -> void:
 		set_transfer_status("Teacher authorization required to import student records.")
 		return
 	_cancel_import_csv()
-	import_dialog.popup_centered()
+	_open_csv_dialog(import_dialog)
 
 
 func _choose_database_export_csv() -> void:
 	if _transfer_pending:
 		_show_status("A database transfer is already pending. Please finish it first.")
 		return
-	_show_status("Export ALL profiles and completed scores. The existing Download CSV only saves filtered leaderboard scores.")
-	database_export_dialog.popup_centered()
+	_open_csv_dialog(database_export_dialog, "kilosgrammar_student_scores.csv")
 
 
 func _on_import_file_selected(path: String) -> void:
@@ -380,6 +450,10 @@ func _on_import_file_selected(path: String) -> void:
 		+ "The local database must validate each row before saving. Confirm only if "
 		+ "you recognize this file and intend to import its contents."
 	) % path.get_file()
+	# File selection signals can arrive directly in tests or from native dialogs.
+	# Close a prior backend notice before opening this exclusive review window.
+	if empty_dialog.visible:
+		empty_dialog.hide()
 	import_review_dialog.popup_centered()
 
 
@@ -428,12 +502,22 @@ func _begin_delete_all() -> void:
 		set_transfer_status("Teacher authorization required before deleting ALL students and scores.")
 		return
 	_reset_delete_confirmation()
-	_show_status("Deletion requires TWO confirmations and exact typed DELETE ALL DATA.")
-	delete_first_warning.popup_centered()
+	if empty_dialog.visible:
+		# A previous CSV/backend notice must not cover the custom warning board.
+		# Restore its text after the teacher closes the delete challenge.
+		_queued_transfer_notice = empty_dialog.dialog_text
+		_queued_transfer_success = empty_dialog.title == "Leaderboard — Completed"
+		empty_dialog.hide()
+	# The custom board carries the complete warning; no separate status banner.
+	delete_first_overlay.show()
+	first_continue_button.call_deferred("grab_focus")
 
 
 func _on_delete_first_confirmed() -> void:
-	delete_first_warning.hide()
+	# A synthetic button signal or stale event cannot skip the visible first
+	# stage. Only the Continue button on that stage authorizes advancing.
+	if not delete_first_overlay.visible:
+		return
 	if _transfer_pending:
 		_reset_delete_confirmation()
 		_show_status("Cannot continue deletion during a pending database operation.")
@@ -444,6 +528,7 @@ func _on_delete_first_confirmed() -> void:
 		return
 	_delete_first_confirmed = true
 	typed_confirmation_edit.clear()
+	delete_first_overlay.hide()
 	delete_final_overlay.show()
 	_on_typed_confirmation_changed("")
 	typed_confirmation_edit.call_deferred("grab_focus")
@@ -472,18 +557,86 @@ func _on_final_delete_pressed() -> void:
 
 
 func _cancel_delete_all() -> void:
-	delete_final_overlay.hide()
+	var was_open := (is_instance_valid(delete_first_overlay) and delete_first_overlay.visible) \
+		or (is_instance_valid(delete_final_overlay) and delete_final_overlay.visible)
 	_reset_delete_confirmation()
+	if was_open and not _transfer_pending and is_instance_valid(delete_button) \
+			and delete_button.is_visible_in_tree() and not empty_dialog.visible:
+		delete_button.grab_focus()
 
 
 func _reset_delete_confirmation() -> void:
+	var was_open := (is_instance_valid(delete_first_overlay) and delete_first_overlay.visible) \
+		or (is_instance_valid(delete_final_overlay) and delete_final_overlay.visible)
 	_delete_first_confirmed = false
-	if is_instance_valid(delete_first_warning):
-		delete_first_warning.hide()
+	if is_instance_valid(delete_first_overlay):
+		delete_first_overlay.hide()
+	if is_instance_valid(delete_final_overlay):
+		delete_final_overlay.hide()
 	if is_instance_valid(typed_confirmation_edit):
 		typed_confirmation_edit.clear()
 	if is_instance_valid(final_delete_button):
 		final_delete_button.disabled = true
+	if was_open:
+		_flush_queued_transfer_notice()
+
+
+func show_delete_success(students_deleted: int, scores_deleted: int) -> void:
+	## Called only after the host receives a successful delete_all_data reply.
+	## Unlike CSV completion, this shows the supplied wooden success artwork.
+	## Counts come from the acknowledged server response, never hardcoded text.
+	if not is_node_ready():
+		return
+	_set_transfer_pending_state(false)
+	_reset_delete_confirmation()
+	_queued_transfer_notice = ""
+	_queued_transfer_success = false
+	_last_transfer_notice_text = ""
+	empty_dialog.hide()
+	success_message.text = "Deleted %d student profiles and %d saved scores." % [
+		maxi(0, students_deleted), maxi(0, scores_deleted)]
+	delete_success_overlay.show()
+	success_okay_button.grab_focus()
+
+
+func _dismiss_delete_success() -> void:
+	delete_success_overlay.hide()
+	_flush_queued_transfer_notice()
+	if is_instance_valid(back_button) and back_button.is_visible_in_tree():
+		back_button.grab_focus()
+
+
+func _input(event: InputEvent) -> void:
+	# Keep keyboard navigation inside the active modal, as well as capturing
+	# pointer events. Escape closes either destructive confirmation stage.
+	if not delete_first_overlay.visible and not delete_final_overlay.visible:
+		return
+	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if event.keycode == KEY_ESCAPE:
+		_cancel_delete_all()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_focus_next"):
+		_cycle_delete_focus(false)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_focus_prev"):
+		_cycle_delete_focus(true)
+		get_viewport().set_input_as_handled()
+
+
+func _cycle_delete_focus(backwards: bool) -> void:
+	var targets: Array[Control] = []
+	if delete_final_overlay.visible:
+		targets = [typed_confirmation_edit, final_cancel_button]
+		if not final_delete_button.disabled:
+			targets.append(final_delete_button)
+	elif delete_first_overlay.visible:
+		targets = [first_cancel_button, first_continue_button]
+	var focus_index := targets.find(get_viewport().gui_get_focus_owner())
+	if focus_index < 0:
+		focus_index = 0 if backwards else -1
+	var direction := -1 if backwards else 1
+	targets[posmod(focus_index + direction, targets.size())].grab_focus()
 
 
 func _teacher_authorized() -> bool:
@@ -537,28 +690,67 @@ func _validate_import_csv(path: String) -> String:
 
 
 func _show_status(message: String) -> void:
-	transfer_status.get_parent().visible = not message.is_empty()
-	transfer_status.text = message
-	transfer_status.add_theme_color_override("font_color", Color("#38334F"))
+	# Status warnings now use the existing notice dialog, with no beige banner.
+	_queue_or_show_transfer_notice(message, false)
 
 
 func set_transfer_status(message: String, success: bool = false) -> void:
 	## Main menu should call this when the backend acknowledges an operation.
 	## A failed call keeps database state unchanged; show the actual server error.
 	_set_transfer_pending_state(false)
-	transfer_status.get_parent().visible = not message.is_empty()
-	transfer_status.text = message
-	transfer_status.add_theme_color_override("font_color", Color("#217046") if success else Color("#9D2930"))
-	if success:
-		# The host will provide freshly queried rows using set_context().
-		_cancel_delete_all()
+	_queue_or_show_transfer_notice(message, success)
+	# A successful *unrelated* export must not close a teacher's active delete
+	# challenge or make its queued notice cover the custom warning artwork.
+	# Any fresh backend context is applied through set_context(), which already
+	# revokes a challenge when database/authorization state actually changes.
+
+
+func _queue_or_show_transfer_notice(message: String, success: bool) -> void:
+	if not is_instance_valid(empty_dialog):
+		# Hosts can call status methods before the scene enters the tree.
+		_queued_transfer_notice = message
+		_queued_transfer_success = success
+		return
+	if (is_instance_valid(delete_first_overlay) and delete_first_overlay.visible) \
+			or (is_instance_valid(delete_final_overlay) and delete_final_overlay.visible) \
+			or (is_instance_valid(delete_success_overlay) and delete_success_overlay.visible):
+		# A generic dialog must never obscure either custom delete challenge.
+		_queued_transfer_notice = message
+		_queued_transfer_success = success
+	elif not message.is_empty():
+		_show_transfer_notice(message, success)
+	else:
+		_queued_transfer_notice = ""
+		_queued_transfer_success = false
+		if empty_dialog.visible and empty_dialog.dialog_text == _last_transfer_notice_text:
+			empty_dialog.hide()
+		_last_transfer_notice_text = ""
+
+
+func _flush_queued_transfer_notice() -> void:
+	var message := _queued_transfer_notice
+	var success := _queued_transfer_success
+	_queued_transfer_notice = ""
+	_queued_transfer_success = false
+	if not message.is_empty():
+		_show_transfer_notice(message, success)
+
+
+func _show_transfer_notice(message: String, success: bool) -> void:
+	if message.is_empty():
+		return
+	_last_transfer_notice_text = message
+	empty_dialog.title = "Leaderboard — Completed" if success else "Leaderboard — Notice"
+	empty_dialog.dialog_text = message
+	empty_dialog.popup_centered()
 
 
 func set_transfer_pending(message: String) -> void:
 	## Host calls this for "Preparing..." and other interim database progress.
 	## Buttons remain locked until set_transfer_status indicates completion.
 	_set_transfer_pending_state(true)
-	_show_status(message)
+	# Progress text no longer creates a persistent status panel or interrupts
+	# a CSV transfer. Backend completion/errors use set_transfer_status().
 
 
 func set_processing(message: String) -> void:
@@ -568,6 +760,11 @@ func set_processing(message: String) -> void:
 
 func _set_transfer_pending_state(pending: bool) -> void:
 	_transfer_pending = pending
-	import_button.disabled = pending
-	export_button.disabled = pending
-	delete_button.disabled = pending
+	# A transfer beginning from elsewhere must revoke any unfinished delete
+	# challenge instead of leaving an actionable confirmation on screen.
+	if pending and ((is_instance_valid(delete_first_overlay) and delete_first_overlay.visible) \
+			or (is_instance_valid(delete_final_overlay) and delete_final_overlay.visible)):
+		_cancel_delete_all()
+	for button in [import_button, export_button, delete_button]:
+		if is_instance_valid(button):
+			button.disabled = pending

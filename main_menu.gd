@@ -77,8 +77,6 @@ const EFFECTS_BUS := "KilosSFX"
 @onready var left_menu: Control = $MainLayer/LeftMenu
 @onready var center_menu: Control = $MainLayer/CenterMenu
 @onready var version: Label = get_node_or_null("MainLayer/Version") as Label
-@onready var tooltip: PanelContainer = $MainLayer/Tooltip
-@onready var tooltip_label: Label = $MainLayer/Tooltip/Text
 @onready var falling_layer: Control = $FallingLayer
 @onready var falling_template: PanelContainer = $FallingLayer/FallingTemplate
 @onready var fall_timer: Timer = $FallTimer
@@ -139,8 +137,6 @@ var idle_time := 0.0
 var title_music_player: AudioStreamPlayer
 var button_sounds: Node
 var logo_bump_active := false
-var tooltip_tween: Tween
-const TOOLTIP_GAP := 24.0
 var _shutting_down := false
 var _shutdown_audio_prepared := false
 var _shutdown_audio_drain_complete := false
@@ -192,9 +188,9 @@ func _ready() -> void:
 		grammar_home_positions[tile] = tile.position
 		grammar_home_rotations[tile] = tile.rotation
 
-	_register_left_button($MainLayer/LeftMenu/Leaderboard, "View student scores and rankings.", 0.015)
-	_register_left_button($MainLayer/LeftMenu/Settings, "Adjust audio, display, and gameplay preferences.", 0.013)
-	_register_left_button($MainLayer/LeftMenu/Credits, "View the KilosGrammar team and acknowledgments.", -0.012)
+	_register_button($MainLayer/LeftMenu/Leaderboard, 0.015)
+	_register_button($MainLayer/LeftMenu/Settings, 0.013)
+	_register_button($MainLayer/LeftMenu/Credits, -0.012)
 
 	_register_button($MainLayer/CenterMenu/Tutorial, -0.026)
 	_register_button($MainLayer/CenterMenu/Play, 0.018)
@@ -209,10 +205,6 @@ func _ready() -> void:
 	_register_logo_interactions()
 
 	fall_timer.timeout.connect(_spawn_falling_grammar_card)
-	tooltip.z_index = 40
-	tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tooltip.visible = false
 	call_deferred("_play_intro")
 
 
@@ -352,12 +344,6 @@ func _ensure_audio_buses() -> void:
 		var new_index: int = AudioServer.bus_count - 1
 		AudioServer.set_bus_name(new_index, bus_name)
 		AudioServer.set_bus_send(new_index, "Master")
-
-
-func _register_left_button(button: Button, copy: String, hover_rotation: float) -> void:
-	_register_button(button, hover_rotation)
-	button.mouse_entered.connect(_show_tooltip.bind(button, copy))
-	button.mouse_exited.connect(_hide_tooltip)
 
 
 func _register_button(button: Button, _hover_rotation: float) -> void:
@@ -519,46 +505,6 @@ func _bump_grammar_tile(tile: Control) -> void:
 	logo_tweens[tile] = tween
 	tween.tween_property(tile, "scale", Vector2(rng.randf_range(1.15, 1.25), rng.randf_range(0.80, 0.90)), 0.10)
 	tween.tween_property(tile, "scale", Vector2.ONE, 0.15).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
-
-
-func _show_tooltip(button: Button, copy: String) -> void:
-	if current_route != "main":
-		return
-	if tooltip_tween and tooltip_tween.is_valid():
-		tooltip_tween.kill()
-	tooltip_label.text = copy
-	tooltip.custom_minimum_size = Vector2(260.0, 72.0)
-	tooltip.size = Vector2(260.0, 72.0)
-	var rect: Rect2 = button.get_global_rect()
-	var viewport_rect: Rect2 = get_viewport_rect()
-	var tooltip_width: float = tooltip.size.x
-	var tooltip_height: float = tooltip.size.y
-	var target_x: float = rect.end.x + TOOLTIP_GAP
-	if target_x + tooltip_width > viewport_rect.end.x - 12.0:
-		target_x = rect.position.x - TOOLTIP_GAP - tooltip_width
-	var target_y: float = rect.position.y + (rect.size.y - tooltip_height) * 0.5
-	target_y = clampf(target_y, 12.0, maxf(12.0, viewport_rect.size.y - tooltip_height - 12.0))
-	tooltip.global_position = Vector2(target_x, target_y)
-	tooltip.pivot_offset = Vector2(0.0, tooltip_height * 0.5)
-	tooltip.visible = true
-	tooltip.scale = Vector2(0.94, 0.94)
-	tooltip.modulate.a = 0.0
-	tooltip_tween = create_tween()
-	tooltip_tween.set_parallel(true)
-	tooltip_tween.tween_property(tooltip, "scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tooltip_tween.tween_property(tooltip, "modulate:a", 1.0, 0.08)
-
-
-func _hide_tooltip() -> void:
-	if not tooltip.visible:
-		return
-	if tooltip_tween and tooltip_tween.is_valid():
-		tooltip_tween.kill()
-	tooltip_tween = create_tween()
-	tooltip_tween.set_parallel(true)
-	tooltip_tween.tween_property(tooltip, "scale", Vector2(0.94, 0.94), 0.09).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tooltip_tween.tween_property(tooltip, "modulate:a", 0.0, 0.08)
-	tooltip_tween.chain().tween_callback(func() -> void: tooltip.visible = false)
 
 
 func _spawn_falling_grammar_card() -> void:
@@ -1080,8 +1026,13 @@ func _handle_database_management_result(info: Dictionary, result: Dictionary) ->
 			_leaderboard_management_context())
 		return
 	if operation == "delete_all_data":
-		_leaderboard_management_status("Deleted %d student profiles and %d saved scores." % [
-			int(data.get("students_deleted", 0)), int(data.get("scores_deleted", 0))], true)
+		var deleted_students := int(data.get("students_deleted", 0))
+		var deleted_scores := int(data.get("scores_deleted", 0))
+		if is_instance_valid(active_panel) and active_panel.has_method("show_delete_success"):
+			active_panel.call("show_delete_success", deleted_students, deleted_scores)
+		else:
+			_leaderboard_management_status("Deleted %d student profiles and %d saved scores." % [
+				deleted_students, deleted_scores], true)
 		# Never keep a now-deleted student's identity in the next game session.
 		for key in ["student_id", "student_name", "grade_section", "student_lookup_connected"]:
 			session_state.erase(key)
@@ -1302,7 +1253,6 @@ func _show_panel(route: String) -> void:
 	logo_group.visible = false
 	left_menu.visible = false
 	center_menu.visible = false
-	tooltip.visible = false
 	if version:
 		version.visible = false
 	panel_host.add_child(active_panel)
@@ -1354,7 +1304,6 @@ func _return_to_main() -> void:
 	left_menu.visible = true
 	center_menu.visible = true
 	button_sounds.call("reset_hover_origin", $MainLayer)
-	tooltip.visible = false
 	if version:
 		version.visible = true
 	current_route = "main"
@@ -1434,8 +1383,6 @@ func prepare_for_shutdown() -> void:
 		fall_timer.stop()
 	if is_instance_valid(logo_sequence_tween) and logo_sequence_tween.is_valid():
 		logo_sequence_tween.kill()
-	if is_instance_valid(tooltip_tween) and tooltip_tween.is_valid():
-		tooltip_tween.kill()
 	if is_instance_valid(panel_host):
 		panel_host.process_mode = Node.PROCESS_MODE_DISABLED
 	if is_instance_valid(button_sounds):

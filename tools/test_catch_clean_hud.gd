@@ -8,9 +8,9 @@ extends SceneTree
 
 const SCENE_PATH := "res://ui/minigames/catch_word.tscn"
 const SOURCE_PATH := "res://ui/minigames/catch_word.gd"
-const ART := "res://ui/minigames/catch_hud/generated/"
+const ART := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const HEART_ART := ART + "replacement/"
-const OLD_APPLE := "res://Components/Apple.png"
+const OLD_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
 const NEW_APPLE := ART + "character/word_apple.png"
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const MODES := ["Seconds", "Lives"]

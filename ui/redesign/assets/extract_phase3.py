@@ -23,6 +23,12 @@ from PIL import Image
 
 
 HERE = Path(__file__).resolve().parent
+ART_ROOT = HERE.parents[2] / "Components"
+ART_FOLDERS = {
+    "game_over": "Results/Redesign",
+    "tutorial": "Tutorial/Redesign",
+    "settings": "Settings/Redesign",
+}
 
 # Component rank is the descending alpha-connected area (threshold 45/255).
 # This is more robust than clipping rectangles from a flattened screen design:
@@ -181,7 +187,7 @@ def extract(source_dir: Path, overwrite: bool = False) -> dict[str, list[dict]]:
     hashed: dict[str, str] = {}
     manifest: dict[str, list[dict]] = {}
     for category, specifications in SPECS.items():
-        output_folder = HERE / category
+        output_folder = ART_ROOT / ART_FOLDERS[category]
         output_folder.mkdir(parents=True, exist_ok=True)
         records: list[dict] = []
         for name, key, rank, meaning, baked, mode in specifications:
@@ -231,7 +237,7 @@ def extract(source_dir: Path, overwrite: bool = False) -> dict[str, list[dict]]:
                 output.write_bytes(raw.getvalue())
             record = {
                 "name": name,
-                "path": f"res://ui/redesign/assets/{category}/{name}.png",
+                "path": f"res://Components/{ART_FOLDERS[category]}/{name}.png",
                 "source": (Path(folder) / file_name).as_posix(),
                 "source_sha256": hashed[key],
                 "source_component_rank": rank if mode != "full" else None,

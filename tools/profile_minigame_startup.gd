@@ -15,28 +15,28 @@ const WRAPPER_PATH := "res://ui/play/gameplay.tscn"
 const MENU_PATH := "res://main_menu.tscn"
 const CATCH_PROBE := {
 	"hud": [
-		"res://ui/minigames/catch_hud/generated/title_board.png",
-		"res://ui/minigames/catch_hud/generated/lives_badge.png",
-		"res://ui/minigames/catch_hud/generated/timer_badge.png",
-		"res://ui/minigames/catch_hud/generated/pause_badge.png",
-		"res://ui/minigames/catch_hud/generated/score_board.png",
-		"res://ui/minigames/catch_hud/generated/replacement/lives_state_1.png",
-		"res://ui/minigames/catch_hud/generated/replacement/lives_state_2.png",
-		"res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png",
-		"res://ui/minigames/catch_hud/generated/character/word_apple.png"
+		"res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png",
+		"res://Components/Gameplay/Catch the Word/HUD/generated/lives_badge.png",
+		"res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png",
+		"res://Components/Gameplay/Catch the Word/HUD/generated/pause_badge.png",
+		"res://Components/Gameplay/Catch the Word/HUD/generated/score_board.png",
+		"res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png",
+		"res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png",
+		"res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png",
+		"res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
 	],
 	"character_map": [
-		"res://WordCatcherMaps/CityMap.png",
-		"res://WordCatcherMaps/ForestMap.png",
-		"res://WordCatcherMaps/MountainMap.png",
-		"res://WordCatcherCharacters/BOY BODY.png",
-		"res://WordCatcherCharacters/BOY BASKET.png",
-		"res://WordCatcherCharacters/GIRL BODY.png",
-		"res://WordCatcherCharacters/GIRL BASKET.png",
-		"res://WordCatcherCharacters/GRANDMA BODY.png",
-		"res://WordCatcherCharacters/GRANDMA BASKET.png",
-		"res://WordCatcherCharacters/GRANDPA BODY.png",
-		"res://WordCatcherCharacters/GRANDPA BASKET.png"
+		"res://Components/Gameplay/Catch the Word/Maps/CityMap.png",
+		"res://Components/Gameplay/Catch the Word/Maps/ForestMap.png",
+		"res://Components/Gameplay/Catch the Word/Maps/MountainMap.png",
+		"res://Components/Gameplay/Catch the Word/Characters/BOY BODY.png",
+		"res://Components/Gameplay/Catch the Word/Characters/BOY BASKET.png",
+		"res://Components/Gameplay/Catch the Word/Characters/GIRL BODY.png",
+		"res://Components/Gameplay/Catch the Word/Characters/GIRL BASKET.png",
+		"res://Components/Gameplay/Catch the Word/Characters/GRANDMA BODY.png",
+		"res://Components/Gameplay/Catch the Word/Characters/GRANDMA BASKET.png",
+		"res://Components/Gameplay/Catch the Word/Characters/GRANDPA BODY.png",
+		"res://Components/Gameplay/Catch the Word/Characters/GRANDPA BASKET.png"
 	],
 	"voice": [
 		"GoodJob.mp3", "niceee.mp3", "Awesome.mp3", "Perfect.mp3",

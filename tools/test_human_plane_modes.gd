@@ -3,9 +3,9 @@ extends SceneTree
 # Run with Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_modes.gd
 const GAME_SCENE := preload("res://ui/minigames/human_plane.tscn")
 const DIFFICULTIES := [
-	{"name": "Easy", "waves": 12, "seconds_lives": 3, "gate_speed": 0.20, "bonus": 0},
-	{"name": "Normal", "waves": 14, "seconds_lives": 3, "gate_speed": 0.27, "bonus": 20},
-	{"name": "Hard", "waves": 16, "seconds_lives": 3, "gate_speed": 0.34, "bonus": 40}
+	{"name": "Easy", "waves": 12, "seconds_lives": 3, "gate_speed": 0.20},
+	{"name": "Normal", "waves": 14, "seconds_lives": 3, "gate_speed": 0.27},
+	{"name": "Hard", "waves": 16, "seconds_lives": 3, "gate_speed": 0.34}
 ]
 
 var failures: Array[String] = []
@@ -54,7 +54,7 @@ func _check_mode(mode: String, diff: Dictionary) -> void:
 	var payload := game.call("get_context") as Dictionary
 	_expect(String(payload.get("game_mode")) == mode and int(payload.get("lives")) == initial_lives, label + " result payload mode and lives")
 
-	# A correct gate keeps the original difficulty scoring formula.
+	# Correct gates always award +100, while difficulty changes gate velocity.
 	var lane_data: Dictionary = game.get("round_data")
 	var correct_lane := int((lane_data["valid_indices"] as Array)[0])
 	var gate_progress: float = game.call("_progress_for_answer_line")
@@ -62,7 +62,7 @@ func _check_mode(mode: String, diff: Dictionary) -> void:
 	game.set("plane_x_norm", chosen_rect.get_center().x / game.size.x)
 	game.call("_resolve_at_answer_line")
 	_expect(int(game.get("correct_count")) == 1, label + " correct hit")
-	_expect(int(game.get("score")) == 100 + int(diff["bonus"]), label + " difficulty scoring")
+	_expect(int(game.get("score")) == 100, label + " fixed +100 correct gate score")
 	game.call("_resolve_at_answer_line")
 	_expect(int(game.get("attempts")) == 1, label + " idempotent gate resolution")
 	game.call("_start_wave")

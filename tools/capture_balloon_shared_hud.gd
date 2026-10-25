@@ -10,11 +10,11 @@ const SCENE: PackedScene = preload("res://ui/minigames/balloon_popping.tscn")
 const OUTPUT := "res://showcase/balloon_asset_review/fixed"
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const HEART_IMAGES := {
-    1: "res://ui/minigames/catch_hud/generated/replacement/lives_state_1.png",
-    2: "res://ui/minigames/catch_hud/generated/replacement/lives_state_2.png",
-    3: "res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png",
+    1: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png",
+    2: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png",
+    3: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png",
 }
-const TIMER_IMAGE := "res://ui/minigames/catch_hud/generated/timer_badge.png"
+const TIMER_IMAGE := "res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png"
 
 var failures: Array[String] = []
 var captures := 0

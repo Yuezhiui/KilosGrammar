@@ -5,10 +5,10 @@ extends SceneTree
 # Word, with original editable coordinates and precisely three life states.
 const SCENE := preload("res://ui/minigames/human_plane.tscn")
 const CATCH_SCENE := preload("res://ui/minigames/catch_word.tscn")
-const LIVES_STATE_3 := preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_3.png")
-const LIVES_STATE_2 := preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_2.png")
-const LIVES_STATE_1 := preload("res://ui/minigames/catch_hud/generated/replacement/lives_state_1.png")
-const LIVES_STATE_EMPTY := preload("res://ui/minigames/catch_hud/generated/lives_badge.png")
+const LIVES_STATE_3 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png")
+const LIVES_STATE_2 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png")
+const LIVES_STATE_1 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png")
+const LIVES_STATE_EMPTY := preload("res://Components/Gameplay/Catch the Word/HUD/generated/lives_badge.png")
 const SCREENS := [Vector2i(1280, 720), Vector2i(1920, 1080)]
 const MODES := ["Seconds", "Lives"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]

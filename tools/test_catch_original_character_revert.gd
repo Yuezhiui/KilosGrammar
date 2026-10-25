@@ -18,7 +18,7 @@ func _run() -> void:
 	for name in NAMES:
 		var pair := {}
 		for suffix in ["BODY", "BASKET"]:
-			var path: String = "res://WordCatcherCharacters/%s %s.png" % [name.to_upper(), suffix]
+			var path: String = "res://Components/Gameplay/Catch the Word/Characters/%s %s.png" % [name.to_upper(), suffix]
 			var png_bytes := FileAccess.get_file_as_bytes(path)
 			_check(not png_bytes.is_empty(), path + " original PNG bytes missing")
 			if png_bytes.is_empty():

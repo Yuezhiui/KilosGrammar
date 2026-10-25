@@ -1,63 +1,22 @@
-# Leaderboard — extracted component pack
+# KILOSGRAMMAR — Live Leaderboard artwork
 
-This folder contains the **new 2026 Leaderboard component pack**, made from
-`C:\Users\Yue\Downloads\431b27ff-031a-4389-9e8a-1b95a7ac53ae.png`,
-as well as the earlier reference assets. The new sheet is retained intact
-as `new_user_reference.png`.
+Only images used by the current Godot Leaderboard (and its editable confirmation dialogs) belong in this folder. The older prototype sprite packs, reference-sheet screenshots, their `.import` files, unused manifests, and retired extractor scripts were pruned on 25 October 2026 at the user's request.
 
-The component PNGs retain original pixel color, anti-aliasing, lighting,
-soft shadows and alpha. Their backgrounds were **not redrawn or replaced**:
-several elements of the source sheet already contain baked atmospheric
-gradients around the artwork.
+**Runtime artwork is fully local to the Godot project.** The supplied Downloads folders are source-only and are **not** read at runtime or referenced by the scene. All eight notification PNGs live in `res://Components/Leaderboard/NotifLeader/`; all three success PNGs live in `res://Components/Leaderboard/Success/`. Each has its own Godot `.png.import` metadata. The three success PNGs were verified as byte-identical copies of the supplied originals.
 
-## Used in game
+## Live artwork
 
-`ui/secondary/leaderboard.tscn` is a fully **editor-authored layout**.
-No reference screenshot is rendered underneath buttons. The new title,
-board, buttons, table, foreground decorations and backdrop use separate
-textures. A 2026 extraction manifest is included for reproducibility.
+- `2026-10-24/` — Leaderboard background, title, row/table header, back/import/export/delete buttons and all grammar/mode/difficulty dropdown selected-state textures. The PNGs are referenced individually by `res://ui/secondary/leaderboard.tscn` and remain draggable/editable in the editor.
+- `NotifLeader/` — First and final wooden warning panels, two-stage confirmation buttons, input frame, and separate gray/red **`FinalDeleteButton`** styles. The red and gray are **one** native Godot Button with two authored styles, not two controls.
+- `Success/` — Locally copied `bg.png`, `OkayButton.png`, and `00669de2-99cd-46c6-bef9-f3a0f69c72e1.png` (decorated **Leaderboard — Completed** header), displayed only on confirmed successful deletion. `SuccessBoard` and `SuccessHeader` remain separate editable TextureRects, green OK remains a native Button, and `SuccessMessage` is a native Label populated with backend-deleted record counts.
+- `Secondary/transparent_dropdown_arrow.png` — Invisible native OptionButton arrow; the selected-state PNG artwork supplies the visible arrow so it never doubles.
 
-### Manual drag-and-drop editing
+There is no image drawn as a screenshot of the whole Leaderboard. Native Buttons, LineEdit, OptionButtons, labels, two delete-warning overlays and a separate success overlay remain `.tscn` nodes for drag-and-drop editing. The generic `EmptyNotice` remains untouched for unrelated CSV/import/export results and failures.
 
-1. In Godot's FileSystem panel, open `res://ui/secondary/leaderboard.tscn`.
-2. Select **2D**. The `Background` node is a full-window
-   `TextureRect` and is **not locked**. Select it, then change
-   **Inspector → Texture** to any other image. The other UI elements will
-   stay in place. The default image is `new_background.png`.
-3. All other permanent UI elements are **real movable nodes**:
-   `WoodBoard`, `TitleArt`, `BackButton`, `FiltersArt`, the
-   three independent `OptionButton` selectors, `TableHeaderArt`,
-   `TableBodyArt`, `TableContent`, `EmptyMessage`,
-   `DownloadButton`, `DecorativePot`, `DecorativeStar`, and
-   `DecorativeBooks`.
-4. Select a node from the **Scene** tree, drag it in 2D, resize its
-   handles, or change its style, text, textures and anchors in the
-   Inspector. **No script changes are necessary to move a button.**
-5. The row cell positions belong to
-   `res://ui/secondary/leaderboard_row.tscn`. Edit that scene visually
-   for individual student-column spacing.
-6. `ui/secondary/leaderboard.gd` only binds button signals, filters
-   supplied records, populates row instances, and handles CSV export.
-   It does not position UI nodes.
+The active Godot scene is `res://ui/secondary/leaderboard.tscn`, with logic in `leaderboard.gd` and rows in `leaderboard_row.tscn`. To resize the red/gray PERMANENTLY DELETE art together, select `DeleteFinalOverlay/ConfirmPanel/FinalDeleteButton`. Change its offsets/rect once; `NotifDeleteEnabledStyle` and `NotifDeleteDisabledStyle` both use the same target rectangle, despite their underlying artwork being different original PNGs.
 
-The background texture is separate and swappable. Changing the canvas
-coordinates of a visible foreground node moves its **actual sprite,
-label or selectable control**—not an invisible click area.
-The original screenshots remain untouched under this folder.
+## Safety and verification
 
-## Re-extract
+Do not remove any texture referenced from `.tscn` or from dynamic selected-skin loaders in `.gd`, even if it appears hidden. Check both direct file references and constructed resource paths. Tests include `tools/test_leaderboard_selected_assets.gd`, `tools/test_leaderboard_design.gd`, `tools/test_leaderboard_delete_modal_visual.gd`, `tools/test_leaderboard_delete_success_visual.gd`, and `tools/test_component_prune_integrity.gd`. The latter checks resource validity across the game.
 
-From project root:
-
-```powershell
-& 'C:\Espressif\tools\python\python.exe' -B tools\extract_leaderboard_components.py
-```
-
-To extract the **new reference** again:
-
-```powershell
-& 'C:\Espressif\tools\python\python.exe' -B tools\extract_leaderboard_2026_reference.py
-```
-
-`new_reference_manifest.json` records all new sprite bounds. The other
-existing files under `Components/` are untouched.
+The original reference packs were not part of the playable UI and have been removed rather than duplicated across folders. No database records were deleted, and the teacher-only two-stage delete flow is preserved.

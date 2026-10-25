@@ -5,7 +5,7 @@ signal requested(target: String, payload: Dictionary)
 const UI = preload("res://ui/play/play_ui.gd")
 const TOPICS := ["Noun", "Verb", "Adjective", "Adverb", "Pronoun"]
 const TOPIC_COLORS := [UI.GREEN, UI.RED, UI.YELLOW, UI.BLUE, UI.PURPLE]
-const ART := "res://ui/redesign/assets/student/"
+const ART := "res://Components/Student Setup/Redesign/"
 
 var context: Dictionary = {}
 var topic_buttons: Dictionary = {}

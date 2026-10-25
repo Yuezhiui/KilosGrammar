@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://ui/play/ready.gd" id="1_script"]
 [ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="2_font"]
-[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/setup_main_panel.png" id="3_background"]
+[ext_resource type="Texture2D" path="res://Components/Student Setup/Redesign/setup_main_panel.png" id="3_background"]
 
 [sub_resource type="StyleBoxFlat" id="ReadyCard"]
 bg_color = Color(0.282353, 0.266667, 0.388235, 0.92)

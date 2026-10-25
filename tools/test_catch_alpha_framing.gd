@@ -10,7 +10,7 @@ const SCENE := preload("res://ui/minigames/catch_word.tscn")
 const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
 const MAPS := ["City", "Forest", "Mountain"]
-const SOURCE_ROOT := "res://WordCatcherCharacters/"
+const SOURCE_ROOT := "res://Components/Gameplay/Catch the Word/Characters/"
 const EXPECTED_RIG_ORIGIN := Vector2(640, 620)
 const TOLERANCE := 1.5
 const MIN_EDGE_CLEARANCE := 4.0
@@ -77,7 +77,7 @@ func _case(resolution: Vector2i, character: String, map_name: String) -> void:
 	_check(rig.scale.is_equal_approx(Vector2.ONE * factor),
 		tag + ": root editor scaling is not proportional to viewport")
 	_check(game.selected_map == map_name and game.background.texture.resource_path ==
-		"res://WordCatcherMaps/%sMap.png" % map_name, tag + ": wrong map artwork")
+		"res://Components/Gameplay/Catch the Word/Maps/%sMap.png" % map_name, tag + ": wrong map artwork")
 
 	var group: Node2D = game.get_node(character) as Node2D
 	var body_editor_pos := body.position

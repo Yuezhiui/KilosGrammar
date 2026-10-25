@@ -1,6 +1,6 @@
 extends SceneTree
 
-const OUTPUT_PATH := "res://assets/ui/kilos_curved.png"
+const OUTPUT_PATH := "res://Components/Main Panel/Generated/kilos_curved.png"
 const CANVAS_SIZE := Vector2i(840, 320)
 const WORD := "KILOS"
 const FONT_SIZE := 224
@@ -43,6 +43,12 @@ func _generate() -> void:
 	mask_image = _warp_arch(mask_image)
 	_paint_halftone(final_image, mask_image)
 
+	var destination_dir := ProjectSettings.globalize_path(OUTPUT_PATH.get_base_dir())
+	var make_error := DirAccess.make_dir_recursive_absolute(destination_dir)
+	if make_error != OK:
+		push_error("Could not create image output folder: %s" % destination_dir)
+		quit(1)
+		return
 	var err := final_image.save_png(OUTPUT_PATH)
 	if err != OK:
 		push_error("Could not save KILOS texture: %s" % error_string(err))

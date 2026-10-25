@@ -3,7 +3,7 @@ extends SceneTree
 ## Focused October 25 regression for fully image-skinned native filter selections.
 ## No database server or destructive operations are called.
 const BOARD := preload("res://ui/secondary/leaderboard.tscn")
-const ASSETS := "res://Components/Leaderboard/2026-10-24/"
+const ASSETS := "res://Components/Leaderboard/"
 const CAPTURE_PATH := "res://ui/secondary/_review_selected_leaderboard.png"
 
 var errors: Array[String] = []
@@ -26,11 +26,9 @@ func _run() -> void:
 	_check(panel.has_method("set_minigame_filter")
 		and panel.has_method("request_filtered_csv_export"),
 		"minigame and filtered CSV backend remain callable without popover")
-	var minigame := panel.get_node("%MinigameFilter") as OptionButton
-	var filtered := panel.get_node("%DownloadButton") as Button
-	_check(minigame != null and filtered != null
-		and not minigame.is_visible_in_tree() and not filtered.is_visible_in_tree(),
-		"backend-only controls do not appear or intercept the leaderboard")
+	_check(panel.find_child("MinigameFilter", true, false) == null
+		and panel.find_child("DownloadButton", true, false) == null,
+		"retired backend-only controls are physically removed and cannot intercept clicks")
 
 	var groups := [
 		["StyleFilter", ["ALL STYLES", "NOUN", "PRONOUN", "VERB", "ADJECTIVE", "ADVERB"],
@@ -55,7 +53,7 @@ func _run() -> void:
 			selector.item_selected.emit(index)
 			var skin := selector.get_theme_stylebox("normal") as StyleBoxTexture
 			_check(skin != null and skin.texture != null
-				and _asset_source(skin.texture) == ASSETS + filenames[index],
+					and _is_leaderboard_png(_asset_source(skin.texture), filenames[index]),
 				"%s index %d uses supplied image %s" % [group[0], index, filenames[index]])
 			_check(selector.get_theme_color("font_color").a < 0.01,
 				"%s index %d hides the native duplicate caption" % [group[0], index])
@@ -117,6 +115,11 @@ func _asset_source(texture: Texture2D) -> String:
 	if texture is AtlasTexture:
 		return (texture as AtlasTexture).atlas.resource_path
 	return texture.resource_path if texture != null else ""
+
+func _is_leaderboard_png(path: String, original_name: String) -> bool:
+	# Image organization may add screen-specific folders without changing the
+	# pixels, dropdown option ordering or the editor-authored selected sprites.
+	return path.begins_with(ASSETS) and path.get_file() == original_name and ResourceLoader.exists(path)
 
 func _check(ok: bool, description: String) -> void:
 	checks += 1
