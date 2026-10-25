@@ -103,7 +103,7 @@ func _check_game(game_name: String, path: String, viewport_size: Vector2i) -> vo
 
 func _check_catch(game: Control, viewport_size: Vector2i) -> void:
 	var layer := game.get_node_or_null("FallingWordLayer") as CanvasItem
-	var rig := game.get_node_or_null("CharacterRig") as Node2D
+	var group := game.get("character_group") as Node2D
 	var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var pause := game.get_node_or_null("HUDLayer/HUD/PauseButton") as Button
@@ -113,12 +113,12 @@ func _check_catch(game: Control, viewport_size: Vector2i) -> void:
 	for item in [prompt, timer, pause, score, title, score_plaque]:
 		_check(item is Control and item.is_visible_in_tree() and _within_viewport(item.get_global_rect(), viewport_size),
 			"Catch %s: visible and unclipped HUD %s" % [viewport_size, item.name if item != null else "missing"])
-	_check(layer != null and rig != null, "Catch %s: apple layer and character rig exist" % viewport_size)
-	if rig != null:
+	_check(layer != null and group != null, "Catch %s: apple layer and selected root character exist" % viewport_size)
+	if group != null:
 		_check(Vector2(game.get("character_editor_origin")).y > 0.0,
-			"Catch %s: scene-authored rig Y survives _ready (authored=%s; live=%s)" %
-			[viewport_size, game.get("character_editor_origin"), rig.position])
-	if layer != null and rig != null:
+			"Catch %s: scene-authored character Y survives _ready (authored=%s; live=%s)" %
+			[viewport_size, game.get("character_editor_origin"), group.position])
+	if layer != null and group != null:
 		# Test a real gameplay apple node, not only the scene's static layer.
 		var apple := game.call("_create_tile_node", "QA", Color.WHITE) as Control
 		var apple_art := apple.get_node_or_null("AppleSprite") as CanvasItem if apple != null else null

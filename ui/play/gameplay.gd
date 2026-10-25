@@ -148,8 +148,13 @@ func _spotlight_targets() -> Dictionary:
 	var paths: Dictionary
 	match activity:
 		"Catch the Word":
+			# Characters are separate editor-authored root siblings. Spotlight
+			# must follow the actual selected character's visible basket.
+			var catch_character := String(active_game.get("selected_character"))
+			if catch_character not in ["Boy", "Girl", "Grandma", "Grandpa"]:
+				catch_character = "Boy"
 			paths = {
-				"prompt": "HUDLayer/HUD/PromptLabel", "play_area": "CharacterRig/Basket",
+				"prompt": "HUDLayer/HUD/PromptLabel", "play_area": catch_character + "/Basket",
 				"mode": "HUDLayer/HUD/" + mode_path,
 				"score": "ScoreDrawLayer/ScorePlaque", "pause": "HUDLayer/HUD/PausePlaque"
 			}

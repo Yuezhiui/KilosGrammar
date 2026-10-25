@@ -37,14 +37,9 @@ const TILE_SIZE := Vector2(106.0, 109.0)
 const APPLE_SIZE := Vector2(106.0, 109.0)
 const APPLE_SPACING_MARGIN := 12.0
 const BODY_FOLLOW_SPEED := 10.0
-# The CharacterRig and each character's Body/Basket offsets, crops and scales
-# are authored in catch_word.tscn. Gameplay only moves the shared rig on X.
-const CHARACTER_NODES := {
-	"Boy": ".",
-	"Girl": "Girl",
-	"Grandma": "Grandma",
-	"Grandpa": "Grandpa"
-}
+# Each character is its own root-level editable group. Gameplay moves only the
+# selected group; the other groups keep their scene-authored transforms.
+const CHARACTER_NODES := ["Boy", "Girl", "Grandma", "Grandpa"]
 const COLLECTED_WORD_LIMIT := 3
 const SECONDS_ROUND_DURATION := 60.0
 
@@ -140,15 +135,18 @@ var selected_character := ""
 var selected_map := ""
 var character_editor_origin := Vector2.ZERO
 var character_editor_scale := Vector2.ONE
+var character_editor_transforms: Dictionary = {}
+var collected_editor_offset := Vector2.ZERO
+var collected_editor_scale := Vector2.ONE
 
 var tile_style_cache: Dictionary = {}
 
 @onready var background: TextureRect = $Background
 @onready var falling_word_layer: Node2D = $FallingWordLayer
-@onready var character_rig: Node2D = $CharacterRig
-@onready var body_sprite: Sprite2D = $CharacterRig/Body
-@onready var collected_word_layer: Node2D = $CharacterRig/CollectedWords
-@onready var basket_sprite: Sprite2D = $CharacterRig/Basket
+@onready var character_group: Node2D = $Boy
+@onready var body_sprite: Sprite2D = $Boy/Body
+@onready var collected_word_layer: Node2D = $CollectedWords
+@onready var basket_sprite: Sprite2D = $Boy/Basket
 @onready var hud: Control = $HUDLayer/HUD
 @onready var title_plaque: TextureRect = $HUDLayer/HUD/TitlePlaque
 @onready var timer_plaque: TextureRect = $HUDLayer/HUD/TimerPlaque
@@ -181,10 +179,15 @@ var last_prompt_layout_text := ""
 func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# The scene editor owns the resting X/Y; do not recompute the rig's baseline
-	# from screen height and hide its lower body below the viewport.
-	character_editor_origin = character_rig.position
-	character_editor_scale = character_rig.scale
+	# Capture all four saved positions/scales before the round moves anything.
+	# Inactive characters and the loose CollectedWords layer are editor-owned.
+	for name in CHARACTER_NODES:
+		var group := get_node(name) as Node2D
+		character_editor_transforms[name] = {"position": group.position, "scale": group.scale}
+	character_editor_origin = character_group.position
+	character_editor_scale = character_group.scale
+	collected_editor_offset = collected_word_layer.position - character_group.position
+	collected_editor_scale = collected_word_layer.scale
 	rng.randomize()
 	_initialize_voice_feedback()
 	_load_grammar_bank_if_available()
@@ -463,8 +466,8 @@ func _apply_generated_reference_assets() -> void:
 func _place_score_behind_character() -> void:
 	# The HUD lives in CanvasLayer 20; score nodes inside it always cover the
 	# player, regardless of z_index. Keep the rest of the HUD on that layer.
-	# Same-canvas absolute draw order (all author-owned Sprite2D z values are
-	# relative to CharacterRig): score -3 < body -2 < collected -1 < basket 0
+	# Same-canvas absolute draw order (the root character groups use z=0):
+	# score -3 < body -2 < collected -1 < basket 0
 	# < falling apples 1. Thus falling apples stay ABOVE even the front basket.
 	score_draw_layer = Control.new()
 	score_draw_layer.name = "ScoreDrawLayer"
@@ -473,7 +476,8 @@ func _place_score_behind_character() -> void:
 	score_plaque.reparent(score_draw_layer)
 	score_bottom_container.reparent(score_draw_layer)
 	score_draw_layer.z_index = -3
-	character_rig.z_index = 0
+	for name in CHARACTER_NODES:
+		(get_node(name) as Node2D).z_index = 0
 	_layout_controls()
 
 
@@ -611,19 +615,27 @@ func _apply_art_selection() -> void:
 	# Selecting a character only changes visibility, never its sprite transforms
 	# or textures. This also preserves artist-adjusted basket/body alignment.
 	for name in CHARACTER_NODES:
-		var rig_path: String = String(CHARACTER_NODES[name])
-		var group: Node2D = character_rig if rig_path == "." else character_rig.get_node_or_null(rig_path) as Node2D
+		var group := get_node_or_null(name) as Node2D
 		if group == null:
 			push_error("Missing editor-authored Catch character: " + name)
 			continue
+		var saved: Dictionary = character_editor_transforms.get(name, {})
+		if selected_character != name and saved.has("position"):
+			# A previous random/startup selection may have moved this group.
+			# Return inactive variants to their exact Inspector positions.
+			group.position = saved["position"]
+		group.visible = selected_character == name
+		# The Boy sprites are initially hidden in the authored scene.
+		# Reveal them when Boy's root group is chosen.
 		if name == "Boy":
-			(character_rig.get_node("Body") as Sprite2D).visible = selected_character == name
-			(character_rig.get_node("Basket") as Sprite2D).visible = selected_character == name
-		else:
-			group.visible = selected_character == name
+			(group.get_node("Body") as Sprite2D).visible = group.visible
+			(group.get_node("Basket") as Sprite2D).visible = group.visible
 		if selected_character == name:
+			character_group = group
 			body_sprite = group.get_node("Body") as Sprite2D
 			basket_sprite = group.get_node("Basket") as Sprite2D
+			character_editor_origin = saved.get("position", group.position)
+			character_editor_scale = saved.get("scale", group.scale)
 
 
 func _character_baseline_y() -> float:
@@ -631,32 +643,42 @@ func _character_baseline_y() -> float:
 
 
 func _basket_local_center() -> Vector2:
-	# Support dragging either the basket itself OR its character variant group.
-	return character_rig.to_local(basket_sprite.global_position)
+	# CollectedWords is a root sibling, so convert the chosen basket to its space.
+	return collected_word_layer.to_local(basket_sprite.global_position)
 
 
 func _basket_visual_size() -> Vector2:
 	var artwork_size: Vector2 = basket_sprite.region_rect.size if basket_sprite.region_enabled else basket_sprite.texture.get_size()
-	var rig_scale: Vector2 = character_rig.global_scale
+	var rig_scale: Vector2 = collected_word_layer.global_scale
 	var sprite_scale: Vector2 = basket_sprite.global_scale
 	return artwork_size * Vector2(absf(sprite_scale.x / maxf(absf(rig_scale.x), 0.001)), absf(sprite_scale.y / maxf(absf(rig_scale.y), 0.001)))
 
 
 func _basket_world_size() -> Vector2:
-	return _basket_visual_size() * Vector2(absf(character_rig.scale.x), absf(character_rig.scale.y))
+	return _basket_visual_size() * Vector2(absf(collected_word_layer.scale.x), absf(collected_word_layer.scale.y))
 
 
 func _basket_world_offset() -> Vector2:
-	return _basket_local_center() * character_rig.scale
+	return character_group.to_local(basket_sprite.global_position) * character_group.scale
 
 
 func _sync_character_scale() -> void:
-	# Scale the entire *editor-authored* rig with the design canvas, just like
-	# the other game HUD graphics. Child Sprite2Ds remain freely editable and
-	# are never resized/repositioned from code.
+	# Scale each editor-authored sibling as the viewport changes. Preserve all
+	# body/basket sprite transforms and their individual Inspector adjustments.
 	var view := _view_size()
 	var factor := minf(view.x / HUD_DESIGN_SIZE.x, view.y / HUD_DESIGN_SIZE.y)
-	character_rig.scale = character_editor_scale * factor
+	for name in CHARACTER_NODES:
+		var group := get_node(name) as Node2D
+		var saved: Dictionary = character_editor_transforms[name]
+		group.scale = Vector2(saved["scale"]) * factor
+	# Match the selected group's scale while keeping the collected layer's
+	# original Inspector scale and its tiny offset from the Boy at rest.
+	var boy_saved_scale: Vector2 = character_editor_transforms["Boy"]["scale"]
+	var ratio := Vector2(
+		character_editor_scale.x / maxf(absf(boy_saved_scale.x), 0.001),
+		character_editor_scale.y / maxf(absf(boy_saved_scale.y), 0.001)
+	)
+	collected_word_layer.scale = collected_editor_scale * ratio * factor
 
 
 func _selected_character_data() -> Dictionary:
@@ -667,8 +689,7 @@ func _selected_character_data() -> Dictionary:
 
 func _reset_round_geometry() -> void:
 	var field := _game_rect()
-	# Drag CharacterRig in the .tscn to choose the starting position. Gameplay
-	# moves that rig horizontally while leaving all sprite offsets alone.
+	# The selected character's own saved root position is its starting point.
 	_sync_character_scale()
 	basket_x = character_editor_origin.x * (_view_size().x / HUD_DESIGN_SIZE.x)
 	var half_basket_width := _basket_world_size().x * 0.5
@@ -679,7 +700,11 @@ func _reset_round_geometry() -> void:
 
 
 func _sync_character_position() -> void:
-	character_rig.position = Vector2(basket_x, _character_baseline_y())
+	character_group.position = Vector2(basket_x, _character_baseline_y())
+	var view := _view_size()
+	collected_word_layer.position = character_group.position + collected_editor_offset * Vector2(
+		view.x / HUD_DESIGN_SIZE.x, view.y / HUD_DESIGN_SIZE.y
+	)
 
 
 func _update_basket(delta: float) -> void:

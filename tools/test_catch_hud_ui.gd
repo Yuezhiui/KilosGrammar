@@ -93,17 +93,17 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	_check(hud != null, "%s: HUD is a separate Control in a CanvasLayer" % viewport_size)
 	_check(game.get_node_or_null("HUDLayer") is CanvasLayer, "%s: HUD is on its own CanvasLayer" % viewport_size)
 	_check(game.get_node_or_null("Background") is TextureRect, "%s: background remains editable" % viewport_size)
-	var character := game.get_node_or_null("CharacterRig") as Node2D
+	var character := game.get("character_group") as Node2D
 	var body := game.body_sprite as Sprite2D
-	var apples := game.get_node_or_null("CharacterRig/CollectedWords") as Node2D
+	var apples := game.get_node_or_null("CollectedWords") as Node2D
 	var basket := game.basket_sprite as Sprite2D
-	_check(character != null, "%s: separate CharacterRig exists" % viewport_size)
+	_check(character != null, "%s: selected root character exists" % viewport_size)
 	_check(body != null and apples != null and basket != null, "%s: Body, CollectedWords, Basket are distinct scene nodes" % viewport_size)
 	if body != null and apples != null and basket != null:
 		var sprite_group := body.get_parent()
 		_check(body != basket and sprite_group == basket.get_parent()
-			and (sprite_group == character or sprite_group.get_parent() == character)
-			and apples.get_parent() == character,
+			and sprite_group == character
+			and apples.get_parent() == game,
 			"%s: active body/basket are independently editable alongside the caught-apple layer" % viewport_size)
 		_check(body.texture != null and basket.texture != null, "%s: Body and Basket have their own sprite textures" % viewport_size)
 
@@ -307,7 +307,7 @@ func _test_character_and_map_combinations(game: Control, viewport_size: Vector2i
 	if apples == null:
 		return
 	var backdrop := game.get_node_or_null("Background") as TextureRect
-	var rig := game.get_node_or_null("CharacterRig") as Node2D
+	var rig := game.get("character_group") as Node2D
 	var falling := game.get_node_or_null("FallingWordLayer") as Node2D
 	if backdrop == null or rig == null or falling == null:
 		_fail("%s: character/map layers are missing" % viewport_size)
@@ -354,9 +354,9 @@ func _test_character_and_map_combinations(game: Control, viewport_size: Vector2i
 			_check(body.texture != basket.texture, "%s: body and basket use different images" % ctx)
 			var sprite_group := body.get_parent()
 			_check(sprite_group == basket.get_parent()
-				and (sprite_group == rig or sprite_group.get_parent() == rig)
-				and apples.get_parent() == rig,
-				"%s: rig keeps independent active body/basket and caught-apple layers" % ctx)
+				and sprite_group == game.get("character_group")
+				and apples.get_parent() == game,
+				"%s: selected root sibling keeps body/basket and separate root caught-apple layer" % ctx)
 			_check(body.is_visible_in_tree() and basket.is_visible_in_tree(),
 				"%s: selected character sprites are visible" % ctx)
 			_check(backdrop.z_index < body.z_index

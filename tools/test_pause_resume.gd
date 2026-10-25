@@ -206,7 +206,7 @@ func _test_catch_restart_clears_round(app: Control, mode: String) -> void:
 	_assert(new_game != old_game, "Catch %s restart uses a fresh minigame" % mode)
 	_assert(app.get("paused_game_panel") == null, "Catch %s restart clears old parked instance" % mode)
 	var new_context := _context_of(new_wrapper)
-	var apple_layer := new_game.get_node("CharacterRig/CollectedWords") as Node2D
+	var apple_layer := new_game.get_node("CollectedWords") as Node2D
 	_assert((new_context.get("catch_collected_words", []) as Array).is_empty(), "Catch %s restart clears saved apple words" % mode)
 	_assert(apple_layer.get_child_count() == 0, "Catch %s restart has no visible basket apples" % mode)
 	_assert(int(new_context.get("score", -1)) == 0, "Catch %s restart resets score" % mode)

@@ -41,8 +41,8 @@ func _check_character(scene: PackedScene, viewport_size: Vector2i, selected: Str
 	_check(game != null, tag + ": scene is Control")
 	if game == null:
 		return
-	var rig := game.get_node_or_null("CharacterRig") as Node2D
-	_check(rig != null and rig.owner == game, tag + ": shared draggable CharacterRig is scene-authored")
+	var rig := game.get_node_or_null(selected) as Node2D
+	_check(rig != null and rig.owner == game, tag + ": chosen root sibling is independently editor-authored")
 	if rig == null:
 		game.free()
 		return
@@ -50,12 +50,11 @@ func _check_character(scene: PackedScene, viewport_size: Vector2i, selected: Str
 	var pair_sprites: Dictionary = {}
 	var editor_snapshots: Dictionary = {}
 	for name in CHARACTERS:
-		var prefix: String = "" if name == "Boy" else String(name) + "/"
-		var parent := rig if name == "Boy" else rig.get_node_or_null(name) as Node2D
-		_check(parent != null and (name == "Boy" or parent.owner == game),
+		var parent := game.get_node_or_null(name) as Node2D
+		_check(parent != null and parent.owner == game and parent.get_parent() == game,
 			tag + ": %s rig is a separately selectable editor node" % name)
-		var body := rig.get_node_or_null(prefix + "Body") as Sprite2D
-		var basket := rig.get_node_or_null(prefix + "Basket") as Sprite2D
+		var body := parent.get_node_or_null("Body") as Sprite2D if parent != null else null
+		var basket := parent.get_node_or_null("Basket") as Sprite2D if parent != null else null
 		_check(body != null and basket != null, tag + ": %s has separate Body and Basket Sprite2D" % name)
 		if body == null or basket == null:
 			continue
@@ -113,22 +112,23 @@ func _check_character(scene: PackedScene, viewport_size: Vector2i, selected: Str
 		tag + ": editor rig Y remains visible and follows viewport scaling")
 	var responsive_factor := minf(float(viewport_size.x) / 1280.0, float(viewport_size.y) / 720.0)
 	_check(rig.scale.is_equal_approx(authored_rig_scale * responsive_factor),
-		tag + ": root CharacterRig scales responsively from EDITOR scale; individual sprites remain untouched")
+		tag + ": selected root sibling scales responsively from EDITOR scale; individual sprites remain untouched")
 	_check(_pair_visibility(pair_sprites, rig, selected),
 		tag + ": only chosen Boy/Girl/Grandma/Grandpa is visible")
 	_check_local_snapshots(pair_sprites, editor_snapshots, tag + ": after set_context")
 
 	var active_body: Sprite2D = pair_sprites[selected]["body"]
 	var active_basket: Sprite2D = pair_sprites[selected]["basket"]
-	var collected := rig.get_node_or_null("CollectedWords") as Node2D
+	var collected := game.get_node_or_null("CollectedWords") as Node2D
 	_check(collected != null and collected.owner == game,
 		tag + ": independent collected-word layer stays editor-authored")
 	if collected != null:
-		_check(active_body.z_index < collected.z_index and collected.z_index < active_basket.z_index,
+		_check(active_body.z_index + rig.z_index < collected.z_index and collected.z_index < active_basket.z_index + rig.z_index,
 			tag + ": back body < caught fruit < foreground basket draw order")
 	_check_clipping(active_body, active_basket, viewport_size, tag + ": initial framing")
 	_check_collision_follows_basket(game, active_basket, tag)
 	_check_collected_apples(game, rig, collected, active_basket, viewport_size, tag)
+	_check(collected.position.distance_to(rig.position + Vector2(game.get("collected_editor_offset")) * responsive_factor) <= EPSILON, tag + ": root collected words follows edited root sibling")
 	_check_steering_edges(game, active_body, active_basket, viewport_size, tag)
 	_check_local_snapshots(pair_sprites, editor_snapshots, tag + ": after collider perturbation")
 
@@ -152,7 +152,7 @@ func _check_collision_follows_basket(game: Control, basket: Sprite2D, tag: Strin
 	var before := game.call("_basket_rect") as Rect2
 	var visual := _global_sprite_rect(basket)
 	_check(before.has_area() and visual.has_area(), tag + ": rendered basket + collision have nonzero area")
-	var root_rig := game.get_node("CharacterRig") as Node2D
+	var root_rig := game.get("character_group") as Node2D
 	var local_center: Vector2 = root_rig.to_local(basket.global_position)
 	var expected_world_center: Vector2 = root_rig.get_global_transform_with_canvas() * local_center
 	_check(before.get_center().distance_to(expected_world_center - Vector2(0, visual.size.y * 0.05)) <= 2.0,
@@ -204,8 +204,7 @@ func _check_collected_apples(game: Control, rig: Node2D, layer: Node2D,
 			continue
 		count += 1
 		var item := child as TextureRect
-		var world_pos := rig.get_global_transform_with_canvas() * item.position
-		var rect := Rect2(world_pos, item.size * rig.get_global_transform_with_canvas().get_scale().abs())
+		var rect := item.get_global_rect()
 		_check(rect.intersects(basket_rect.grow(1.0)),
 			tag + ": collected apple overlaps the selected Basket, not legacy Boy")
 		_check(viewport.grow(2.0).encloses(rect),
@@ -281,7 +280,7 @@ func _pair_visibility(pairs: Dictionary, rig: Node2D, selected: String) -> bool:
 			count += 1
 		if visible != (name == selected):
 			return false
-	return count == 1 and rig.is_visible_in_tree()
+	return count == 1 and rig.is_visible_in_tree() and rig == pairs[selected]["body"].get_parent()
 
 
 func _check(ok: bool, message: String) -> void:

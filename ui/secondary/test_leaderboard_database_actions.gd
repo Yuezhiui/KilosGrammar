@@ -39,18 +39,23 @@ func _run() -> void:
 	var status := board.get_node_or_null("%TransferStatus") as Label
 	var filters := [board.get_node_or_null("%StyleFilter"), board.get_node_or_null("%ModeFilter"), board.get_node_or_null("%DifficultyFilter")]
 	var new_buttons := [import_button, export_button, delete_button]
-	for item in [original, import_button, export_button, delete_button]:
+	for obsolete in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
+		_check(board.find_child(obsolete, true, false) == null,
+			"FILTERS and popover physically removed: " + obsolete)
+	_check(not original.is_visible_in_tree() and board.has_method("request_filtered_csv_export"),
+		"hidden filtered CSV remains accessible through explicit host API")
+	for item in [import_button, export_button, delete_button]:
 		_check(item is Button and item.is_visible_in_tree(), "permanent native action is visible")
 		_check(item.focus_mode == Control.FOCUS_ALL, "action accessible by keyboard")
 		_check(item.get_global_rect().size.x >= 44.0 and item.get_global_rect().size.y >= 44.0, "button large enough for classroom use")
-	_check(original.tooltip_text.to_lower().contains("displayed scores"), "original filtered CSV action preserved")
+	_check(not original.is_visible_in_tree(), "obsolete secondary Download CSV has no visible or clickable hitbox")
 	for selector in filters:
 		_check(selector is OptionButton and selector.item_count > 1, "existing leaderboard filter preserved")
 	for i in range(new_buttons.size()):
 		var action := new_buttons[i] as Button
 		for j in range(i + 1, new_buttons.size()):
 			_check(not action.get_global_rect().intersects((new_buttons[j] as Button).get_global_rect()), "new drag/drop action hitboxes do not overlap")
-		_check(not action.get_global_rect().intersects(original.get_global_rect()), "new actions do not cover original Download CSV")
+		_check(not original.is_visible_in_tree(), "new actions are not obscured by hidden filtered Download")
 		var prior_position: Vector2 = action.position
 		action.position += Vector2(5, 2)
 		await process_frame

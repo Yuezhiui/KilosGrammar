@@ -5,7 +5,6 @@ signal requested(target: String, payload: Dictionary)
 const UI = preload("res://ui/play/play_ui.gd")
 const TOPICS := ["Noun", "Verb", "Adjective", "Adverb", "Pronoun"]
 const TOPIC_COLORS := [UI.GREEN, UI.RED, UI.YELLOW, UI.BLUE, UI.PURPLE]
-const FUTURE_TOPICS := ["Preposition", "Conjunction", "Interjection"]
 const ART := "res://ui/redesign/assets/student/"
 
 var context: Dictionary = {}
@@ -57,20 +56,6 @@ func _ready() -> void:
 		button.pressed.connect(_select_topic.bind(topic))
 		grid.add_child(button)
 		topic_buttons[topic] = button
-
-	var future_row := HBoxContainer.new()
-	future_row.add_theme_constant_override("separation", 12)
-	content.add_child(future_row)
-	for topic in FUTURE_TOPICS:
-		var future := Button.new()
-		future.text = "%s • SOON" % topic.to_upper()
-		future.disabled = true
-		future.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		future.custom_minimum_size.y = 48
-		future.custom_minimum_size.y = 70 if get_viewport_rect().size.x < 1000.0 else 86
-		UI.style_button(future, UI.INK, 16)
-		_style_art_button(future, "topic_%s_locked.png" % topic.to_lower())
-		future_row.add_child(future)
 
 	var footer: Array[Button] = UI.add_compact_footer(column, "BACK", "NEXT: DIFFICULTY")
 	footer[0].pressed.connect(_go_back)

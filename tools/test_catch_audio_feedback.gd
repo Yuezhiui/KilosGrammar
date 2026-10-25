@@ -5,7 +5,7 @@ extends SceneTree
 # Run with --headless for resource/wiring tests; repeat without --headless
 # for Windows GUI/audio-device routing. Neither run can certify audibility.
 
-const MENU_SCENE: PackedScene = preload("res://main_menu.tscn")
+const MENU_SCENE_PATH := "res://main_menu.tscn"
 const CATCH_SCENE: PackedScene = preload("res://ui/minigames/catch_word.tscn")
 const TITLE_MUSIC_PATH := "res://assets/audio/user_provided/wii_fit_user_settings.mp3"
 const CLIP_DIR := "res://assets/audio/catch_voice/"
@@ -73,7 +73,12 @@ func _test_imported_clips() -> void:
 
 
 func _test_main_menu_music() -> void:
-    var app := MENU_SCENE.instantiate() as Control
+    # Load after project autoload initialization, matching the game startup.
+    var menu_scene := load(MENU_SCENE_PATH) as PackedScene
+    _check(menu_scene != null, "Main menu scene resource loads after startup")
+    if menu_scene == null:
+        return
+    var app := menu_scene.instantiate() as Control
     _check(app != null and app.get_script() != null, "Main menu instantiates with gameplay script")
     if app == null:
         return

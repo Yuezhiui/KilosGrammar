@@ -12,6 +12,7 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $setupScript = Join-Path $PSScriptRoot 'configure_local.ps1'
 $autoScript = Join-Path $PSScriptRoot 'start_auto.ps1'
+$upgradeScript = Join-Path $PSScriptRoot 'upgrade_existing_scores.ps1'
 $venvPython = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 $credentialPath = Join-Path (
     [Environment]::GetFolderPath('LocalApplicationData')) 'KilosGrammar\db_credentials.xml'
@@ -112,6 +113,12 @@ if ($InteractiveSession) {
                 'Q' { Write-Host 'Setup cancelled. The game will offer setup again while the database is offline.'; return }
                 default { Write-Host 'Existing PostgreSQL account login selected.'; $requestedMode = 'LOGIN' }
             }
+        } else {
+            Write-Host 'Encrypted credentials already exist. If scores appear missing after restart, the existing database may need a schema upgrade.'
+            Write-Host '5 - Check and safely upgrade EXISTING scores (private backup + typed MIGRATE, never recreates database)'
+            Write-Host 'Enter - Continue the usual local database login/setup'
+            $existingChoice = Read-Host 'Choose 5 or press Enter'
+            if ($existingChoice.Trim() -eq '5') { $requestedMode = 'UPGRADE' }
         }
         for ($attempt = 1; $attempt -le 6; $attempt++) {
             Write-Host ''
@@ -121,6 +128,8 @@ if ($InteractiveSession) {
                 Write-Host 'Credential recovery verifies that the role owns a NEW EMPTY app database, then asks for explicit RESET and the existing PostgreSQL administrator password.'
             } elseif ($requestedMode -eq 'MIGRATE') {
                 Write-Host 'Please review database/migrations/001_initial.sql before confirming schema creation.'
+            } elseif ($requestedMode -eq 'UPGRADE') {
+                Write-Host 'Preserve existing students and scores: backup/verify before the optional 002 migration.'
             }
 
             # This is an interactive console session. The configuration script
@@ -135,6 +144,8 @@ if ($InteractiveSession) {
                     & $setupScript -RepairNewAppCredentials -GenerateAppPassword
                 } elseif ($requestedMode -eq 'MIGRATE') {
                     & $setupScript -Migrate
+                } elseif ($requestedMode -eq 'UPGRADE') {
+                    & $upgradeScript
                 } else {
                     & $setupScript
                 }
@@ -171,13 +182,15 @@ if ($InteractiveSession) {
             Write-Host '2 - Create a NEW dedicated PostgreSQL role/database (requires admin password)'
             Write-Host '3 - Review and explicitly approve schema migration'
             Write-Host '4 - Repair new EMPTY application database credentials (requires admin password)'
+            Write-Host '5 - Upgrade EXISTING score tables (verified backup + explicit MIGRATE)'
             Write-Host 'Q - Leave setup for now'
-            $choice = Read-Host 'Select 1, 2, 3, 4, or Q'
+            $choice = Read-Host 'Select 1, 2, 3, 4, 5, or Q'
             switch ($choice.Trim().ToUpperInvariant()) {
                 '1' { $requestedMode = 'LOGIN' }
                 '2' { $requestedMode = 'CREATE' }
                 '3' { $requestedMode = 'MIGRATE' }
                 '4' { $requestedMode = 'REPAIR' }
+                '5' { $requestedMode = 'UPGRADE' }
                 'Q' { Write-Host 'Setup was left unchanged. The game will offer setup again if the database remains offline.'; return }
                 default { Write-Warning 'Unrecognized selection. Retrying the existing account login.'; $requestedMode = 'LOGIN' }
             }

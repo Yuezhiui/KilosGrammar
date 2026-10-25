@@ -28,8 +28,8 @@ func _run() -> void:
 	var difficulty := panel.get_node_or_null("%DifficultyFilter") as OptionButton
 	var rows := panel.get_node_or_null("%ScoreRows") as VBoxContainer
 	var csv_button := panel.get_node_or_null("%DownloadButton") as Button
-	var guide := panel.get_node_or_null("MinigameTopicGuide") as Label
-	_check(minigame != null and guide != null, "minigame filter and explainer are editor-authored")
+	_check(minigame != null and panel.has_method("set_minigame_filter"),
+		"minigame filter is retained through host API despite removal of FILTERS popover")
 	if minigame == null or rows == null:
 		panel.queue_free()
 		quit(1)
@@ -37,10 +37,14 @@ func _run() -> void:
 	_check(minigame.item_count == 5 and minigame.selected == 0, "exactly five inspector-authored minigame options")
 	for index in range(5):
 		_check(minigame.get_item_text(index) == ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE", "LEGACY"][index], "minigame menu option %d" % index)
-	_check(minigame.focus_mode == Control.FOCUS_ALL and minigame.is_visible_in_tree(), "native minigame dropdown keyboard focus and visibility")
-	_check(minigame.get_global_rect().position.y > style.get_global_rect().end.y, "new filter occupies a separate editor-authored row")
-	_check(minigame.get_global_rect().end.y < (panel.get_node("TableHeaderArt") as Control).get_global_rect().position.y, "filter does not overlap table header art")
-	_check(guide.text.contains("MINIGAME") and guide.text.contains("TOPIC"), "guide clarifies combo table column")
+	_check(not minigame.is_visible_in_tree() and not csv_button.is_visible_in_tree(),
+		"advanced minigame and filtered CSV controls do not crowd the default reference")
+	for obsolete in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
+		_check(panel.find_child(obsolete, true, false) == null, "obsolete FILTERS/popover removed from authored UI: " + obsolete)
+	_check(not minigame.is_visible_in_tree() and not csv_button.is_visible_in_tree(),
+		"minigame and filtered CSV hidden with no popup hitbox")
+	_check(panel.has_method("request_filtered_csv_export"),
+		"hidden filtered CSV continues to work through public host API")
 	var original_position := minigame.position
 	minigame.position += Vector2(10, 5)
 	await process_frame
@@ -48,7 +52,7 @@ func _run() -> void:
 	minigame.position = original_position
 	for selector in [style, mode, difficulty]:
 		_check(selector.item_count > 1 and selector.is_visible_in_tree(), "original grammar/mode/difficulty filters preserved")
-	_check(csv_button.is_visible_in_tree() and panel.get_node_or_null("%ImportCsvButton") is Button and panel.get_node_or_null("%ExportCsvButton") is Button and panel.get_node_or_null("%DeleteAllButton") is Button, "original Download and all database actions preserved")
+	_check(not csv_button.is_visible_in_tree() and panel.get_node_or_null("%ImportCsvButton") is Button and panel.get_node_or_null("%ExportCsvButton") is Button and panel.get_node_or_null("%DeleteAllButton") is Button, "hidden filtered Download and three visible database actions preserved")
 
 	var records := [
 		{"student_id": "ID-1", "student_name": "One", "grade_section": "Grade 5", "minigame": "Catch the Word", "game_style": "Noun", "game_mode": "Seconds", "difficulty": "Easy", "score": 19},
@@ -79,14 +83,12 @@ func _run() -> void:
 		{"index": 3, "expected": 1, "code": "PLANE / NOUN"},
 		{"index": 4, "expected": 1, "code": "LEGACY / NOUN"},
 	]:
-		minigame.select(item["index"])
-		minigame.item_selected.emit(item["index"])
+		_check(bool(panel.call("set_minigame_filter", minigame.get_item_text(item["index"]))), "public hidden minigame filter accepts authorized selection")
 		_check(rows.get_child_count() == item["expected"], "filter %s shows only matching backend minigame rows" % minigame.get_item_text(item["index"]))
 		if rows.get_child_count() > 0:
 			_check((rows.get_child(0).get_node("GameStyle") as Label).text.begins_with(item["code"]), "visible result matches selected minigame")
 
-	minigame.select(2)
-	minigame.item_selected.emit(2)
+	_check(bool(panel.call("set_minigame_filter", "BALLOON POPPING")), "public minigame filter sets Balloon Popping")
 	style.select(1)
 	style.item_selected.emit(1)
 	_check(rows.get_child_count() == 1 and (rows.get_child(0).get_node("GameStyle") as Label).text == "POP / NOUN", "minigame + topic filters intersect")
@@ -116,8 +118,7 @@ func _run() -> void:
 	var hostile_path := _make_csv("formula", CANONICAL8 + "ID-5,=HYPERLINK(1),Grade 4,Catch the Word,Noun,Seconds,Easy,3\r\n")
 	_check(not String(panel.call("_validate_import_csv", hostile_path)).is_empty(), "CSV injection preflight remains active")
 
-	minigame.select(0)
-	minigame.item_selected.emit(0)
+	_check(bool(panel.call("set_minigame_filter", "ALL MINIGAMES")), "public minigame filter resets to all")
 	style.select(0)
 	style.item_selected.emit(0)
 	difficulty.select(0)

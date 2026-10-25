@@ -78,6 +78,10 @@ func _run() -> void:
 	if title_music != null:
 		title_music.stop()
 		title_music.stream = null
+	# The shared menu owns cached looping sounds. Let its production mixer
+	# drain before freeing the mock-routed Settings app (avoids ObjectDB warnings).
+	if app.has_method("prepare_for_shutdown"):
+		await app.call("prepare_for_shutdown")
 	app.queue_free()
 	await process_frame
 	for bus_name in original_bus_levels:

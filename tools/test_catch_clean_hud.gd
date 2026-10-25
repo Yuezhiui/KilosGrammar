@@ -99,7 +99,7 @@ func _verify_window(packed: PackedScene, physical: Vector2i) -> void:
     var hud := game.get_node_or_null("HUDLayer/HUD") as Control
     var number := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
     var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
-    var apples := game.get_node_or_null("CharacterRig/CollectedWords") as Node2D
+    var apples := game.get_node_or_null("CollectedWords") as Node2D
     _check(hud != null and number != null and prompt != null and apples != null,
         "%s: required HUD and basket nodes exist" % physical)
     if hud == null or number == null or prompt == null or apples == null:
@@ -209,7 +209,7 @@ func _verify_hud(game: Control, hud: Control, prompt: Label, number: Label,
 
 func _verify_catches_and_retry(game: Control, ctx: Dictionary,
         mode: String, label: String) -> void:
-    var apples := game.get_node("CharacterRig/CollectedWords") as Node2D
+    var apples := game.get_node("CollectedWords") as Node2D
     var original_voice := game.get_node_or_null("CatchVoicePlayer") as AudioStreamPlayer
     _check(original_voice != null and _count_audio(game) == 1,
         label + ": one voice player is allocated at start, not per catch")

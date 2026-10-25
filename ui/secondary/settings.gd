@@ -23,9 +23,15 @@ const MUSIC_BUS := "KilosMusic"
 const EFFECTS_BUS := "KilosSFX"
 const SETTINGS_FILE := "user://kilos_settings.cfg"
 const WINDOWED_SIZE := Vector2i(1600, 900)
+# The main panel already owns one shared hover/click sound router and watches
+# routed screens. Settings supplies its matching animation ONLY, so there is
+# never a second audio player/signal for the same button event.
+const HOVER_SCALE := 0.15
+const HOVER_TILT_DEGREES := 3.0
 
 var _context: Dictionary = {}
 var _active_tab := "settings"
+var _button_feedback_tweens: Dictionary = {}
 
 var _classroom_bg: TextureRect
 var _main_stage: Control
@@ -34,6 +40,8 @@ var _board_art: NinePatchRect
 var _title_image: TextureRect
 var _sidebar_panel: Control
 var _sidebar_buttons: Dictionary = {}
+var _sidebar_authored_size := Vector2.ZERO
+var _sidebar_authored_button_rects: Dictionary = {}
 var _home_button: Button
 var _card_heading: Label
 var _heading_icon: TextureRect
@@ -63,10 +71,117 @@ func _ready() -> void:
 	_restore_preferences()
 	_sync_from_system()
 	_switch_tab("settings")
+	_remove_native_tooltips(self)
+	_register_button_feedback()
 	resized.connect(_apply_responsive_layout)
 	call_deferred("_apply_responsive_layout")
 	if is_instance_valid(_volume_slider):
 		_volume_slider.call_deferred("grab_focus")
+
+
+func _remove_native_tooltips(branch: Node) -> void:
+	# Native Control tooltip_text is the dark popup obscuring CAMERA in the
+	# editor-authored sidebar. Do not make a replacement tooltip. Remove
+	# old inherited/fallback tooltips for the entire Settings subtree.
+	if branch is Control:
+		(branch as Control).tooltip_text = ""
+	for child in branch.get_children():
+		_remove_native_tooltips(child)
+
+
+func _register_button_feedback() -> void:
+	# The four editor-authored navigation buttons retain their exact rects.
+	# Checkbox-sized switches receive the same (gentler) interactive polish;
+	# sliders must NEVER scale while a student is dragging their value.
+	for button in _sidebar_buttons.values():
+		_bind_button_feedback(button as BaseButton)
+	_bind_button_feedback(_home_button)
+	_bind_button_feedback(_mute_check)
+	_bind_button_feedback(_fullscreen_check)
+
+
+func _bind_button_feedback(button: BaseButton) -> void:
+	if not is_instance_valid(button):
+		return
+	button.set_meta("settings_home_rotation", button.rotation)
+	button.set_meta("settings_home_z_index", button.z_index)
+	var entered := _animate_button_hover.bind(button)
+	var exited := _animate_button_exit.bind(button)
+	var down := _animate_button_press.bind(button)
+	var up := _animate_button_release.bind(button)
+	var refresh := _refresh_button_pivot.bind(button)
+	if not button.mouse_entered.is_connected(entered):
+		button.mouse_entered.connect(entered)
+	if not button.mouse_exited.is_connected(exited):
+		button.mouse_exited.connect(exited)
+	if not button.button_down.is_connected(down):
+		button.button_down.connect(down)
+	if not button.button_up.is_connected(up):
+		button.button_up.connect(up)
+	if not button.resized.is_connected(refresh):
+		button.resized.connect(refresh)
+	_refresh_button_pivot(button)
+
+
+func _refresh_button_pivot(button: BaseButton) -> void:
+	if is_instance_valid(button):
+		button.pivot_offset = button.size * 0.5
+
+
+func _kill_button_feedback_tween(button: BaseButton) -> void:
+	var old: Tween = _button_feedback_tweens.get(button)
+	if old != null and old.is_valid():
+		old.kill()
+	_button_feedback_tweens.erase(button)
+
+
+func _animate_button_hover(button: BaseButton) -> void:
+	if not is_instance_valid(button) or button.disabled or not button.is_visible_in_tree():
+		return
+	_kill_button_feedback_tween(button)
+	button.z_index = maxi(int(button.get_meta("settings_home_z_index", 0)), 12)
+	var ratio := clampf(128.0 / maxf(button.size.x, 1.0), 0.45, 1.0)
+	var bump := 1.0 + HOVER_SCALE * ratio
+	var angle := float([-1.0, 1.0].pick_random()) * deg_to_rad(HOVER_TILT_DEGREES * ratio)
+	var home_angle := float(button.get_meta("settings_home_rotation", 0.0))
+	var tween := create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_button_feedback_tweens[button] = tween
+	tween.tween_property(button, "scale:x", bump, 0.20)
+	tween.tween_property(button, "scale:y", bump, 0.30)
+	tween.tween_property(button, "rotation", home_angle + angle, 0.10)
+	tween.tween_property(button, "rotation", home_angle, 0.10).set_delay(0.10)
+
+
+func _animate_button_exit(button: BaseButton) -> void:
+	if not is_instance_valid(button):
+		return
+	_kill_button_feedback_tween(button)
+	var tween := create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_button_feedback_tweens[button] = tween
+	tween.tween_property(button, "scale", Vector2.ONE, 0.25)
+	tween.tween_property(button, "rotation", float(button.get_meta("settings_home_rotation", 0.0)), 0.14)
+	await tween.finished
+	if is_instance_valid(button):
+		button.z_index = int(button.get_meta("settings_home_z_index", 0))
+	_button_feedback_tweens.erase(button)
+
+
+func _animate_button_press(button: BaseButton) -> void:
+	if not is_instance_valid(button) or button.disabled:
+		return
+	_kill_button_feedback_tween(button)
+	var tween := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	_button_feedback_tweens[button] = tween
+	tween.tween_property(button, "scale", Vector2(0.94, 0.90), 0.055)
+
+
+func _animate_button_release(button: BaseButton) -> void:
+	if not is_instance_valid(button):
+		return
+	if button.get_global_rect().has_point(get_viewport().get_mouse_position()):
+		_animate_button_hover(button)
+	else:
+		_animate_button_exit(button)
 
 
 func set_context(context: Dictionary) -> void:
@@ -80,7 +195,12 @@ func _bind_or_build_ui() -> void:
 		_settings_card = _main_stage.get_node_or_null("SettingsCard") as Control
 		if _settings_card != null:
 			_board_art = _settings_card.get_node_or_null("BoardArtwork") as NinePatchRect
-			_sidebar_panel = _settings_card.find_child("SidebarPanel", true, false) as PanelContainer
+			# The scene's transparent, editor-draggable sidebar panel is a
+			# Control, not a container. Bind the authored node instead of silently
+			# skipping responsive sidebar positioning and hover geometry.
+			_sidebar_panel = _settings_card.find_child("SidebarPanel", true, false) as Control
+			if _sidebar_panel != null:
+				_sidebar_authored_size = _sidebar_panel.size
 		_title_image = _main_stage.get_node_or_null("SettingsTitle") as TextureRect
 		_home_button = _main_stage.get_node_or_null("BackButton") as Button
 		if _home_button != null and not _home_button.pressed.is_connected(_request_main):
@@ -96,6 +216,7 @@ func _bind_or_build_ui() -> void:
 			var btn := find_child("Sidebar" + tab_name.capitalize() + "Tab", true, false) as Button
 			if btn != null:
 				_sidebar_buttons[tab_name] = btn
+				_sidebar_authored_button_rects[tab_name] = btn.get_rect()
 				if not btn.pressed.is_connected(_switch_tab):
 					btn.pressed.connect(_switch_tab.bind(tab_name))
 			var page := find_child(tab_name.capitalize() + "Page", true, false) as Control
@@ -208,7 +329,7 @@ func _build_ui() -> void:
 		sidebar_button.position = Vector2(10, y_offset)
 		sidebar_button.size = Vector2(196, 66)
 		sidebar_button.custom_minimum_size = Vector2(196, 66)
-		sidebar_button.tooltip_text = tab_name.capitalize()
+		sidebar_button.tooltip_text = ""
 		sidebar_button.pressed.connect(_switch_tab.bind(tab_name))
 		_sidebar_panel.add_child(sidebar_button)
 		_sidebar_buttons[tab_name] = sidebar_button
@@ -307,7 +428,7 @@ func _build_ui() -> void:
 	_home_button.name = "BackButton"
 	_home_button.unique_name_in_owner = true
 	_home_button.custom_minimum_size = Vector2(184, 56)
-	_home_button.tooltip_text = "Return to main menu"
+	_home_button.tooltip_text = ""
 	_home_button.focus_mode = Control.FOCUS_ALL
 	_home_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_home_button.z_index = 2
@@ -601,11 +722,11 @@ func _sync_bus_slider(bus_name: String, slider: HSlider, value_label: Label) -> 
 		var percent := clampf(linear * 100.0, 0.0, 100.0)
 		slider.set_value_no_signal(percent)
 		value_label.text = "%d%%" % int(round(percent))
-		slider.tooltip_text = "%s volume" % bus_name
+		slider.tooltip_text = ""
 	else:
 		slider.set_value_no_signal(0.0)
 		value_label.text = "N/A"
-		slider.tooltip_text = "%s audio bus is not available in this scene yet." % bus_name
+		slider.tooltip_text = ""
 
 
 func _on_master_volume_changed(value: float) -> void:
@@ -723,7 +844,7 @@ func _save_preferences() -> void:
 
 func _update_toggle_text(toggle: CheckButton) -> void:
 	toggle.text = ""
-	toggle.tooltip_text = "On" if toggle.button_pressed else "Off"
+	toggle.tooltip_text = ""
 
 
 func _switch_tab(tab_name: String) -> void:
@@ -787,6 +908,12 @@ func _apply_responsive_layout() -> void:
 	if is_instance_valid(_sidebar_panel):
 		var sidebar_w := 160.0 if compact else 216.0
 		_sidebar_panel.custom_minimum_size.x = sidebar_w
+		# The authored side panel is a transparent hit/layout parent. Its old
+		# height could extend below the board at 875x500, despite the buttons
+		# themselves being visible. Bound it to the actual editor board rect.
+		var available_h := maxf(0.0, _settings_card.size.y - _sidebar_panel.position.y - 8.0)
+		var authored_h := _sidebar_authored_size.y if _sidebar_authored_size.y > 0.0 else available_h
+		_sidebar_panel.size = Vector2(sidebar_w, minf(authored_h, available_h))
 		for tab_btn: Button in _sidebar_buttons.values():
 			tab_btn.custom_minimum_size = Vector2(sidebar_w - 20.0, 48.0 if compact else 66.0)
 		if compact:
@@ -797,6 +924,15 @@ func _apply_responsive_layout() -> void:
 					tab_btn.position = Vector2(10.0, y_off)
 					tab_btn.size = Vector2(sidebar_w - 20.0, 48.0)
 					y_off += 48.0 + 14.0
+		else:
+			# Restore whatever designers placed in the .tscn. Compact mode
+			# must not permanently overwrite drag-edited desktop tab geometry.
+			for tab_key in _sidebar_authored_button_rects:
+				if _sidebar_buttons.has(tab_key):
+					var authored: Rect2 = _sidebar_authored_button_rects[tab_key]
+					var tab_btn: Button = _sidebar_buttons[tab_key]
+					tab_btn.position = authored.position
+					tab_btn.size = authored.size
 
 	# 4. Home Button Positioning
 	if is_instance_valid(_home_button):

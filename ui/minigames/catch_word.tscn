@@ -43,77 +43,81 @@ stretch_mode = 6
 [node name="FallingWordLayer" type="Node2D" parent="." unique_id=1456927821]
 z_index = 1
 
-[node name="CharacterRig" type="Node2D" parent="." unique_id=669911193]
-position = Vector2(256, 490)
+[node name="Boy" type="Node2D" parent="." unique_id=669911193]
+position = Vector2(640, 620)
 
-[node name="Body" type="Sprite2D" parent="CharacterRig" unique_id=1516257554]
+[node name="Body" type="Sprite2D" parent="Boy" unique_id=1516257554]
 visible = false
 z_index = -2
-position = Vector2(3.793396, -0.15722656)
+position = Vector2(0.136, -209.87)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("3_body")
 region_enabled = true
 region_rect = Rect2(97, 125, 748, 1547)
 
-[node name="CollectedWords" type="Node2D" parent="CharacterRig" unique_id=883634018]
-z_index = -1
-
-[node name="Basket" type="Sprite2D" parent="CharacterRig" unique_id=956352649]
+[node name="Basket" type="Sprite2D" parent="Boy" unique_id=956352649]
 visible = false
-position = Vector2(5.793396, 59.842896)
+position = Vector2(0.136, -149.89)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("4_basket")
 region_enabled = true
 region_rect = Rect2(11, 890, 920, 459)
 
-[node name="Girl" type="Node2D" parent="CharacterRig" unique_id=311705792]
-visible = false
+[node name="CollectedWords" type="Node2D" parent="." unique_id=883634018]
+z_index = -1
+position = Vector2(640, 621)
 
-[node name="Body" type="Sprite2D" parent="CharacterRig/Girl" unique_id=1490883895]
+[node name="Girl" type="Node2D" parent="." unique_id=311705792]
+visible = false
+position = Vector2(640, 820)
+
+[node name="Body" type="Sprite2D" parent="Girl" unique_id=1490883895]
 z_index = -2
-position = Vector2(3.7930298, 4.8430176)
+position = Vector2(0.135634, -204.86977)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("12_girl_body")
 region_enabled = true
 region_rect = Rect2(106, 130, 722, 1542)
 
-[node name="Basket" type="Sprite2D" parent="CharacterRig/Girl" unique_id=803945287]
-position = Vector2(5.79303, 60.843018)
+[node name="Basket" type="Sprite2D" parent="Girl" unique_id=803945287]
+position = Vector2(0.135634, -148.88988)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("13_girl_basket")
 region_enabled = true
 region_rect = Rect2(8, 878, 920, 459)
 
-[node name="Grandma" type="Node2D" parent="CharacterRig" unique_id=764711831]
+[node name="Grandma" type="Node2D" parent="." unique_id=764711831]
 visible = false
+position = Vector2(640, 820)
 
-[node name="Body" type="Sprite2D" parent="CharacterRig/Grandma" unique_id=170348412]
+[node name="Body" type="Sprite2D" parent="Grandma" unique_id=170348412]
 z_index = -2
-position = Vector2(-0.9500122, 9.843018)
+position = Vector2(-4.607408, -199.86977)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("14_grandma_body")
 region_enabled = true
 region_rect = Rect2(94, 125, 750, 1547)
 
-[node name="Basket" type="Sprite2D" parent="CharacterRig/Grandma" unique_id=1205466285]
-position = Vector2(-0.2709961, 61.843018)
+[node name="Basket" type="Sprite2D" parent="Grandma" unique_id=1205466285]
+position = Vector2(-5.927392, -147.88988)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("15_grandma_basket")
 region_enabled = true
 region_rect = Rect2(8, 870, 923, 448)
 
-[node name="Grandpa" type="Node2D" parent="CharacterRig" unique_id=2090389336]
+[node name="Grandpa" type="Node2D" parent="." unique_id=2090389336]
+position = Vector2(640, 820)
 
-[node name="Body" type="Sprite2D" parent="CharacterRig/Grandpa" unique_id=1737243803]
+[node name="Body" type="Sprite2D" parent="Grandpa" unique_id=1737243803]
 z_index = -2
-position = Vector2(-0.5430298, 5.8430176)
+position = Vector2(-4.200426, -203.86977)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("16_grandpa_body")
 region_enabled = true
 region_rect = Rect2(97, 130, 743, 1542)
 
-[node name="Basket" type="Sprite2D" parent="CharacterRig/Grandpa" unique_id=1205801394]
-position = Vector2(-0.40698242, 60.843018)
+[node name="Basket" type="Sprite2D" parent="Grandpa" unique_id=1205801394]
+position = Vector2(-6.064378, -148.88988)
 scale = Vector2(0.27129, 0.27129)
 texture = ExtResource("17_grandpa_basket")
 region_enabled = true
@@ -134,9 +138,9 @@ mouse_filter = 2
 [node name="TitlePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=859901248]
 layout_mode = 0
 offset_left = 13.0
-offset_top = 10.0
+offset_top = -9.0
 offset_right = 519.0
-offset_bottom = 167.0
+offset_bottom = 148.0
 mouse_filter = 2
 texture = ExtResource("6_title")
 expand_mode = 1
@@ -230,9 +234,9 @@ vertical_alignment = 1
 [node name="PromptLabel" type="Label" parent="HUDLayer/HUD" unique_id=982457133]
 layout_mode = 0
 offset_left = 115.0
-offset_top = 93.0
+offset_top = 74.0
 offset_right = 421.0
-offset_bottom = 126.0
+offset_bottom = 107.0
 theme_override_colors/font_color = Color(0.27, 0.12, 0.05, 1)
 theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 17
@@ -274,10 +278,10 @@ vertical_alignment = 1
 
 [node name="TimeLabel" type="Label" parent="HUDLayer/HUD" unique_id=1176703706]
 layout_mode = 0
-offset_left = 1075.0
-offset_top = 25.0
-offset_right = 1185.0
-offset_bottom = 75.0
+offset_left = 1078.0
+offset_top = 33.0
+offset_right = 1180.0
+offset_bottom = 66.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
 theme_override_constants/outline_size = 4

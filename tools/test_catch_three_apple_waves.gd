@@ -148,7 +148,7 @@ func _run_case(topic: String, character: String, mode: String, difficulty: Strin
     if should_catch_correct:
         _check(game.collected_words.size() == 1,
             label + ": caught correct word appears exactly once in basket")
-        var basket_words := game.get_node("CharacterRig/CollectedWords") as Node2D
+        var basket_words := game.get_node("CollectedWords") as Node2D
         _check(basket_words.get_child_count() == 1 and
             (basket_words.get_child(0) as TextureRect).texture.resource_path == COLLECTED_TEXTURE,
             label + ": original basket apple stays in use")
@@ -210,7 +210,7 @@ func _run_case(topic: String, character: String, mode: String, difficulty: Strin
     _check(game.score == 0 and game.attempts == 0 and game.correct_count == 0
         and game.lives == 3 and game.collected_words.is_empty(),
         label + ": retry resets score, attempts, lives, and collected words")
-    _check(game.get_node("CharacterRig/CollectedWords").get_child_count() == 0,
+    _check(game.get_node("CollectedWords").get_child_count() == 0,
         label + ": retry removes basket word sprites")
     _check(_count_transients(game) == 0,
         label + ": retry clears all old transient catch effects")

@@ -3,7 +3,7 @@ extends SceneTree
 ## Deliberately runs real editor-authored UI with a NO-SOCKET fake service.
 ## NEVER connects to PostgreSQL or calls the real local HTTP endpoint.
 ## godot --headless --path . --script res://tools/test_postgres_csv_delete_integration.gd
-const MENU_PATH := "res://tools/test_postgres_csv_delete_menu.gd"
+const MENU_PATH := "res://tools/test_postgres_csv_delete_menu_fixture.gd"
 const VALID_CSV := "student_id,student_name,grade_section,minigame,game_style,game_mode,difficulty,score\r\n\"ID-1\",\"Ada, \"\"Quoted\"\"\",\"Grade 5\",\"Catch the Word\",\"Noun\",\"Seconds\",\"Easy\",\"7\"\r\n"
 const LEGACY_CSV := "student_id,student_name,grade_section,game_style,game_mode,difficulty,score\r\n\"LEG-1\",\"Bea, \"\"Legacy\"\"\",\"Grade 5\",\"Noun\",\"Seconds\",\"Easy\",\"4\"\r\n"
 const IMPORT_PATH := "user://qa_postgres_csv_delete_import.csv"
@@ -101,6 +101,13 @@ func _test_minigame_display_and_filters() -> void:
 	_check(selector != null, "MinigameFilter is editor-authored and distinct from grammar style filter")
 	if selector == null:
 		return
+	_check(not selector.is_visible_in_tree(),
+		"minigame filter remains hidden after FILTERS popover removal")
+	for old_node in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
+		_check(board.find_child(old_node, true, false) == null,
+			"removed FILTERS/popover cannot be reopened: " + old_node)
+	_check(board.has_method("set_minigame_filter") and board.has_method("request_filtered_csv_export"),
+		"hidden minigame and CSV preserve explicit non-popover host APIs")
 	var expected := ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE", "LEGACY"]
 	var actual: Array[String] = []
 	for i in selector.item_count:
@@ -135,8 +142,8 @@ func _test_minigame_display_and_filters() -> void:
 		and visible_styles.has("PLANE / NOUN") and visible_styles.has("LEGACY / NOUN"),
 		"Same grammar topic visibly distinguishes Catch, Balloon Popping, Human Plane, Legacy")
 	for index in range(1, expected.size()):
-		selector.select(index)
-		selector.item_selected.emit(index)
+		_check(bool(board.call("set_minigame_filter", expected[index])),
+			"public API sets hidden minigame filter " + expected[index])
 		_check(_count_rows() == 1,
 			"Minigame filter '%s' selects exactly its backend row" % expected[index])
 		if _count_rows() == 1:
@@ -151,7 +158,7 @@ func _test_minigame_display_and_filters() -> void:
 	_check(download != null and local_save != null,
 		"Filtered local Download and its file dialog remain editor-authored")
 	if download != null and local_save != null:
-		download.pressed.emit()
+		board.call("request_filtered_csv_export")
 		_check(local_save.visible, "Filtered Download launches its native SaveCsvDialog")
 		local_save.file_selected.emit(ProjectSettings.globalize_path(FILTERED_PATH))
 		local_save.hide()
@@ -163,10 +170,12 @@ func _test_minigame_display_and_filters() -> void:
 				and filtered.count("\r\n") == 2,
 				"Filtered CSV has eight display columns and one Legacy record, distinct from canonical full export")
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(FILTERED_PATH))
-	selector.select(0)
-	selector.item_selected.emit(0)
+	_check(bool(board.call("set_minigame_filter", "ALL MINIGAMES")),
+		"public API resets hidden minigame filter")
 	_check(_count_rows() == 4, "Restoring ALL MINIGAMES shows all four independent scores")
 	_check(selector.position == authored_position, "Minigame filter layout stays editor-authored during filtering")
+	_check(not selector.is_visible_in_tree() and not download.is_visible_in_tree(),
+		"hidden filters stay hidden after host requests; no FILTERS popover returns")
 	# Restore a predictable single, fully identified live minigame ranking for
 	# the existing export/import/delete safety checks.
 	_authorize_mock_teacher()

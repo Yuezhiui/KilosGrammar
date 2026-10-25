@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=33 format=3]
 
 [ext_resource type="Script" path="res://ui/student/student_setup.gd" id="1_script"]
 [ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="r1"]
@@ -13,9 +13,6 @@
 [ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_verb.png" id="r10"]
 [ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_adjective.png" id="r11"]
 [ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_adverb.png" id="r12"]
-[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_preposition_locked.png" id="r13"]
-[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_conjunction_locked.png" id="r14"]
-[ext_resource type="Texture2D" path="res://ui/redesign/assets/student/topic_interjection_locked.png" id="r15"]
 [ext_resource type="Texture2D" path="res://ui/redesign/assets/student/mode_seconds.png" id="r16"]
 [ext_resource type="Texture2D" path="res://ui/redesign/assets/student/mode_lives.png" id="r17"]
 [ext_resource type="Texture2D" path="res://ui/redesign/assets/student/difficulty_easy.png" id="r18"]
@@ -629,105 +626,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("r12")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="PrepositionButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
-custom_minimum_size = Vector2(0, 44)
-size_flags_horizontal = 3
-focus_mode = 2
-mouse_default_cursor_shape = 2
-theme_override_fonts/font = ExtResource("r1")
-theme_override_font_sizes/font_size = 14
-text = "PREPOSITION • SOON"
-theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
-theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
-theme_override_styles/normal = SubResource("EmptyButton")
-theme_override_styles/hover = SubResource("EmptyButton")
-theme_override_styles/pressed = SubResource("EmptyButton")
-theme_override_styles/disabled = SubResource("EmptyButton")
-theme_override_styles/focus = SubResource("FocusBorder")
-disabled = true
-
-[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/PrepositionButton"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("r13")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="ConjunctionButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
-custom_minimum_size = Vector2(0, 44)
-size_flags_horizontal = 3
-focus_mode = 2
-mouse_default_cursor_shape = 2
-theme_override_fonts/font = ExtResource("r1")
-theme_override_font_sizes/font_size = 14
-text = "CONJUNCTION • SOON"
-theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
-theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
-theme_override_styles/normal = SubResource("EmptyButton")
-theme_override_styles/hover = SubResource("EmptyButton")
-theme_override_styles/pressed = SubResource("EmptyButton")
-theme_override_styles/disabled = SubResource("EmptyButton")
-theme_override_styles/focus = SubResource("FocusBorder")
-disabled = true
-
-[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/ConjunctionButton"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("r14")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="InterjectionButton" type="Button" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid"]
-custom_minimum_size = Vector2(0, 44)
-size_flags_horizontal = 3
-focus_mode = 2
-mouse_default_cursor_shape = 2
-theme_override_fonts/font = ExtResource("r1")
-theme_override_font_sizes/font_size = 14
-text = "INTERJECTION • SOON"
-theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
-theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
-theme_override_styles/normal = SubResource("EmptyButton")
-theme_override_styles/hover = SubResource("EmptyButton")
-theme_override_styles/pressed = SubResource("EmptyButton")
-theme_override_styles/disabled = SubResource("EmptyButton")
-theme_override_styles/focus = SubResource("FocusBorder")
-disabled = true
-
-[node name="ButtonArtwork" type="TextureRect" parent="LayoutMargins/StudentSetupColumn/StudentSetupScroll/SetupCardGrid/GameSetupCard/GameContent/GameStyleGrid/InterjectionButton"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("r15")
 expand_mode = 1
 stretch_mode = 5
 

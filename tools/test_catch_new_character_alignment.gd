@@ -45,12 +45,10 @@ func _check_game(viewport: SubViewport, resolution: Vector2i, character: String,
 	game.set_process(false)
 	game.call("_on_resized")
 	await process_frame
-	var rig := game.get_node("CharacterRig") as Node2D
+	var group := game.get_node(character) as Node2D
 	var body := game.get("body_sprite") as Sprite2D
 	var basket := game.get("basket_sprite") as Sprite2D
-	var layer := rig.get_node("CollectedWords") as Node2D
-	var selected_path := "." if character == "Boy" else character
-	var group: Node2D = rig if selected_path == "." else rig.get_node_or_null(selected_path) as Node2D
+	var layer := game.get_node("CollectedWords") as Node2D
 	check(group != null and body != null and basket != null, tag + " selected sprites/group are missing")
 	if group == null or body == null or basket == null:
 		game.queue_free()
@@ -59,17 +57,14 @@ func _check_game(viewport: SubViewport, resolution: Vector2i, character: String,
 	check(game.get("selected_character") == character, tag + " incorrect active variant")
 	check(game.get("selected_map") == map_name, tag + " incorrect active map")
 	check(body == group.get_node("Body") and basket == group.get_node("Basket"), tag + " active sprite pointers do not match selected scene nodes")
-	check(group == rig or group.owner == game, tag + " character group not owned by editable scene")
+	check(group.owner == game and group.get_parent() == game, tag + " character group not owned by editable scene")
 	check(body.owner == game and basket.owner == game, tag + " body/basket are not editor-authored")
 	check(body.is_visible_in_tree() and basket.is_visible_in_tree(), tag + " selected sprites hidden")
 	for other in CHARACTERS:
 		if other == character:
 			continue
-		var other_group := rig if other == "Boy" else rig.get_node(other) as Node2D
-		if other == "Boy":
-			check(not (other_group.get_node("Body") as Sprite2D).visible and not (other_group.get_node("Basket") as Sprite2D).visible, tag + " inactive Boy is visible")
-		else:
-			check(not other_group.visible, tag + " inactive " + other + " group is visible")
+		var other_group := game.get_node(other) as Node2D
+		check(not other_group.visible, tag + " inactive " + other + " group is visible")
 	var original_body := "res://WordCatcherCharacters/%s BODY.png" % character.to_upper()
 	var original_basket := "res://WordCatcherCharacters/%s BASKET.png" % character.to_upper()
 	check(body.texture != null and body.texture.resource_path == original_body, tag + " body is not its ORIGINAL PNG")
@@ -85,7 +80,7 @@ func _check_game(viewport: SubViewport, resolution: Vector2i, character: String,
 	check(basket_rect.intersects(body_rect), tag + " basket misses selected body")
 	check(absf(basket_rect.get_center().x - body_rect.get_center().x) <= body_rect.size.x * 0.24, tag + " basket not centered on selected body")
 	check(basket_rect.get_center().y > body_rect.position.y + body_rect.size.y * 0.38 and basket_rect.get_center().y < body_rect.end.y, tag + " basket is not held around torso")
-	check(body.z_index < layer.z_index and layer.z_index < basket.z_index, tag + " incorrect body/fruit/basket draw order")
+	check(body.z_index + group.z_index < layer.z_index and layer.z_index < basket.z_index + group.z_index, tag + " incorrect body/fruit/basket draw order")
 	var title := game.get_node("HUDLayer/HUD/TitlePlaque") as TextureRect
 	var pause := game.get_node("HUDLayer/HUD/PausePlaque") as TextureRect
 	check(not body_rect.intersects(title.get_global_rect()) and not basket_rect.intersects(title.get_global_rect()), tag + " character obscures title")

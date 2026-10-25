@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 PoseService="*res://ui/vision/pose_service.gd"
+GlobalButtonHover="*res://ui/shared/global_button_hover.gd"
 
 [display]
 

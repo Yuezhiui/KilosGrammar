@@ -76,19 +76,21 @@ func _test_serialized_scene_resources() -> void:
 	for expected in [
 		"[node name=\"Background\" type=\"TextureRect\"",
 		"[node name=\"FallingWordLayer\" type=\"Node2D\"",
-		"[node name=\"CharacterRig\" type=\"Node2D\"",
+		"[node name=\"Boy\" type=\"Node2D\"",
 		"[node name=\"HUDLayer\" type=\"CanvasLayer\"",
 	]:
 		_assert(catch_text.contains(expected), "Catch TSCN serializes " + expected)
 	# Godot 4.7.2 can insert unique_id= before the closing bracket. Check
 	# the actual node name, type and parent instead of a brittle full header.
-	for node_info in [
-		["Body", "Sprite2D"],
-		["CollectedWords", "Node2D"],
-		["Basket", "Sprite2D"],
-	]:
-		_assert(_has_serialized_node(catch_text, node_info[0], node_info[1], "CharacterRig"),
-			"Catch TSCN serializes %s as %s under CharacterRig" % node_info)
+	_assert(not catch_text.contains("[node name=\"CharacterRig\""), "Catch no obsolete parent node")
+	_assert(_has_serialized_node(catch_text, "CollectedWords", "Node2D", "."),
+		"Catch CollectedWords is editor-authored root sibling")
+	for character_name in ["Boy", "Girl", "Grandma", "Grandpa"]:
+		_assert(_has_serialized_node(catch_text, character_name, "Node2D", "."),
+			"Catch %s scene-authored root group" % character_name)
+		for part in ["Body", "Basket"]:
+			_assert(_has_serialized_node(catch_text, part, "Sprite2D", character_name),
+				"Catch %s/%s is scene-authored sprite" % [character_name, part])
 
 	var balloon_text := _file_text(BALLOON_SCENE)
 	for expected in [
@@ -114,12 +116,12 @@ func _test_serialized_scene_resources() -> void:
 	var catch := await _instantiate(CATCH_SCENE)
 	if catch != null:
 		_assert(catch.get_node_or_null("Background") is TextureRect, "Catch Background is editor TextureRect")
-		_assert(catch.get_node_or_null("CharacterRig/Body") is Sprite2D, "Catch Body is editor Sprite2D")
-		_assert(catch.get_node_or_null("CharacterRig/Basket") is Sprite2D, "Catch Basket is editor Sprite2D")
-		_assert(catch.get_node_or_null("CharacterRig/CollectedWords") is Node2D, "Catch CollectedWords is editor Node2D")
+		_assert(catch.get_node_or_null("Boy/Body") is Sprite2D, "Catch Body is editor Sprite2D")
+		_assert(catch.get_node_or_null("Boy/Basket") is Sprite2D, "Catch Basket is editor Sprite2D")
+		_assert(catch.get_node_or_null("CollectedWords") is Node2D, "Catch CollectedWords is editor Node2D")
 		var bg := catch.get_node("Background") as TextureRect
-		var body := catch.get_node("CharacterRig/Body") as Sprite2D
-		var basket := catch.get_node("CharacterRig/Basket") as Sprite2D
+		var body := catch.get("body_sprite") as Sprite2D
+		var basket := catch.get("basket_sprite") as Sprite2D
 		_assert(bg.texture != null, "Catch Background has an editable texture resource")
 		_assert(body.texture != null and basket.texture != null, "Catch body/basket have editable texture resources")
 		await _dispose(catch)
@@ -179,8 +181,8 @@ func _test_catch_random_art() -> void:
 	_assert(String(catch.get("selected_character")) == restored_character, "Catch pause snapshot restores exact character")
 	_assert(String(catch.get("selected_map")) == restored_map, "Catch pause snapshot restores exact map")
 	var background := catch.get_node("Background") as TextureRect
-	var body := catch.get_node("CharacterRig/Body") as Sprite2D
-	var basket := catch.get_node("CharacterRig/Basket") as Sprite2D
+	var body := catch.get("body_sprite") as Sprite2D
+	var basket := catch.get("basket_sprite") as Sprite2D
 	_assert(background.texture != null, "Catch restored map texture is applied")
 	_assert(body.texture != null, "Catch restored body texture is applied")
 	_assert(basket.texture != null, "Catch restored basket texture is applied")
@@ -197,14 +199,25 @@ func _test_catch_random_art() -> void:
 			"catch_map": "City",
 		}))
 		await process_frame
-		var character_bottom := body.global_position.y + body.region_rect.size.y * body.scale.y * 0.5
-		var basket_top := basket.global_position.y - basket.region_rect.size.y * basket.scale.y * 0.5
-		_assert(character_bottom > catch.size.y, "Catch %s lower body stays below screen" % character_name)
+		body = catch.get("body_sprite") as Sprite2D
+		basket = catch.get("basket_sprite") as Sprite2D
+		var body_rect := Rect2(body.global_position + body.get_rect().position * body.global_scale,
+			body.get_rect().size * body.global_scale)
+		var basket_rect := Rect2(basket.global_position + basket.get_rect().position * basket.global_scale,
+			basket.get_rect().size * basket.global_scale)
+		var character_bottom := body_rect.end.y
+		var basket_top := basket_rect.position.y
+		_assert(body_rect.position.y >= 0.0 and character_bottom <= catch.size.y + 1.0
+			and character_bottom >= catch.size.y * 0.75,
+			"Catch %s entire original body and feet are in the screen" % character_name)
+		_assert(basket_rect.position.x >= 0.0 and basket_rect.end.x <= catch.size.x
+			and basket_rect.position.y >= 0.0 and basket_rect.end.y <= catch.size.y,
+			"Catch %s entire original basket is in the screen" % character_name)
 		# All four restored WordCatcherCharacters use the original framing.
 		# The removed using_reference_character flag must not be queried.
 		print("Catch original ", character_name, " basket_top=", basket_top, " viewport_height=", catch.size.y)
-		var lower_basket_limit: float = 0.78
-		_assert(basket_top > catch.size.y * lower_basket_limit and basket_top < catch.size.y * 0.89, "Catch %s basket sits near bottom rim" % character_name)
+		var lower_basket_limit: float = 0.48
+		_assert(basket_top > catch.size.y * lower_basket_limit and basket_top < catch.size.y * 0.70, "Catch %s basket sits near bottom rim" % character_name)
 	_assert(not _file_text("res://ui/minigames/catch_word.gd").contains("_draw_lane_guides"), "Catch renders no lane guides")
 	await _dispose(catch)
 
@@ -229,7 +242,7 @@ func _test_catch_inventory_and_pause() -> void:
 	await process_frame
 
 	var collected: Array = catch.get("collected_words")
-	var collected_layer := catch.get_node("CharacterRig/CollectedWords") as Node2D
+	var collected_layer := catch.get_node("CollectedWords") as Node2D
 	_assert(collected.size() == 3, "Catch visual inventory data caps at three words")
 	_assert(collected_layer.get_child_count() == 3, "Catch renders at most three collected apples")
 	for child in collected_layer.get_children():

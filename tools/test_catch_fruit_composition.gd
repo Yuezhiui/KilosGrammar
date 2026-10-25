@@ -19,16 +19,16 @@ func _run() -> void:
 			game.call("set_context", {"activity":"Catch the Word", "topic":"Noun", "game_mode":"Seconds", "catch_character":character, "catch_map":"City"})
 			game.set_process(false)
 			await process_frame
-			var rig := game.get_node("CharacterRig") as Node2D
-			var body := rig.get_node("Body") as Sprite2D
-			var basket := rig.get_node("Basket") as Sprite2D
-			var layer := rig.get_node("CollectedWords") as Node2D
+			var group := game.get_node(character) as Node2D
+			var body := group.get_node("Body") as Sprite2D
+			var basket := group.get_node("Basket") as Sprite2D
+			var layer := game.get_node("CollectedWords") as Node2D
 			var body_rect := _sprite_rect(body)
 			var basket_rect := _sprite_rect(basket)
 			var tag: String = "%s %s" % [resolution, character]
 			print(tag, " BODY=", body_rect, " BASKET=", basket_rect, " scale=", body.scale, "/", basket.scale)
 			_check(body.texture != null and basket.texture != null, tag + " missing sprite")
-			_check(body.z_index < layer.z_index and layer.z_index < basket.z_index, tag + " incorrect layers")
+			_check(body.z_index + group.z_index < layer.z_index and layer.z_index < basket.z_index + group.z_index, tag + " incorrect layers")
 			for count in range(4):
 				var words: Array = game.get("collected_words")
 				words.clear()
@@ -40,7 +40,7 @@ func _run() -> void:
 					if child.is_queued_for_deletion() or not child is TextureRect:
 						continue
 					live += 1
-					var rect := Rect2(rig.global_position + child.position, child.size)
+					var rect := (child as TextureRect).get_global_rect()
 					var label := child.get_child(0) as Label if child.get_child_count() > 0 else null
 					print("  count=", count, " apple=", child.name, " rect=", rect, " label=", label.text if label else "MISSING")
 					_check(label != null and not label.text.is_empty(), tag + " missing apple word")

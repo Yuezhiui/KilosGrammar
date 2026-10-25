@@ -37,7 +37,7 @@ func _run() -> void:
 			_verify(field != null and field.focus_mode == Control.FOCUS_ALL, part + " native editable field")
 		var button_count := 0
 		var option_panels := [
-			{"container": setup.get_node("GameStyleGrid"), "names": ["Noun", "Pronoun", "Verb", "Adjective", "Adverb", "Preposition", "Conjunction", "Interjection"]},
+			{"container": setup.get_node("GameStyleGrid"), "names": ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]},
 			{"container": setup.get_node("LowerSelections/ModeColumn/ModeRow"), "names": ["Seconds", "Lives"]},
 			{"container": setup.get_node("LowerSelections/DifficultyColumn/DifficultyRow"), "names": ["Easy", "Normal", "Hard"]},
 		]
@@ -49,8 +49,10 @@ func _run() -> void:
 					button_count += 1
 					var art := native.get_node_or_null("ButtonArtwork") as TextureRect
 					_verify(art != null and art.texture != null and art.mouse_filter == Control.MOUSE_FILTER_IGNORE, item + " editable child PNG")
-					_verify(native.disabled == (item in ["Preposition", "Conjunction", "Interjection"]), item + " enabled state")
-		_verify(button_count == 13, "all 13 editor-authored game choices")
+					_verify(not native.disabled, item + " enabled state")
+		_verify(button_count == 10, "all 10 editor-authored game choices")
+		var styles := setup.get_node("GameStyleGrid") as GridContainer
+		_verify(styles.get_child_count() == 5, "only five supported grammar topics appear")
 		for child_name in ["BackButton", "ContinueButton"]:
 			var child := screen.get_node_or_null(parent + "/SetupActions/" + child_name) as Button
 			_verify(child != null and child.get_node_or_null("ButtonArtwork") is TextureRect, child_name + " native editable footer")

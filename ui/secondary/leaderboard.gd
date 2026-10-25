@@ -21,6 +21,22 @@ const MAX_IMPORT_BYTES := 1000000
 const MAX_IMPORT_RECORDS := 5000
 const LEGACY_IMPORT_CSV_FIELDS := ["student_id", "student_name", "grade_section", "game_style", "game_mode", "difficulty", "score"]
 const IMPORT_CSV_FIELDS := ["student_id", "student_name", "grade_section", "minigame", "game_style", "game_mode", "difficulty", "score"]
+const EDITOR_CANVAS_SIZE := Vector2(1280, 720)
+const FILTER_INVISIBLE_ARROW := preload("res://ui/secondary/transparent_dropdown_arrow.png")
+## Inspector-editable selected-state artwork. Index 0 is the original ALL image.
+## Every element is an authored StyleBoxTexture from leaderboard.tscn.
+@export var style_filter_skins: Array[StyleBoxTexture] = []
+@export var mode_filter_skins: Array[StyleBoxTexture] = []
+@export var difficulty_filter_skins: Array[StyleBoxTexture] = []
+# Each node keeps its independent editor-authored position. Only proportional
+# viewport scaling/centering happens at runtime, never per-button hardcoded XY.
+const RESPONSIVE_NODE_NAMES := [
+	"BoardArtwork", "TitleArt", "BackButton",
+	"StyleFilter", "ModeFilter", "DifficultyFilter",
+	"MinigameFilter", "DownloadButton", "TableHeaderArt", "TableBodyArt",
+	"TableContent", "ImportCsvButton", "ExportCsvButton",
+	"DeleteAllButton", "TransferStatusPanel"
+]
 
 var _context: Dictionary = {}
 var _all_rows: Array[Dictionary] = []
@@ -53,11 +69,17 @@ var _visible_rows: Array[Dictionary] = []
 var _delete_first_confirmed := false
 var _transfer_pending := false
 var _pending_import_path := ""
+var _authored_ui_transforms: Dictionary = {}
 
 
 func _ready() -> void:
+	_capture_editor_layout()
+	resized.connect(_apply_viewport_layout)
+	call_deferred("_apply_viewport_layout")
 	back_button.pressed.connect(_request_main)
-	download_button.pressed.connect(_download_csv)
+	# Minigame-specific filter and filtered CSV stay callable by the host.
+	# Their native controls are hidden since the FILTERS popup was removed.
+	download_button.pressed.connect(request_filtered_csv_export)
 	for selector in [style_filter, mode_filter, difficulty_filter, minigame_filter]:
 		selector.item_selected.connect(_on_filter_changed.unbind(1))
 	csv_dialog.file_selected.connect(_write_csv)
@@ -78,6 +100,51 @@ func _ready() -> void:
 	_on_typed_confirmation_changed("")
 	call_deferred("_focus_back")
 	_on_filter_changed()
+
+
+func set_minigame_filter(minigame: String) -> bool:
+	## Host/API entry point, retained without a visible FILTERS popup.
+	var wanted := minigame.strip_edges().to_upper()
+	for index in minigame_filter.item_count:
+		if minigame_filter.get_item_text(index).to_upper() == wanted:
+			minigame_filter.select(index)
+			_on_filter_changed()
+			return true
+	return false
+
+
+func request_filtered_csv_export() -> void:
+	## Exports exactly the currently filtered rows through SaveCsvDialog.
+	_download_csv()
+
+
+func _capture_editor_layout() -> void:
+	for node_name in RESPONSIVE_NODE_NAMES:
+		var control := get_node_or_null(node_name) as Control
+		if control != null:
+			_authored_ui_transforms[node_name] = {
+				"position": control.position,
+				"scale": control.scale
+			}
+
+
+func _apply_viewport_layout() -> void:
+	# The root's background is separately full-rect, not moved/scaled here.
+	# All UI art and hitboxes scale as a unit, keeping authored .tscn positions
+	# accurate in 16:9 1280/1600/1920 windows. No scene element is reparented.
+	var actual_size := size
+	if actual_size.x < 10.0 or actual_size.y < 10.0:
+		return
+	var factor := minf(actual_size.x / EDITOR_CANVAS_SIZE.x,
+		actual_size.y / EDITOR_CANVAS_SIZE.y)
+	var upper_left := (actual_size - EDITOR_CANVAS_SIZE * factor) * 0.5
+	for node_name in _authored_ui_transforms:
+		var control := get_node_or_null(node_name) as Control
+		if control == null:
+			continue
+		var authored: Dictionary = _authored_ui_transforms[node_name]
+		control.scale = Vector2(authored["scale"]) * factor
+		control.position = upper_left + Vector2(authored["position"]) * factor
 
 
 func _focus_back() -> void:
@@ -111,6 +178,7 @@ func _request_main() -> void:
 
 
 func _on_filter_changed() -> void:
+	_update_filter_appearance()
 	_visible_rows.clear()
 	var selected_minigame := minigame_filter.get_item_text(minigame_filter.selected)
 	var selected_style := style_filter.get_item_text(style_filter.selected).to_upper()
@@ -127,6 +195,27 @@ func _on_filter_changed() -> void:
 			continue
 		_visible_rows.append(record)
 	_redraw_rows()
+
+
+func _update_filter_appearance() -> void:
+	var controls: Array[OptionButton] = [style_filter, mode_filter, difficulty_filter]
+	var skin_sets: Array = [style_filter_skins, mode_filter_skins, difficulty_filter_skins]
+	for index in controls.size():
+		var selector := controls[index]
+		var skins: Array = skin_sets[index]
+		if selector.selected < 0 or selector.selected >= skins.size():
+			continue
+		var style := skins[selector.selected] as StyleBoxTexture
+		if style == null:
+			continue
+		# The native button handles focus/click/dropdown; the image carries
+		# the selected caption and its ONE arrow in every selected state.
+		selector.add_theme_icon_override("arrow", FILTER_INVISIBLE_ARROW)
+		for state in ["normal", "hover", "pressed", "hover_pressed"]:
+			selector.add_theme_stylebox_override(state, style)
+		for key in ["font_color", "font_hover_color", "font_pressed_color",
+			"font_hover_pressed_color", "font_focus_color"]:
+			selector.add_theme_color_override(key, Color.TRANSPARENT)
 
 
 func _redraw_rows() -> void:
@@ -448,6 +537,7 @@ func _validate_import_csv(path: String) -> String:
 
 
 func _show_status(message: String) -> void:
+	transfer_status.get_parent().visible = not message.is_empty()
 	transfer_status.text = message
 	transfer_status.add_theme_color_override("font_color", Color("#38334F"))
 
@@ -456,6 +546,7 @@ func set_transfer_status(message: String, success: bool = false) -> void:
 	## Main menu should call this when the backend acknowledges an operation.
 	## A failed call keeps database state unchanged; show the actual server error.
 	_set_transfer_pending_state(false)
+	transfer_status.get_parent().visible = not message.is_empty()
 	transfer_status.text = message
 	transfer_status.add_theme_color_override("font_color", Color("#217046") if success else Color("#9D2930"))
 	if success:

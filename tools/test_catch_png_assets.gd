@@ -207,8 +207,8 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		var ctx := "%s %s" % [viewport_size, character_name]
 		var body := game.body_sprite as Sprite2D
 		var basket := game.basket_sprite as Sprite2D
-		var collected := game.get_node_or_null("CharacterRig/CollectedWords") as Node2D
-		var rig := game.get_node_or_null("CharacterRig") as Node2D
+		var collected := game.get_node_or_null("CollectedWords") as Node2D
+		var group := game.get_node_or_null(character_name) as Node2D
 		var prefix: String = String(character_name).to_upper()
 		_check(String(game.get("selected_character")) == character_name,
 			ctx + ": requested character selected")
@@ -231,12 +231,11 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		if body != null and basket != null and collected != null:
 			var sprite_group := body.get_parent()
 			_check(sprite_group == basket.get_parent()
-				and (sprite_group == rig or sprite_group.get_parent() == rig)
-				and collected.get_parent() == rig,
-				ctx + ": active body and basket are independent editor-authored sprites under the rig")
+				and sprite_group == group and collected.get_parent() == game,
+				ctx + ": active body/basket are editor-authored children of selected root sibling")
 			_check(body.is_visible_in_tree() and basket.is_visible_in_tree(),
 				ctx + ": selected character body and basket are visible")
-			_check(body.z_index < collected.z_index and collected.z_index < basket.z_index,
+			_check(body.z_index + group.z_index < collected.z_index and collected.z_index < basket.z_index + group.z_index,
 				ctx + ": body < collected apples < basket/hands draw order")
 			var screen := Rect2(Vector2.ZERO, Vector2(viewport_size))
 			for sprite in [body, basket]:

@@ -35,8 +35,7 @@ func _check_variant(viewport: SubViewport, character: String, map_name: String) 
 	# This separate unmounted instance is the saved .tscn author's positions,
 	# not a baseline copied from the game after runtime selected a character.
 	var authored := SCENE.instantiate() as Control
-	var authored_rig := authored.get_node("CharacterRig") as Node2D
-	var authored_group: Node2D = authored_rig if character == "Boy" else authored_rig.get_node(character) as Node2D
+	var authored_group := authored.get_node(character) as Node2D
 	var authored_body := authored_group.get_node("Body") as Sprite2D
 	var authored_basket := authored_group.get_node("Basket") as Sprite2D
 	var original_body_position := authored_body.position
@@ -46,7 +45,7 @@ func _check_variant(viewport: SubViewport, character: String, map_name: String) 
 	var original_body_region := authored_body.region_rect
 	var original_basket_region := authored_basket.region_rect
 	var original_group_position := authored_group.position
-	var original_rig_position := authored_rig.position
+	var original_layer_offset := (authored.get_node("CollectedWords") as Node2D).position - authored_group.position
 	_check(authored_body.owner == authored and authored_basket.owner == authored, tag + " original variants are not editable in saved scene")
 	_check(authored_body.region_enabled and authored_basket.region_enabled, tag + " original alpha crops not editor-authored")
 	_check(original_body_scale.x > 0.0 and original_body_scale.y > 0.0 and original_basket_scale.x > 0.0 and original_basket_scale.y > 0.0, tag + " invalid authored scale")
@@ -63,11 +62,10 @@ func _check_variant(viewport: SubViewport, character: String, map_name: String) 
 	game.set_process(false)
 	game.call("_on_resized")
 	await process_frame
-	var rig := game.get_node("CharacterRig") as Node2D
-	var group: Node2D = rig if character == "Boy" else rig.get_node(character) as Node2D
+	var group := game.get_node(character) as Node2D
 	var body := game.get("body_sprite") as Sprite2D
 	var basket := game.get("basket_sprite") as Sprite2D
-	var layer := rig.get_node("CollectedWords") as Node2D
+	var layer := game.get_node("CollectedWords") as Node2D
 	_check(body == group.get_node("Body") and basket == group.get_node("Basket"), tag + " active sprites differ from editable selected variant")
 	_check(body.owner == game and basket.owner == game, tag + " active sprites have no scene owner")
 	_check(body.texture != null and body.texture.resource_path == ("res://WordCatcherCharacters/%s BODY.png" % character.to_upper()), tag + " wrong original body texture")
@@ -76,13 +74,13 @@ func _check_variant(viewport: SubViewport, character: String, map_name: String) 
 	_check(_near_vec(body.scale, original_body_scale) and _near_vec(basket.scale, original_basket_scale), tag + " runtime overwrote editor-authored sprite scales")
 	_check(body.region_rect == original_body_region and basket.region_rect == original_basket_region, tag + " runtime overwrote editor-authored alpha crop")
 	_check(_near_vec(group.position, original_group_position), tag + " runtime overwrote selected character group position")
-	_check(is_equal_approx(rig.position.y, original_rig_position.y), tag + " runtime moved rig baseline off original editor position")
+	_check(_near_vec(layer.position - group.position, original_layer_offset), tag + " runtime detached collected-word sibling from the character editor baseline")
 	var frame := Rect2(Vector2.ZERO, Vector2(1280, 720))
 	var rect_body := _screen_rect(body)
 	var rect_basket := _screen_rect(basket)
 	_check(_inside(frame, rect_body) and _inside(frame, rect_basket), tag + " selected body or basket clipped: " + str(rect_body) + " / " + str(rect_basket))
 	_check(rect_basket.intersects(rect_body), tag + " basket not aligned to body")
-	_check(body.z_index < layer.z_index and layer.z_index < basket.z_index, tag + " collected words are not between body and basket")
+	_check(body.z_index + group.z_index < layer.z_index and layer.z_index < basket.z_index + group.z_index, tag + " collected words are not between body and basket")
 	# Dragging either sprite in Godot's 2D editor must have an actual effect.
 	# After runtime geometry sync, those authored offsets must still drive
 	# visible geometry and the basket's collision region.

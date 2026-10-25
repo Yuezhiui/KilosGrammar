@@ -95,8 +95,8 @@ func _verify_viewport(packed: PackedScene, physical_size: Vector2i) -> void:
 	game.set_process(false)
 
 	var hud := game.get_node_or_null("HUDLayer/HUD") as Control
-	var body := game.get_node_or_null("CharacterRig/Body") as Sprite2D
-	var basket := game.get_node_or_null("CharacterRig/Basket") as Sprite2D
+	var body := game.get_node_or_null("Boy/Body") as Sprite2D
+	var basket := game.get_node_or_null("Boy/Basket") as Sprite2D
 	var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
 	var time_label := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimerPlaque") as TextureRect
@@ -131,6 +131,11 @@ func _verify_viewport(packed: PackedScene, physical_size: Vector2i) -> void:
 		})
 		game.set_process(false)
 		await process_frame
+		body = game.get("body_sprite") as Sprite2D
+		basket = game.get("basket_sprite") as Sprite2D
+		_check(body.get_parent() == game.get_node(character_name)
+			and basket.get_parent() == game.get_node(character_name),
+			"%s %s: runtime selects the exact root-sibling sprite pair" % [physical_size, character_name])
 		var expected_body: String = OLD_CHAR + String(character_name).to_upper() + " BODY.png"
 		var expected_basket: String = OLD_CHAR + String(character_name).to_upper() + " BASKET.png"
 		_check(body.texture != null and body.texture.resource_path == expected_body,
@@ -233,7 +238,7 @@ func _check_falling_and_basket_apples(game: Control, physical_size: Vector2i) ->
 	else:
 		_fail("%s: unable to create falling-word AppleSprite for visual asset check" %
 			physical_size)
-	var caught_layer := game.get_node_or_null("CharacterRig/CollectedWords") as Node2D
+	var caught_layer := game.get_node_or_null("CollectedWords") as Node2D
 	if caught_layer == null:
 		_fail("%s: collected-word apple layer missing" % physical_size)
 		return

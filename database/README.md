@@ -154,6 +154,41 @@ and a safe diagnostic. The launcher does not write the password to the
 command line, a log file, or a network service. The game can invoke this
 script before trying its local HTTP requests.
 
+### Existing scores appear to disappear after Windows restart
+
+PostgreSQL data is stored on disk and should survive reboot. An empty/offline
+Leaderboard does **not** prove the student data was deleted: the Windows
+PostgreSQL service can be running while the game's separate localhost HTTP
+service is unavailable. In particular, existing databases created with the
+original `001_initial.sql` may lack the `minigame` column and uniqueness key
+required by current game versions; the API then rejects the outdated schema.
+
+To **inspect without writing anything**, run:
+
+```powershell
+.\tools\diagnose_database_readonly.ps1
+.\database\upgrade_existing_scores.ps1 -CheckOnly
+```
+
+If the result is `PREFLIGHT=LEGACY_001`, close active gameplay and use the
+game's **SET UP LOCAL DATABASE** window, choosing **5 - Upgrade EXISTING score
+tables**. Alternatively, run `.\database\upgrade_existing_scores.ps1`
+interactively from the project directory. This option uses the saved Windows
+DPAPI-protected app credentials, **backs up the existing entire local database
+and verifies the private archive first**, then requires the teacher to type
+`MIGRATE` before applying only `002_add_minigame.sql` in a transaction. The
+script never automatically re-creates or empties the existing database, and
+never silently runs the migration during game startup. Historical scores keep
+their original values and are labeled `Legacy`, since their activity cannot
+be reliably inferred. The private backup stays under
+`%LOCALAPPDATA%\KilosGrammar\backups`.
+
+After successful confirmation and upgrade, `start_auto.ps1` can start the API
+on each game launch, and the Windows PostgreSQL service remains set to its
+existing Automatic startup mode. If the inspection reports another schema
+state, do **not** force any migration: ask the database administrator to
+review the current schema and backups first.
+
 ### Manual alternative
 
 1. Run `.\database\setup_local.ps1` to create `database/.venv` and install

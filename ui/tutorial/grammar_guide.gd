@@ -13,10 +13,7 @@ const ENTRIES := [
 	["PRONOUN", "Takes the place of a noun.", "I • she • they", Color("#C171CF")],
 	["VERB", "Shows an action or state.", "run • learn • is", Color("#FF4F66")],
 	["ADJECTIVE", "Describes a noun or pronoun.", "bright • kind • small", Color("#FFC23D")],
-	["ADVERB", "Tells how, when, or where.", "quickly • today • here", Color("#7BC9EF")],
-	["PREPOSITION", "Shows position or relationship.", "under • beside • into", Color("#F4985F")],
-	["CONJUNCTION", "Connects words or ideas.", "and • but • because", Color("#5AA0D7")],
-	["INTERJECTION", "Shows a sudden feeling.", "wow! • hey! • hooray!", Color("#8E78C6")]
+	["ADVERB", "Tells how, when, or where.", "quickly • today • here", Color("#7BC9EF")]
 ]
 
 var context: Dictionary = {}
@@ -46,11 +43,10 @@ func _bind_scene_nodes(stage: Control) -> void:
 func _populate_cards(grid: GridContainer) -> void:
 	for index in range(ENTRIES.size()):
 		var item: Array = ENTRIES[index]
-		var active := index < 5
 		var card := PanelContainer.new()
 		card.custom_minimum_size = Vector2(462, 143)
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color("#FFFDF4") if active else Color("#EAE6E1")
+		style.bg_color = Color("#FFFDF4")
 		style.set_corner_radius_all(20)
 		style.set_border_width_all(2)
 		style.border_color = item[3]
@@ -71,7 +67,7 @@ func set_context(value: Dictionary) -> void:
 
 
 func _build_redesign() -> void:
-	var stage := ART.prepare(self, "EXPLORE GRAMMAR!", "Eight parts of speech make up our grammar map. The game currently practices five.", "GRAMMAR GUIDE")
+	var stage := ART.prepare(self, "EXPLORE GRAMMAR!", "Explore the five grammar topics practiced in this game.", "GRAMMAR GUIDE")
 	ART.label(stage, "Scroll the cards to discover meanings and examples.", Rect2(85, 154, 946, 28), 15, ART.INK)
 	var scroll := ScrollContainer.new()
 	scroll.name = "GrammarCardScroll"
@@ -88,11 +84,10 @@ func _build_redesign() -> void:
 	scroll.add_child(grid)
 	for index in range(ENTRIES.size()):
 		var item: Array = ENTRIES[index]
-		var active := index < 5
 		var card := PanelContainer.new()
 		card.custom_minimum_size = Vector2(462, 143)
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color("#FFFDF4") if active else Color("#EAE6E1")
+		style.bg_color = Color("#FFFDF4")
 		style.set_corner_radius_all(20)
 		style.set_border_width_all(2)
 		style.border_color = item[3]
@@ -129,7 +124,7 @@ func _build_ui() -> void:
 	column.add_theme_constant_override("separation", 12)
 	pad.add_child(column)
 	column.add_child(_label("GRAMMAR GUIDE", 34, INK, HORIZONTAL_ALIGNMENT_CENTER))
-	column.add_child(_label("Meet the eight parts of speech. The current game focuses on Noun, Verb, Adjective, Adverb, and Pronoun.", 15, INK, HORIZONTAL_ALIGNMENT_CENTER))
+	column.add_child(_label("Meet the five grammar topics practiced in this game: Noun, Verb, Adjective, Adverb, and Pronoun.", 15, INK, HORIZONTAL_ALIGNMENT_CENTER))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

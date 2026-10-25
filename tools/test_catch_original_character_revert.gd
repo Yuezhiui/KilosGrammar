@@ -44,12 +44,12 @@ func _run() -> void:
 	viewport.add_child(game)
 	game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await process_frame
-	var rig := game.get_node("CharacterRig") as Node2D
-	var layer := rig.get_node("CollectedWords") as Node2D
+	_check(not game.has_node("CharacterRig"), "legacy parent removed")
+	var layer := game.get_node("CollectedWords") as Node2D
 	var frame := Rect2(Vector2.ZERO, Vector2(viewport.size))
 	var original_transforms: Dictionary = {}
 	for name in NAMES:
-		var group: Node2D = rig if name == "Boy" else rig.get_node(name) as Node2D
+		var group := game.get_node(name) as Node2D
 		var body := group.get_node("Body") as Sprite2D
 		var basket := group.get_node("Basket") as Sprite2D
 		original_transforms[name] = {
@@ -58,7 +58,7 @@ func _run() -> void:
 			"group_position": group.position
 		}
 		_check(body.owner == game and basket.owner == game, name + " original pair not authored in Godot scene")
-		_check(group == rig or group.owner == game, name + " variant group not editable")
+		_check(group.owner == game and group.get_parent() == game, name + " variant group not editable")
 
 	# Switch characters in ONE live game, then revisit Boy: selecting another
 	# variant must never silently keep displaying the default Boy sprite.
@@ -74,7 +74,7 @@ func _run() -> void:
 			game.call("_on_resized")
 			await process_frame
 			var tag := "%s cycle=%d" % [name, cycle]
-			var group: Node2D = rig if name == "Boy" else rig.get_node(name) as Node2D
+			var group := game.get_node(name) as Node2D
 			var body := game.get("body_sprite") as Sprite2D
 			var basket := game.get("basket_sprite") as Sprite2D
 			_check(game.get("selected_character") == name, tag + " selection reverted to another character")
@@ -97,19 +97,16 @@ func _run() -> void:
 			var basket_rect := _screen_rect(basket)
 			_check(_inside(frame, body_rect), tag + " ENTIRE original body/legs clipped: " + str(body_rect))
 			_check(_inside(frame, basket_rect), tag + " ENTIRE original basket clipped: " + str(basket_rect))
-			_check(body_rect.end.y >= frame.end.y - 35.0, tag + " original feet not near ground")
+			_check(body_rect.end.y >= frame.end.y * 0.80 and body_rect.end.y <= frame.end.y - 4.0, tag + " original feet not fully framed near bottom")
 			_check(body_rect.position.y < basket_rect.position.y, tag + " body not behind basket")
 			_check(basket_rect.intersects(body_rect), tag + " original body and basket separated")
 			_check(absf(basket_rect.get_center().x - body_rect.get_center().x) <= body_rect.size.x * 0.24, tag + " basket off-center from character")
-			_check(body.z_index < layer.z_index and layer.z_index < basket.z_index, tag + " incorrect body/collected words/basket layering")
+			_check(body.z_index + group.z_index < layer.z_index and layer.z_index < basket.z_index + group.z_index, tag + " incorrect body/collected words/basket layering")
 			for other in NAMES:
 				if other == name:
 					continue
-				var other_node: Node2D = rig if other == "Boy" else rig.get_node(other) as Node2D
-				if other == "Boy":
-					_check(not (other_node.get_node("Body") as Sprite2D).visible and not (other_node.get_node("Basket") as Sprite2D).visible, tag + " old Boy still visible")
-				else:
-					_check(not other_node.visible, tag + " old " + other + " still visible")
+				var other_node := game.get_node(other) as Node2D
+				_check(not other_node.visible, tag + " old " + other + " still visible")
 			for count in range(4):
 				var words: Array = game.get("collected_words")
 				words.clear()

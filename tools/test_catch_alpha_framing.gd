@@ -11,7 +11,7 @@ const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1
 const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
 const MAPS := ["City", "Forest", "Mountain"]
 const SOURCE_ROOT := "res://WordCatcherCharacters/"
-const EXPECTED_RIG_ORIGIN := Vector2(256, 490)
+const EXPECTED_RIG_ORIGIN := Vector2(640, 620)
 const TOLERANCE := 1.5
 const MIN_EDGE_CLEARANCE := 4.0
 
@@ -69,7 +69,7 @@ func _case(resolution: Vector2i, character: String, map_name: String) -> void:
 
 	var body: Sprite2D = game.body_sprite
 	var basket: Sprite2D = game.basket_sprite
-	var rig: Node2D = game.character_rig
+	var rig: Node2D = game.character_group
 	var frame := Rect2(Vector2.ZERO, Vector2(resolution))
 	var factor := float(resolution.y) / 720.0
 	_check(rig.position.y > 0.0 and absf(rig.position.y - EXPECTED_RIG_ORIGIN.y * factor) <= TOLERANCE,
@@ -79,7 +79,7 @@ func _case(resolution: Vector2i, character: String, map_name: String) -> void:
 	_check(game.selected_map == map_name and game.background.texture.resource_path ==
 		"res://WordCatcherMaps/%sMap.png" % map_name, tag + ": wrong map artwork")
 
-	var group: Node2D = rig if character == "Boy" else rig.get_node(character) as Node2D
+	var group: Node2D = game.get_node(character) as Node2D
 	var body_editor_pos := body.position
 	var basket_editor_pos := basket.position
 	var body_editor_scale := body.scale
@@ -101,8 +101,8 @@ func _case(resolution: Vector2i, character: String, map_name: String) -> void:
 		tag + ": opaque basket too close to frame edge")
 	_check(body_rect.intersects(basket_rect),
 		tag + ": original body/basket artwork no longer overlaps naturally")
-	_check(body.z_index < rig.get_node("CollectedWords").z_index and
-		rig.get_node("CollectedWords").z_index < basket.z_index,
+	_check(body.z_index + group.z_index < game.get_node("CollectedWords").z_index and
+		game.get_node("CollectedWords").z_index < basket.z_index + group.z_index,
 		tag + ": fruit/body/basket layering changed")
 	_check(body.texture.resource_path == SOURCE_ROOT + character.to_upper() + " BODY.png" and
 		basket.texture.resource_path == SOURCE_ROOT + character.to_upper() + " BASKET.png",
@@ -113,7 +113,7 @@ func _case(resolution: Vector2i, character: String, map_name: String) -> void:
 		game._basket_rect().intersects(basket_rect),
 		tag + ": actual collision shape is disconnected from basket image")
 
-	# Camera/body tracking steers the shared rig, but must not reintroduce
+	# Camera/body tracking steers the selected root sibling, but must not reintroduce
 	# opaque clipping or detach collision from the basket at either edge.
 	for direction in [-1.0, 1.0]:
 		game.set_body_x(direction)

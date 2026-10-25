@@ -37,7 +37,7 @@ func _run() -> void:
 	_check(panel.get_node_or_null("OriginalArt") == null
 		and panel.get_node_or_null("ReferenceCanvas/OriginalArt") == null,
 		"No baked full-screen UI screenshot remains under movable elements")
-	var board := panel.get_node("WoodBoard") as TextureRect
+	var board := panel.get_node("BoardArtwork") as NinePatchRect
 	var title := panel.get_node("TitleArt") as TextureRect
 	var frame := panel.get_node("TableBodyArt") as TextureRect
 	var header := panel.get_node("TableHeaderArt") as TextureRect
@@ -58,21 +58,37 @@ func _run() -> void:
 	var difficulty := panel.get_node("%DifficultyFilter") as OptionButton
 	var back := panel.get_node("%BackButton") as Button
 	var download := panel.get_node("%DownloadButton") as Button
-	_check(style.item_count == 7 and style.selected == 0,
-		"Grammar options and default selection are authored in scene Inspector")
-	_check(mode.item_count == 5 and difficulty.item_count == 4,
-		"Game mode and difficulty selections authored in scene Inspector")
-	for button in [back, download, style, mode, difficulty]:
+	for removed in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
+		_check(panel.find_child(removed, true, false) == null,
+			"FILTERS and associated popup removed completely: " + removed)
+	_check(not download.is_visible_in_tree() and panel.has_method("request_filtered_csv_export"),
+		"Hidden filtered CSV remains accessible through explicit host API, not removed UI")
+	_check(style.item_count == 6 and style.selected == 0,
+	"Grammar options and default selection are authored in scene Inspector")
+	_check(mode.item_count == 3 and difficulty.item_count == 4,
+	"Game mode and difficulty selections authored in scene Inspector")
+	for button in [back, style, mode, difficulty]:
 		_check(button.is_visible_in_tree() and button.modulate.a > 0.99,
 			"Control is visible, movable and clickable in the editor: " + button.name)
-	_check(back.focus_mode == Control.FOCUS_ALL and download.focus_mode == Control.FOCUS_ALL,
-		"Navigation and download are keyboard-accessible")
+	_check(back.focus_mode == Control.FOCUS_ALL,
+		"Back remains keyboard-accessible without obsolete FILTERS")
 	var original_pos := download.position
 	download.position += Vector2(12, 4)
 	await process_frame
 	_check(download.position.distance_to(original_pos + Vector2(12, 4)) < 0.5,
 		"Download art travels with its native button, not with a background screenshot")
 	download.position = original_pos
+	for selector in [style, mode, difficulty]:
+		var original_skin := selector.get_theme_stylebox("normal") as StyleBoxTexture
+		selector.select(1)
+		selector.item_selected.emit(1)
+		_check(selector.get_theme_stylebox("normal") is StyleBoxTexture
+			and selector.get_theme_stylebox("normal") != original_skin,
+			"Selection replaces artwork using scene-authored selected-state PNG: " + selector.name)
+		selector.select(0)
+		selector.item_selected.emit(0)
+		_check(selector.get_theme_stylebox("normal") == original_skin,
+			"Reset restores exact authored ALL state PNG: " + selector.name)
 
 	var empty := panel.get_node("%EmptyMessage") as Label
 	var scroll := panel.get_node("%ScoreRowsScroll") as ScrollContainer

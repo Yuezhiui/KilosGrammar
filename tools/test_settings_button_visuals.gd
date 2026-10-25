@@ -155,6 +155,7 @@ func _check_button(button: BaseButton, viewport_rect: Rect2, title: String, rout
 		return
 	_check(button.is_visible_in_tree() and not button.disabled, title + " hidden or disabled")
 	_check(button.focus_mode == Control.FOCUS_ALL, title + " cannot receive keyboard focus")
+	_check(button.tooltip_text.is_empty(), title + " opens an unwanted native black tooltip")
 	if test_bounds:
 		_check(_fully_inside(button.get_global_rect(), viewport_rect, 2.0), title + " clipped by viewport: " + str(button.get_global_rect()))
 	print("BUTTON ", title, " ", button.get_global_rect(), " visible=", button.is_visible_in_tree())
@@ -315,7 +316,7 @@ func _check_live_mixer(panel: Control) -> void:
 		_check(not AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Mute CheckButton failed to unmute Master")
 	var display := panel.find_child("FullscreenCheck", true, false) as CheckButton
 	if display != null:
-		_check(display.tooltip_text == ("On" if display.button_pressed else "Off"), "Fullscreen CheckButton tooltip out of sync")
+		_check(display.tooltip_text.is_empty(), "Fullscreen CheckButton must not show native dark popup")
 	for entry in [["VolumeSlider", "VolumeValue", "Master", 100], ["MusicSlider", "MusicValue", "KilosMusic", 100], ["EffectsSlider", "EffectsValue", "KilosSFX", 100]]:
 		var slider := panel.find_child(entry[0], true, false) as HSlider
 		if slider != null:

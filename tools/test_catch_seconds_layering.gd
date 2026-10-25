@@ -28,9 +28,9 @@ func _run() -> void:
 		_check(is_equal_approx(game.time_remaining, 60.0), "%s fresh Seconds inherits 999" % viewport_size)
 		_check(game.time_label.text == "60s", "%s fresh Seconds label is not 60s" % viewport_size)
 		_check(game.is_seconds_mode and not game.is_lives_mode, "%s Seconds flags" % viewport_size)
-		_check(game.character_rig.z_index == 0, "%s character is not at requested z_index 0" % viewport_size)
+		_check(game.character_group.z_index == 0, "%s character is not at requested z_index 0" % viewport_size)
 		_check(game.falling_word_layer.z_index == 1, "%s falling apples must render at z_index 1" % viewport_size)
-		_check(game.score_draw_layer != null and game.score_draw_layer.z_index < game.character_rig.z_index,
+		_check(game.score_draw_layer != null and game.score_draw_layer.z_index < game.character_group.z_index,
 			"%s score must remain behind the character" % viewport_size)
 		_check(game.score_plaque.get_parent() == game.score_draw_layer, "%s plaque is not in score layer" % viewport_size)
 		_check(game.score_bottom_container.get_parent() == game.score_draw_layer, "%s number is not in score layer" % viewport_size)

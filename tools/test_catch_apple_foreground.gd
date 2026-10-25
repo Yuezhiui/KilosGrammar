@@ -19,9 +19,9 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var scene := SCENE.instantiate() as Control
-	var authored_rig := scene.get_node_or_null("CharacterRig") as Node2D
+	var authored_rig := scene.get_node_or_null("Boy") as Node2D
 	_check(authored_rig != null and authored_rig.position.y >= 450.0,
-		"CharacterRig has its actual saved editor baseline (never silently parsed as y=0)")
+		"Boy root sibling has its actual saved editor baseline (never silently parsed as y=0)")
 	scene.free()
 	for size in SIZES:
 		root.size = size
@@ -44,10 +44,10 @@ func _verify_case(size: Vector2i, character: String) -> void:
 
 	var bg := game.get_node("Background") as CanvasItem
 	var falling := game.get_node("FallingWordLayer") as Node2D
-	var rig := game.get_node("CharacterRig") as Node2D
+	var rig := game.get_node(character) as Node2D
 	var body := game.body_sprite as Sprite2D
 	var basket := game.basket_sprite as Sprite2D
-	var caught := game.get_node("CharacterRig/CollectedWords") as Node2D
+	var caught := game.get_node("CollectedWords") as Node2D
 	var score := game.score_draw_layer as Control
 	var hud := game.get_node("HUDLayer") as CanvasLayer
 	_check(rig.z_index == 0 and falling.z_index == 1, tag + ": avatar uses gameplay layer 0; falling apples layer 1")
@@ -62,7 +62,7 @@ func _verify_case(size: Vector2i, character: String) -> void:
 		and game.score_plaque.get_parent() == score,
 		tag + ": normal HUD stays high; ONLY score sits behind avatar")
 	_check(body.get_parent() == basket.get_parent()
-		and (body.get_parent() == rig or body.get_parent().get_parent() == rig)
+		and body.get_parent() == rig and caught.get_parent() == game
 		and body.owner == game and basket.owner == game,
 		tag + ": active Body/Basket are independent editor-authored sprites")
 	_check(game.falling_tiles.size() == 3 and falling.get_child_count() == 3,

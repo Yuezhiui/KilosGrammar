@@ -1,22 +1,11 @@
-extends "res://main_menu.gd"
+extends "res://tools/test_postgres_csv_delete_integration.gd"
 
-## The SceneTree harness loads this script at runtime only AFTER project
-## autoloads (including PoseService) are ready. Avoid transitive inheritance
-## through test_postgres_main_menu.gd and eager preload of any main-menu code.
-
-
-func _start_database_client() -> void:
-	var fake_script := load("res://tools/test_postgres_csv_delete_mock.gd") as Script
-	database_client = fake_script.new()
-	database_client.name = "CsvDeleteInMemoryMockOnly"
-	add_child(database_client)
-	database_client.connect("request_finished", Callable(self, "_on_database_request_finished"))
-	database_client.call("check_health", {"purpose": "startup"})
-
-
-func _setup_title_music() -> void:
-	pass
-
-
-func _play_intro() -> void:
-	intro_done = true
+## Supported direct Godot --script entry point. The test-only Main Menu
+## subclass lives in test_postgres_csv_delete_menu_fixture.gd and MUST NOT be
+## run as a SceneTree script: it extends the real UI Control and depends on
+## PoseService, which is created only after SceneTree autoload startup.
+##
+## godot --headless --path . --script res://tools/test_postgres_csv_delete_menu.gd
+##
+## Inherit the existing camera-free/socket-free 166-assertion integration QA
+## so this filename remains easy to execute without duplicating test code.
