@@ -34,7 +34,7 @@ func _run() -> void:
 		_assert(stage.get_node_or_null(removed) == null, "Removed unwanted control: " + removed)
 	_assert(stage.get_node_or_null("BackButton") is Button, "Teacher Back button remains editor-authored")
 	_assert(stage.get_node_or_null("IntroOverlay/IntroBackButton") is Button, "Intro Back button remains editor-authored")
-	_assert(not (stage.get_node("ContinueButton") as Button).visible, "Continue stays hidden with auto-advance")
+	_assert(stage.get_node_or_null("ContinueButton") == null, "Unused Continue removed; auto-advance remains active")
 	var new_dimmer := screen.get_node("ClassroomDimmer") as ColorRect
 	_assert(new_dimmer.color.r <= 0.01 and new_dimmer.color.g <= 0.01
 		and new_dimmer.color.b <= 0.01 and new_dimmer.color.a >= 0.0
@@ -55,9 +55,9 @@ func _run() -> void:
 	_assert(not bool(screen.get("intro_running")), "Intro finishes after 2.5 s")
 	_assert((stage.get_node("BackButton") as Button).visible, "Teacher Back is visible after intro")
 	var zones := [
-		stage.get_node("LeftCalibrationLane") as Control,
-		stage.get_node("CenterCalibrationLane") as Control,
-		stage.get_node("RightCalibrationLane") as Control
+			stage.get_node("ArtGuideLeft") as Control,
+			stage.get_node("ArtGuideCenter") as Control,
+			stage.get_node("ArtGuideRight") as Control
 	]
 	_check_one_zone(zones, 1, "CENTER")
 	_assert(stage.get_node("LiveCameraInset") is TextureRect, "Live camera is an editor-authored TextureRect")
@@ -124,7 +124,7 @@ func _run() -> void:
 		_assert(not bool(normal_payload.get("keyboard_mode", true)), "Even stale keyboard entry never enables keyboard mode")
 		_assert(bool(normal_payload.get("start_countdown", false)), "Normal play receives countdown")
 	regular.call("_go_back")
-	_assert(normal_routes.size() == 2 and String(normal_routes[1].get("target", "")) == "main", "Teacher Back returns Main")
+	_assert(normal_routes.size() == 2 and String(normal_routes[1].get("target", "")) == "play_activity", "Teacher Back returns Choose Activity")
 	_assert(not bool(pose.get("active")), "Teacher Back stops camera")
 	regular.free()
 	pose.stop_camera()
@@ -136,7 +136,7 @@ func _run() -> void:
 func _check_one_zone(zones: Array, active_index: int, label: String) -> void:
 	for index in range(zones.size()):
 		_assert((zones[index] as Control).visible == (index == active_index),
-			"%s stage displays only correct guide %d" % [label, index])
+			"%s stage displays only the correct yellow PNG guide %d" % [label, index])
 
 
 func _assert(ok: bool, description: String) -> void:

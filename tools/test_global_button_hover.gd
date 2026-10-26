@@ -10,7 +10,7 @@ const SETTINGS := "res://ui/secondary/settings.tscn"
 const MAIN_SCENE := "res://main_menu.tscn"
 const MOCK_MENU_SCRIPT := "res://tools/test_postgres_csv_delete_menu_fixture.gd"
 const SAFE_SCENES := [
-    ["res://ui/secondary/credits.tscn", "BackButton"],
+    ["res://ui/tutorial/tutorial_home.tscn", "StartButton"],
     ["res://ui/play/pause.tscn", "ResumeButton"],
     [LEADERBOARD, "ExportCsvButton"],
 ]
@@ -429,8 +429,8 @@ func _test_main_menu_no_double_animation() -> void:
         if path.contains("LeftMenu/"):
             _check(_signal_method_count(button, "mouse_entered", app, "_show_tooltip") == 0,
                 "Main Menu no longer connects description popups: " + path)
-            _check(button.tooltip_text.is_empty(),
-                "Main Menu left buttons do not show native tooltips: " + path)
+        _check(button.tooltip_text.is_empty(),
+            "Main Menu button never shows a native hover label: " + path)
         _check(_global_signal_count(button, "mouse_entered") == 0,
             "Global hover excludes Main Menu own animated button: " + path)
     _check(app.get_node_or_null("MainLayer/Tooltip") == null,

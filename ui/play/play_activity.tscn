@@ -1,154 +1,34 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene format=3 uid="uid://bkyrugs6vye5f"]
 
-[ext_resource type="Script" path="res://ui/play/play_activity.gd" id="1_script"]
-[ext_resource type="FontFile" path="res://assets/fonts/TitanOne-Regular.ttf" id="2_font"]
-[ext_resource type="Texture2D" path="res://Components/Student Setup/Redesign/setup_main_panel.png" id="3_background"]
+[ext_resource type="Script" uid="uid://4r8dcfapofhr" path="res://ui/play/play_activity.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bjumbqolahhj7" path="res://Components/Game Chooser/bg1.png" id="2_options"]
+[ext_resource type="Texture2D" uid="uid://b6u13ywxqvy6j" path="res://Components/Game Chooser/choose an activity.png" id="3_title"]
+[ext_resource type="Texture2D" uid="uid://csow8mflv3vy" path="res://Components/Game Chooser/header1.png" id="4_subtitle"]
+[ext_resource type="Texture2D" uid="uid://bf2kia7j42h34" path="res://Components/Game Chooser/catch the word button.png" id="5_catch"]
+[ext_resource type="Texture2D" uid="uid://c7wovmcvlwq4w" path="res://Components/Game Chooser/human plane button.png" id="6_plane"]
+[ext_resource type="Texture2D" uid="uid://bdbbnxlahsukh" path="res://Components/Game Chooser/ballooon popping button.png" id="7_balloon"]
+[ext_resource type="Texture2D" uid="uid://wybdchpxivls" path="res://Components/Game Chooser/select game default.png" id="8_default"]
+[ext_resource type="Texture2D" uid="uid://8xwbkspkkpfk" path="res://Components/Game Chooser/back button.png" id="9_back"]
+[ext_resource type="Texture2D" uid="uid://piarvamdc4ef" path="res://Components/Game Chooser/next student setup.png" id="10_next_disabled"]
+[ext_resource type="Texture2D" uid="uid://dmcncn3tphmj7" path="res://Components/Shared/Redesign/classroom_bg.png" id="11_classroom"]
 
-[sub_resource type="StyleBoxFlat" id="OptionsCard"]
-bg_color = Color(0.282353, 0.266667, 0.388235, 0.91)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.968627, 0.901961, 0.741176, 0.8)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-content_margin_left = 20.0
-content_margin_top = 16.0
-content_margin_right = 20.0
-content_margin_bottom = 16.0
+[sub_resource type="StyleBoxEmpty" id="EmptyButton"]
 
-[sub_resource type="StyleBoxFlat" id="DetailCard"]
-bg_color = Color(0.282353, 0.266667, 0.388235, 0.95)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.968627, 0.901961, 0.741176, 0.8)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-content_margin_left = 20.0
-content_margin_top = 16.0
-content_margin_right = 20.0
-content_margin_bottom = 16.0
+[sub_resource type="AtlasTexture" id="NextDisabledVisible"]
+atlas = ExtResource("10_next_disabled")
+region = Rect2(72, 144, 2028, 435)
 
-[sub_resource type="StyleBoxFlat" id="WordButton"]
-bg_color = Color(0.411765, 0.745098, 0.603922, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.968627, 0.901961, 0.741176, 0.65)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="PlaneButton"]
-bg_color = Color(0.482353, 0.788235, 0.937255, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.968627, 0.901961, 0.741176, 0.65)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="BalloonButton"]
-bg_color = Color(0.756863, 0.443137, 0.811765, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.968627, 0.901961, 0.741176, 0.65)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="SelectedButton"]
-bg_color = Color(0.054902, 0.564706, 0.439216, 1)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(1, 0.945098, 0.768627, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="BackButton"]
-bg_color = Color(0.282353, 0.266667, 0.388235, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.968627, 0.901961, 0.741176, 0.8)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="NextButton"]
-bg_color = Color(0.411765, 0.745098, 0.603922, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.968627, 0.901961, 0.741176, 0.8)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="DisabledButton"]
-bg_color = Color(0.44, 0.50, 0.53, 0.8)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="FocusButton"]
-bg_color = Color(0, 0, 0, 0)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(1, 0.945098, 0.768627, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="HoverButton"]
-bg_color = Color(0.568627, 0.831373, 0.698039, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.945098, 0.768627, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[node name="PlayActivity" type="Control"]
+[node name="PlayActivity" type="Control" unique_id=1501776927]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+focus_mode = 1
 script = ExtResource("1_script")
 
-[node name="CleanBackdrop" type="ColorRect" parent="."]
+[node name="CleanBackdrop" type="TextureRect" parent="." unique_id=1327981046]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -156,218 +36,279 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0313725, 0.494118, 0.458824, 1)
+texture = ExtResource("11_classroom")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="SetupArtworkBackground" type="TextureRect" parent="."]
+[node name="LayoutMargins" type="Control" parent="." unique_id=1418521799]
+custom_minimum_size = Vector2(1280, 720)
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
 mouse_filter = 2
-texture = ExtResource("3_background")
+
+[node name="Content" type="Control" parent="LayoutMargins" unique_id=1475552497]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="Header" type="Control" parent="LayoutMargins/Content" unique_id=101099062]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 135.0
+mouse_filter = 2
+
+[node name="ChooseActivityArtwork" type="TextureRect" parent="LayoutMargins/Content/Header" unique_id=553326407]
+layout_mode = 1
+offset_left = 12.0
+offset_top = -16.0
+offset_right = 669.0
+offset_bottom = 203.0
+mouse_filter = 2
+texture = ExtResource("3_title")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="LayoutMargins" type="MarginContainer" parent="."]
+[node name="InstructionArtwork" type="TextureRect" parent="LayoutMargins/Content/Header" unique_id=2036042906]
+layout_mode = 1
+offset_left = 855.0
+offset_top = 9.0
+offset_right = 1253.0
+offset_bottom = 111.0
+mouse_filter = 2
+texture = ExtResource("4_subtitle")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GameRow" type="Control" parent="LayoutMargins/Content" unique_id=1930276749]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="GameOptions" type="Control" parent="LayoutMargins/Content/GameRow" unique_id=874785614]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 28.0
+offset_top = 139.0
+offset_right = 502.0
+offset_bottom = 648.0
+mouse_filter = 2
+
+[node name="BoardArtwork" type="TextureRect" parent="LayoutMargins/Content/GameRow/GameOptions" unique_id=123260554]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 33.0
+offset_top = -13.0
+offset_right = 33.0
+offset_bottom = -13.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_options")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GameOptionsContent" type="Control" parent="LayoutMargins/Content/GameRow/GameOptions" unique_id=1669823848]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 46.0
+offset_top = 122.0
+offset_right = 388.0
+offset_bottom = 444.0
+mouse_filter = 2
+
+[node name="CatchWordButton" type="Button" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent" unique_id=1657430196]
+custom_minimum_size = Vector2(342, 93)
+layout_mode = 1
+offset_right = 342.0
+offset_bottom = 93.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/hover_pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("EmptyButton")
+toggle_mode = true
+
+[node name="Artwork" type="TextureRect" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent/CatchWordButton" unique_id=79638382]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 52.0
+offset_top = -35.0
+offset_right = 60.0
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_catch")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HumanPlaneButton" type="Button" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent" unique_id=678727722]
+custom_minimum_size = Vector2(342, 93)
+layout_mode = 1
+offset_top = 105.0
+offset_right = 342.0
+offset_bottom = 198.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/hover_pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("EmptyButton")
+toggle_mode = true
+
+[node name="Artwork" type="TextureRect" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent/HumanPlaneButton" unique_id=1976749081]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 52.0
+offset_top = -39.0
+offset_right = 60.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("6_plane")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BalloonPoppingButton" type="Button" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent" unique_id=2123072427]
+custom_minimum_size = Vector2(342, 93)
+layout_mode = 1
+offset_top = 210.0
+offset_right = 342.0
+offset_bottom = 303.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/hover_pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("EmptyButton")
+toggle_mode = true
+
+[node name="Artwork" type="TextureRect" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent/BalloonPoppingButton" unique_id=562386844]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 52.0
+offset_top = -43.0
+offset_right = 60.0
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("7_balloon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GameDetail" type="Control" parent="LayoutMargins/Content/GameRow" unique_id=637911156]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 435.0
+offset_top = 114.0
+offset_right = 1325.0
+offset_bottom = 666.0
+mouse_filter = 2
+
+[node name="DetailContent" type="Control" parent="LayoutMargins/Content/GameRow/GameDetail" unique_id=671784]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 36
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 36
-theme_override_constants/margin_bottom = 18
-
-[node name="Content" type="VBoxContainer" parent="LayoutMargins"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="Header" type="HBoxContainer" parent="LayoutMargins/Content"]
-custom_minimum_size = Vector2(0, 75)
-layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="HeaderTitle" type="VBoxContainer" parent="LayoutMargins/Content/Header"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Kicker" type="Label" parent="LayoutMargins/Content/Header/HeaderTitle"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 0.85)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 14
-text = "PLAY • CHOOSE GAME"
-
-[node name="Title" type="Label" parent="LayoutMargins/Content/Header/HeaderTitle"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 34
-text = "CHOOSE AN ACTIVITY"
-
-[node name="Subtitle" type="Label" parent="LayoutMargins/Content/Header"]
-custom_minimum_size = Vector2(360, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 0.9)
-theme_override_font_sizes/font_size = 16
-text = "Choose your game, then continue to teacher setup and the camera."
-horizontal_alignment = 2
-vertical_alignment = 1
-autowrap_mode = 3
-
-[node name="GameRow" type="HBoxContainer" parent="LayoutMargins/Content"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 16
-
-[node name="GameOptions" type="PanelContainer" parent="LayoutMargins/Content/GameRow"]
-custom_minimum_size = Vector2(430, 0)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("OptionsCard")
-
-[node name="GameOptionsContent" type="VBoxContainer" parent="LayoutMargins/Content/GameRow/GameOptions"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="GameOptionsLabel" type="Label" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent"]
-custom_minimum_size = Vector2(0, 28)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 18
-text = "GAME OPTIONS"
-
-[node name="CatchWordButton" type="Button" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent"]
-custom_minimum_size = Vector2(0, 74)
-layout_mode = 2
-size_flags_vertical = 3
-focus_mode = 2
-mouse_default_cursor_shape = 2
-toggle_mode = true
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.98, 0.9, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("WordButton")
-theme_override_styles/hover = SubResource("HoverButton")
-theme_override_styles/pressed = SubResource("SelectedButton")
-theme_override_styles/focus = SubResource("FocusButton")
-text = "CATCH THE WORD"
-
-[node name="HumanPlaneButton" type="Button" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent"]
-custom_minimum_size = Vector2(0, 74)
-layout_mode = 2
-size_flags_vertical = 3
-focus_mode = 2
-mouse_default_cursor_shape = 2
-toggle_mode = true
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.98, 0.9, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("PlaneButton")
-theme_override_styles/hover = SubResource("HoverButton")
-theme_override_styles/pressed = SubResource("SelectedButton")
-theme_override_styles/focus = SubResource("FocusButton")
-text = "HUMAN PLANE"
-
-[node name="BalloonPoppingButton" type="Button" parent="LayoutMargins/Content/GameRow/GameOptions/GameOptionsContent"]
-custom_minimum_size = Vector2(0, 74)
-layout_mode = 2
-size_flags_vertical = 3
-focus_mode = 2
-mouse_default_cursor_shape = 2
-toggle_mode = true
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.98, 0.9, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 20
-theme_override_styles/normal = SubResource("BalloonButton")
-theme_override_styles/hover = SubResource("HoverButton")
-theme_override_styles/pressed = SubResource("SelectedButton")
-theme_override_styles/focus = SubResource("FocusButton")
-text = "BALLOON POPPING"
-
-[node name="GameDetail" type="PanelContainer" parent="LayoutMargins/Content/GameRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("DetailCard")
-
-[node name="DetailContent" type="VBoxContainer" parent="LayoutMargins/Content/GameRow/GameDetail"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 12
-
-[node name="SelectedBadge" type="Label" parent="LayoutMargins/Content/GameRow/GameDetail/DetailContent"]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.760784, 0.239216, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 15
-text = "CAMERA PLAY"
-horizontal_alignment = 1
-
-[node name="SelectedTitle" type="Label" parent="LayoutMargins/Content/GameRow/GameDetail/DetailContent"]
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
-text = "SELECT A GAME"
-horizontal_alignment = 1
-autowrap_mode = 3
-
-[node name="SelectedDescription" type="Label" parent="LayoutMargins/Content/GameRow/GameDetail/DetailContent"]
-custom_minimum_size = Vector2(0, 92)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 0.88)
-theme_override_font_sizes/font_size = 18
-text = "Choose one of the game concepts on the left."
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 3
-
-[node name="Footer" type="HBoxContainer" parent="LayoutMargins/Content"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="BackButton" type="Button" parent="LayoutMargins/Content/Footer"]
-custom_minimum_size = Vector2(170, 48)
-layout_mode = 2
-focus_mode = 2
-mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("BackButton")
-theme_override_styles/hover = SubResource("HoverButton")
-theme_override_styles/pressed = SubResource("SelectedButton")
-theme_override_styles/focus = SubResource("FocusButton")
-text = "BACK"
-
-[node name="FooterSpacer" type="Control" parent="LayoutMargins/Content/Footer"]
-layout_mode = 2
-size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="NextButton" type="Button" parent="LayoutMargins/Content/Footer"]
-custom_minimum_size = Vector2(230, 48)
-layout_mode = 2
-focus_mode = 2
+[node name="SelectedPreview" type="TextureRect" parent="LayoutMargins/Content/GameRow/GameDetail/DetailContent" unique_id=292947858]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -43.0
+offset_top = -29.0
+offset_right = -43.0
+offset_bottom = -29.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("8_default")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Footer" type="Control" parent="LayoutMargins/Content" unique_id=945277730]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="BackButton" type="Button" parent="LayoutMargins/Content/Footer" unique_id=1180742664]
+custom_minimum_size = Vector2(209, 76)
+layout_mode = 1
+offset_left = 105.0
+offset_top = 614.0
+offset_right = 348.0
+offset_bottom = 701.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("NextButton")
-theme_override_styles/hover = SubResource("HoverButton")
-theme_override_styles/pressed = SubResource("SelectedButton")
-theme_override_styles/disabled = SubResource("DisabledButton")
-theme_override_styles/focus = SubResource("FocusButton")
-text = "NEXT: TOPIC"
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/hover_pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("EmptyButton")
+
+[node name="Artwork" type="TextureRect" parent="LayoutMargins/Content/Footer/BackButton" unique_id=189403613]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("9_back")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NextButton" type="Button" parent="LayoutMargins/Content/Footer" unique_id=2071349553]
+custom_minimum_size = Vector2(335, 72)
+layout_mode = 1
+offset_left = 838.0
+offset_top = 622.0
+offset_right = 1173.0
+offset_bottom = 694.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("EmptyButton")
+theme_override_styles/pressed = SubResource("EmptyButton")
+theme_override_styles/hover = SubResource("EmptyButton")
+theme_override_styles/hover_pressed = SubResource("EmptyButton")
+theme_override_styles/disabled = SubResource("EmptyButton")
+theme_override_styles/focus = SubResource("EmptyButton")
+disabled = true
+
+[node name="Artwork" type="TextureRect" parent="LayoutMargins/Content/Footer/NextButton" unique_id=982069647]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("NextDisabledVisible")
+expand_mode = 1
+stretch_mode = 5

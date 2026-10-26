@@ -1,275 +1,240 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3 uid="uid://dnxpj7f8f1yfp"]
 
-[ext_resource type="Script" path="res://ui/secondary/credits.gd" id="1_script"]
-[ext_resource type="Theme" path="res://ui/secondary/secondary_theme.tres" id="2_theme"]
-[ext_resource type="FontFile" path="res://assets/fonts/Comic Lemon.otf" id="3_comic"]
-[ext_resource type="PackedScene" path="res://ui/shared/lexi_reference_backdrop.tscn" id="4_backdrop"]
+[ext_resource type="Script" uid="uid://bb7dc35r3okqy" path="res://ui/secondary/credits.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dx1fsocdnlfsq" path="res://Components/Credits/Redesign/background1.png" id="2_background"]
+[ext_resource type="Texture2D" uid="uid://c30qw384hnjf" path="res://Components/Credits/Redesign/background2.png" id="3_board"]
+[ext_resource type="Texture2D" uid="uid://cprqqy2p1kypi" path="res://Components/Credits/Redesign/CREDITS.png" id="4_title"]
+[ext_resource type="Texture2D" uid="uid://c1hnw6023f15n" path="res://Components/Credits/Redesign/HOME.png" id="5_home"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="6_font"]
 
-[sub_resource type="StyleBoxFlat" id="CreditsFrame"]
-bg_color = Color(0.992157, 0.894118, 0.72549, 1)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(0.278431, 0.27451, 0.376471, 1)
-corner_radius_top_left = 26
-corner_radius_top_right = 26
-corner_radius_bottom_right = 26
-corner_radius_bottom_left = 26
-shadow_color = Color(0.192157, 0.192157, 0.270588, 0.7)
-shadow_size = 8
-shadow_offset = Vector2(8, 10)
+[sub_resource type="StyleBoxEmpty" id="ButtonNoFrame"]
 
-[sub_resource type="StyleBoxFlat" id="CreditsHeader"]
-bg_color = Color(0.278431, 0.27451, 0.376471, 1)
-corner_radius_top_left = 21
-corner_radius_top_right = 21
-
-[sub_resource type="StyleBoxFlat" id="SectionRule"]
-bg_color = Color(0.454902, 0.670588, 0.556863, 0.18)
-border_width_top = 2
-border_color = Color(0.454902, 0.670588, 0.556863, 0.55)
-corner_radius_bottom_left = 14
-corner_radius_bottom_right = 14
-
-[sub_resource type="StyleBoxFlat" id="TechBox"]
-bg_color = Color(0.278431, 0.27451, 0.376471, 0.055)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.278431, 0.27451, 0.376471, 0.15)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-
-[node name="Credits" type="Control"]
+[node name="Credits" type="Control" unique_id=889224267]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("2_theme")
 script = ExtResource("1_script")
 
-[node name="LexiReferenceBackdrop" parent="." instance=ExtResource("4_backdrop")]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="CreditsStage" type="Control" parent="." unique_id=1217345257]
+editor_description = "DESIGN CANVAS 1280x720. All images, text and Home button are individually editable in 2D. Root script scales the complete authored stage without modifying child coordinates."
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
 
-[node name="CreditsPanel" type="Panel" parent="."]
-layout_mode = 1
-anchor_left = 0.15
-anchor_top = 0.08
-anchor_right = 0.85
-anchor_bottom = 0.88
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_styles/panel = SubResource("CreditsFrame")
-
-[node name="PanelContent" type="Control" parent="CreditsPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Header" type="Panel" parent="CreditsPanel/PanelContent"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 94.0
-grow_horizontal = 2
-theme_override_styles/panel = SubResource("CreditsHeader")
-
-[node name="HeaderTitle" type="RichTextLabel" parent="CreditsPanel/PanelContent/Header"]
-clip_contents = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="ClassroomBackground" type="TextureRect" parent="CreditsStage" unique_id=1857487219]
+editor_description = "Original Downloads/CREDIT/background1.png (classroom). Drag/resize in the 2D editor."
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
 mouse_filter = 2
-theme_override_colors/default_color = Color(0.992157, 0.894118, 0.72549, 1)
-theme_override_colors/font_outline_color = Color(0.454902, 0.670588, 0.556863, 1)
-theme_override_colors/font_shadow_color = Color(0.192157, 0.192157, 0.270588, 1)
-theme_override_constants/outline_size = 8
-theme_override_constants/shadow_outline_size = 8
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 4
-theme_override_fonts/normal_font = ExtResource("3_comic")
-theme_override_font_sizes/normal_font_size = 44
-bbcode_enabled = true
-text = "[wave amp=40.0 freq=4.0 connected=1]CREDITS[/wave]"
-scroll_active = false
-autowrap_mode = 0
-horizontal_alignment = 1
-vertical_alignment = 1
+texture = ExtResource("2_background")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="Body" type="Control" parent="CreditsPanel/PanelContent"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 34.0
-offset_top = 116.0
-offset_right = -34.0
-offset_bottom = -24.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="WoodenBoard" type="TextureRect" parent="CreditsStage" unique_id=99262095]
+editor_description = "Original Downloads/CREDIT/background2.png. Move/resize this wooden credits panel independently."
+layout_mode = 0
+offset_left = 213.0
+offset_top = 122.0
+offset_right = 1081.0
+offset_bottom = 678.0
+mouse_filter = 2
+texture = ExtResource("3_board")
+expand_mode = 1
 
-[node name="CreditsScroll" type="ScrollContainer" parent="CreditsPanel/PanelContent/Body"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="CreditsTitle" type="TextureRect" parent="CreditsStage" unique_id=1327070128]
+editor_description = "Original Downloads/CREDIT/CREDITS.png - transparent, cap/cat wooden CREDITS banner; draggable above the board."
+layout_mode = 0
+offset_left = 343.0
+offset_top = 44.0
+offset_right = 937.0
+offset_bottom = 241.0
+mouse_filter = 2
+texture = ExtResource("4_title")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CreditsScroll" type="ScrollContainer" parent="CreditsStage" unique_id=2110270215]
+editor_description = "EDITABLE scroll viewport inside wooden board. Drag/resize separately. The credits labels below remain separate Godot nodes; scrollbar is kept interactive."
+layout_mode = 0
+offset_left = 296.0
+offset_top = 222.0
+offset_right = 992.0
+offset_bottom = 579.0
 horizontal_scroll_mode = 0
-vertical_scroll_mode = 1
+vertical_scroll_mode = 2
 
-[node name="ScrollCenter" type="CenterContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll"]
+[node name="ScrollCenter" type="CenterContainer" parent="CreditsStage/CreditsScroll" unique_id=1714649596]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="CreditsStack" type="VBoxContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter"]
-custom_minimum_size = Vector2(610, 0)
+[node name="CreditsStack" type="VBoxContainer" parent="CreditsStage/CreditsScroll/ScrollCenter" unique_id=2057702995]
+custom_minimum_size = Vector2(660, 0)
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/separation = 5
 
-[node name="KernelHeading" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="KernelHeading" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=1905439860]
+custom_minimum_size = Vector2(620, 80)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_colors/font_outline_color = Color(0.992157, 0.894118, 0.72549, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 29
+theme_override_colors/font_color = Color(0.15, 0.105, 0.34, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 46
 text = "KERNEL"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="KernelRule" type="PanelContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
-custom_minimum_size = Vector2(0, 12)
+[node name="Name01" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=1415481153]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_styles/panel = SubResource("SectionRule")
-
-[node name="Name01" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Teoxon John William Ruiz"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "JOHN WILLIAM R. TEOXON"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name02" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name02" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=626331401]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Arabi Harwyn Lance Quinto"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "HARWYN LANCE Q. ARABI"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name03" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name03" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=315102564]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Cawicaan James Francis Alfaro"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "JAMES FRANCINS A. CAWICAAN"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name04" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name04" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=514090443]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Estaris Kristina Yvonne Frial"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "KRISTINA YVONNE F. ESTARIS"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name05" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name05" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=135568530]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Daantos Johncarlos Opo"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "JOHNCARLOS O. DAANTOS"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name06" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name06" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=960171314]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Matienzo Ron Jaypee V"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "RON JAYPEE V. MATIENZO"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name07" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name07" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=1123750014]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Blase John Barry Villanueva"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "JOHN BARRY V. BARRY"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name08" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name08" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=893676386]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Manangan Andrew Garcia"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "ANDREW G. MANANGAN"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name09" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name09" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=739921910]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Calleja Rodrigo Jhon Lagarto"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "RODRIGO JHON L. CALLEJA"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name10" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name10" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=1538768671]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Bobis Lordjethro Bequilla"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "LORDJETHRO B. BOBIS"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Name11" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="Name11" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=1478656053]
+custom_minimum_size = Vector2(620, 29)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 1)
-theme_override_font_sizes/font_size = 16
-text = "Burgos Riviera Irish Amor"
+theme_override_colors/font_color = Color(0.19, 0.145, 0.37, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 21
+text = "RIVIERA IRISH A. BURGOS"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="TechCredits" type="PanelContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
+[node name="TechnicalCredits" type="Label" parent="CreditsStage/CreditsScroll/ScrollCenter/CreditsStack" unique_id=1809150844]
+custom_minimum_size = Vector2(620, 120)
 layout_mode = 2
-theme_override_styles/panel = SubResource("TechBox")
-
-[node name="TechMargin" type="MarginContainer" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack/TechCredits"]
-layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 14
-
-[node name="TechText" type="Label" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack/TechCredits/TechMargin"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.278431, 0.27451, 0.376471, 0.72)
-theme_override_font_sizes/font_size = 11
-text = "Godot Engine — MIT License\nTitan One — SIL Open Font License 1.1\nComic Lemon — Khurasan (free personal/commercial)"
+theme_override_colors/font_color = Color(0.26, 0.21, 0.36, 0.82)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 13
+text = "
+SPECIAL THANKS
+Godot Engine - MIT License
+Titan One - SIL Open Font License 1.1
+Comic Lemon - Khurasan"
 horizontal_alignment = 1
-autowrap_mode = 2
+vertical_alignment = 1
 
-[node name="BottomSpacer" type="Control" parent="CreditsPanel/PanelContent/Body/CreditsScroll/ScrollCenter/CreditsStack"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="BackButton" type="Button" parent="."]
+[node name="BackButton" type="Button" parent="CreditsStage" unique_id=433250123]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(138, 50)
+editor_description = "Clickable full-size transparent Home hit target. Resize/drag visually. The actual authored artwork is its Artwork child."
+layout_mode = 0
+offset_left = 1002.0
+offset_top = 30.0
+offset_right = 1222.0
+offset_bottom = 103.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("ButtonNoFrame")
+theme_override_styles/pressed = SubResource("ButtonNoFrame")
+theme_override_styles/hover = SubResource("ButtonNoFrame")
+theme_override_styles/disabled = SubResource("ButtonNoFrame")
+theme_override_styles/focus = SubResource("ButtonNoFrame")
+
+[node name="Artwork" type="TextureRect" parent="CreditsStage/BackButton" unique_id=658114158]
 layout_mode = 1
-anchor_left = 0.055
-anchor_top = 0.905
-anchor_right = 0.055
-anchor_bottom = 0.905
-offset_right = 138.0
-offset_bottom = 50.0
-grow_horizontal = 0
-grow_vertical = 0
-focus_mode = 2
-text = "← HOME"
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -3.0
+offset_right = -3.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_home")
+expand_mode = 1
+stretch_mode = 5

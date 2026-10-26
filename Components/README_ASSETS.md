@@ -6,17 +6,28 @@ All current gameplay and screen artwork (PNG/JPEG/WebP/SVG) is organized under *
 
 | Folder | Artwork files | Active use |
 | --- | ---: | --- |
-| `Gameplay/` | 63 | Catch the Word, Balloon Popping, Human Plane, calibration, HUD and dynamically chosen gameplay images |
+| `Gameplay/` | 85 | Catch the Word, Balloon Popping, Human Plane (original NATURE grass/mountain textures and 3D sky textures), calibration, HUD and dynamically chosen images |
 | `Leaderboard/` | 32 | Live Leaderboard, filters, both teacher-only delete-confirmation stages and the wooden success notice with separate illustrated header |
-| `Main Panel/` | 15 | Main Menu and native button states |
+| `Game Chooser/` | 13 | Illustrated game-selection panels and buttons, three selection previews, and disabled/enabled Next states |
+| `Main Panel/` | 14 | Main Menu and native button states (unused Credits art removed) |
 | `Settings/` | 24 | Settings scene and dynamic tab states |
 | `Student Setup/` | 18 | Student details, grade and grammar-topic controls |
 | `Tutorial/` | 14 | Guided/tutorial cards, navigation and spotlight |
 | `Results/` | 1 | End-of-round results background |
 | `Shared/` | 1 | Shared classroom artwork |
-| **Total** | **168** | **166 PNG + 2 SVG, with matching `.import` sidecars** |
+| **Total** | **202** | **196 PNG + 2 SVG + 4 JPEG/JPG, with matching `.import` sidecars** |
 
 `res://icon.svg` is the Godot project icon outside `Components/`. Ignored `showcase/` screenshots are not runtime sprites. Empty or obsolete prototype artwork, copied originals, historic extraction manifests and unused `.import` sidecars were pruned only after checking serialized scene dependencies, test fixtures and dynamically constructed paths. The dated Leaderboard images, eight current `NotifLeader` button/panel parts, Main Menu original images still used by its scene, Settings dynamic tab states and uncertain original user art were retained.
+
+**Human Plane 3D (26 October):** `Components/Gameplay/Human Plane/3D/` additionally stores four active FBX scenery models, the glTF airplane scene with binary mesh and PBR textures, and panoramic sky image. These are local imported 3D assets (not counted as PNG-only sprites above, except their four texture images). See that folder's README for rights/attribution; verify NATURE scenery licenses before public redistribution.
+
+**Human Plane optimization (26 October):** A separately imported 2048×1024 sky derivative replaces runtime loading of the large 6K panorama; the original is preserved for editing. Four recycled forest segments retain 120 additional trees and now use **1,360 real NATURE Grass_green.fbx patches** in four GPU MultiMeshes. The original unmodified `NATURE/mountain/scene.gltf` is instanced as a distant mountain valley, preserving the editor-authored transforms. The rings use blue, green and orange with interpolated progress. See `docs/human-plane-3d/nature-model-integration.md` and `performance.md` for GPU and licensing caveats. **The mountain pack is CC BY-NC-ND 4.0 (noncommercial; adapted copies not distributable), and grass-green's bundled source contains no license; do not publish the game with these assets until the necessary rights are confirmed.**
+
+**Game Chooser redesign (26 October):** The 13 supplied `Gamemode chooser` PNGs were copied unchanged to `Components/Game Chooser/`. The current game-selection screen uses only local `res://` artwork, a default preview and a truly disabled Next button until a game is selected; selecting one of three games changes the preview and Next state. Its README lists exact PNG provenance and tests.
+
+**Chooser selection cleanup (26 October):** Removed the extra glowing gold rounded `SelectedOutline` and its three `SelectedFrame` panels, plus obsolete hidden selection text labels. A subtle 2px focus underline preserves keyboard clarity without the yellow overlay. All 13 chooser image assets remain active and are correctly retained; none can be safely deleted.
+
+**Pose model latency optimization (26 October):** The offline YOLO26 pose model starts warming in a separate Python process while the teacher is in Student Setup **without opening the webcam**. On entering calibration, the same process receives a loopback-only authenticated `start_camera` command and reuses CUDA/ByteTrack; local UDP packets are timestamped and newest-only to suppress delayed poses. A real no-camera Godot test proves prewarming uses the same process; full camera+student timing still needs physical classroom validation. See `docs/calibration-latency/`.
 
 ## Provenance and pruning records
 

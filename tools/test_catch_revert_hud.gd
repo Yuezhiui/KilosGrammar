@@ -10,7 +10,7 @@ const SCENE := "res://ui/minigames/catch_word.tscn"
 const ART := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const OLD_CHAR := "res://Components/Gameplay/Catch the Word/Characters/"
 const OLD_BASKET_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
-const NEW_FALLING_APPLE := ART + "character/word_apple.png"
+const NEW_FALLING_APPLE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
 const HEART_STATE_DIR := ART + "replacement/"
 const HEART_STATE_PATHS := {
 	1: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png",

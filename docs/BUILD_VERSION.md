@@ -1,33 +1,27 @@
 # KilosGrammar build and version
 
-**Source version:** `v0.1.0-beta.1`
+**Source version:** `v0.2.0-beta.1`
 
-**Revision date:** 2026-10-24 (Asia/Manila)
+**Revision date:** 2026-10-26 (Asia/Manila)
 
 **Engine:** Godot 4.7.2.stable
 
-**Windows export platform:** Windows Desktop x86-64
+**Target export platform:** Windows Desktop x86-64 (not yet released)
 
-## Human Plane update
+## Highlights of this source beta
 
-- Uses actual measured CENTER → RIGHT → LEFT body calibration with fresh three-second holds per zone, matching Catch the Word.
-- A student must spread BOTH arms wide to enable flight. Lowering either arm, a missing wrist, or lost student tracking immediately freezes horizontal motion. Re-spreading both arms resumes without recalibration.
-- Smooth, frame-rate-independent left/right movement follows calibrated body X across the entire authored flight path. Arm banking/gyro angles no longer steer.
-- Preserves the original scene-authored gate positions, HUD, 60-second mode, three lives, and other minigames.
+- New editable Main Menu, Settings (Audio & Display only), Credits, Leaderboard home artwork and Game Chooser screens, with hover/press feedback preserved.
+- Tutorial-only practice does not register students or save scores; only completed normal Play rounds can save results through the local API.
+- Catch the Word and Balloon Popping retain CENTER -> RIGHT -> LEFT body-position calibration, effects, and existing game rules.
+- Human Plane is now a cloud-based 3D flight game with editable portrait answer portals instead of torus rings. Neutral, stationary center calibration uses multiple fresh locked-student observations; steering then follows left/center/right torso position, with one wrist temporarily occluded if the same student remains reliably tracked.
+- Human Plane score is +100 for an unambiguously correct answer, no deduction for incorrect/missed/ambiguous overlaps; correct gates permanently increase speed by 14% cumulatively.
 
-## Build status and limitations
+## Source asset redistribution
 
-This tag marks a **source-code beta**, not a completed standalone installer or Windows executable.
-The Windows offline release preflight remains BLOCKED until the matching Godot
-4.7.2 Windows export templates and the reviewed local offline inputs (YOLO model,
-Python 3.11 runtime, PostgreSQL 18 installer, Windows x64 dependency wheels) are staged.
-The release scripts intentionally refuse to create incomplete or misleading EXE/PCK
-or checksum manifests.
+The public repository contains the CC BY 4.0 'stylize clouds' by ragad.sallabi and a CC BY 4.0 Toy Plane by l3clarke with their original licenses and credits. A locally supplied 3D red aircraft from 3DPolyForge/Sketchfab and legacy mountain/terrain model packs have unclear or restricted republication rights. **They are not included in the public Git source beta.** The public 3D scene therefore uses a separate Toy Plane fallback while the original supplied art remains untouched in the developer's local Godot workspace. Public users can replace the flight model with their own properly licensed 3D asset using the editor. This is not a claim of rights to redistribute the local model.
 
-To prepare a future offline build on Windows, follow `release/windows/README.md`,
-verify the required assets and prerequisites, then use
-`release/windows/Build-WindowsRelease.ps1 -PreflightOnly` before exporting.
+## Build and acceptance limitations
 
-Source-code tests run with Godot 4.7.2 and Python's `unittest` are camera-free.
-Real classroom webcam tracking, offline deployment to another school PC, and
-live PostgreSQL durability still require acceptance testing.
+This version is **source-code beta**, not a completed Windows installer, executable, or stable 1.0 release. Windows offline export still requires verified Godot templates and an approved bundled/local Python/YOLO/PostgreSQL deployment process. The game does not include credentials, local student records, private media or a classroom database.
+
+Automated tests use synthetic pose/camera observations without launching a physical webcam or writing to a live student database. Real classroom one-student lock behavior, performance and a second offline Windows PC remain to be acceptance-tested. For a future release follow `release/windows/README.md`, run `release/windows/Build-WindowsRelease.ps1 -PreflightOnly` only after staging approved dependencies and templates, and do not ship incomplete builds.

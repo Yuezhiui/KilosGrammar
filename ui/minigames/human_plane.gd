@@ -22,6 +22,21 @@ const LANE_NAMES := ["LEFT", "CENTER", "RIGHT"]
 const SECONDS_ROUND_DURATION := 60.0
 const LIVES_ROUND_ALLOWANCE := 3
 const POINTS_PER_CORRECT_GATE := 100
+# Centered single-ring hits must cover most of the pilot hitbox. When the
+# hitbox touches two rings, choose only a clear geometric winner; the answer's
+# correctness never influences which lane is selected.
+const RING_CENTER_WINDOW_RATIO := 0.30
+const MIN_RING_HITBOX_COVERAGE := 0.70
+const MIN_DOMINANT_HITBOX_COVERAGE := 0.50
+const MIN_OVERLAP_LEAD_FRACTION := 0.20
+# Each correct ring makes subsequent flight 14% faster. The bonus is earned
+# permanently for this round: wrong/missed rings consume a heart but NEVER
+# remove earlier boosts or points. No arbitrary maximum speed multiplier.
+const SPEED_BOOST_PER_CORRECT := 0.14
+const VOICE_DIR := "res://assets/audio/catch_voice/"
+const VOICE_CORRECT := ["GoodJob.mp3", "niceee.mp3", "Awesome.mp3", "Perfect.mp3", "You Nailed it.mp3"]
+const VOICE_WRONG := ["Awww.mp3", "Wrong Answer.mp3"]
+const VOICE_MISSED := "You Missed.mp3"
 # Show the next question shortly after crossing the answer line. It glides
 # toward the player at a slower distant pace, then continues at normal pace
 # after handoff. Keeping the same Control nodes avoids teleporting sprites.
@@ -30,10 +45,12 @@ const GATE_SEPARATION := 0.72
 const GATE_PREVIEW_TRAVEL_FACTOR := 0.28
 const GATE_EXIT_FADE_SECONDS := 0.26
 const GATE_ANSWER_FADE_SPAN := 0.12
-# Match Catch the Word's body-position easing, with a limit on displacement
-# per frame so dropped webcam/render frames never teleport across lanes.
+# The wrapper delivers raw validated student body/torso steering; this is its ONLY motion
+# filter. Catch the Word-style exponential pursuit reaches a new lane within
+# roughly 0.35-0.5s without a one-frame teleport or jittery pose mirroring.
+# The full 3D plane and 2D scoring hitbox use this same authoritative X.
 const BODY_FOLLOW_SPEED := 10.0
-const BODY_MAX_TRAVEL_PER_SECOND := 1.6
+const BODY_MAX_TRAVEL_PER_SECOND := 3.0
 const BODY_MAX_MOTION_STEP := 0.10
 # Reuse Catch the Word's original LivesPlaque as a mode-specific alternative
 # to its TimerPlaque. The scene-authored Catch HUD positions are never moved.
@@ -59,6 +76,12 @@ const FALLBACK_WORDS := {
 	"Adverb": ["QUICKLY", "SOFTLY", "ALWAYS", "CAREFULLY", "LOUDLY", "SLOWLY"],
 }
 
+# The class camera/pose is the only steering source in the actual game. This
+# opt-in switch exists strictly for developers testing with no physical camera.
+@export var allow_keyboard_debug := false
+# Human Plane now uses the full editable 3D environment exclusively.
+# Keep its original real-pose gate/plane collision controls invisible.
+
 @onready var _plane_rig: Control = $PlaneRig
 @onready var _plane_artwork: TextureRect = $PlaneRig/PlaneArtwork
 @onready var _catch_hud: Control = $HUDLayer/HUD
@@ -72,6 +95,7 @@ const FALLBACK_WORDS := {
 @onready var _gate_ends: Array[Control] = [$FlightPaths/GateEndLeft, $FlightPaths/GateEndCenter, $FlightPaths/GateEndRight]
 @onready var _gate_nodes: Array[Control] = [$MovingGates/GateLeft, $MovingGates/GateCenter, $MovingGates/GateRight]
 @onready var _upcoming_gate_nodes: Array[Control] = [$UpcomingGates/GateLeft, $UpcomingGates/GateCenter, $UpcomingGates/GateRight]
+@onready var _world_3d: SubViewportContainer = $WorldView3D
 var _plane_authored_offset_x := 0.0
 var _authored_gate_colors: Array[Dictionary] = []
 var _authored_gate_rect_offsets: Array[Rect2] = []
@@ -98,6 +122,8 @@ var is_seconds_mode := true
 var is_lives_mode := false
 var score := 0
 var correct_count := 0
+var speed_boost_count := 0
+var speed_multiplier := 1.0
 var attempts := 0
 var streak := 0
 var lives := LIVES_ROUND_ALLOWANCE
@@ -123,12 +149,15 @@ var inter_wave_delay := 0.0
 
 var target_x_norm := 0.5
 var plane_x_norm := 0.5
-# Set by the camera/pose bridge ONLY when the locked student has both arms
-# spread wide and the detection packet is fresh. Arms down/lost pose freeze X.
+# Set by the camera/pose bridge ONLY while the same enrolled student has
+# a fresh, confident calibrated body-position observation. Losing
+# a wrist, student lock, or tracking freezes lateral steering immediately.
 var airplane_pose_active := false
 var _artwork_base_position := Vector2.ZERO
 var _artwork_base_rotation := 0.0
 var _flight_visual_elapsed := 0.0
+var _feedback_voice: AudioStreamPlayer
+var _voice_cache: Dictionary = {}
 
 var feedback_text := ""
 var feedback_color := CREAM
@@ -139,6 +168,12 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	set_process(true)
 	set_process_unhandled_key_input(true)
+	# Retain editor-authored collision guides, render only the full 3D world.
+	$MovingGates.modulate.a = 0.0
+	$UpcomingGates.modulate.a = 0.0
+	$PlaneRig.modulate.a = 0.0
+	_world_3d.visible = true
+	_world_3d.set_process(true)
 	# Capture any editor offset from the path midpoint so moving PlaneRig in
 	# the editor also moves the actual gameplay hitbox horizontally.
 	_plane_authored_offset_x = _plane_rig.get_rect().get_center().x - lerpf(_plane_left_limit.get_rect().get_center().x, _plane_right_limit.get_rect().get_center().x, 0.5)
@@ -169,6 +204,7 @@ func _ready() -> void:
 	resized.connect(_on_scene_resized)
 	$HUDLayer/HUD/PauseButton.pressed.connect(_request_pause)
 	rng.randomize()
+	_initialize_voice_feedback()
 	if ResourceLoader.exists(GRAMMAR_BANK_PATH):
 		grammar_bank = load(GRAMMAR_BANK_PATH) as Script
 	call_deferred("_ensure_started")
@@ -195,6 +231,8 @@ func get_context() -> Dictionary:
 	payload["game_mode"] = game_mode
 	payload["score"] = score
 	payload["correct"] = correct_count
+	payload["plane_speed_boosts"] = speed_boost_count
+	payload["plane_speed_multiplier"] = speed_multiplier
 	payload["attempts"] = attempts
 	payload["total"] = waves_total
 	payload["waves_completed"] = waves_completed
@@ -212,9 +250,9 @@ func get_context() -> Dictionary:
 
 
 func set_body_x(normalized_x: float) -> void:
-	# PoseService.normalized_body_x(): -1 calibrated LEFT, 0 measured CENTER,
-	# +1 calibrated RIGHT. Map onto the entire editor-authored flight path.
-	# The wrapper validates both arms before opening this input gate.
+	# Camera-space torso movement measures -1 LEFT / 0 CENTER / +1 RIGHT,
+	# following Catch the Word's simple left/center/right physical steering.
+	# The wrapper validates the one locked student's fresh pose first.
 	if not airplane_pose_active or paused or finished or not is_finite(normalized_x):
 		return
 	target_x_norm = (clampf(normalized_x, -1.0, 1.0) + 1.0) * 0.5
@@ -227,9 +265,9 @@ func set_wing_steering(_roll: float, _active: bool) -> void:
 
 
 func set_airplane_pose_active(active: bool) -> void:
-	# Freeze the CURRENT visual/physical X immediately on arms lowering or
-	# tracking loss. Re-arming also clears the prior position target; only a
-	# fresh, eligible set_body_x() can move the airplane again.
+	# Freeze the CURRENT visual/physical X immediately on occlusion, loss of
+	# student lock, or unreliable arm steering. Re-arming needs a fresh input;
+	# no stale pose is replayed from the last frame or another student.
 	if airplane_pose_active == active:
 		return
 	airplane_pose_active = active
@@ -246,6 +284,7 @@ func _finish_round() -> void:
 	round_completed = true
 	feedback_text = "ROUND COMPLETE"
 	feedback_color = GREEN
+	_stop_voice_feedback()
 	_sync_visuals()
 	requested.emit("results", get_context())
 
@@ -278,6 +317,10 @@ func _apply_initial_context() -> void:
 	waves_total = maxi(waves_total, 10)
 	score = maxi(int(context.get("score", 0)), 0)
 	correct_count = maxi(int(context.get("correct", 0)), 0)
+	# A resumed game may be restored independently of streak (wrong answers
+	# reset streak, not the flight speed). Never reduce an earned boost.
+	speed_boost_count = maxi(int(context.get("plane_speed_boosts", correct_count)), correct_count)
+	speed_multiplier = 1.0 + float(speed_boost_count) * SPEED_BOOST_PER_CORRECT
 	attempts = maxi(int(context.get("attempts", 0)), 0)
 	streak = maxi(int(context.get("streak", 0)), 0)
 	waves_completed = clampi(int(context.get("waves_completed", attempts)), 0, waves_total)
@@ -321,7 +364,7 @@ func _process(delta: float) -> void:
 
 func _update_plane_motion(delta: float) -> void:
 	# Movement comes exclusively from the calibrated live pose target.
-	# Lowered arms and lost tracking must hold the aircraft's exact X position.
+	# Tracking loss or invalid pose must hold the aircraft's exact X position.
 	if not airplane_pose_active or paused or finished:
 		return
 	var step := clampf(delta, 0.0, BODY_MAX_MOTION_STEP)
@@ -335,7 +378,7 @@ func _update_plane_motion(delta: float) -> void:
 
 func _update_flight_artwork(delta: float) -> void:
 	# A hint of forward-flight life, without ever moving the PlaneRig hitbox,
-	# editor-authored gate guides, or the original static BACKGROUND.png.
+	# editor-authored gate collision guides or full-3D environment.
 	# Tracking loss/arms lowered or Pause freeze the existing visual pose.
 	if not airplane_pose_active or not running or finished:
 		return
@@ -366,9 +409,10 @@ func _update_gate_wave(delta: float) -> void:
 
 
 func _advance_gate_step(delta: float) -> void:
+	var progress_per_second := float(DIFFICULTY_CONFIG[difficulty]["gate_speed"]) * speed_multiplier
 	if _retiring_gate_fade > 0.0:
 		_retiring_gate_fade = maxf(_retiring_gate_fade - delta, 0.0)
-		_retiring_gate_progress += delta * float(DIFFICULTY_CONFIG[difficulty]["gate_speed"])
+		_retiring_gate_progress += delta * progress_per_second
 		if _retiring_gate_fade <= 0.0 and not _retiring_gate_nodes.is_empty():
 			_retiring_gate_nodes[0].get_parent().visible = false
 			_retiring_gate_nodes = []
@@ -376,10 +420,9 @@ func _advance_gate_step(delta: float) -> void:
 	if round_data.is_empty():
 		return
 	var previous_y := _gate_y(gate_progress)
-	var config: Dictionary = DIFFICULTY_CONFIG[difficulty]
-	gate_progress = minf(gate_progress + float(config["gate_speed"]) * delta, 1.0)
+	gate_progress = minf(gate_progress + progress_per_second * delta, 1.0)
 	if not next_round_data.is_empty():
-		next_gate_progress = minf(next_gate_progress + float(config["gate_speed"]) * GATE_PREVIEW_TRAVEL_FACTOR * delta, 1.0)
+		next_gate_progress = minf(next_gate_progress + progress_per_second * GATE_PREVIEW_TRAVEL_FACTOR * delta, 1.0)
 	elif gate_progress >= GATE_PREFETCH_AT and _retiring_gate_fade <= 0.0:
 		_prefetch_next_wave()
 	var current_y := _gate_y(gate_progress)
@@ -574,27 +617,84 @@ func _resolve_at_answer_line() -> void:
 	selected_was_correct = selected_lane >= 0 and selected_lane in valid
 	if selected_was_correct:
 		correct_count += 1
+		speed_boost_count += 1
+		speed_multiplier = 1.0 + float(speed_boost_count) * SPEED_BOOST_PER_CORRECT
 		streak += 1
 		score += POINTS_PER_CORRECT_GATE
 		feedback_text = "+%d  CORRECT!" % POINTS_PER_CORRECT_GATE
 		feedback_color = GREEN
+		_play_voice_feedback(true)
 	elif selected_lane >= 0:
 		streak = 0
 		lives = maxi(lives - 1, 0)
-		score = maxi(score - 40, 0)
 		var options: Array = round_data.get("options", [])
-		feedback_text = "WRONG GATE  •  %s" % String(options[selected_lane])
+		feedback_text = "TRY AGAIN  •  %s" % String(options[selected_lane])
 		feedback_color = RED
+		_play_voice_feedback(false)
 	else:
 		streak = 0
 		lives = maxi(lives - 1, 0)
-		score = maxi(score - 20, 0)
-		feedback_text = "MISSED THE GATES  •  -1 LIFE"
+		feedback_text = "MISSED THE GATES  •  TRY AGAIN"
 		feedback_color = YELLOW
+		_play_voice_feedback(false, true)
 	feedback_time = 1.15
 	# Update the serialized heart/score sprites immediately when a gate resolves;
 	# don't show the old hearts until the next rendering/process tick.
 	_sync_visuals()
+
+
+func _initialize_voice_feedback() -> void:
+	# Reuse Catch the Word's human-recorded MP3 reactions and existing SFX bus.
+	# One persistent player and a small (about 300 KB on disk) fixed set of
+	# recordings. Load these BEFORE the first gate collision to avoid a blocking
+	# audio/resource import on a time-critical 3D gameplay frame.
+	if is_instance_valid(_feedback_voice):
+		return
+	_feedback_voice = AudioStreamPlayer.new()
+	_feedback_voice.name = "HumanPlaneVoicePlayer"
+	_feedback_voice.bus = "KilosSFX" if AudioServer.get_bus_index("KilosSFX") >= 0 else "Master"
+	_feedback_voice.volume_db = 2.0
+	add_child(_feedback_voice)
+	for cue in VOICE_CORRECT + VOICE_WRONG + [VOICE_MISSED]:
+		var filename := String(cue)
+		var path := VOICE_DIR + filename
+		if ResourceLoader.exists(path):
+			_voice_cache[filename] = load(path) as AudioStream
+
+
+func _play_voice_feedback(correct: bool, missed: bool = false) -> void:
+	if not is_instance_valid(_feedback_voice):
+		return
+	var name: String
+	if missed:
+		name = VOICE_MISSED
+	else:
+		var options: Array = VOICE_CORRECT if correct else VOICE_WRONG
+		name = String(options[rng.randi_range(0, options.size() - 1)])
+	if not _voice_cache.has(name):
+		var path := VOICE_DIR + name
+		if not ResourceLoader.exists(path):
+			return
+		_voice_cache[name] = load(path) as AudioStream
+	_feedback_voice.stop()
+	_feedback_voice.stream = _voice_cache[name] as AudioStream
+	# The headless test runner has no actual speaker/mixer. Invoking play() on
+	# its dummy audio driver can retain an AudioStreamPlaybackMP3 after a test
+	# shuts down immediately. Still bind the real recording for test assertions,
+	# but only start audio playback when a display-backed game is running.
+	if DisplayServer.get_name() != "headless":
+		_feedback_voice.play()
+
+
+func _stop_voice_feedback() -> void:
+	if is_instance_valid(_feedback_voice):
+		_feedback_voice.stop()
+		_feedback_voice.stream = null
+
+
+func _exit_tree() -> void:
+	_stop_voice_feedback()
+	_voice_cache.clear()
 
 
 func _lane_hit_at_answer_line() -> int:
@@ -604,17 +704,55 @@ func _lane_hit_at_answer_line() -> int:
 	var authored_hitbox := $PlaneRig/Hitbox as Control
 	var half_hitbox := authored_hitbox.size.x * 0.5
 	plane_x += authored_hitbox.get_rect().get_center().x - _plane_rig.size.x * 0.5
+	if not is_finite(plane_x) or not is_finite(half_hitbox) or half_hitbox <= 0.0:
+		return -1
 	var hit_left := plane_x - half_hitbox
 	var hit_right := plane_x + half_hitbox
 	var answer_progress := _progress_for_answer_line()
+	var overlapping_lane := -1
+	var overlapping_rect := Rect2()
+	var best_overlap := 0.0
+	var second_overlap := 0.0
+	var total_overlap := 0.0
+	var overlap_count := 0
 	for lane in range(3):
 		# A gate's authored movement rect may be wider/taller than the actual
 		# texture shown by STRETCH_KEEP_ASPECT_CENTERED. Only the *rendered*
 		# sprite can be hit, never the transparent letterbox beside it.
 		var rect := _gate_visible_rect(lane, answer_progress)
-		if rect.size.x > 0.0 and hit_right > rect.position.x and hit_left < rect.end.x:
-			return lane
-	return -1
+		if rect.size.x <= 0.0:
+			continue
+		var overlap := minf(hit_right, rect.end.x) - maxf(hit_left, rect.position.x)
+		if overlap <= 0.0:
+			continue
+		overlap_count += 1
+		total_overlap += overlap
+		if overlap > best_overlap:
+			second_overlap = best_overlap
+			best_overlap = overlap
+			overlapping_lane = lane
+			overlapping_rect = rect
+		else:
+			second_overlap = maxf(second_overlap, overlap)
+	if overlapping_lane < 0:
+		return -1
+	var hitbox_width := half_hitbox * 2.0
+	if overlap_count > 1:
+		# Example: 80/20 touching two rings selects the dominant one; 52/48
+		# yields no score. Requiring at least half of the pilot hitbox inside
+		# the leading ring prevents a tiny sliver from claiming a hit.
+		if best_overlap < hitbox_width * MIN_DOMINANT_HITBOX_COVERAGE \
+				or (best_overlap - second_overlap) < total_overlap * MIN_OVERLAP_LEAD_FRACTION:
+			return -1
+		return overlapping_lane
+	if best_overlap < hitbox_width * MIN_RING_HITBOX_COVERAGE:
+		return -1
+	var center_offset := absf(plane_x - overlapping_rect.get_center().x)
+	var safe_half_width := minf(overlapping_rect.size.x * RING_CENTER_WINDOW_RATIO,
+		overlapping_rect.size.x * 0.5 - half_hitbox)
+	if safe_half_width <= 0.0 or center_offset > safe_half_width:
+		return -1
+	return overlapping_lane
 
 
 func _pause() -> void:
@@ -622,10 +760,14 @@ func _pause() -> void:
 		return
 	paused = true
 	running = false
+	_stop_voice_feedback()
 	# Resume waits for a fresh body sample instead of replaying a target from
 	# before the pause (the camera wrapper may have continued reading poses).
 	target_x_norm = plane_x_norm
 	round_completed = false
+	# Freeze the independent 3D scenery/world loop in the same frame as Pause;
+	# otherwise its SubViewport keeps moving while this Control is suspended.
+	_sync_visuals()
 	var payload := get_context()
 	payload["round_completed"] = false
 	requested.emit("pause", payload)
@@ -648,9 +790,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
 			_request_pause()
 			get_viewport().set_input_as_handled()
+		elif allow_keyboard_debug and not paused and not finished:
+			# No-camera QA only; production retains pose-locked X exclusively.
+			if event.keycode in [KEY_A, KEY_LEFT]:
+				airplane_pose_active = true
+				target_x_norm = clampf(target_x_norm - 0.28, 0.0, 1.0)
+				get_viewport().set_input_as_handled()
+			elif event.keycode in [KEY_D, KEY_RIGHT]:
+				airplane_pose_active = true
+				target_x_norm = clampf(target_x_norm + 0.28, 0.0, 1.0)
+				get_viewport().set_input_as_handled()
 
-# All presentation geometry lives in human_plane.tscn; rendering is performed
-# by authored Polygon2D, ColorRect, Label, Panel and Line2D children.
+
+# Native meshes, terrain, the red FBX plane and torus rings render in the
+# full-3D SubViewport. Legacy 2D collision guides remain invisible.
 func _draw() -> void:
 	pass
 
@@ -708,6 +861,43 @@ func _sync_visuals() -> void:
 		_render_gate_trio(_retiring_gate_nodes, _retiring_gate_data, _retiring_gate_progress,
 			_retiring_gate_colors, _retiring_gate_offsets, false,
 			_retiring_gate_fade / GATE_EXIT_FADE_SECONDS * _active_gate_opacity(_retiring_gate_progress))
+	var selected_world: Control = _world_3d
+	if is_instance_valid(selected_world):
+		if selected_world.has_method("set_speed_multiplier"):
+			selected_world.call("set_speed_multiplier", speed_multiplier)
+		# The invisible, editor-authored hitbox/gate markers decide scores.
+		# Send those EXACT source-centers to the visible 3D aircraft so a child
+		# visually inside the right/left ring is scored in that same ring.
+		var answer_progress := _progress_for_answer_line()
+		if selected_world.has_method("set_scoring_lane_centers"):
+			selected_world.call("set_scoring_lane_centers", _normalized_scoring_lane_centers(answer_progress))
+		selected_world.call("sync_flight", plane_x_norm, round_data, gate_progress,
+			next_round_data, next_gate_progress, gate_resolved,
+			selected_lane, selected_was_correct, finished, paused,
+			answer_progress, airplane_pose_active)
+
+
+func _normalized_scoring_lane_centers(answer_progress: float) -> PackedFloat32Array:
+	# Resolve the authored PlaneRig/Hitbox center to the SAME 0..1 calibrated
+	# steering coordinates used by the scoring function. No pixel hardcoding:
+	# moving a Godot editor gate changes both the collision and 3D rendering.
+	var left_x := _plane_left_limit.get_rect().get_center().x
+	var right_x := _plane_right_limit.get_rect().get_center().x
+	var width := right_x - left_x
+	var hitbox := $PlaneRig/Hitbox as Control
+	if width <= 0.0 or hitbox == null:
+		return PackedFloat32Array()
+	var hitbox_offset := hitbox.get_rect().get_center().x - _plane_rig.size.x * 0.5
+	var centers := PackedFloat32Array()
+	for lane in range(3):
+		var visible_rect := _gate_visible_rect(lane, answer_progress)
+		if visible_rect.size.x <= 0.0:
+			return PackedFloat32Array()
+		var norm := (visible_rect.get_center().x - left_x - _plane_authored_offset_x - hitbox_offset) / width
+		if not is_finite(norm):
+			return PackedFloat32Array()
+		centers.append(norm)
+	return centers
 
 
 func _render_gate_trio(gates: Array[Control], data: Dictionary, progress: float,

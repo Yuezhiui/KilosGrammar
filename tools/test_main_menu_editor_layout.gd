@@ -58,13 +58,12 @@ func _run() -> void:
 		"Play": "MainLayer/CenterMenu/Play",
 		"Quit": "MainLayer/CenterMenu/Quit",
 		"Leaderboard": "MainLayer/LeftMenu/Leaderboard",
-		"Settings": "MainLayer/LeftMenu/Settings",
-		"Credits": "MainLayer/LeftMenu/Credits"
+		"Settings": "MainLayer/LeftMenu/Settings"
 	}
 	for name in navigations:
 		var button := menu.get_node(navigations[name]) as Button
 		_check(button != null and button.is_visible_in_tree(), "Visible draggable " + name + " button")
-		var expected_size := Vector2(225, 55) if name in ["Leaderboard", "Settings", "Credits"] else Vector2(340, 72)
+		var expected_size := Vector2(225, 67) if name in ["Leaderboard", "Settings"] else Vector2(273, 83)
 		_check(button.size.is_equal_approx(expected_size),
 			"Original button dimensions preserved: " + name)
 		_check(button.text == "", "No duplicate text overlays the painted " + name + " button")
@@ -72,6 +71,10 @@ func _run() -> void:
 			"Button image is editable through Inspector: " + name)
 
 	var board := menu.get_node("MainLayer/LeftMenu") as Control
+	_check(menu.get_node_or_null("MainLayer/LeftMenu/Credits") == null,
+		"Removed Credits button has no editor node")
+	_check(not FileAccess.get_file_as_string("res://main_menu.gd").contains('"credits":'),
+		"Removed Credits route has no panel mapping")
 	_check(board.position.is_equal_approx(Vector2(44, 474)),
 		"Original left menu position preserved after entrance animation")
 	_check((menu.get_node("MainLayer/CenterMenu") as Control).position.is_equal_approx(Vector2(470, 435)),

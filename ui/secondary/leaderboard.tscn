@@ -17,7 +17,7 @@
 [ext_resource type="Texture2D" uid="uid://cci7sakhdv8ij" path="res://Components/Leaderboard/NotifLeader/header end.png" id="NotifFinalHeader"]
 [ext_resource type="Texture2D" uid="uid://vu0jn0i2e0oq" path="res://Components/Leaderboard/NotifLeader/hgeader before end.png" id="NotifFirstHeader"]
 [ext_resource type="Texture2D" uid="uid://2uqxg56b3yyy" path="res://Components/Leaderboard/NotifLeader/type delete all data.png" id="NotifTypedFrame"]
-[ext_resource type="Texture2D" uid="uid://cepmkxcfokxkn" path="res://Components/Leaderboard/2026-10-24/BACK.png" id="Oct24_BACK"]
+[ext_resource type="Texture2D" path="res://Components/Credits/Redesign/HOME.png" id="LeaderboardHomeArtwork"]
 [ext_resource type="Texture2D" uid="uid://cceqoc8q6a0p5" path="res://Components/Leaderboard/2026-10-24/BACKGROUND.png" id="Oct24_BG"]
 [ext_resource type="Texture2D" uid="uid://bx8tcifhk5oaw" path="res://Components/Leaderboard/2026-10-24/DELETE.png" id="Oct24_DELETE"]
 [ext_resource type="Texture2D" uid="uid://d21twhlubm325" path="res://Components/Leaderboard/2026-10-24/ALL DIFFICULTIES.png" id="Oct24_DIFFICULTY"]
@@ -100,16 +100,7 @@ texture = SubResource("SelectedHardAtlas")
 atlas = ExtResource("Oct24_TITLE")
 region = Rect2(0, 9, 2144, 715)
 
-[sub_resource type="AtlasTexture" id="Oct24BackAtlas"]
-atlas = ExtResource("Oct24_BACK")
-region = Rect2(0, 9, 2156, 715)
-
-[sub_resource type="StyleBoxTexture" id="BackImageStyle"]
-texture = SubResource("Oct24BackAtlas")
-texture_margin_left = 12.0
-texture_margin_top = 8.0
-texture_margin_right = 12.0
-texture_margin_bottom = 8.0
+[sub_resource type="StyleBoxEmpty" id="LeaderboardBackTransparent"]
 
 [sub_resource type="AtlasTexture" id="Oct24ImportAtlas"]
 atlas = ExtResource("Oct24_IMPORT")
@@ -239,6 +230,7 @@ texture = SubResource("Oct24TitleAtlas")
 expand_mode = 1
 
 [node name="BackButton" type="Button" parent="." unique_id=1029564873]
+editor_description = "Editable HOME image button. Select BackButton/Artwork in the Godot 2D editor or Inspector to change the PNG. This button preserves the Back-to-Main action and has no separate focus border."
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 1027.0
@@ -246,10 +238,24 @@ offset_top = 3.0
 offset_right = 1271.0
 offset_bottom = 93.0
 mouse_default_cursor_shape = 2
-theme_override_styles/normal = SubResource("BackImageStyle")
-theme_override_styles/pressed = SubResource("BackImageStyle")
-theme_override_styles/hover = SubResource("BackImageStyle")
-theme_override_styles/disabled = SubResource("BackImageStyle")
+theme_override_styles/normal = SubResource("LeaderboardBackTransparent")
+theme_override_styles/pressed = SubResource("LeaderboardBackTransparent")
+theme_override_styles/hover = SubResource("LeaderboardBackTransparent")
+theme_override_styles/disabled = SubResource("LeaderboardBackTransparent")
+theme_override_styles/focus = SubResource("LeaderboardBackTransparent")
+
+[node name="Artwork" type="TextureRect" parent="BackButton"]
+editor_description = "DRAG AND DROP IMAGE: Replace Texture with any PNG directly in Inspector. Position and size are editable here, independently of the Back button's click/navigation behavior."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("LeaderboardHomeArtwork")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="StyleFilter" type="OptionButton" parent="." unique_id=1336159057]
 unique_name_in_owner = true

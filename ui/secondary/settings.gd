@@ -30,7 +30,7 @@ const HOVER_SCALE := 0.15
 const HOVER_TILT_DEGREES := 3.0
 
 var _context: Dictionary = {}
-var _active_tab := "settings"
+var _active_tab := "settings" # One permanent Audio & Display page.
 var _button_feedback_tweens: Dictionary = {}
 
 var _classroom_bg: TextureRect
@@ -38,10 +38,6 @@ var _main_stage: Control
 var _settings_card: Control
 var _board_art: NinePatchRect
 var _title_image: TextureRect
-var _sidebar_panel: Control
-var _sidebar_buttons: Dictionary = {}
-var _sidebar_authored_size := Vector2.ZERO
-var _sidebar_authored_button_rects: Dictionary = {}
 var _home_button: Button
 var _card_heading: Label
 var _heading_icon: TextureRect
@@ -70,7 +66,7 @@ func _ready() -> void:
 	_connect_controls()
 	_restore_preferences()
 	_sync_from_system()
-	_switch_tab("settings")
+	_show_audio_display()
 	_remove_native_tooltips(self)
 	_register_button_feedback()
 	resized.connect(_apply_responsive_layout)
@@ -80,9 +76,7 @@ func _ready() -> void:
 
 
 func _remove_native_tooltips(branch: Node) -> void:
-	# Native Control tooltip_text is the dark popup obscuring CAMERA in the
-	# editor-authored sidebar. Do not make a replacement tooltip. Remove
-	# old inherited/fallback tooltips for the entire Settings subtree.
+	# Remove native hover tooltip boxes without disturbing real audio controls.
 	if branch is Control:
 		(branch as Control).tooltip_text = ""
 	for child in branch.get_children():
@@ -90,11 +84,9 @@ func _remove_native_tooltips(branch: Node) -> void:
 
 
 func _register_button_feedback() -> void:
-	# The four editor-authored navigation buttons retain their exact rects.
+	# Home and audio/display switches retain their authored rectangles.
 	# Checkbox-sized switches receive the same (gentler) interactive polish;
 	# sliders must NEVER scale while a student is dragging their value.
-	for button in _sidebar_buttons.values():
-		_bind_button_feedback(button as BaseButton)
 	_bind_button_feedback(_home_button)
 	_bind_button_feedback(_mute_check)
 	_bind_button_feedback(_fullscreen_check)
@@ -195,12 +187,6 @@ func _bind_or_build_ui() -> void:
 		_settings_card = _main_stage.get_node_or_null("SettingsCard") as Control
 		if _settings_card != null:
 			_board_art = _settings_card.get_node_or_null("BoardArtwork") as NinePatchRect
-			# The scene's transparent, editor-draggable sidebar panel is a
-			# Control, not a container. Bind the authored node instead of silently
-			# skipping responsive sidebar positioning and hover geometry.
-			_sidebar_panel = _settings_card.find_child("SidebarPanel", true, false) as Control
-			if _sidebar_panel != null:
-				_sidebar_authored_size = _sidebar_panel.size
 		_title_image = _main_stage.get_node_or_null("SettingsTitle") as TextureRect
 		_home_button = _main_stage.get_node_or_null("BackButton") as Button
 		if _home_button != null and not _home_button.pressed.is_connected(_request_main):
@@ -212,16 +198,9 @@ func _bind_or_build_ui() -> void:
 		_page_host = find_child("PageHost", true, false) as Control
 		_page_scroll = find_child("PageScroll", true, false) as ScrollContainer
 
-		for tab_name in ["settings", "controls", "camera"]:
-			var btn := find_child("Sidebar" + tab_name.capitalize() + "Tab", true, false) as Button
-			if btn != null:
-				_sidebar_buttons[tab_name] = btn
-				_sidebar_authored_button_rects[tab_name] = btn.get_rect()
-				if not btn.pressed.is_connected(_switch_tab):
-					btn.pressed.connect(_switch_tab.bind(tab_name))
-			var page := find_child(tab_name.capitalize() + "Page", true, false) as Control
-			if page != null:
-				_pages[tab_name] = page
+		var audio_display := find_child("SettingsPage", true, false) as Control
+		if audio_display != null:
+			_pages["settings"] = audio_display
 
 		_volume_slider = find_child("VolumeSlider", true, false) as HSlider
 		_music_slider = find_child("MusicSlider", true, false) as HSlider
@@ -299,44 +278,7 @@ func _build_ui() -> void:
 	board_layout.add_theme_constant_override("separation", 16)
 	card_padding.add_child(board_layout)
 
-	# Left Sidebar
-	_sidebar_panel = Panel.new()
-	_sidebar_panel.name = "SidebarPanel"
-	_sidebar_panel.custom_minimum_size = Vector2(216, 0)
-	_sidebar_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-	var sidebar_art := _art_texture(SETTINGS_ART + "panel_sidebar.png")
-	if sidebar_art != null:
-		var sidebar_style := StyleBoxTexture.new()
-		sidebar_style.texture = sidebar_art
-		sidebar_style.texture_margin_left = 32
-		sidebar_style.texture_margin_right = 32
-		sidebar_style.texture_margin_top = 44
-		sidebar_style.texture_margin_bottom = 44
-		sidebar_style.content_margin_left = 0
-		sidebar_style.content_margin_right = 0
-		sidebar_style.content_margin_top = 0
-		sidebar_style.content_margin_bottom = 0
-		_sidebar_panel.add_theme_stylebox_override("panel", sidebar_style)
-	else:
-		_sidebar_panel.add_theme_stylebox_override("panel", _flat_style(Color("#FFF4DD"), 20))
-	board_layout.add_child(_sidebar_panel)
-
-	var y_offset := 22.0
-	for tab_name in ["settings", "controls", "camera"]:
-		var sidebar_button := _tab_button("")
-		sidebar_button.name = "Sidebar" + tab_name.capitalize() + "Tab"
-		sidebar_button.position = Vector2(10, y_offset)
-		sidebar_button.size = Vector2(196, 66)
-		sidebar_button.custom_minimum_size = Vector2(196, 66)
-		sidebar_button.tooltip_text = ""
-		sidebar_button.pressed.connect(_switch_tab.bind(tab_name))
-		_sidebar_panel.add_child(sidebar_button)
-		_sidebar_buttons[tab_name] = sidebar_button
-		_apply_art_tab(sidebar_button, tab_name, tab_name == "settings")
-		y_offset += 66.0 + 18.0
-
-	# Right Content Stack
+	# Audio & Display takes the entire board; no unused left tab column.
 	var content_stack := VBoxContainer.new()
 	content_stack.name = "ContentStack"
 	content_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -400,8 +342,6 @@ func _build_ui() -> void:
 	_page_host.add_child(_page_scroll)
 
 	_build_settings_page()
-	_build_controls_page()
-	_build_camera_page()
 
 	# 4. Settings Title Plaque (Centered on upper wooden rail of the board)
 	var artwork_title := _art_texture(SETTINGS_ART + "title_settings.png")
@@ -465,12 +405,6 @@ func _sprite_style(texture: Texture2D, tint: Color) -> StyleBoxTexture:
 	style.texture = texture
 	style.modulate_color = tint
 	return style
-
-
-func _apply_art_tab(button: Button, tab_name: String, active: bool) -> void:
-	var filename := "tab_%s_%s.png" % [tab_name, "green" if active else "cream"]
-	_apply_full_art_button(button, filename)
-	button.text = ""
 
 
 func _icon_rect(filename: String, dimension: float) -> TextureRect:
@@ -584,80 +518,6 @@ func _add_settings_group(page: VBoxContainer, title: String, icon_filename: Stri
 	fields.add_theme_constant_override("separation", 2)
 	inner_margin.add_child(fields)
 	return fields
-
-
-func _build_controls_page() -> void:
-	var page := _new_page("ControlsPage")
-	_pages["controls"] = page
-
-	var card := PanelContainer.new()
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var card_style := _flat_style(Color("#DEF0FC"), 16)
-	card_style.border_color = Color("#CCE5F9")
-	card_style.set_border_width_all(2)
-	card.add_theme_stylebox_override("panel", card_style)
-	page.add_child(card)
-
-	var inset := MarginContainer.new()
-	inset.add_theme_constant_override("margin_left", 16)
-	inset.add_theme_constant_override("margin_right", 16)
-	inset.add_theme_constant_override("margin_top", 14)
-	inset.add_theme_constant_override("margin_bottom", 14)
-	card.add_child(inset)
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 10)
-	inset.add_child(box)
-
-	box.add_child(_section_label("CONTROL GUIDE"))
-	box.add_child(_info_row("MENU NAVIGATION", "Mouse / touch, or Tab + Enter / Space to navigate menus.", MINT))
-	box.add_child(_separator(0.25))
-	box.add_child(_info_row("KEYBOARD MINIGAMES", "A / D or Arrow Keys to move left and right. Space / Enter to fire.", BLUE))
-	box.add_child(_separator(0.25))
-	box.add_child(_info_row("PAUSE / RESUME", "Press ESC or click the in-game Pause button anytime.", YELLOW))
-	box.add_child(_separator(0.35))
-	box.add_child(_status_banner("BODY TRACKING: PREVIEW ONLY", "Webcam pose tracking will be calibrated in a future milestone.", RED))
-
-
-func _build_camera_page() -> void:
-	var page := _new_page("CameraPage")
-	_pages["camera"] = page
-
-	var card := PanelContainer.new()
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var card_style := _flat_style(Color("#DEF0FC"), 16)
-	card_style.border_color = Color("#CCE5F9")
-	card_style.set_border_width_all(2)
-	card.add_theme_stylebox_override("panel", card_style)
-	page.add_child(card)
-
-	var inset := MarginContainer.new()
-	inset.add_theme_constant_override("margin_left", 16)
-	inset.add_theme_constant_override("margin_right", 16)
-	inset.add_theme_constant_override("margin_top", 14)
-	inset.add_theme_constant_override("margin_bottom", 14)
-	card.add_child(inset)
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 10)
-	inset.add_child(box)
-
-	box.add_child(_section_label("CAMERA STATUS"))
-	box.add_child(_status_banner("CAMERA & TRACKING: NOT CONNECTED", "Settings does not open a live camera device or report fake detection.", RED))
-	box.add_child(_separator(0.28))
-
-	var lane_title := _label("3-LANE PLAYER CALIBRATION PREVIEW", 14, INK_DARK, HORIZONTAL_ALIGNMENT_CENTER)
-	lane_title.modulate.a = 0.88
-	box.add_child(lane_title)
-
-	var lanes := HBoxContainer.new()
-	lanes.add_theme_constant_override("separation", 10)
-	box.add_child(lanes)
-	lanes.add_child(_lane_chip("<  LEFT", BLUE))
-	lanes.add_child(_lane_chip("CENTER", MINT))
-	lanes.add_child(_lane_chip("RIGHT  >", YELLOW))
-	box.add_child(_separator(0.28))
-	box.add_child(_info_row("CALIBRATION", "Physical calibration maps real movement to the LEFT / CENTER / RIGHT zones.", GREEN))
 
 
 func _new_page(node_name: String) -> VBoxContainer:
@@ -847,30 +707,18 @@ func _update_toggle_text(toggle: CheckButton) -> void:
 	toggle.tooltip_text = ""
 
 
-func _switch_tab(tab_name: String) -> void:
-	if not _pages.has(tab_name):
-		return
-	_active_tab = tab_name
-	var headings := {
-		"settings": "AUDIO & DISPLAY",
-		"controls": "CONTROL GUIDE",
-		"camera": "CAMERA STATUS"
-	}
-	_card_heading.text = headings.get(tab_name, "SETTINGS")
-	var heading_icons := {
-		"settings": "icon_sound.png",
-		"controls": "icon_controls.png",
-		"camera": "icon_camera.png"
-	}
+func _show_audio_display() -> void:
+	# Only one Settings page remains. Do not re-create or switch into retired
+	# keyboard/camera demo tabs: this is a fully body-controlled game.
+	_active_tab = "settings"
+	if is_instance_valid(_card_heading):
+		_card_heading.text = "AUDIO & DISPLAY"
 	if is_instance_valid(_heading_icon):
-		_heading_icon.texture = _art_texture(SETTINGS_ART + String(heading_icons.get(tab_name, "icon_settings.png")))
-	for key in _pages:
-		var page: Control = _pages[key]
-		page.visible = key == tab_name
-	_page_scroll.scroll_vertical = 0
-	for key in _sidebar_buttons:
-		var sidebar_button: Button = _sidebar_buttons[key]
-		_apply_art_tab(sidebar_button, key, key == tab_name)
+		_heading_icon.texture = _art_texture(SETTINGS_ART + "icon_sound.png")
+	if _pages.has("settings"):
+		(_pages["settings"] as Control).visible = true
+	if is_instance_valid(_page_scroll):
+		_page_scroll.scroll_vertical = 0
 
 
 func _apply_responsive_layout() -> void:
@@ -904,37 +752,7 @@ func _apply_responsive_layout() -> void:
 		_title_image.position = Vector2(title_x, title_y)
 		_title_image.size = Vector2(title_w, title_h)
 
-	# 3. Sidebar Panel Sizing
-	if is_instance_valid(_sidebar_panel):
-		var sidebar_w := 160.0 if compact else 216.0
-		_sidebar_panel.custom_minimum_size.x = sidebar_w
-		# The authored side panel is a transparent hit/layout parent. Its old
-		# height could extend below the board at 875x500, despite the buttons
-		# themselves being visible. Bound it to the actual editor board rect.
-		var available_h := maxf(0.0, _settings_card.size.y - _sidebar_panel.position.y - 8.0)
-		var authored_h := _sidebar_authored_size.y if _sidebar_authored_size.y > 0.0 else available_h
-		_sidebar_panel.size = Vector2(sidebar_w, minf(authored_h, available_h))
-		for tab_btn: Button in _sidebar_buttons.values():
-			tab_btn.custom_minimum_size = Vector2(sidebar_w - 20.0, 48.0 if compact else 66.0)
-		if compact:
-			var y_off := 16.0
-			for tab_key in ["settings", "controls", "camera"]:
-				if _sidebar_buttons.has(tab_key):
-					var tab_btn: Button = _sidebar_buttons[tab_key]
-					tab_btn.position = Vector2(10.0, y_off)
-					tab_btn.size = Vector2(sidebar_w - 20.0, 48.0)
-					y_off += 48.0 + 14.0
-		else:
-			# Restore whatever designers placed in the .tscn. Compact mode
-			# must not permanently overwrite drag-edited desktop tab geometry.
-			for tab_key in _sidebar_authored_button_rects:
-				if _sidebar_buttons.has(tab_key):
-					var authored: Rect2 = _sidebar_authored_button_rects[tab_key]
-					var tab_btn: Button = _sidebar_buttons[tab_key]
-					tab_btn.position = authored.position
-					tab_btn.size = authored.size
-
-	# 4. Home Button Positioning
+	# 3. Home Button Positioning
 	if is_instance_valid(_home_button):
 		var home_w := 148.0 if compact else 184.0
 		var home_h := 46.0 if compact else 56.0
@@ -950,7 +768,7 @@ func _apply_responsive_layout() -> void:
 			_home_button.position = Vector2(home_x, home_y)
 			_home_button.size = Vector2(home_w, home_h)
 
-	# 5. Card Padding
+	# 4. Card Padding
 	var card_padding := _settings_card.get_node_or_null("CardPadding") as MarginContainer
 	if card_padding != null:
 		card_padding.add_theme_constant_override("margin_left", 20 if compact else 36)
@@ -958,7 +776,7 @@ func _apply_responsive_layout() -> void:
 		card_padding.add_theme_constant_override("margin_top", 24 if compact else 44)
 		card_padding.add_theme_constant_override("margin_bottom", 78 if compact else 26)
 
-	# 6. Scroll Hint
+	# 5. Scroll Hint
 	if is_instance_valid(_scroll_hint):
 		_scroll_hint.visible = compact
 
@@ -1030,67 +848,6 @@ func _toggle_row(label_text: String, hint_text: String, toggle: CheckButton, ico
 
 func _soft_row_style() -> StyleBoxFlat:
 	return _flat_style(Color.TRANSPARENT, 0)
-
-
-func _info_row(title_text: String, detail_text: String, accent: Color) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.custom_minimum_size.y = 44
-	row.add_theme_constant_override("separation", 12)
-	var marker := PanelContainer.new()
-	marker.custom_minimum_size = Vector2(6, 0)
-	marker.add_theme_stylebox_override("panel", _flat_style(accent, 3))
-	row.add_child(marker)
-	var text_box := VBoxContainer.new()
-	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text_box.add_theme_constant_override("separation", 2)
-	row.add_child(text_box)
-	text_box.add_child(_label(title_text, 13, INK_DARK, HORIZONTAL_ALIGNMENT_LEFT))
-	var detail := _label(detail_text, 11, INK_DARK, HORIZONTAL_ALIGNMENT_LEFT)
-	detail.modulate.a = 0.74
-	text_box.add_child(detail)
-	return row
-
-
-func _status_banner(title_text: String, detail_text: String, accent: Color) -> PanelContainer:
-	var panel := PanelContainer.new()
-	var style := _flat_style(Color(INK_DARK.r, INK_DARK.g, INK_DARK.b, 0.92), 12)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = accent
-	panel.add_theme_stylebox_override("panel", style)
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 6)
-	margin.add_theme_constant_override("margin_bottom", 6)
-	panel.add_child(margin)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	margin.add_child(box)
-	box.add_child(_label(title_text, 12, accent, HORIZONTAL_ALIGNMENT_CENTER))
-	var detail := _label(detail_text, 11, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
-	detail.modulate.a = 0.82
-	box.add_child(detail)
-	return panel
-
-
-func _lane_chip(text_value: String, accent: Color) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.custom_minimum_size.y = 44
-	var style := _flat_style(Color(accent.r, accent.g, accent.b, 0.18), 12)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = accent
-	panel.add_theme_stylebox_override("panel", style)
-	var label := _label(text_value, 12, INK_DARK, HORIZONTAL_ALIGNMENT_CENTER)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	panel.add_child(label)
-	return panel
 
 
 func _slider(node_name: String) -> HSlider:
@@ -1167,25 +924,6 @@ func _toggle(node_name: String) -> CheckButton:
 	return toggle
 
 
-func _tab_button(text_value: String) -> Button:
-	var button := Button.new()
-	button.text = text_value
-	button.custom_minimum_size = Vector2(190, 56)
-	button.focus_mode = Control.FOCUS_ALL
-	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.add_theme_font_override("font", FONT)
-	button.add_theme_font_size_override("font_size", 12)
-	button.add_theme_stylebox_override("focus", _focus_style(16))
-	return button
-
-
-func _section_label(text_value: String) -> Label:
-	var label := _label(text_value, 15, INK_DARK, HORIZONTAL_ALIGNMENT_LEFT)
-	label.custom_minimum_size.y = 22
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	return label
-
-
 func _label(text_value: String, font_size: int, color: Color, alignment: HorizontalAlignment) -> Label:
 	var label := Label.new()
 	label.text = text_value
@@ -1196,16 +934,6 @@ func _label(text_value: String, font_size: int, color: Color, alignment: Horizon
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label
-
-
-func _separator(alpha: float = 0.38) -> HSeparator:
-	var separator := HSeparator.new()
-	var line := StyleBoxFlat.new()
-	line.bg_color = Color(INK_DARK.r, INK_DARK.g, INK_DARK.b, alpha)
-	line.content_margin_top = 1
-	line.content_margin_bottom = 1
-	separator.add_theme_stylebox_override("separator", line)
-	return separator
 
 
 func _card_style() -> StyleBoxFlat:

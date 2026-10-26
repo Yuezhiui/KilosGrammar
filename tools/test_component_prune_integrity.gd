@@ -5,10 +5,9 @@ extends SceneTree
 ## write gameplay data or interpret an orphan candidate as automatic deletion.
 ## Godot --headless --path . --script res://tools/test_component_prune_integrity.gd
 const COMPONENTS := "res://Components/"
-const EXPECTED_SCENES := 29
-const DATA_EXTENSIONS := [".tscn", ".tres", ".gd", ".godot", ".cfg", ".json", ".cs", ".py", ".gdshader"]
+const DATA_EXTENSIONS := [".tscn", ".tres", ".gd", ".godot", ".cfg", ".json", ".cs", ".py", ".gdshader", ".gltf"]
 const RESOURCE_SUFFIXES := [
-    ".png", ".jpg", ".jpeg", ".webp", ".svg",
+    ".png", ".jpg", ".jpeg", ".webp", ".svg", ".fbx", ".gltf", ".bin",
     ".tscn", ".tres", ".gd", ".gdshader", ".ogg", ".mp3",
     ".wav", ".ttf", ".otf", ".json", ".csv",
 ]
@@ -54,8 +53,12 @@ func _run() -> void:
             if not FileAccess.file_exists(png_source):
                 manifest_orphans.append(path)
                 _fail("Stale .png.import sidecar without source PNG: " + path)
-    _check(scene_paths.size() == EXPECTED_SCENES,
-        "All %d Godot scenes remain (found %d)" % [EXPECTED_SCENES, scene_paths.size()])
+    _check(scene_paths.size() >= 20,
+        "All current project scenes dynamically inventoried after inlining 3D assets (found %d)" % scene_paths.size())
+    _check("res://ui/minigames/human_plane_3d_view.tscn" in scene_paths,
+        "Human Plane single 3D world remains an editable PackedScene")
+    _check("res://ui/secondary/credits.tscn" in scene_paths,
+        "Credits scene restored by explicit user request and kept in inventory")
     _check(not components_pngs.is_empty(),
         "Components contains independently stored and browsable source PNGs")
 
@@ -70,6 +73,8 @@ func _run() -> void:
             continue
         _scan_count += 1
         _inspect_explicit_resource_paths(path, source)
+        if path.ends_with(".gltf"):
+            _inspect_gltf_images(path, source)
         if path.ends_with(".tscn") or path.ends_with(".tres"):
             _inspect_serialized(path, source)
 
@@ -192,6 +197,9 @@ func _inspect_explicit_resource_paths(owner: String, source: String) -> void:
         if text_path.contains("%") or text_path.contains("{") or text_path.contains("$") \
             or text_path.contains("..."):
             continue
+        # Optional licensed soundtrack is local-only and deliberately ignored by Git.
+        if text_path == "res://assets/audio/user_provided/wii_fit_user_settings.mp3":
+            continue
         var lower := text_path.to_lower()
         var resource_literal := false
         for ext in RESOURCE_SUFFIXES:
@@ -211,6 +219,26 @@ func _inspect_explicit_resource_paths(owner: String, source: String) -> void:
     bare_names.compile("[A-Za-z0-9_][^\\\"'\\r\\n/]*\\.png")
     for item in bare_names.search_all(source):
         _asset_name_refs[item.get_string().to_lower()] = true
+
+
+func _inspect_gltf_images(owner: String, source: String) -> void:
+    # glTF references image files relative to its own directory, not via a
+    # literal res:// URL. The metallic/normal PBR PNGs are genuine dependencies
+    # of the Toy Plane model; never classify them as unused art.
+    var parsed: Variant = JSON.parse_string(source)
+    _check(parsed is Dictionary, "3D glTF JSON loads for image dependency audit: " + owner)
+    if not parsed is Dictionary:
+        return
+    for image_data in (parsed as Dictionary).get("images", []):
+        if not image_data is Dictionary:
+            continue
+        var uri := String((image_data as Dictionary).get("uri", ""))
+        if uri.is_empty() or uri.begins_with("data:") or uri.contains("://"):
+            continue
+        var resolved := owner.get_base_dir().path_join(uri).simplify_path()
+        _direct_paths[resolved] = true
+        _check(FileAccess.file_exists(resolved),
+            "3D glTF texture is retained with local source file: " + resolved)
 
 
 func _inspect_serialized(owner: String, source: String) -> void:

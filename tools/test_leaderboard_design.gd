@@ -76,6 +76,16 @@ func _run() -> void:
 	var mode := panel.get_node("%ModeFilter") as OptionButton
 	var difficulty := panel.get_node("%DifficultyFilter") as OptionButton
 	var back := panel.get_node("%BackButton") as Button
+	var back_art := back.get_node_or_null("Artwork") as TextureRect
+	_check(back_art != null and back_art.texture != null
+		and back_art.texture.resource_path == "res://Components/Credits/Redesign/HOME.png",
+		"Leaderboard HOME PNG is an inspector-editable TextureRect, not a hardcoded button skin")
+	_check(back.get_theme_stylebox("normal") is StyleBoxEmpty
+		and back.get_theme_stylebox("focus") is StyleBoxEmpty
+		and back_art.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+		"Leaderboard Back has no duplicate outline, and PNG does not block clicks")
+	_check(back_art.anchor_right == 1.0 and back_art.anchor_bottom == 1.0,
+		"Leaderboard Home artwork follows the editor-authored BackButton rectangle")
 	_check(panel.find_child("DownloadButton", true, false) == null,
 		"Obsolete filtered CSV Download button removed from serialized scene")
 	for removed in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:

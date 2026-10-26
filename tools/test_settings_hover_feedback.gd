@@ -20,17 +20,17 @@ func _run() -> void:
 	scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await process_frame
 	await process_frame
-	var sidebar := scene.find_child("SidebarPanel", true, false) as Control
-	_check(sidebar != null and sidebar.self_modulate.a > 0.99,
-		"editor-authored sidebar is a transparent Control, not a zero-alpha sound-blocking Panel")
+	for retired in ["SidebarPanel", "SidebarSettingsTab", "SidebarControlsTab",
+			"SidebarCameraTab", "ControlsPage", "CameraPage"]:
+		_check(scene.find_child(retired, true, false) == null,
+			"retired Settings tab/page is truly deleted: " + retired)
 	var buttons: Array[BaseButton] = []
-	for name in ["SidebarSettingsTab", "SidebarControlsTab", "SidebarCameraTab",
-			"BackButton", "MuteCheck", "FullscreenCheck"]:
+	for name in ["BackButton", "MuteCheck", "FullscreenCheck"]:
 		var button := scene.find_child(name, true, false) as BaseButton
 		_check(button != null, name + " remains editor-authored")
 		if button != null:
 			buttons.append(button)
-	_check(buttons.size() == 6, "all four navigation and two toggle buttons available")
+	_check(buttons.size() == 3, "Home and the two live audio/display toggles remain")
 	_check(_empty_tooltips(scene), "no Control in Settings creates dark native hover popups")
 	for button in buttons:
 		var label := button.name

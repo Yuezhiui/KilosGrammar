@@ -297,7 +297,7 @@ func _check_calibration(viewport_size: Vector2i) -> void:
 	_check(camera_button == null or not camera_button.text.to_upper().contains("STOP CAMERA"),
 		"Calibration %s: no Stop Camera action remains" % viewport_size)
 	if stage != null:
-		var zone_names := ["CenterCalibrationLane", "RightCalibrationLane", "LeftCalibrationLane"]
+		var zone_names := ["ArtGuideCenter", "ArtGuideRight", "ArtGuideLeft"]
 		for index in range(3):
 			scene.set("live_step", index)
 			scene.call("_update_target_guide")
@@ -306,14 +306,14 @@ func _check_calibration(viewport_size: Vector2i) -> void:
 			for node_name in zone_names:
 				var guide := stage.get_node_or_null(node_name) as Control
 				_check(guide != null and guide.owner == scene,
-					"Calibration %s: %s standing guide is editor-authored" % [viewport_size, node_name])
+					"Calibration %s: %s yellow PNG guide is editor-authored" % [viewport_size, node_name])
 				if guide != null and guide.is_visible_in_tree():
 					zones += 1
 					_check(node_name == zone_names[index],
 						"Calibration %s: step %d highlights correct position, not %s" %
 						[viewport_size, index + 1, node_name])
 			_check(zones == 1,
-				"Calibration %s: step %d shows exactly one standing guide" % [viewport_size, index + 1])
+				"Calibration %s: step %d shows exactly one PARAMETERS.png guide" % [viewport_size, index + 1])
 			var step_badge := stage.get_node_or_null("StepBadge") as Label
 			_check(step_badge != null and step_badge.text.contains("%d / 3" % (index + 1)),
 				"Calibration %s: step %d indicator is synchronized" % [viewport_size, index + 1])

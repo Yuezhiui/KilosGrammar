@@ -147,10 +147,10 @@ expand_mode = 1
 
 [node name="TimerPlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1596940150]
 layout_mode = 0
-offset_left = 1011.0
-offset_top = 18.0
-offset_right = 1206.0
-offset_bottom = 81.0
+offset_left = 908.0
+offset_top = 17.0
+offset_right = 1191.0
+offset_bottom = 112.0
 mouse_filter = 2
 texture = ExtResource("8_timer")
 expand_mode = 1
@@ -158,78 +158,33 @@ expand_mode = 1
 [node name="LivesPlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1349845206]
 visible = false
 layout_mode = 0
-offset_left = 1024.0
+offset_left = 926.0
 offset_top = 20.0
-offset_right = 1193.0
-offset_bottom = 78.0
+offset_right = 1173.0
+offset_bottom = 110.0
 mouse_filter = 2
 texture = ExtResource("9_lives")
 expand_mode = 1
 
 [node name="PausePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=999468031]
 layout_mode = 0
-offset_left = 1195.0
-offset_top = 8.0
-offset_right = 1276.0
-offset_bottom = 89.0
+offset_left = 1165.0
+offset_top = 15.0
+offset_right = 1265.0
+offset_bottom = 115.0
 mouse_filter = 2
 texture = ExtResource("10_pause")
 expand_mode = 1
 
 [node name="ScorePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1188822547]
 layout_mode = 0
-offset_left = 1002.0
-offset_top = 537.0
-offset_right = 1276.0
-offset_bottom = 713.0
+offset_left = 987.0
+offset_top = 563.0
+offset_right = 1261.0
+offset_bottom = 739.0
 mouse_filter = 2
 texture = ExtResource("11_score")
 expand_mode = 1
-
-[node name="TitleLabel" type="Label" parent="HUDLayer/HUD" unique_id=227329996]
-visible = false
-layout_mode = 0
-offset_left = 59.0
-offset_top = 27.0
-offset_right = 224.0
-offset_bottom = 76.0
-theme_override_colors/font_color = Color(1, 0.797, 0.247, 1)
-theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.8)
-theme_override_constants/outline_size = 5
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 37
-text = "CATCH"
-vertical_alignment = 1
-
-[node name="TitleTheLabel" type="Label" parent="HUDLayer/HUD" unique_id=516625395]
-visible = false
-layout_mode = 0
-offset_left = 214.0
-offset_top = 27.0
-offset_right = 302.0
-offset_bottom = 76.0
-theme_override_colors/font_color = Color(1, 0.984, 0.91, 1)
-theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 1)
-theme_override_constants/outline_size = 5
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 29
-text = "THE"
-vertical_alignment = 1
-
-[node name="TitleWordLabel" type="Label" parent="HUDLayer/HUD" unique_id=852777914]
-visible = false
-layout_mode = 0
-offset_left = 290.0
-offset_top = 27.0
-offset_right = 454.0
-offset_bottom = 76.0
-theme_override_colors/font_color = Color(0.4, 0.846, 1, 1)
-theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 1)
-theme_override_constants/outline_size = 5
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 37
-text = "WORD"
-vertical_alignment = 1
 
 [node name="PromptLabel" type="Label" parent="HUDLayer/HUD" unique_id=982457133]
 layout_mode = 0
@@ -244,116 +199,34 @@ text = "WHICH WORD IS A NOUN?"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ScoreLabel" type="Label" parent="HUDLayer/HUD" unique_id=1338652892]
-visible = false
-layout_mode = 0
-offset_left = 460.0
-offset_top = 18.0
-offset_right = 590.0
-offset_bottom = 48.0
-theme_override_colors/font_color = Color(0.411765, 0.745098, 0.603922, 1)
-theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
-theme_override_constants/outline_size = 4
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 18
-text = "SCORE 0000"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="LivesLabel" type="Label" parent="HUDLayer/HUD" unique_id=2069074409]
-visible = false
-layout_mode = 0
-offset_left = 590.0
-offset_top = 18.0
-offset_right = 700.0
-offset_bottom = 48.0
-theme_override_colors/font_color = Color(1, 0.309804, 0.4, 1)
-theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
-theme_override_constants/outline_size = 4
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 18
-text = "LIVES 5"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="TimeLabel" type="Label" parent="HUDLayer/HUD" unique_id=1176703706]
 layout_mode = 0
-offset_left = 1078.0
-offset_top = 33.0
-offset_right = 1180.0
-offset_bottom = 66.0
+offset_left = 1006.0
+offset_top = 39.0
+offset_right = 1152.0
+offset_bottom = 90.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 44
 text = "60s"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StreakLabel" type="Label" parent="HUDLayer/HUD" unique_id=908443430]
-visible = false
-layout_mode = 0
-offset_left = 810.0
-offset_top = 18.0
-offset_right = 955.0
-offset_bottom = 48.0
-theme_override_colors/font_color = Color(0.756863, 0.443137, 0.811765, 1)
-theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
-theme_override_constants/outline_size = 4
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 18
-text = "STREAK 0"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="FooterLabel" type="Label" parent="HUDLayer/HUD" unique_id=300588726]
-visible = false
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 28.0
-offset_top = -30.0
-offset_right = -28.0
-offset_bottom = -8.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_colors/font_color = Color(0.968627, 0.901961, 0.741176, 0.76)
-theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
-theme_override_constants/outline_size = 3
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 12
-text = "CAMERA TRACKING: MOVE LEFT OR RIGHT TO CATCH WORDS"
-vertical_alignment = 1
-
-[node name="FinishButton" type="Button" parent="HUDLayer/HUD" unique_id=177983020]
-visible = false
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -310.0
-offset_top = 20.0
-offset_right = -156.0
-offset_bottom = 66.0
-grow_horizontal = 0
-text = "FINISH ROUND"
-
 [node name="PauseButton" type="Button" parent="HUDLayer/HUD" unique_id=129499625]
 layout_mode = 0
-offset_left = 1212.0
-offset_top = 25.0
-offset_right = 1260.0
-offset_bottom = 73.0
+offset_left = 1171.0
+offset_top = 22.0
+offset_right = 1258.0
+offset_bottom = 108.0
 
 [node name="ScoreBottomContainer" type="VBoxContainer" parent="HUDLayer/HUD" unique_id=1426763398]
 layout_mode = 0
-offset_left = 1066.0
-offset_top = 609.0
-offset_right = 1240.0
-offset_bottom = 669.0
+offset_left = 1043.0
+offset_top = 635.0
+offset_right = 1225.0
+offset_bottom = 695.0
 mouse_filter = 2
 theme_override_constants/separation = -4
 
@@ -364,7 +237,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.207843, 0.109804, 0.0666667, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 49
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1

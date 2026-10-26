@@ -1,292 +1,235 @@
 extends SceneTree
 
-# Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_body_integration.gd
-# End-to-end synthetic camera test: genuine three-position calibration and the
-# PoseService -> Gameplay -> Human Plane bridge. Never starts a camera/worker.
+# End-to-end offline neutral CENTER calibration -> PoseService -> gameplay
+# wrapper -> actual Human Plane renderer. No webcam, DB, or real child data.
+# Godot --headless --path . --script res://tools/test_human_plane_body_integration.gd
 const CALIBRATION_SCENE := "res://ui/vision/calibration.tscn"
 const GAMEPLAY_SCENE := "res://ui/play/gameplay.tscn"
-const TOKEN := "plane-body-qa-only"
-const CAMERA_X := {"CENTER": 0.5, "RIGHT": 0.8, "LEFT": 0.2}
-const FIXED_FRAME := 0.05
+const SESSION_TOKEN := "stationary-flight-wrapper-qa-only"
+const STUDENT_ID := 31
+const CAMERA_X := 0.50
+const DT := 1.0 / 60.0
+const NEUTRAL := CAMERA_X
 
-var failures: Array[String] = []
 var checks := 0
-var service: Node
+var failures: Array[String] = []
+var pose: Node
+var sample_when := 400.0
+var finished := false
 
 
 func _initialize() -> void:
 	call_deferred("_run")
+	call_deferred("_watchdog")
+
+
+func _watchdog() -> void:
+	await create_timer(18.0).timeout
+	if not finished:
+		_check(false, "headless Human Plane integration exceeded 18 seconds")
+		_finish()
 
 
 func _run() -> void:
-	root.size = Vector2i(1280, 720)
-	service = root.get_node_or_null("PoseService")
-	_check(service != null, "PoseService autoload is registered")
-	if service == null:
+	pose = root.get_node_or_null("PoseService")
+	_check(pose != null, "Real PoseService singleton exists")
+	if pose == null:
 		_finish()
 		return
-	service.stop_camera()
-	service.set_process(false)
-	service.active = true
-	service.session_token = TOKEN
-	service.calibration.clear()
-	var payload := await _test_three_zone_calibration()
+	pose.stop_camera()
+	pose.set_process(false)
+	pose.set("session_token", SESSION_TOKEN)
+	pose.set("active", true)
+	var payload := await _complete_stationary_calibration()
 	if not payload.is_empty():
-		await _test_bridge(payload, "Seconds", Vector2i(1280, 720))
-		await _test_bridge(payload, "Lives", Vector2i(1920, 1080))
-	service.stop_camera()
-	service.set_process(true)
+		await _test_live_wrapper(payload, "Seconds", Vector2i(1280, 720))
+		await _test_live_wrapper(payload, "Lives", Vector2i(1920, 1080))
+	pose.stop_camera()
+	pose.set_process(true)
 	_finish()
 
 
-func _test_three_zone_calibration() -> Dictionary:
+func _complete_stationary_calibration() -> Dictionary:
 	var packed := load(CALIBRATION_SCENE) as PackedScene
-	_check(packed != null, "real editor-authored calibration scene loads")
+	_check(packed != null, "Calibration scene loads")
 	if packed == null:
 		return {}
 	var screen := packed.instantiate() as Control
 	root.add_child(screen)
 	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen.set_process(false)
+	screen.set_context({"activity": "Human Plane", "student_name": "OFFLINE QA",
+		"game_mode": "Seconds", "difficulty": "Normal", "topic": "Noun"})
 	var routes: Array[Dictionary] = []
 	screen.requested.connect(func(route: String, data: Dictionary) -> void:
-		routes.append({"route": route, "payload": data.duplicate(true)}))
-	_emit_packet(0.5, true, true)
-	screen.set_context({
-		"activity": "Human Plane", "game_mode": "Seconds", "difficulty": "Normal",
-		"game_style": "Noun", "topic": "Noun", "camera_requested": true,
-		"student_id": "QA-ONLY", "student_name": "SYNTHETIC STUDENT"
-	})
-	screen.set_process(false)
-	var order: Array = screen.call("_capture_order")
-	_check(order == ["CENTER", "RIGHT", "LEFT"],
-		"Human Plane requires actual CENTER, RIGHT and LEFT calibration holds")
-	_check(int(screen.get("live_step")) == 0, "calibration starts at CENTER")
-	# Do not let the 2.5s introduction count toward actual pose holds.
+		routes.append({"route": route, "data": data.duplicate(true)}))
+	_set_pose(NEUTRAL, STUDENT_ID, true, true)
 	screen.call("_process", 2.51)
-	_check(int(screen.get("live_step")) == 0 and float(screen.get("live_timer")) < 0.05,
-		"intro countdown does not credit its 2.5 seconds toward calibration")
+	_check(int(screen.get("live_step")) == 0,
+		"Intro cannot count as a student steering hold")
 	screen.call("_continue_flow", false)
-	_check(routes.is_empty(), "cannot enter gameplay before all three measurements")
-	for step in range(order.size()):
-		var zone: String = String(order[step])
-		for sample in range(33):
-			_emit_packet(float(CAMERA_X[zone]), false, false)
-			screen.call("_process", 0.1)
-		_check(int(screen.get("live_step")) == step + 1,
-			"%s completes exactly one real stationary 3-second hold" % zone)
-		var points: Dictionary = screen.get("measured_points")
-		_check(points.has(zone.to_lower()),
-			"%s measurement stored independently" % zone)
-		if points.has(zone.to_lower()):
-			_check(absf(float(points[zone.to_lower()]) - float(CAMERA_X[zone])) < 0.035,
-				"%s measured from student packets, without fabricated bounds" % zone)
-		if step < order.size() - 1:
-			_check(not bool((service.calibration as Dictionary).get("valid", false)),
-				"partial calibration cannot satisfy a game-ready state")
-	var values: Dictionary = service.calibration.duplicate(true)
-	_check(bool(values.get("valid", false)) and not bool(values.get("center_only", false)),
-		"all three independently sampled zones establish full calibration")
-	_check(float(values.get("left", 99.0)) < float(values.get("center", -1.0))
-		and float(values.get("center", 99.0)) < float(values.get("right", -1.0)),
-		"calibration preserves physically ordered LEFT < CENTER < RIGHT")
-	_check(is_equal_approx(float(values.get("left", -1.0)), 0.2)
-		and is_equal_approx(float(values.get("center", -1.0)), 0.5)
-		and is_equal_approx(float(values.get("right", -1.0)), 0.8),
-		"calibration retains original left/center/right measurements")
-	_emit_packet(0.5, false, true)
+	_check(routes.is_empty(), "No gameplay before a verified neutral hand-pose hold")
+	_check(screen.call("_capture_order") == ["CENTER"], "Human Plane measures neutral only")
+	# One visible hand can steer after calibration, but cannot establish the
+	# starting neutral. This packet must not contribute to the eight frames.
+	_set_pose(NEUTRAL, STUDENT_ID, true, false)
+	pose.call("_record_fresh_calibration_pose", pose.get("current_status"), sample_when)
+	sample_when += 0.45
+	screen.call("_process", 0.45)
+	_check((screen.get("live_samples") as Array).is_empty(),
+		"one-wrist center sample never contributes to enrollment")
+	for packet in range(8):
+		_set_pose(NEUTRAL + 0.001 * float(packet % 3 - 1), STUDENT_ID, true, true)
+		var state: Dictionary = pose.get("current_status")
+		pose.call("_record_fresh_calibration_pose", state, sample_when)
+		sample_when += 0.45
+		screen.call("_process", 0.45)
+	_check(int(screen.get("live_step")) == 1,
+		"Eight distinct source packets over >=2.5s complete the ONLY neutral hold")
+	_check((screen.get("measured_points") as Dictionary).has("center") and
+		(screen.get("measured_points") as Dictionary).has("neutral_noise") and
+		not (screen.get("measured_points") as Dictionary).has("left"),
+		"Only neutral arm/torso pose is measured; no left/right samples invented")
+	_check(bool(pose.plane_calibration.get("valid", false)) and
+		int(pose.plane_calibration.get("locked_id", -1)) == STUDENT_ID,
+		"Only the original locked student's stationary calibration is valid")
+	if not bool(pose.plane_calibration.get("valid", false)):
+		# Subsequent checks must never dereference absent center keys or schedule
+		# gameplay transitions from an incomplete calibration.
+		screen.queue_free()
+		await process_frame
+		return {}
+	_check(absf(float(pose.plane_calibration.get("camera_center_x", -1.0)) - CAMERA_X) < 0.01,
+		"Camera floor x stays constant during the neutral hand-pose hold")
+	_check(absf(float(pose.plane_calibration.get("center", -1.0)) - CAMERA_X) < 0.01,
+		"Actual mirrored torso X provides the neutral position")
+	_check(bool(pose.plane_calibration.get("neutral_only", false)),
+		"Real PoseService calibration explicitly records single-neutral mode")
+	_set_pose(NEUTRAL, STUDENT_ID, true, false)
 	screen.call("_continue_flow", false)
 	_check(routes.size() == 1 and String(routes[0].get("route", "")) == "gameplay",
-		"three-zone success routes once into gameplay")
-	var payload: Dictionary = routes[0]["payload"] if routes.size() == 1 else {}
-	_check(bool(payload.get("camera_live", false)) and bool(payload.get("calibration_measured", false))
-		and not bool(payload.get("calibration_center_only", true)),
-		"handoff declares genuinely measured live three-zone input")
-	_check(payload.get("start_countdown", false) == true
-		and payload.has("calibration_left") and payload.has("calibration_center")
-		and payload.has("calibration_right"),
-		"handoff preserves measured bounds and shared countdown route")
+		"Only completed real stationary calibration routes into gameplay")
+	var payload: Dictionary = routes[0]["data"] if routes.size() == 1 else {}
+	_check(bool(payload.get("calibration_stationary", false)) and
+			String(payload.get("plane_steering_mode", "")) == "centered_torso_x_one_wrist" and
+		bool(payload.get("calibration_neutral_only", false)) and
+		not bool(payload.get("keyboard_mode", true)),
+		"Gameplay is explicitly calibrated to neutral-centered torso movement")
 	screen.queue_free()
 	await process_frame
 	await process_frame
-	_check(service.active, "successful calibration retains live camera ownership for gameplay")
 	return payload
 
 
-func _test_bridge(base_payload: Dictionary, mode: String, resolution: Vector2i) -> void:
-	root.size = resolution
-	service.active = true
-	service.session_token = TOKEN
-	_emit_packet(0.5, false, false)
+func _test_live_wrapper(payload: Dictionary, mode: String, dimensions: Vector2i) -> void:
+	root.size = dimensions
+	root.content_scale_size = dimensions
 	var packed := load(GAMEPLAY_SCENE) as PackedScene
-	_check(packed != null, "gameplay wrapper loads at %s" % mode)
+	_check(packed != null, "Gameplay wrapper is loadable")
 	if packed == null:
 		return
 	var wrapper := packed.instantiate() as Control
 	root.add_child(wrapper)
 	wrapper.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var data := base_payload.duplicate(true)
-	data["game_mode"] = mode
-	data["start_countdown"] = false # Isolate real-time pose bridge from visual countdown.
-	data["guided_tutorial"] = false
-	data["activity"] = "Human Plane"
-	wrapper.set_context(data)
+	var settings := payload.duplicate(true)
+	settings["game_mode"] = mode
+	settings["start_countdown"] = false
+	settings["guided_tutorial"] = false
+	settings["camera_live"] = true
+	settings["activity"] = "Human Plane"
+	wrapper.set_context(settings)
 	await process_frame
 	await process_frame
 	wrapper.set_process(false)
-	var plane := wrapper.get("active_game") as Control
-	_check(is_instance_valid(plane), "wrapper mounts actual Human Plane for %s" % mode)
-	if not is_instance_valid(plane):
+	var game := wrapper.get("active_game") as Control
+	_check(game != null, "Real Human Plane appears inside live gameplay wrapper")
+	if game == null:
 		wrapper.queue_free()
 		await process_frame
 		return
-	plane.set_process(false)
-	var id := "%s/%dx%d" % [mode, resolution.x, resolution.y]
-	var left_marker := plane.get_node("FlightPaths/PlaneLeftLimit") as Control
-	var right_marker := plane.get_node("FlightPaths/PlaneRightLimit") as Control
-	var left_x: float = left_marker.get_rect().get_center().x + float(plane.get("_plane_authored_offset_x"))
-	var right_x: float = right_marker.get_rect().get_center().x + float(plane.get("_plane_authored_offset_x"))
-	_check(left_x < right_x and plane.has_method("set_body_x"), id + " editable flight limits and body X API")
-	_check(int(plane.get("lives")) == 3, id + " initializes exactly three hearts")
-	_check(float(plane.get("time_remaining")) > 59.0 if mode == "Seconds"
-		else is_zero_approx(float(plane.get("time_remaining"))), id + " correct Seconds/Lives timer")
-	_check(plane.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") is Label
-		and plane.get_node_or_null("HUDLayer/HUD/TimeLabel") is Label
-		and plane.get_node_or_null("HUDLayer/HUD/PauseButton") is Button,
-		id + " HUD retains score, timer and pause authored nodes")
-	var options: Array = (plane.get("round_data") as Dictionary).get("options", [])
-	_check(options.size() == 3 and plane.get_node_or_null("UpcomingGates/GateLeft") != null,
-		id + " continuous authored gate trios survive pose bridge")
-
-	# Isolate body movement from gate scoring: the wrapper and plane are both
-	# manually stepped, with no real camera, timers or automatic scene input.
-	_drive_pose(wrapper, plane, 0.5, false, 0.8, 10)
-	_check(not bool(plane.get("airplane_pose_active")), id + " arms down initially deny flight")
-	var resting_x := float(plane.get("plane_x_norm"))
-	_drive_pose(wrapper, plane, 0.8, false, -1.0, 28)
-	_check(absf(float(plane.get("plane_x_norm")) - resting_x) < 0.001,
-		id + " moving RIGHT with lowered arms freezes plane at actual position")
-	_drive_pose(wrapper, plane, 0.5, true, -1.0, 30)
-	var center_x: float = float(plane.get("plane_x_norm"))
-	_check(bool(plane.get("airplane_pose_active")) and absf(center_x - 0.5) < 0.10,
-		id + " arms raised and CENTER pose steer to neutral")
-	_check(absf(service.normalized_body_x()) < 0.015, id + " measured CENTER maps to normalized zero")
-	# Different roll signs on the same body coordinates must never steer.
-	_drive_pose(wrapper, plane, 0.5, true, 1.0, 18)
-	var after_positive_roll := float(plane.get("plane_x_norm"))
-	_drive_pose(wrapper, plane, 0.5, true, -1.0, 18)
-	_check(absf(float(plane.get("plane_x_norm")) - after_positive_roll) < 0.05,
-		id + " changing wing roll alone cannot steer the plane (no gyro)")
-	var before_right := float(plane.get("plane_x_norm"))
-	_drive_pose(wrapper, plane, 0.8, true, -1.0, 36)
-	var right_position := float(plane.get("plane_x_norm"))
-	_check(bool(plane.get("airplane_pose_active")) and right_position > 0.75
-		and right_position > before_right + 0.25, id + " raised arms + body RIGHT traverse authored path")
-	_check(service.normalized_body_x() > 0.98, id + " measured RIGHT maps to +1")
-	_check(_within_flight_limits(plane, left_x, right_x), id + " RIGHT flight stays within editor limits")
-	# Inverting roll while standing RIGHT must not send the airplane left.
-	_drive_pose(wrapper, plane, 0.8, true, 1.0, 12)
-	_check(float(plane.get("plane_x_norm")) >= right_position - 0.02,
-		id + " positive wing roll cannot reverse rightward body command")
-	_drive_pose(wrapper, plane, 0.2, true, 1.0, 48)
-	var left_position := float(plane.get("plane_x_norm"))
-	_check(left_position < 0.25 and left_position < right_position - 0.45,
-		id + " raised arms + body LEFT traverse authored path regardless of roll")
-	_check(service.normalized_body_x() < -0.98, id + " measured LEFT maps to -1")
-	_check(_within_flight_limits(plane, left_x, right_x), id + " LEFT flight stays within editor limits")
-	# Freeze on deliberately lowering hands even when the person walks.
-	_drive_pose(wrapper, plane, 0.8, false, -1.0, 30)
-	var frozen := float(plane.get("plane_x_norm"))
-	_check(absf(frozen - left_position) < 0.001 and not bool(plane.get("airplane_pose_active")),
-		id + " lowered arms preserve exact plane position despite walking")
-	_drive_pose(wrapper, plane, 0.8, true, -1.0, 1)
-	var resumed_x := float(plane.get("plane_x_norm"))
-	_check(absf(resumed_x - frozen) < 0.15, id + " raising arms again never teleports across lanes")
-	_drive_pose(wrapper, plane, 0.8, true, -1.0, 40)
-	_check(float(plane.get("plane_x_norm")) > frozen + 0.35,
-		id + " re-raised wide arms immediately restore body-controlled flight")
-	# A stale gesture must freeze while a less strict torso pose remains valid.
-	service.last_pose_ms = Time.get_ticks_msec() - (int(service.GESTURE_STALE_MS) + 50)
-	_check(service.has_valid_pose() and not service.has_airplane_pose(),
-		id + " freshness guard separates torso lock from stale wide-arm signal")
-	wrapper.call("_process", FIXED_FRAME)
-	var stale_x := float(plane.get("plane_x_norm"))
-	plane.call("_update_plane_motion", 0.3)
-	_check(absf(float(plane.get("plane_x_norm")) - stale_x) < 0.001
-		and not bool(plane.get("airplane_pose_active")),
-		id + " stale raised-arm packet cannot keep plane steering")
-	# A true lost-lock packet suspends game after grace period.
-	_emit_packet(-1.0, true, true, 1.0, false)
-	wrapper.call("_process", 0.30)
-	wrapper.call("_process", 0.40)
-	_check(bool(wrapper.get("tracking_suspended")) and plane.process_mode == Node.PROCESS_MODE_DISABLED,
-		id + " lost student pauses entire game after tracking grace")
-	_check(bool(wrapper.tracking_notice.visible), id + " lost tracking displays guidance")
-	var lost_x := float(plane.get("plane_x_norm"))
-	_check(absf(lost_x - stale_x) < 0.001, id + " occlusion keeps prior plane position")
-	_emit_packet(0.5, true, true, 1.0)
-	wrapper.call("_process", FIXED_FRAME)
-	_check(not bool(wrapper.get("tracking_suspended")) and plane.process_mode == Node.PROCESS_MODE_INHERIT,
-		id + " reacquired pose resumes same minigame without restart")
-	_check(bool(plane.get("airplane_pose_active")), id + " reacquired wide arms re-enable steering")
-	_drive_pose(wrapper, plane, 0.2, true, 1.0, 35)
-	_check(float(plane.get("plane_x_norm")) < lost_x - 0.15,
-		id + " reacquisition accepts newly observed LEFT position")
-	# Confirm the existing gate and HUD contracts after all synthetic steering.
-	_check(int(plane.get("attempts")) == 0 and int(plane.get("correct_count")) == 0
-		and (plane.get("round_data") as Dictionary).get("options", []) == options,
-		id + " body bridge cannot accidentally score or regenerate word gates")
-	_check(int(plane.get("lives")) == 3 and
-		(plane.get_node("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label).text == "0",
-		id + " pose motion does not alter hearts or HUD score")
-	var before_progress := float(plane.get("gate_progress"))
-	plane.call("_update_gate_wave", 0.06)
-	plane.call("_sync_visuals")
-	_check(float(plane.get("gate_progress")) > before_progress, id + " continuous gate flight remains active after reacquire")
-	wrapper.preserve_camera_for_restart()
+	game.set_process(false)
+	var label := "%s/%s" % [mode, dimensions]
+	_check(int(game.get("lives")) == 3, label + " retains three lives")
+	_check(float(game.get("time_remaining")) > 59.0 if mode == "Seconds" else
+		is_zero_approx(float(game.get("time_remaining"))), label + " timer mode remains correct")
+	_check(bool(game.get("airplane_pose_active")) and
+		bool(pose.call("has_stationary_plane_pose")),
+		label + " active game accepts only the same newly verified student steering")
+	var original_score := int(game.get("score"))
+	await _drive(wrapper, game, NEUTRAL, STUDENT_ID, true, 45)
+	_check(absf(float(game.get("plane_x_norm")) - 0.5) < 0.08,
+		label + " centered torso holds the airplane in the middle")
+	await _drive(wrapper, game, 0.72, STUDENT_ID, true, 70)
+	var right_x := float(game.get("plane_x_norm"))
+	_check(right_x > 0.85, label + " RIGHT torso movement steers with only one wrist")
+	await _drive(wrapper, game, 0.28, STUDENT_ID, true, 90)
+	var left_x := float(game.get("plane_x_norm"))
+	_check(left_x < 0.15 and left_x < right_x - 0.5,
+		label + " LEFT torso movement crosses flight path without gyro")
+	await _drive(wrapper, game, NEUTRAL, STUDENT_ID, true, 60)
+	_check(absf(float(game.get("plane_x_norm")) - 0.5) < 0.08,
+		label + " student returns to CENTER with one visible wrist")
+	await _drive(wrapper, game, NEUTRAL, STUDENT_ID, true, 5, true)
+	_check(absf(float(game.get("plane_x_norm")) - 0.5) < 0.08,
+		label + " changing from one to two visible wrists does not jump")
+	var resting := float(game.get("plane_x_norm"))
+	await _drive(wrapper, game, 0.72, STUDENT_ID + 1, true, 12)
+	_check(not bool(game.get("airplane_pose_active")) and
+		absf(float(game.get("plane_x_norm")) - resting) < 0.001,
+		label + " other tracked student cannot command the airplane")
+	await _drive(wrapper, game, 0.28, STUDENT_ID, false, 12)
+	_check(not bool(game.get("airplane_pose_active")) and
+		absf(float(game.get("plane_x_norm")) - resting) < 0.001,
+		label + " occluded/unreliable joints freeze the current steering position")
+	await _drive(wrapper, game, 0.28, STUDENT_ID, true, 65)
+	_check(float(game.get("plane_x_norm")) < resting - 0.25,
+		label + " fresh same-student lock resumes leftward input smoothly")
+	_check(int(game.get("score")) == original_score and int(game.get("attempts")) == 0,
+		label + " steering cannot award points before actual ring crossing")
+	_check(game.has_method("_lane_hit_at_answer_line") and
+		game.get_node_or_null("WorldView3D/Viewport3D/FlightWorld/CloudFlight/CloudProps") != null,
+		label + " 3D cloud renderer and authoritative collision resolver both remain live")
+	wrapper.call("preserve_camera_for_restart")
 	wrapper.queue_free()
 	await process_frame
 	await process_frame
-	_check(service.active, id + " test wrapper cleanup keeps shared synthetic camera for next case")
+	pose.set("active", true)
 
 
-func _drive_pose(wrapper: Control, game: Control, x: float, arms_open: bool,
-		roll: float, frames: int) -> void:
-	for index in range(frames):
-		_emit_packet(x, arms_open, arms_open, roll)
-		wrapper.call("_process", FIXED_FRAME)
-		game.call("_update_plane_motion", FIXED_FRAME)
+func _drive(wrapper: Control, game: Control, value: float, student: int,
+		valid: bool, frames: int, both_wrists: bool = false) -> void:
+	for frame in range(frames):
+		_set_pose(value, student, valid, both_wrists)
+		wrapper.call("_process", DT)
+		game.call("_update_plane_motion", DT)
 		game.call("_sync_visuals")
 
 
-func _emit_packet(x: float, has_pose: bool, wide_arms: bool,
-		roll: float = 0.0, pose_valid: bool = true) -> void:
-	var valid := pose_valid and x >= 0.0 and x <= 1.0
-	if valid:
-		# Exercise the packet parser with deterministic measured coordinates,
-		# without testing variable-rate inference smoothing a second time.
-		service.set("_smoothed_x", x)
-	service._apply_pose_packet({
-		"kind": "pose", "token": TOKEN, "state": "tracking",
-		"pose": valid, "x": x if valid else -1.0,
-		"lock_state": "locked" if valid else "occluded",
-		"hand_up": has_pose, "airplane_pose": wide_arms,
-		"wing_roll": roll
-	}, Time.get_ticks_msec())
+func _set_pose(value: float, student: int, valid: bool = true,
+		both_wrists: bool = false) -> void:
+	pose.set("active", true)
+	var source := {"kind": "pose", "token": SESSION_TOKEN, "state": "tracking",
+		"pose": valid, "x": value, "lock_state": "locked" if valid else "occluded",
+		"locked_id": student, "plane_steering_valid": valid,
+		"plane_neutral_valid": valid and both_wrists,
+		"plane_steering": value}
+	pose.call("_apply_pose_packet", source, Time.get_ticks_msec())
 
 
-func _within_flight_limits(game: Control, left: float, right: float) -> bool:
-	var center: float = float(game.call("_plane_center_x"))
-	return center >= left - 1.0 and center <= right + 1.0
-
-
-func _check(ok: bool, description: String) -> void:
+func _check(ok: bool, message: String) -> void:
 	checks += 1
 	if not ok:
-		failures.append(description)
-		printerr("FAIL body/pose integration: ", description)
+		failures.append(message)
+		printerr("STATIONARY BODY BRIDGE FAIL: ", message)
 
 
 func _finish() -> void:
-	print("%s Human Plane 3-zone body integration: %d checks, %d failures" %
-		["PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
+	if finished:
+		return
+	finished = true
+	if is_instance_valid(pose):
+		pose.stop_camera()
+		pose.set_process(true)
+	print("HUMAN PLANE STATIONARY WRAPPER INTEGRATION: %s checks=%d failures=%d" % [
+		"PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
 	quit(0 if failures.is_empty() else 1)

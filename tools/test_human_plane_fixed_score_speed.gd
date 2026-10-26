@@ -82,7 +82,7 @@ func _check_game(mode: String, difficulty: String) -> void:
 			label + " repeated collision cannot grant points twice")
 		game.call("_start_wave")
 
-	# Existing wrong and missed gate penalties, hearts and streak reset stay intact.
+	# Mistakes cost no points; existing lives/streak rules remain intact.
 	var invalid := -1
 	var valid: Array = (game.get("round_data") as Dictionary).get("valid_indices", [])
 	for lane in range(3):
@@ -95,7 +95,7 @@ func _check_game(mode: String, difficulty: String) -> void:
 		_check(int(game.call("_lane_hit_at_answer_line")) == invalid, label + " collides with wrong gate")
 		var before_wrong := int(game.get("score"))
 		game.call("_resolve_at_answer_line")
-		_check(int(game.get("score")) == maxi(before_wrong - 40, 0), label + " wrong gate retains -40 penalty")
+		_check(int(game.get("score")) == before_wrong, label + " wrong gate never subtracts points")
 		_check(int(game.get("lives")) == 2 and int(game.get("streak")) == 0,
 			label + " wrong gate loses one life and breaks streak")
 		game.call("_start_wave")
@@ -103,16 +103,16 @@ func _check_game(mode: String, difficulty: String) -> void:
 		_check(int(game.call("_lane_hit_at_answer_line")) == -1, label + " offscreen plane misses all gates")
 		var before_miss := int(game.get("score"))
 		game.call("_resolve_at_answer_line")
-		_check(int(game.get("score")) == maxi(before_miss - 20, 0), label + " miss retains -20 penalty")
+		_check(int(game.get("score")) == before_miss, label + " missed gate never subtracts points")
 		_check(int(game.get("lives")) == 1, label + " miss loses exactly one life")
 		game.call("_start_wave")
 		valid = (game.get("round_data") as Dictionary).get("valid_indices", [])
 		if not valid.is_empty():
 			_place_at_lane(game, int(valid[0]))
-			var after_penalty := int(game.get("score"))
+			var after_mistake := int(game.get("score"))
 			game.call("_resolve_at_answer_line")
-			_check(int(game.get("score")) == after_penalty + CORRECT_POINTS,
-				label + " correct gate after penalty still grants +100")
+			_check(int(game.get("score")) == after_mistake + CORRECT_POINTS,
+				label + " correct gate after mistake still grants +100")
 			_check(int(game.get("lives")) == 1, label + " correct gate does not restore or deduct lives")
 	game.queue_free()
 	await process_frame

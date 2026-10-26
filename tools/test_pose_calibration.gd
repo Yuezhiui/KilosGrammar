@@ -40,9 +40,10 @@ func _run() -> void:
 	if calib_scene != null:
 		var calib := calib_scene.instantiate() as Control
 		root.add_child(calib)
-		_check((calib.get("continue_button") as Button).disabled, "Calibration starts locked")
-		var marker := calib.get("guide_cursor") as Control
-		_check(is_instance_valid(marker), "Moving player marker exists")
+		_check(calib.get_node_or_null("TutorialStage/ContinueButton") == null,
+			"Calibration auto-advances without an obsolete Continue button")
+		var center_guide := calib.get_node_or_null("TutorialStage/CenterCalibrationLane") as Control
+		_check(is_instance_valid(center_guide), "Editor-authored center standing guide exists")
 		# New full-screen tutorial displays an introductory card before capture.
 		# Advance time without opening the physical webcam or waiting in real time.
 		calib.call("_process", 2.6)
@@ -54,8 +55,9 @@ func _run() -> void:
 				service.last_pose_ms = Time.get_ticks_msec()
 				calib.call("_process", 0.4)
 		_check(bool(service.calibration.get("valid", false)), "3s Center-Right-Left creates calibration")
-		var next_button := calib.get("continue_button") as Button
-		_check(is_instance_valid(next_button) and not next_button.disabled, "Continue unlocked after all zones")
+		_check(calib.get_node_or_null("TutorialStage/ContinueButton") == null
+			and bool(calib.get("transition_queued")),
+			"Valid three-zone measurement schedules automatic gameplay transition")
 		calib.free()
 
 	service.stop_camera()

@@ -101,7 +101,7 @@ mouse_filter = 2
 color = Color(1, 1, 1, 1)
 
 [node name="FocusRegions" type="Control" parent="Overlay"]
-visible = false
+editor_description = "DRAG-AND-DROP HIGHLIGHT POSITIONS: Expand CatchWord / BalloonPopping / HumanPlane, then move/resize each Prompt, PlayArea, Seconds, Lives, Score or Pause rectangle. These are invisible guides in gameplay; they determine the tutorial spotlight holes."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -279,6 +279,7 @@ offset_bottom = 77
 mouse_filter = 2
 
 [node name="GuideArrows" type="Control" parent="Overlay"]
+editor_description = "DRAG-AND-DROP TUTORIAL ARROWS: Each child is an independent TextureRect (e.g. CatchWordPromptArrow, ModeArrow, ScoreArrow, CatchWordPlayArrow). Toggle Visible in the editor to position; runtime chooses one for the current step."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -390,6 +391,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="CaptionCard" type="Panel" parent="Overlay"]
+editor_description = "DRAG-AND-DROP TUTORIAL CAPTION CARD. This panel, its StepCounter/Header/Caption and Back/Replay/Skip/Next buttons are independently editable in the 2D editor."
 layout_mode = 0
 offset_left = 540.0
 offset_top = 138.0
@@ -515,6 +517,7 @@ theme_override_styles/pressed = SubResource("StyleBox_green")
 text = "NEXT  →"
 
 [node name="MovementFeedbackPanel" type="Panel" parent="Overlay"]
+editor_description = "DRAG-AND-DROP BODY MOVEMENT PRACTICE. Move/resize this separate tutorial feedback panel and its two labels in Godot 2D. Runtime only changes messages/visibility."
 visible = false
 layout_mode = 0
 offset_left = 985.0

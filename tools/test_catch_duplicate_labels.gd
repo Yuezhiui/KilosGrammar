@@ -14,7 +14,10 @@ const FONT_PATH := "res://assets/fonts/TitanOne-Regular.ttf"
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const MODES := ["Seconds", "Lives"]
 const SIZES := [Vector2i(1280, 720), Vector2i(875, 500)]
-const HIDDEN_HEADING_NODES := ["TitleLabel", "TitleTheLabel", "TitleWordLabel", "ScoreLabel"]
+const REMOVED_UNUSED_NODES := [
+	"TitleLabel", "TitleTheLabel", "TitleWordLabel", "ScoreLabel",
+	"LivesLabel", "StreakLabel", "FooterLabel", "FinishButton"
+]
 const STATIC_LIVES_PNGS := {
 	1: PNG_DIR + "replacement/lives_state_1.png",
 	2: PNG_DIR + "replacement/lives_state_2.png",
@@ -180,10 +183,10 @@ func _assert_headings(hud: Control, numeric: Label, context: String) -> void:
 	_check(visible_headings == 0 and visible_scores == 0,
 		"%s: no duplicated CATCH/THE/WORD/SCORE text nodes (visible %s)" %
 		[context, visible_texts])
-	for node_name in HIDDEN_HEADING_NODES:
-		var node := hud.get_node_or_null(node_name) as Label
-		_check(node != null and not node.is_visible_in_tree(),
-			"%s: %s label exists but stays hidden over baked text" % [context, node_name])
+	for node_name in REMOVED_UNUSED_NODES:
+		var node := hud.get_node_or_null(node_name)
+		_check(node == null,
+			"%s: deprecated Catch UI node %s was removed from the scene" % [context, node_name])
 	var extra_score_titles := 0
 	var visible_score_titles := 0
 	var score_container := numeric.get_parent() if numeric != null else null

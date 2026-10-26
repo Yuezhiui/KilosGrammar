@@ -30,7 +30,7 @@ const STATIC_LIVES := {
 	2: GENERATED_HUD_DIR + "replacement/lives_state_2.png",
 	3: GENERATED_HUD_DIR + "replacement/lives_state_3.png",
 }
-const FALLING_APPLE := GENERATED_HUD_DIR + "character/word_apple.png"
+const FALLING_APPLE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
 const CAUGHT_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
 const CHARACTERS: Array[String] = ["Boy", "Girl", "Grandma", "Grandpa"]
 const MAPS: Array[String] = ["City", "Forest", "Mountain"]

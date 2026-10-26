@@ -11,12 +11,12 @@ const SOURCE_BACKGROUND := "C:/Users/Yue/Downloads/CALIB/BACKGROUND.png"
 const BACKGROUND_BASENAME := "BACKGROUND.png"
 const STAGES := ["CenterCalibrationLane", "RightCalibrationLane", "LeftCalibrationLane"]
 const REQUIRED_PARTS := [
-	"CameraBlackBacking", "LiveCameraInset", "CalibrationGuideBar", "CalibrationGuideCursor",
+	"CameraBlackBacking", "LiveCameraInset",
 	"LeftCalibrationLane", "CenterCalibrationLane", "RightCalibrationLane",
-	"InstructionLabel", "InstructionEN", "InstructionFIL", "CountdownLabel",
+	"InstructionLabel", "InstructionFIL", "CountdownLabel",
 	"StepBadge", "ProgressLabel", "StageHeading", "CameraStatusLabel",
 	"CameraUnavailableLabel", "IntroOverlay", "IntroOverlay/IntroCountdown",
-	"BackButton", "ContinueButton"
+	"BackButton"
 ]
 var failures: Array[String] = []
 var checks := 0
@@ -110,10 +110,11 @@ func _run() -> void:
 							and stroke.shadow_size >= 4 and stroke.shadow_color.a > 0.5,
 							"%s has a clearly authored glowing border" % lane_name)
 			var back := stage.get_node_or_null("BackButton") as Button
-			_expect(back != null and back.text.to_upper().contains("MAIN"),
-				"Back button explicitly returns to Main")
+			_expect(back != null and back.accessibility_name == "Back to Choose Activity"
+				and (back.get_node_or_null("Artwork") as TextureRect).texture.resource_path == "res://Components/Gameplay/Calibration/BACK.png",
+					"Back button explicitly returns to Choose Activity using the updated calibration BACK.png")
 			if back != null:
-				_expect(back.focus_mode == Control.FOCUS_ALL, "Back to Main supports keyboard navigation")
+					_expect(back.focus_mode == Control.FOCUS_ALL, "Back to Choose Activity supports keyboard navigation")
 			for removed in ["SkipButton", "RetryButton", "DemoButton", "KeyboardButton"]:
 				_expect(stage.get_node_or_null(removed) == null,
 					"deleted control cannot be edited or clicked: " + removed)
@@ -138,7 +139,7 @@ func _run() -> void:
 					and dimmer.color.a >= 0.0 and dimmer.color.a <= 0.15,
 					"bright CALIB background uses pure-black dim at no more than 15% opacity")
 			_check_intro_only(stage, viewport_size)
-			for heading_path in ["Heading", "StageHeading", "InstructionEN", "InstructionFIL",
+			for heading_path in ["Heading", "StageHeading", "InstructionFIL",
 				"CountdownLabel", "IntroOverlay/IntroHeading"]:
 				var title := stage.get_node_or_null(heading_path) as Label
 				_expect(title != null and title.owner == screen and _uses_gochi(title),
@@ -148,8 +149,8 @@ func _run() -> void:
 			var intro := stage.get_node_or_null("IntroOverlay") as Control
 			_expect(intro != null and not intro.visible, "intro disappears after 2.5 seconds")
 			_check_restored_footer(stage)
-			_expect(_only_zone_visible(stage, "CenterCalibrationLane"),
-				"only CENTER standing guide is visible when camera is unavailable")
+			_expect(_only_zone_visible(stage, "ArtGuideCenter"),
+				"only the CENTER PARAMETERS.png artwork appears when camera is unavailable")
 			var unavailable := stage.get_node_or_null("CameraUnavailableLabel") as Label
 			_expect(unavailable != null and unavailable.visible, "offline camera has a clear textual fallback")
 		var runtime_controls: Array[String] = []
@@ -182,7 +183,11 @@ func _uses_gochi(label: Label) -> bool:
 
 func _only_zone_visible(stage: Control, expected: String) -> bool:
 	var shown := 0
-	for path in STAGES:
+	for old_path in STAGES:
+		var old_panel := stage.get_node_or_null(old_path) as Control
+		if old_panel == null or old_panel.visible:
+			return false
+	for path in ["ArtGuideCenter", "ArtGuideRight", "ArtGuideLeft"]:
 		var zone := stage.get_node_or_null(path) as Control
 		if zone != null and zone.visible:
 			shown += 1
@@ -213,11 +218,11 @@ func _check_intro_only(stage: Control, viewport: Vector2i) -> void:
 		and heading.text.strip_edges().to_upper() == "CALIBRATION",
 		"intro shows only the large CALIBRATION title")
 	_expect(back != null and back.visible and back.is_visible_in_tree()
-		and back.text.to_upper().contains("MAIN") and not back.disabled,
-		"intro Back to Main remains visible and enabled")
+		and back.accessibility_name == "Back to Choose Activity" and not back.disabled,
+		"intro Back to Choose Activity remains visible and enabled")
 	if back != null:
 		_expect(back.focus_mode == Control.FOCUS_ALL,
-			"intro Back to Main is keyboard-focusable")
+			"intro Back to Choose Activity is keyboard-focusable")
 	for child in intro.get_children():
 		if child is Control and child != heading and child != back:
 			_expect(not (child as Control).visible,
@@ -233,14 +238,16 @@ func _check_restored_footer(stage: Control) -> void:
 		var control := stage.get_node_or_null(path) as Control
 		_expect(control != null and control.visible and control.is_visible_in_tree(),
 			"after intro the authored stage/footer returns: %s" % path)
-	for path in ["ContinueButton", "InstructionEN", "Heading", "CalibrationGuideCursor",
-		"CalibrationGuideBar", "CountdownLabel", "LiveCameraInset"]:
+	for path in ["Heading", "CountdownLabel", "LiveCameraInset"]:
 		var hidden := stage.get_node_or_null(path) as Control
 		_expect(hidden != null and not hidden.visible,
 			"after intro unused/locked Control remains hidden: %s" % path)
+	for removed in ["InstructionEN", "ContinueButton", "CalibrationGuideBar", "CalibrationGuideCursor"]:
+		_expect(stage.get_node_or_null(removed) == null,
+			"removed duplicate/unused calibration editor control: %s" % removed)
 	var back := stage.get_node_or_null("BackButton") as Button
 	_expect(back != null and not back.disabled,
-		"after intro the teacher Back Main button alone is enabled")
+			"after intro the teacher Back Choose Activity button alone is enabled")
 
 
 func _expect(ok: bool, description: String) -> void:

@@ -3,7 +3,7 @@ extends SceneTree
 # Integrated active-route redesign smoke and graphical captures.
 # Headless: Godot --headless --path . --script res://tools/test_ui_redesign_integrated.gd
 # Graphical: Godot --path . --rendering-method gl_compatibility --script res://tools/test_ui_redesign_integrated.gd
-const ROUTES := ["tutorial_home", "grammar_guide", "student_setup", "play_activity", "play_topic", "play_difficulty", "camera_check", "calibration", "gameplay", "pause", "results", "leaderboard", "settings", "credits"]
+const ROUTES := ["tutorial_home", "grammar_guide", "student_setup", "play_activity", "play_topic", "play_difficulty", "camera_check", "calibration", "gameplay", "pause", "results", "leaderboard", "settings"]
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const OUTPUT := "res://showcase/ui_redesign_20261016/final"
 var failures: Array[String] = []

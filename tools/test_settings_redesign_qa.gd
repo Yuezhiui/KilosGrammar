@@ -1,7 +1,7 @@
 ﻿extends SceneTree
 const SETTINGS := preload("res://ui/secondary/settings.tscn")
 const PREFS := preload("res://ui/secondary/settings.gd")
-const OUT := "res://showcase/ui_redesign_m1"
+const OUT := "user://_qa_settings_audio_only"
 var failures: Array[String] = []
 func _initialize() -> void:
     call_deferred("_run")
@@ -33,17 +33,19 @@ func _run() -> void:
             DisplayServer.window_set_size(resolution)
             root.size = resolution
             root.content_scale_size = resolution
-            for tab in ["settings", "controls", "camera"]:
+            for tab in ["settings"]:
                 var scene := SETTINGS.instantiate() as Control
                 root.add_child(scene)
                 scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
                 await process_frame
-                scene.call("_switch_tab", tab)
+                scene.call("_show_audio_display")
                 await process_frame
                 await RenderingServer.frame_post_draw
-                var button := scene.get_node_or_null("SettingsTab") as Button
-                var tabs := scene.get_node_or_null("TabsRow")
-                _check(scene.get("_active_tab") == tab, "tab switching " + tab)
+                _check(scene.get("_active_tab") == tab
+                    and scene.find_child("SidebarPanel", true, false) == null
+                    and scene.find_child("ControlsPage", true, false) == null
+                    and scene.find_child("CameraPage", true, false) == null,
+                    "only authored Audio & Display is present")
                 var path := ProjectSettings.globalize_path(OUT.path_join("settings_%s_%dx%d.png" % [tab,resolution.x,resolution.y]))
                 _check(root.get_texture().get_image().save_png(path) == OK, "capture " + path)
                 print("CAPTURED ", path)

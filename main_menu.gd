@@ -190,7 +190,7 @@ func _ready() -> void:
 
 	_register_button($MainLayer/LeftMenu/Leaderboard, 0.015)
 	_register_button($MainLayer/LeftMenu/Settings, 0.013)
-	_register_button($MainLayer/LeftMenu/Credits, -0.012)
+	_register_button($MainLayer/LeftMenu/Credits, 0.013)
 
 	_register_button($MainLayer/CenterMenu/Tutorial, -0.026)
 	_register_button($MainLayer/CenterMenu/Play, 0.018)
@@ -585,6 +585,8 @@ func _on_main_navigation(route: String) -> void:
 
 func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 	# A fresh round must not inherit fake prototype points from an older demo.
+	var entered_from_tutorial := bool(session_state.get("guided_tutorial", false)) \
+		or String(session_state.get("entry_source", "")) == "tutorial"
 	var restarting_round := current_route == "pause" and route in ["restart", "ready"]
 	var fresh_round := route in ["retry", "play_again", "restart", "change_activity", "last_play"]
 	var ordinary_reentry := route in ["retry", "play_again", "last_play", "change_activity"] or (current_route in ["results", "pause"] and route in ["student_setup", "play_activity", "play_topic", "play_difficulty"])
@@ -601,7 +603,8 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 		# saved stats, question history and instance before routing to NEW play.
 		payload = _restart_setup_context(payload)
 		payload["start_countdown"] = true
-		payload["guided_tutorial"] = false
+		payload["guided_tutorial"] = entered_from_tutorial
+		payload["entry_source"] = "tutorial" if entered_from_tutorial else "play"
 		payload["round_completed"] = false
 		database_save_ticket += 1
 		if is_instance_valid(paused_game_panel):
@@ -623,7 +626,9 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 	# A teacher's Continue action registers a new student ID only if the
 	# local service is available. An existing ID cannot silently overwrite a
 	# registered student's name or grade/section. Offline play stays possible.
-	if current_route == "student_setup" and route in ["play_activity", "calibration"] and payload.has("student_id"):
+	if current_route == "student_setup" and route in ["play_activity", "calibration"] and payload.has("student_id") \
+			and not bool(session_state.get("guided_tutorial", false)) \
+			and String(session_state.get("entry_source", "")) != "tutorial":
 		if database_registration_pending:
 			return
 		if not database_registration_confirmed and database_online and is_instance_valid(database_client):
@@ -660,6 +665,17 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 		payload["start_countdown"] = true
 	if PoseService.active and route in ["student_setup", "play_activity", "play_topic", "play_difficulty", "results", "tutorial_home", "quit"]:
 		PoseService.stop_camera()
+	# The teacher has explicitly selected a camera game and is entering student
+	# setup: warm Python/YOLO/CUDA now, WITHOUT opening the webcam. This work
+	# overlaps the setup form rather than adding 5–10 seconds to calibration.
+	# Keep the already-warmed worker while selecting topic/difficulty or
+	# returning to the chooser: those are still the same camera-game setup.
+	# Stop it only when leaving that flow or cancelling the game.
+	if PoseService.is_model_prestarting() and route in ["tutorial_home", "quit"]:
+		PoseService.stop_camera()
+	if DisplayServer.get_name() != "headless" and route == "student_setup" and current_route == "play_activity" \
+			and String(payload.get("activity", "")) in ["Catch the Word", "Human Plane", "Balloon Popping"]:
+		PoseService.prewarm_camera_model()
 	if route == "last_play":
 		route = "student_setup"
 	if route == "retry" or route == "play_again":
@@ -676,9 +692,14 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 		session_state = {"entry_source": "tutorial", "guided_tutorial": true, "demo_mode": true}
 	for key in payload:
 		session_state[key] = payload[key]
-	if ordinary_reentry and not bool(payload.get("guided_retry", false)):
-		# Results and pause actions start ordinary Play sessions even when their
-		# previous game context contained a guided_tutorial flag.
+	if entered_from_tutorial and not (route == "tutorial_home" and current_route == "main"):
+		# A minigame/retry payload may contain stale values from Play. Never let
+		# those values upgrade a practice-only session to a savable session.
+		session_state["guided_tutorial"] = true
+		session_state["entry_source"] = "tutorial"
+	if ordinary_reentry and not entered_from_tutorial and not bool(payload.get("guided_retry", false)):
+		# Only actual Main Menu Play starts a savable student session. Retrying
+		# Tutorial from Pause or Results must NEVER silently become Play.
 		session_state.erase("guided_tutorial")
 		session_state["entry_source"] = "play"
 	if route == "student_setup":
@@ -695,6 +716,9 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 		for stat_key in ["score", "streak", "best_streak", "correct", "attempts", "total", "accuracy", "time_remaining", "lives", "misses", "round_completed", "completion_reason", "round_reason", "gameplay_implemented", "body_x", "catch_collected_words", "round_running"]:
 			session_state.erase(stat_key)
 	if route == "tutorial_home":
+		# Invalidate an outstanding Play save if the user moves into a fresh
+		# non-persistent tutorial. A delayed response may never relabel practice.
+		database_save_ticket += 1
 		session_state["entry_source"] = "tutorial"
 	elif route == "play_activity":
 		session_state["entry_source"] = "tutorial" if bool(session_state.get("guided_tutorial", false)) else "play"
@@ -704,7 +728,9 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 	# Saving is attempted only when a live minigame reports a *completed*
 	# round, never when a teacher opens Results from a paused/aborted round.
 	var completed_round := route == "results" and current_route == "gameplay" \
-		and bool(payload.get("round_completed", false)) and payload.has("score")
+		and bool(payload.get("round_completed", false)) and payload.has("score") \
+		and not bool(session_state.get("guided_tutorial", false)) \
+		and String(session_state.get("entry_source", "")) != "tutorial"
 	if completed_round:
 		session_state["score_saved"] = false
 		session_state["database_connected"] = database_online
@@ -734,7 +760,7 @@ func _restart_setup_context(snapshot: Dictionary) -> Dictionary:
 	for key in [
 		"student_id", "student_name", "grade_section", "activity", "topic",
 		"game_style", "game_mode", "difficulty", "catch_character", "catch_map",
-		"entry_source", "demo_mode", "database_connected", "camera_live",
+		"entry_source", "guided_tutorial", "demo_mode", "database_connected", "camera_live",
 		"camera_requested", "keyboard_mode", "calibration_valid",
 		"calibration_live", "calibration_measured", "calibration_left",
 		"calibration_center", "calibration_right", "from_calibration",
@@ -1047,6 +1073,11 @@ func _save_completed_round() -> void:
 	var state := session_state.duplicate(true)
 	state["score_saved"] = false
 	state["database_saving"] = false
+	if bool(state.get("guided_tutorial", false)) or String(state.get("entry_source", "")) == "tutorial":
+		session_state["score_saved"] = false
+		session_state["database_saving"] = false
+		active_panel.call("set_context", state)
+		return
 	if database_online and is_instance_valid(database_client) \
 		and not String(state.get("student_id", "")).strip_edges().is_empty():
 		state["database_saving"] = true
@@ -1259,6 +1290,9 @@ func _show_panel(route: String) -> void:
 	active_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if active_panel.has_signal("requested"):
 		active_panel.connect("requested", Callable(self, "_on_panel_requested"))
+	if route == "play_activity" and active_panel.has_signal("camera_model_prewarm_requested") \
+			and DisplayServer.get_name() != "headless":
+		active_panel.connect("camera_model_prewarm_requested", Callable(PoseService, "prewarm_camera_model"))
 	if active_panel.has_method("set_context"):
 		active_panel.call("set_context", session_state.duplicate(true))
 	if route == "student_setup":
@@ -1290,7 +1324,7 @@ func _show_panel(route: String) -> void:
 func _return_to_main() -> void:
 	database_registration_pending = false
 	database_pending_route.clear()
-	if PoseService.active:
+	if PoseService.active or PoseService.is_model_prestarting():
 		PoseService.stop_camera()
 	if is_instance_valid(catch_asset_preloader):
 		catch_asset_preloader.call("clear_selection")
@@ -1344,7 +1378,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				"play_topic": "play_activity",
 				"play_difficulty": "play_topic",
 				"camera_check": "play_activity" if bool(session_state.get("guided_tutorial", false)) else ("play_activity" if bool(session_state.get("setup_preview", false)) else "play_difficulty"),
-					"calibration": "student_setup" if bool(session_state.get("guided_tutorial", false)) else "play_activity",
+						"calibration": "play_activity",
 				"grammar_guide": "tutorial_home",
 				"ready": "calibration"
 				}

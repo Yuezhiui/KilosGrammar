@@ -15,7 +15,7 @@ const PLAQUES := {
 	"PausePlaque": "pause_badge.png",
 	"ScorePlaque": "score_board.png",
 }
-const FALLING_APPLE := DIR + "character/word_apple.png"
+const FALLING_APPLE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
 const CAUGHT_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
 const ORIGINAL_CHAR_DIR := "res://Components/Gameplay/Catch the Word/Characters/"
 const HEART_STATES := {

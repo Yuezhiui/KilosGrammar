@@ -9,7 +9,7 @@ const EXPECTED_ORDER := ["CENTER", "RIGHT", "LEFT"]
 const EXPECTED_HOLD := 3.0
 const EXPECTED_INTRO := 2.5
 const STAGE_ZONES := [
-	"CenterCalibrationLane", "RightCalibrationLane", "LeftCalibrationLane"
+	"ArtGuideCenter", "ArtGuideRight", "ArtGuideLeft"
 ]
 const ENGLISH := ["STAY IN THE CENTER", "MOVE TO THE RIGHT", "MOVE TO THE LEFT"]
 const FILIPINO := ["MANATILI SA GITNA", "GUMALAW SA KANAN", "GUMALAW SA KALIWA"]
@@ -61,11 +61,12 @@ func _check_intro_navigation() -> void:
 		routes.append(target))
 	_expect(intro != null and intro.is_visible_in_tree(), "intro covers HUD immediately after ready")
 	_expect(back != null and back.is_visible_in_tree() and not back.disabled,
-		"intro has one usable Back to Main action")
-	for path in ["BackButton", "ContinueButton"]:
+			"intro has one usable Back to Choose Activity action")
+	for path in ["BackButton"]:
 		var footer := stage.get_node_or_null(path) as Button if stage != null else null
 		_expect(footer != null and not footer.is_visible_in_tree(),
 			"intro prevents normal footer %s from receiving user input" % path)
+	_expect(stage.get_node_or_null("ContinueButton") == null, "Obsolete Continue footer absent")
 	for removed in ["SkipButton", "DemoButton", "RetryButton", "KeyboardButton"]:
 		_expect(stage.get_node_or_null(removed) == null,
 			"removed camera/keyboard action stays absent: " + removed)
@@ -75,7 +76,7 @@ func _check_intro_navigation() -> void:
 		"keyboard focus begins on the visible intro Back action")
 	if back != null:
 		back.pressed.emit()
-	_expect(routes == ["main"], "intro Back goes straight to Main without starting camera or gameplay")
+		_expect(routes == ["play_activity"], "intro Back goes to Choose Activity without starting camera or gameplay")
 	_expect(not bool(pose.get("active")), "intro navigation never starts webcam capture")
 	await _dispose(calibration)
 
@@ -139,13 +140,12 @@ func _check_no_camera() -> void:
 	var locked_continue := stage.get_node_or_null("ContinueButton") as Button if stage != null else null
 	var back_button := stage.get_node_or_null("BackButton") as Button if stage != null else null
 	_expect(back_button != null and back_button.visible and not back_button.disabled,
-		"after intro only Back Main is an operable footer action")
-	_expect(locked_continue != null and not locked_continue.visible and locked_continue.disabled,
-		"Continue never appears automatically after intro")
+		"after intro only Back Choose Activity is an operable footer action")
+	_expect(locked_continue == null, "Continue never appears automatically after intro")
 	await process_frame
 	await process_frame
 	_expect(back_button != null and root.gui_get_focus_owner() == back_button,
-		"keyboard focus transfers from intro Back to teacher Back Main")
+		"keyboard focus transfers from intro Back to teacher Back Choose Activity")
 	_check_active_zone(stage, 0, "offline, immediately after intro")
 	calibration.call("_process", 9.0)
 	_expect(int(calibration.get("live_step")) == 0, "camera-off cannot auto-complete calibration")
@@ -153,7 +153,7 @@ func _check_no_camera() -> void:
 	var hold_number := stage.get_node_or_null("CountdownLabel") as Label if stage != null else null
 	_expect(hold_number != null and not hold_number.visible,
 		"large 3/2/1 does not appear when there is no valid camera pose")
-	_expect((calibration.get("continue_button") as Button).disabled, "Continue is locked without measured poses")
+	_expect(stage.get_node_or_null("ContinueButton") == null, "No unmeasured Continue bypass is present")
 	var camera_note := stage.get_node_or_null("CameraUnavailableLabel") as Label if stage != null else null
 	_expect(camera_note != null and camera_note.visible, "explicitly visible no-camera fallback message")
 	calibration.call("_continue_flow", false)
@@ -161,11 +161,11 @@ func _check_no_camera() -> void:
 	calibration.call("_continue_flow", true)
 	_expect(requests.is_empty(), "deprecated skip parameter cannot bypass live calibration")
 	var back := stage.get_node_or_null("BackButton") as Button if stage != null else null
-	_expect(back != null and back.text.to_upper().contains("MAIN"), "Back button names Main destination")
+	_expect(back != null and back.accessibility_name == "Back to Choose Activity", "Back button names Choose Activity destination")
 	if back != null:
 		back.pressed.emit()
-	_expect(requests.size() == 1 and String(requests[0].get("target", "")) == "main",
-		"Back to Main leaves calibration without opening game")
+	_expect(requests.size() == 1 and String(requests[0].get("target", "")) == "play_activity",
+		"Back to Choose Activity leaves calibration without opening game")
 	await _dispose(calibration)
 
 
@@ -270,8 +270,8 @@ func _check_pose_hold(guided: bool) -> void:
 	_check_active_zone(stage, 3, "after calibration completion")
 	_expect(bool((pose.get("calibration") as Dictionary).get("valid", false)),
 		"stable LEFT/CENTER/RIGHT samples create real normalized bounds")
-	_expect(not (calibration.get("continue_button") as Button).disabled,
-		"Continue unlocks only after all measured zones pass validation")
+	_expect(stage.get_node_or_null("ContinueButton") == null and bool((pose.get("calibration") as Dictionary).get("valid", false)),
+		"Measured zones permit automatic flow without a redundant Continue button")
 	calibration.call("_continue_flow", false)
 	_expect(requests.size() == 1 and String(requests[0]["target"]) == "gameplay",
 		"completed calibration enters gameplay for %s" % ("guided" if guided else "normal Play"))
@@ -334,18 +334,21 @@ func _check_active_zone(stage: Control, index: int, context_label: String) -> vo
 		if zone.visible:
 			visible_count += 1
 		_expect(zone.visible == (i == index),
-			context_label + ": only the current standing guide is visible: " + STAGE_ZONES[i])
+			context_label + ": only current PARAMETERS.png guide is visible: " + STAGE_ZONES[i])
+		var old_panel := stage.get_node_or_null(["CenterCalibrationLane", "RightCalibrationLane", "LeftCalibrationLane"][i]) as Control
+		_expect(old_panel != null and not old_panel.visible,
+			context_label + ": obsolete green standing panel never overlays updated PNG")
 	_expect(visible_count == (0 if index >= STAGE_ZONES.size() else 1),
 		context_label + ": there is at most one visible glowing standing guide")
 	if index >= ENGLISH.size():
 		return
 	var heading := stage.get_node_or_null("StageHeading") as Label
-	var english := stage.get_node_or_null("InstructionEN") as Label
+	var english := stage.get_node_or_null("StageHeading") as Label
 	var filipino := stage.get_node_or_null("InstructionFIL") as Label
 	_expect(heading != null and heading.text.contains(EXPECTED_ORDER[index]),
 		context_label + ": stage heading identifies " + EXPECTED_ORDER[index])
 	_expect(english != null and english.text.to_upper().contains(ENGLISH[index]),
-		context_label + ": editor-authored English instruction matches active guide")
+		context_label + ": single authored English heading matches active guide")
 	_expect(filipino != null and filipino.text.to_upper().contains(FILIPINO[index]),
 		context_label + ": editor-authored Filipino instruction matches active guide")
 

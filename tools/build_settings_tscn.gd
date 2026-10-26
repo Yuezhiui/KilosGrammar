@@ -26,6 +26,12 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# RETIRED. The real Settings scene is now an editor-authored single
+	# Audio & Display page. Never regenerate it from the old three-tab
+	# builder, as that would undo the user's manually edited layout.
+	push_warning("Deprecated Settings generator disabled: edit ui/secondary/settings.tscn directly.")
+	quit(0)
+	return
 	_title_font = _load_title_font()
 	_slider_knob = _make_slider_knob()
 

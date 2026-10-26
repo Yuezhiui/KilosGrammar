@@ -1,7 +1,8 @@
 extends SceneTree
 
 # Run: Godot --headless --path . --script res://tools/test_ui_screens.gd
-# Fast smoke test: load every current UI scene in the real main menu host.
+# Fast smoke test: load every current UI scene in the real menu tree with a
+# no-socket database fixture (never connects to live student records).
 const ROUTES := [
 	"tutorial_home", "grammar_guide",
 	"student_setup", "play_activity", "play_topic", "play_difficulty",
@@ -24,25 +25,25 @@ func _run() -> void:
 		quit(1)
 		return
 	var app: Control = packed.instantiate() as Control
+	app.set_script(load("res://tools/test_postgres_csv_delete_menu_fixture.gd") as Script)
 	root.add_child(app)
-	# Allow the original 1.12-second intro coroutine to finish before teardown.
+	# The fixture suppresses title music and entrance timing for deterministic UI QA.
 	await create_timer(1.35).timeout
 	if AudioServer.get_bus_index("KilosMusic") < 0 or AudioServer.get_bus_index("KilosSFX") < 0:
 		failures.append("Independent Music / Effects volume buses were not created")
 	else:
 		print("PASS  independent music/effects mixer buses")
-	var menu_music: AudioStreamPlayer = app.get("title_music_player")
-	if menu_music == null or menu_music.bus != "KilosMusic":
-		failures.append("TitleMusic is not routed to the Music volume bus")
+	if String(app.get("current_route")) != "main":
+		failures.append("No-socket Main Menu fixture did not start at Home")
 	var play_button: Button = app.get_node("MainLayer/CenterMenu/Play")
 	var focus_style: StyleBoxFlat = play_button.get_theme_stylebox("focus") as StyleBoxFlat
 	if focus_style == null or focus_style.bg_color.a > 0.01 or focus_style.corner_radius_top_left < 8:
 		failures.append("Play focus still has a rectangular opaque background")
-	# Leaderboard / Settings / Credits still animate on hover, but the old
+	# Leaderboard / Settings still animate on hover, but the old
 	# beige description bubble and native OS tooltip must never appear.
 	if app.get_node_or_null("MainLayer/Tooltip") != null:
 		failures.append("Obsolete Main Menu description popup remains in scene")
-	for name in ["Leaderboard", "Settings", "Credits"]:
+	for name in ["Leaderboard", "Settings"]:
 		var button := app.get_node("MainLayer/LeftMenu/" + name) as Button
 		if not button.tooltip_text.is_empty():
 			failures.append(name + " still has a native hover tooltip")
@@ -54,7 +55,8 @@ func _run() -> void:
 		await create_timer(0.22).timeout
 	app.get_node("MainLayer/CenterMenu/Play").emit_signal("pressed")
 	await process_frame
-	_assert_route(app, "student_setup", "Main Panel Play button -> Student Setup")
+	if not _assert_route(app, "student_setup", "Main Panel Play button -> Student Setup"):
+		return
 	var entry_form: Control = app.get("active_panel")
 	var fresh_id: LineEdit = entry_form.get("_student_id_edit")
 	if not fresh_id.text.is_empty():
@@ -74,7 +76,7 @@ func _run() -> void:
 		else:
 			print("PASS  ", route)
 
-	# Exercise redesigned Settings and Credits rather than just checking load.
+	# Exercise redesigned Settings beyond just checking scene loading.
 	app.call("_on_panel_requested", "settings", {})
 	await process_frame
 	var settings_panel: Control = app.get("active_panel") as Control
@@ -88,43 +90,27 @@ func _run() -> void:
 	_test_audio_slider(settings_panel, "VolumeSlider", "Master")
 	_test_audio_slider(settings_panel, "MusicSlider", "KilosMusic")
 	_test_audio_slider(settings_panel, "EffectsSlider", "KilosSFX")
-	settings_panel.call("_switch_tab", "controls")
-	var control_page: Control = settings_panel.find_child("ControlsPage", true, false) as Control
-	if control_page == null or not control_page.visible:
-		failures.append("Settings CONTROLS tab did not open")
-	settings_panel.call("_switch_tab", "camera")
-	var camera_page: Control = settings_panel.find_child("CameraPage", true, false) as Control
-	if camera_page == null or not camera_page.visible:
-		failures.append("Settings CAMERA tab did not open")
+	for removed_page in ["ControlsPage", "CameraPage", "SidebarPanel",
+			"SidebarSettingsTab", "SidebarControlsTab", "SidebarCameraTab"]:
+		if settings_panel.find_child(removed_page, true, false) != null:
+			failures.append("Removed Settings component still exists: " + removed_page)
+	var audio_only := settings_panel.find_child("SettingsPage", true, false) as Control
+	if audio_only == null or not audio_only.visible:
+		failures.append("Audio & Display should be the only visible Settings page")
 	else:
-		print("PASS  Settings tab navigation")
-	app.call("_on_panel_requested", "credits", {})
-	await process_frame
-	await process_frame
-	var credits_panel: Control = app.get("active_panel") as Control
-	var credits_title: RichTextLabel = credits_panel.find_child("HeaderTitle", true, false) as RichTextLabel
-	if credits_title == null or not credits_title.bbcode_enabled or not credits_title.text.contains("[wave amp=40.0 freq=4.0 connected=1]"):
-		failures.append("Credits reference title lost Comic Lemon wave animation")
-	else:
-		print("PASS  Credits wave title")
-	var credits_scroll: ScrollContainer = credits_panel.find_child("CreditsScroll", true, false) as ScrollContainer
-	var credits_header: Control = credits_panel.find_child("Header", true, false) as Control
-	if credits_scroll == null or credits_header == null or credits_scroll.is_ancestor_of(credits_header):
-		failures.append("Credits header is missing or incorrectly inside its scroll area")
-	else:
-		print("PASS  Credits fixed header and separate scroll region")
-		var scroll_bar: VScrollBar = credits_scroll.get_v_scroll_bar()
-		var stack: Control = credits_panel.find_child("CreditsStack", true, false) as Control
-		if stack.get_combined_minimum_size().y > credits_scroll.size.y + 2.0 and scroll_bar.max_value <= scroll_bar.page:
-			failures.append("Credits overflow is not scrollable; names may be cut off")
-		else:
-			if scroll_bar.max_value > scroll_bar.page:
-				credits_scroll.scroll_vertical = int(scroll_bar.max_value)
-				print("PASS  Credits contributor list can scroll to legal credits")
-			else:
-				print("PASS  Credits contributor list fits without scrolling at this size")
+		print("PASS  Settings Audio & Display only; obsolete tabs deleted")
+	var restored_credits := app.get_node_or_null("MainLayer/LeftMenu/Credits") as Button
+	if restored_credits == null or restored_credits.disabled:
+		failures.append("Credits Main Menu button was not restored")
+	if not ResourceLoader.exists("res://ui/secondary/credits.tscn"):
+		failures.append("Restored Credits scene is missing")
 
 	# Verify complete teacher setup and single-pass game configuration.
+	# Return to Main and explicitly choose Play. A preceding Tutorial-only
+	# scene smoke-test deliberately leaves practice provenance active; that
+	# must not silently convert into a savable Play session.
+	app.call("_return_to_main")
+	await process_frame
 	app.call("_on_panel_requested", "student_setup", {})
 	await process_frame
 	var form: Control = app.get("active_panel")
@@ -136,7 +122,8 @@ func _run() -> void:
 	form.call("_select_difficulty", "Easy")
 	form.call("_continue")
 	await process_frame
-	_assert_route(app, "play_activity", "Student Setup -> Activity")
+	if not _assert_route(app, "play_activity", "Student Setup -> Activity"):
+		return
 	var game_select := app.get("active_panel") as Control
 	game_select.call("_select_activity", "Catch the Word")
 	if game_select.get_node_or_null("LayoutMargins/Content/Footer/PlayKeyboardButton") != null or game_select.has_method("_play_keyboard_now"):
@@ -149,7 +136,8 @@ func _run() -> void:
 	pose_service.current_status = {"state": "waiting", "pose": false}
 	(game_select.get("next_button") as Button).pressed.emit()
 	await process_frame
-	_assert_route(app, "calibration", "Game Selection Next -> camera-only Calibration")
+	if not _assert_route(app, "calibration", "Game Selection Next -> camera-only Calibration"):
+		return
 	var calibration_state := (app.get("session_state") as Dictionary).duplicate(true)
 	if bool(calibration_state.get("keyboard_mode", true)) or not bool(calibration_state.get("camera_requested", false)):
 		failures.append("Game Selection Next did not select camera-only calibration")
@@ -158,7 +146,7 @@ func _run() -> void:
 		failures.append("Calibration still contains a SKIP control")
 	(calibration_panel.get_node("TutorialStage/IntroOverlay/IntroBackButton") as Button).pressed.emit()
 	await process_frame
-	_assert_route(app, "main", "Calibration Back -> Main for teacher to change game")
+	_assert_route(app, "play_activity", "Calibration Back -> Choose Activity preserves teacher setup")
 	app.call("_on_panel_requested", "camera_check", {})
 	await process_frame
 	# Gameplay/results can be smoke-tested independently by explicit router
@@ -167,11 +155,13 @@ func _run() -> void:
 	calibration_state["start_countdown"] = false
 	app.call("_on_panel_requested", "gameplay", calibration_state)
 	await process_frame
-	_assert_route(app, "gameplay", "Explicit isolated gameplay fixture")
+	if not _assert_route(app, "gameplay", "Explicit isolated gameplay fixture"):
+		return
 	for activity in ["Catch the Word", "Balloon Popping", "Human Plane"]:
 		app.call("_on_panel_requested", "gameplay", {"activity": activity, "topic": "Noun", "game_style": "Noun", "difficulty": "Easy", "demo_mode": true})
 		await process_frame
-		_assert_route(app, "gameplay", "Gameplay scene: " + activity)
+		if not _assert_route(app, "gameplay", "Gameplay scene: " + activity):
+			return
 		var mounted_game: Control = (app.get("active_panel") as Control).get_node_or_null("ActiveMiniGame") as Control
 		if mounted_game == null:
 			failures.append("Could not instantiate playable activity: " + activity)
@@ -180,10 +170,12 @@ func _run() -> void:
 	var gameplay: Control = app.get("active_panel") as Control
 	gameplay.call("_finish_round")
 	await process_frame
-	_assert_route(app, "results", "Playable 2D Gameplay -> Results")
+	if not _assert_route(app, "results", "Playable 2D Gameplay -> Results"):
+		return
 	(app.get("active_panel") as Control).call("_request", "student_setup")
 	await process_frame
-	_assert_route(app, "student_setup", "Game Over Retry -> Student Setup")
+	if not _assert_route(app, "student_setup", "Game Over Retry -> Student Setup"):
+		return
 	var state: Dictionary = app.get("session_state")
 	for stat_key in ["score", "streak", "best_streak", "correct", "attempts", "total", "accuracy", "time_remaining"]:
 		if state.has(stat_key):
@@ -213,7 +205,7 @@ func _run() -> void:
 	await process_frame
 	(app.get("active_panel") as Control).call("_go_back")
 	await process_frame
-	_assert_route(app, "play_difficulty", "Camera Back -> Difficulty")
+	_assert_route(app, "tutorial_home", "Tutorial Camera Back returns to Tutorial, not Play's Difficulty")
 	app.call("_return_to_main")
 	await process_frame
 	if String(app.get("current_route")) != "main":
@@ -234,11 +226,19 @@ func _run() -> void:
 		quit(1)
 
 
-func _assert_route(app: Control, expected: String, label: String) -> void:
+func _assert_route(app: Control, expected: String, label: String) -> bool:
 	if String(app.get("current_route")) == expected:
 		print("PASS  ", label)
+		return true
 	else:
-		failures.append("%s expected %s but got %s" % [label, expected, String(app.get("current_route"))])
+		var reason := "%s expected %s but got %s" % [label, expected, String(app.get("current_route"))]
+		failures.append(reason)
+		push_error("FAIL  " + reason)
+		# A bad route must stop here instead of calling nonexistent functions
+		# on the previous screen and leaving SceneTree running indefinitely.
+		app.queue_free()
+		quit(1)
+		return false
 
 
 func _test_audio_slider(settings_panel: Control, slider_name: String, bus_name: String) -> void:

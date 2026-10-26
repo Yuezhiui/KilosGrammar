@@ -201,8 +201,16 @@ func _check_human_plane_spotlight(overlay: CanvasLayer, focus: Dictionary, label
 			continue
 		var hole := overlay.call("get_spotlight_rect") as Rect2
 		var center := target.get_global_rect().get_center()
+		if bool(overlay.get("use_editor_highlights")):
+			var slot_name: String = String({
+				"prompt": "Prompt", "play_area": "PlayArea", "mode": "Seconds" if label.contains("Seconds") else "Lives",
+				"score": "Score", "pause": "Pause"
+			}.get(key, "Prompt"))
+			var guide := overlay.get_node_or_null("Overlay/FocusRegions/HumanPlane/" + String(slot_name)) as Control
+			if guide != null:
+				center = guide.get_global_rect().get_center()
 		_expect(hole.get_area() > 0.0 and hole.has_point(center),
-			label + ": step %d spotlight hole covers live %s HUD/control" % [index + 1, key])
+			label + ": step %d spotlight hole covers the editor-authored %s guide" % [index + 1, key])
 	for _index in range(sequence.size() - 1):
 		overlay.call("go_back")
 	_expect(String(overlay.call("get_current_step_id")) == "human_plane_prompt",

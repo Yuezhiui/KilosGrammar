@@ -35,7 +35,7 @@ This folder contains the **cleanup record** for the existing Godot project. The 
 | `assets/fonts/`, `assets/audio/`, `assets/icons/` | Active fonts, feedback and controls, including dynamically loaded voiceover paths |
 | `showcase/` | **Git-ignored** local test snapshots and visual review material (around 370 MiB at audit). These are not gameplay assets, but may be needed to compare designs; deliberately **not deleted** |
 
-`Components/Settings/Secondary/qwqwqw.png` may look like a temporary filename but **is referenced by** `ui/secondary/settings.tscn`. Leave it in place until both scene art and its resource reference are safely migrated.
+`Components/Settings/Secondary/qwqwqw.png` was formerly used by a decorative cat that covered the Fullscreen row. The October 26 single-page Audio & Display cleanup deleted its scene node and resource reference, verified it had no remaining runtime references, and then removed this source PNG and its matching `.import`. No active Settings art was deleted.
 
 Some image pairs are byte-identical yet separately used by different editable scenes, or explicitly retained by the original artwork pack manifests. Matching hashes or no direct literal `res://` hit do not alone authorize deletion. See the detailed reports in `Components/README_ASSETS.md` and `ui/ASSETS.md`.
 

@@ -24,24 +24,24 @@ func _run() -> void:
 	calibration.set_context({"guided_tutorial": true, "camera_requested": false, "keyboard_mode": false})
 	var stage := calibration.get_node("TutorialStage")
 	var guides: Array[Control] = [
-		stage.get_node("LeftCalibrationLane") as Control,
-		stage.get_node("CenterCalibrationLane") as Control,
-		stage.get_node("RightCalibrationLane") as Control
+		stage.get_node("ArtGuideLeft") as Control,
+		stage.get_node("ArtGuideCenter") as Control,
+		stage.get_node("ArtGuideRight") as Control
 	]
 	var countdown := stage.get_node_or_null("CountdownLabel") as Label
 	var step_badge := stage.get_node_or_null("StepBadge") as Label
-	var english := stage.get_node_or_null("InstructionEN") as Label
+	var english := stage.get_node_or_null("StageHeading") as Label
 	var filipino := stage.get_node_or_null("InstructionFIL") as Label
 	_check(countdown != null, "Top-right countdown is an editor-authored Label")
 	_check(step_badge != null, "Step badge is an editor-authored Label")
-	_check(english != null and filipino != null, "English/Filipino labels are editor-authored")
+	_check(english != null and filipino != null, "Single English stage heading and Filipino label are editor-authored")
 	_check(stage.get_node("LiveCameraInset") is TextureRect, "Camera inset is editor-authored")
-	_check(not (calibration.get("continue_button") as Button).visible, "Continue is hidden; calibration auto-advances")
+	_check(stage.get_node_or_null("ContinueButton") == null, "Dead Continue button removed; calibration auto-advances")
 	_check(bool(calibration.get("intro_running")), "Intro begins before pose capture")
 	_check((calibration.get("intro_overlay") as Control).visible, "2.5-second intro overlay appears")
 	var intro := calibration.get("intro_overlay") as Control
 	var intro_back := stage.get_node("IntroOverlay/IntroBackButton") as Button
-	_check(intro_back.visible and not intro_back.disabled, "Intro Back to Main is visible and clickable")
+	_check(intro_back.visible and not intro_back.disabled, "Intro Back to Choose Activity is visible and clickable")
 	for child in stage.get_children():
 		if child is Control and child != intro:
 			_check(not (child as Control).visible, "Intro hides all authored main-scene controls: " + child.name)
@@ -59,12 +59,12 @@ func _run() -> void:
 	calibration.call("_process", 2.6)
 	_check(not bool(calibration.get("intro_running")), "Intro finishes at 2.5 seconds")
 	_check(not intro.visible, "Intro overlay closes")
-	_check((stage.get_node("BackButton") as Button).visible, "Main Back button restored after intro")
+	_check((stage.get_node("BackButton") as Button).visible, "Choose Activity Back button restored after intro")
 	for removed in ["DemoButton", "RetryButton", "SkipButton", "KeyboardButton"]:
 		_check(stage.get_node_or_null(removed) == null, "Forbidden control removed: " + removed)
 	_check(not (stage.get_node("Heading") as Label).visible and not unused_before, "Editor-hidden legacy header stays hidden")
 	_check((stage.get_node("LiveCameraInset") as TextureRect).visible, "Buffered live video reappears after intro")
-	_check(not (stage.get_node("InstructionEN") as Label).visible, "Duplicate English instruction remains hidden")
+	_check(stage.get_node_or_null("InstructionEN") == null, "Duplicate English instruction removed from authored scene")
 	_check((stage.get_node("InstructionFIL") as Label).visible, "Filipino instruction visible after intro")
 	_assert_only_active(guides, 1, "CENTER guide")
 	if step_badge != null:
@@ -131,7 +131,7 @@ func _run() -> void:
 	_check(bool(pose.calibration.get("valid", false)), "CENTER RIGHT LEFT measurements become valid")
 	_assert_only_active(guides, -1, "Completed calibration hides all standing guides")
 	_check(bool(calibration.get("transition_queued")), "Automatic transition is scheduled")
-	_check(not (calibration.get("continue_button") as Button).visible, "Continue stays hidden after success")
+	_check(stage.get_node_or_null("ContinueButton") == null, "Auto-advance creates no duplicate Continue after success")
 	# If the pose drops during the success transition, the same locked
 	# student can return and trigger another automatic handoff.
 	calibration.set("transition_queued", false)
@@ -158,8 +158,8 @@ func _run() -> void:
 	intro_back_scene.requested.connect(func(route: String, _payload: Dictionary) -> void:
 		intro_back_request.append(route))
 	(intro_back_scene.get_node("TutorialStage/IntroOverlay/IntroBackButton") as Button).pressed.emit()
-	_check(intro_back_request == ["main"], "Intro Back to Main routes directly to Main")
-	_check(not pose.active, "Intro Back to Main stops camera capture")
+	_check(intro_back_request == ["play_activity"], "Intro Back returns to Choose Activity")
+	_check(not pose.active, "Intro Back to Choose Activity stops camera capture")
 	intro_back_scene.free()
 	print("CALIBRATION SINGLE GUIDE: ", "PASS" if failures.is_empty() else "FAIL (%d)" % failures.size())
 	for failure in failures:
@@ -177,6 +177,10 @@ func _send_pose(pose: Node, calibration: Control, x: float, delta: float) -> voi
 func _assert_only_active(guides: Array[Control], active: int, description: String) -> void:
 	for index in guides.size():
 		_check(guides[index].visible == (index == active), description + ": guide %d visible correctly" % index)
+		var old_panel_name: String = String(["LeftCalibrationLane", "CenterCalibrationLane", "RightCalibrationLane"][index])
+		var old_panel := guides[index].get_parent().get_node(old_panel_name) as Control
+		_check(old_panel != null and not old_panel.visible,
+			description + ": redundant green panel remains hidden: " + old_panel_name)
 		for child in guides[index].get_children():
 			if child is Label:
 				_check(not (child as Label).visible, description + ": no card label inside standing outline")

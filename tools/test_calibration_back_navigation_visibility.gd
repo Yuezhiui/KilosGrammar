@@ -6,8 +6,9 @@ extends SceneTree
 const CALIBRATION_SCENE := "res://ui/vision/calibration.tscn"
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1920, 1080)]
 const STAGES := ["CENTER", "RIGHT", "LEFT"]
-const STEP_ZONE := ["CenterCalibrationLane", "RightCalibrationLane", "LeftCalibrationLane"]
-const INTENDED_RECT := Rect2(Vector2(47, 650), Vector2(255, 57))
+const STEP_ZONE := ["ArtGuideCenter", "ArtGuideRight", "ArtGuideLeft"]
+const INTENDED_RECT := Rect2(Vector2(47, 622), Vector2(255, 85))
+const BACK_ART := "res://Components/Gameplay/Calibration/BACK.png"
 var checks := 0
 var failures: Array[String] = []
 
@@ -60,7 +61,12 @@ func _check_intro_click(packed: PackedScene, pose: Node, viewport_size: Vector2i
 	var intro_back := stage.get_node_or_null("IntroOverlay/IntroBackButton") as Button
 	var main_back := stage.get_node_or_null("BackButton") as Button
 	var routes: Array[String] = []
-	screen.requested.connect(func(target: String, _payload: Dictionary) -> void: routes.append(target))
+	var payloads: Array[Dictionary] = []
+	# Assign context directly: this UI-only test must not activate a webcam.
+	screen.set("context", {"student_name": "QA STUDENT", "student_id": "QA-001", "activity": "Human Plane"})
+	screen.requested.connect(func(target: String, payload: Dictionary) -> void:
+		routes.append(target)
+		payloads.append(payload.duplicate(true)))
 	_check(intro != null and intro.is_visible_in_tree(),
 		"%s intro visible during opening 2.5 seconds" % viewport_size)
 	_check(intro_back != null and intro_back.owner == screen and intro_back.is_visible_in_tree()
@@ -72,8 +78,11 @@ func _check_intro_click(packed: PackedScene, pose: Node, viewport_size: Vector2i
 			and intro_back.get_global_rect().has_point(intro_back.get_global_rect().get_center()),
 			"%s intro Back supports native keyboard and mouse" % viewport_size)
 		await _click_real_mouse(intro_back)
-	_check(routes == ["main"], "%s clicking intro Back navigates only to Main (actual=%s)" %
+	_check(routes == ["play_activity"], "%s clicking intro Back navigates to Choose Activity (actual=%s)" %
 		[viewport_size, routes])
+	_check(payloads.size() == 1 and payloads[0].get("student_id", "") == "QA-001"
+		and payloads[0].get("activity", "") == "Human Plane",
+		"%s intro Back carries student and chosen game context" % viewport_size)
 	_check(not pose.active, "%s intro Back never starts camera" % viewport_size)
 	screen.queue_free()
 	await process_frame
@@ -104,14 +113,25 @@ func _check_offline_stages_and_keyboard(packed: PackedScene, pose: Node,
 	_check(main_back.position.is_equal_approx(INTENDED_RECT.position)
 		and main_back.size.is_equal_approx(INTENDED_RECT.size),
 		"%s normal Back position and size stay authored, not calculated at runtime" % viewport_size)
-	_check(main_back.text.to_upper().contains("BACK") and main_back.text.to_upper().contains("MAIN"),
-		"%s normal Back clearly indicates Main destination" % viewport_size)
+	var intro_art := intro_back.get_node_or_null("Artwork") as TextureRect
+	var active_art := main_back.get_node_or_null("Artwork") as TextureRect
+	_check(intro_art != null and active_art != null
+		and intro_art.owner == screen and active_art.owner == screen
+		and intro_art.texture != null and active_art.texture != null
+		and intro_art.texture.resource_path == BACK_ART
+		and active_art.texture.resource_path == BACK_ART
+		and main_back.accessibility_name == "Back to Choose Activity"
+		and intro_back.accessibility_name == "Back to Choose Activity",
+			"%s both Back buttons use the updated calibration BACK.png with activity destination" % viewport_size)
+	_check(main_back.get_theme_stylebox("focus") is StyleBoxEmpty
+		and intro_back.get_theme_stylebox("focus") is StyleBoxEmpty,
+		"%s neither Back button draws yellow focus corners or another rectangle" % viewport_size)
 	_check(main_back.get_theme_stylebox("normal") == intro_back.get_theme_stylebox("normal")
 		and main_back.get_theme_font("font") == intro_back.get_theme_font("font"),
-		"%s normal Back matches supplied intro Calib button styling" % viewport_size)
+		"%s normal Back matches intro artwork-button styling" % viewport_size)
 	_check(camera.size.is_equal_approx(Vector2(1007, 446))
 		and skeleton.size.is_equal_approx(camera.size),
-		"%s original 1007x446 camera and independent skeleton geometry preserved" % viewport_size)
+		"%s camera and independent skeleton geometry match for accurate pose overlay" % viewport_size)
 	_check(not main_back.get_global_rect().intersects(camera.get_global_rect()),
 		"%s normal Back stays below camera preview, never blocks skeleton/video" % viewport_size)
 	_check(_screen_rect(viewport_size).encloses(main_back.get_global_rect()),
@@ -152,13 +172,15 @@ func _check_offline_stages_and_keyboard(packed: PackedScene, pose: Node,
 		_check(main_back.visible and main_back.is_visible_in_tree() and not main_back.disabled,
 			"%s Back stays usable for offline %s" % [viewport_size, STAGES[index]])
 		_check(stage.get_node(STEP_ZONE[index]).visible,
-			"%s %s guide still active with Back visible" % [viewport_size, STAGES[index]])
+			"%s %s yellow PNG guide still active with Back visible" % [viewport_size, STAGES[index]])
+		_check(not (stage.get_node(["CenterCalibrationLane", "RightCalibrationLane", "LeftCalibrationLane"][index]) as Control).visible,
+			"%s %s old green duplicate panel remains hidden" % [viewport_size, STAGES[index]])
 		_check(camera.size.is_equal_approx(Vector2(1007, 446))
 			and main_back.position.is_equal_approx(INTENDED_RECT.position),
 			"%s %s cannot move the camera or Back art layout" % [viewport_size, STAGES[index]])
 	_check(results.is_empty(), "%s offline stages emit no gameplay request" % viewport_size)
 	await _press_real_keyboard(main_back)
-	_check(results == ["main"], "%s Enter on focused Back navigates to Main only (actual=%s)" %
+	_check(results == ["play_activity"], "%s Enter on focused Back navigates to Choose Activity only (actual=%s)" %
 		[viewport_size, results])
 	_check(not pose.active, "%s keyboard Back leaves webcam stopped" % viewport_size)
 	screen.queue_free()
@@ -180,8 +202,8 @@ func _check_post_intro_mouse(packed: PackedScene, pose: Node,
 	_check(back.is_visible_in_tree() and not back.disabled,
 		"%s Back visibly survives camera initialization failure" % viewport_size)
 	await _click_real_mouse(back)
-	_check(routes == ["main"],
-		"%s actual mouse click after intro returns only Main (%s)" % [viewport_size, routes])
+	_check(routes == ["play_activity"],
+		"%s actual mouse click after intro returns only to Choose Activity (%s)" % [viewport_size, routes])
 	_check(not pose.active, "%s offline mouse Back does not open a camera" % viewport_size)
 	screen.queue_free()
 	await process_frame

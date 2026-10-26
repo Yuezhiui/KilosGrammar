@@ -18,6 +18,8 @@ var active_game: Control
 var smooth_x := 0.0
 var last_pose_valid := false
 var missing_pose_seconds := 0.0
+var confirmed_missing_student_seconds := 0.0
+var saw_student_in_live_round := false
 var tracking_suspended := false
 @onready var tracking_notice: Control = $TrackingNoticeLayer/TrackingNotice
 var tutorial_layer: CanvasLayer
@@ -60,6 +62,8 @@ func _mount_game() -> void:
 	# previous activity's last smoothing target during countdown/recalibration.
 	smooth_x = 0.0
 	missing_pose_seconds = 0.0
+	confirmed_missing_student_seconds = 0.0
+	saw_student_in_live_round = false
 	tracking_suspended = false
 	last_pose_valid = false
 	tracking_notice.visible = false
@@ -246,6 +250,11 @@ func _complete_countdown_start() -> void:
 		return
 	guided_stage = "completed"
 	_clear_guided_ui()
+	# A tutorial skipped before the camera's next real inference frame must
+	# never carry a stale "missing" timer into the first live gameplay frame.
+	missing_pose_seconds = 0.0
+	confirmed_missing_student_seconds = 0.0
+	tracking_notice.visible = false
 	if is_instance_valid(active_game):
 		active_game.process_mode = Node.PROCESS_MODE_INHERIT
 
@@ -286,9 +295,24 @@ func _process(delta: float) -> void:
 		return
 	if not is_instance_valid(active_game):
 		return
-	if not PoseService.has_valid_pose() or not bool(PoseService.calibration.get("valid", false)):
+	# For Human Plane a visible torso alone is insufficient: the calibrated
+	# student lock and required wrist observation must remain fresh. Treat
+	# loss of either as tracking loss, including the existing round freeze.
+	var human_plane := String(context.get("activity", "")) == "Human Plane"
+	var verified_plane_pose := not human_plane or PoseService.has_stationary_plane_pose()
+	var guided_ui_active := guided_stage in ["tutorial", "countdown"]
+	# The previous completed camera calibration is also proof that this
+	# session had a real locked player, even if the first gameplay frame after
+	# skipping the tutorial is empty. Never arm on fake/demo pose data.
+	var previously_seen := saw_student_in_live_round or (bool(PoseService.calibration.get("valid", false)) \
+		and bool(PoseService.get("_ever_tracked")))
+	var confirmed_missing := previously_seen and not guided_ui_active \
+		and PoseService.has_recent_missing_student_observation()
+	if not PoseService.has_valid_pose() or not bool(PoseService.calibration.get("valid", false)) \
+			or not verified_plane_pose:
 		_clear_gesture_input()
 		missing_pose_seconds += maxf(delta, 0.0)
+		confirmed_missing_student_seconds = confirmed_missing_student_seconds + maxf(delta, 0.0) if confirmed_missing else 0.0
 		if last_pose_valid:
 			if active_game.has_method("clear_body_input"):
 				active_game.call("clear_body_input")
@@ -298,14 +322,21 @@ func _process(delta: float) -> void:
 		# A short grace period prevents flicker between YOLO inference frames.
 		# While the student steps back into view, the entire minigame (including
 		# its countdown/lives) freezes without affecting the global PoseService.
+		# Only explicit, continuously fresh missing-student YOLO frames may
+		# show "COME BACK INTO THE CAMERA!". Losing calibration, a wrist,
+		# frame transport or StudentLock enrollment may freeze controls, but
+		# must never tell an actually visible child to step back into view.
+		tracking_notice.visible = confirmed_missing_student_seconds >= 1.25
 		if missing_pose_seconds >= 0.65:
-			tracking_notice.visible = guided_stage not in ["tutorial", "countdown"]
-			if not tracking_suspended and guided_stage not in ["tutorial", "countdown"]:
+			if not tracking_suspended and not guided_ui_active:
 				active_game.process_mode = Node.PROCESS_MODE_DISABLED
 				tracking_suspended = true
 		return
 	missing_pose_seconds = 0.0
+	confirmed_missing_student_seconds = 0.0
 	tracking_notice.visible = false
+	if not guided_ui_active:
+		saw_student_in_live_round = true
 	if tracking_suspended:
 		tracking_suspended = false
 		if guided_stage not in ["tutorial", "countdown"]:
@@ -313,23 +344,18 @@ func _process(delta: float) -> void:
 	# Gestures require their OWN short freshness window even when the regular
 	# calibrated position still has a temporary tracking grace period.
 	_update_gesture_input()
-	if String(context.get("activity", "")) == "Human Plane":
-		# Three measured CENTER / RIGHT / LEFT positions now steer the plane,
-		# matching Catch the Word. BOTH arms extended are a safety-enable gate,
-		# not a gyroscope: lowered arms freeze the current aircraft position.
-		# Never let a stale or uncertain arm frame update the target.
-		var wide_arms: bool = PoseService.has_airplane_pose()
-		if wide_arms and guided_stage != "countdown":
-			var raw_plane_x: float = PoseService.normalized_body_x()
-			# Smooth noisy YOLO measurements each rendered frame, while the game
-			# separately glides its aircraft toward the calibrated target.
-			# Keep the previous filter state across arm-lowering for a soft
-			# reacquisition rather than a one-frame lateral jump.
-			smooth_x = lerpf(smooth_x, raw_plane_x,
-				1.0 - exp(-maxf(delta, 0.0) * 12.0))
-			set_body_x(smooth_x)
-		last_pose_valid = true
-		_preview_guided_movement(delta)
+	if human_plane:
+		# A single neutral hold establishes camera-space body/torso steering.
+		# The pose service validates student lock and requires at least one
+		# confidently visible wrist; only HumanPlane applies the smooth glide.
+		if PoseService.has_stationary_plane_pose() and guided_stage != "countdown":
+			set_body_x(PoseService.normalized_plane_steering())
+			last_pose_valid = true
+			_preview_guided_movement(delta)
+		else:
+			if active_game.has_method("set_airplane_pose_active"):
+				active_game.call("set_airplane_pose_active", false)
+			last_pose_valid = false
 		return
 	var raw_x: float = PoseService.normalized_body_x()
 	if not last_pose_valid:
@@ -358,7 +384,7 @@ func _update_gesture_input() -> void:
 	var fresh: bool = PoseService.has_fresh_gesture_pose()
 	match String(context.get("activity", "")):
 		"Human Plane":
-			var eligible: bool = fresh and PoseService.has_airplane_pose() \
+			var eligible: bool = fresh and PoseService.has_stationary_plane_pose() \
 				and guided_stage != "countdown"
 			if active_game.has_method("set_airplane_pose_active"):
 				active_game.call("set_airplane_pose_active", eligible)

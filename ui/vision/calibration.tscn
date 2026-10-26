@@ -15,8 +15,10 @@
 [ext_resource type="Texture2D" uid="uid://dsj3168wjitxq" path="res://Components/Gameplay/Calibration/STEP 2.png" id="15_v2_step2"]
 [ext_resource type="Texture2D" uid="uid://j7avft553vs" path="res://Components/Gameplay/Calibration/STEP 3.png" id="16_v2_step3"]
 [ext_resource type="Texture2D" uid="uid://b5akb7suoldlx" path="res://Components/Gameplay/Calibration/1.png" id="17_v2_count1"]
+[ext_resource type="Texture2D" uid="uid://8xwbkspkkpfk" path="res://Components/Game Chooser/back button.png" id="18_rxbyu"]
 [ext_resource type="Texture2D" uid="uid://2n0metk7ac7y" path="res://Components/Gameplay/Calibration/2.png" id="18_v2_count2"]
 [ext_resource type="Texture2D" uid="uid://kysyulngt85n" path="res://Components/Gameplay/Calibration/3.png" id="19_v2_count3"]
+[ext_resource type="Texture2D" uid="uid://d052dwf4qtjin" path="res://Components/Gameplay/Calibration/BACK.png" id="20_back_calibration"]
 
 [sub_resource type="StyleBoxFlat" id="StepBadgeStyle"]
 bg_color = Color(0.03, 0.03, 0.03, 0.8)
@@ -73,18 +75,18 @@ shadow_color = Color(0.05, 1, 0.73, 0.98)
 shadow_size = 14
 
 [sub_resource type="StyleBoxFlat" id="ZoneCenter"]
-bg_color = Color(0.86, 1, 0.15, 0.012)
+bg_color = Color(0.14, 1, 0.23, 0.012)
 draw_center = false
 border_width_left = 7
 border_width_top = 7
 border_width_right = 7
 border_width_bottom = 7
-border_color = Color(0.97, 1, 0.31, 1)
+border_color = Color(0.3, 1, 0.42, 1)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-shadow_color = Color(0.87, 1, 0.18, 0.96)
+shadow_color = Color(0.17, 1, 0.34, 0.96)
 shadow_size = 14
 
 [sub_resource type="StyleBoxFlat" id="ZoneRight"]
@@ -101,18 +103,6 @@ corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 shadow_color = Color(0.18, 0.71, 1, 0.96)
 shadow_size = 14
-
-[sub_resource type="AtlasTexture" id="V2TitleCenterVisible"]
-atlas = ExtResource("11_v2_title_center")
-region = Rect2(0, 284, 1672, 416)
-
-[sub_resource type="AtlasTexture" id="V2TitleRightVisible"]
-atlas = ExtResource("12_v2_title_right")
-region = Rect2(18, 68, 2138, 593)
-
-[sub_resource type="AtlasTexture" id="V2TitleLeftVisible"]
-atlas = ExtResource("13_v2_title_left")
-region = Rect2(68, 297, 1564, 393)
 
 [sub_resource type="AtlasTexture" id="V2Step1Visible"]
 atlas = ExtResource("14_v2_step1")
@@ -152,41 +142,7 @@ corner_radius_top_right = 11
 corner_radius_bottom_right = 11
 corner_radius_bottom_left = 11
 
-[sub_resource type="StyleBoxFlat" id="DisabledButton"]
-bg_color = Color(0.2, 0.2, 0.2, 0.73)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.7, 0.7, 0.7, 0.5)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-
-[sub_resource type="StyleBoxFlat" id="FocusButton"]
-bg_color = Color(0, 0, 0, 0)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(1, 1, 0.78, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-
-[sub_resource type="StyleBoxFlat" id="PurpleButton"]
-bg_color = Color(0.35, 0.25, 0.66, 0.96)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.81, 0.77, 1, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+[sub_resource type="StyleBoxEmpty" id="TransparentArtButton"]
 
 [node name="Calibration" type="Control" unique_id=1969878418]
 layout_mode = 3
@@ -266,21 +222,6 @@ theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 54
 text = "STEP 1 OF 3 • CENTER"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="InstructionEN" type="Label" parent="TutorialStage" unique_id=1722685505]
-layout_mode = 0
-offset_left = 205.0
-offset_top = 74.0
-offset_right = 1075.0
-offset_bottom = 117.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 0.92)
-theme_override_constants/outline_size = 5
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
-text = "STAY IN THE CENTER"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -402,15 +343,16 @@ border_color = Color(0.25, 0.94, 0.37, 0.82)
 editor_description = "Editable decorative wood frame. Adjust this independently of LiveCameraInset; it does not control source camera resolution."
 material = SubResource("V2FrameOverlayMaterial")
 layout_mode = 0
-offset_left = 69.0
+offset_left = 70.0
 offset_top = 45.0
-offset_right = 1219.0
+offset_right = 1220.0
 offset_bottom = 745.0
 mouse_filter = 2
 texture = ExtResource("5_v2_border")
 expand_mode = 1
 
 [node name="LeftCalibrationLane" type="Panel" parent="TutorialStage" unique_id=243504694]
+editor_description = "LEGACY REFERENCE RECTANGLE (HIDDEN): The yellow ArtGuideLeft PARAMETERS.png is the only actual visual calibration guide. This rectangle is retained for layout reference, never shown in gameplay."
 visible = false
 modulate = Color(1, 1, 1, 0)
 self_modulate = Color(1, 1, 1, 0)
@@ -454,6 +396,8 @@ vertical_alignment = 1
 autowrap_mode = 3
 
 [node name="CenterCalibrationLane" type="Panel" parent="TutorialStage" unique_id=676968786]
+editor_description = "LEGACY REFERENCE RECTANGLE (HIDDEN): Edit ArtGuideCenter for the yellow PARAMETERS.png calibration square instead. This older green panel must not be displayed on top of the PNG."
+visible = false
 modulate = Color(1, 1, 1, 0)
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 0
@@ -496,6 +440,7 @@ vertical_alignment = 1
 autowrap_mode = 3
 
 [node name="RightCalibrationLane" type="Panel" parent="TutorialStage" unique_id=812682382]
+editor_description = "LEGACY REFERENCE RECTANGLE (HIDDEN): ArtGuideRight is the current yellow PARAMETERS.png visual. This old green panel is never shown during calibration."
 visible = false
 modulate = Color(1, 1, 1, 0)
 self_modulate = Color(1, 1, 1, 0)
@@ -538,40 +483,40 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="CalibrationGuideBar" type="ColorRect" parent="TutorialStage" unique_id=1600386426]
-layout_mode = 0
-
 [node name="ArtGuideLeft" type="TextureRect" parent="TutorialStage" unique_id=1834780264]
+editor_description = "PARAMETERS.png / LEFT editable square. Inspector > Layout > Transform: Position (122, 34), Size (332, 685). Use the 2D editor's resize handles to change size. This offset keeps the art's visible ink inside the game window."
 visible = false
 layout_mode = 0
 offset_left = 122.0
-offset_top = 60.0
-offset_right = 454.0
-offset_bottom = 745.0
+offset_top = 62.0
+offset_right = 434.0
+offset_bottom = 692.0
 mouse_filter = 2
 texture = ExtResource("8_v2_guide")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="ArtGuideCenter" type="TextureRect" parent="TutorialStage" unique_id=807145019]
+editor_description = "PARAMETERS.png / CENTER editable square. Inspector > Layout > Transform: Position (490, 34), Size (332, 685). This is the main editor-draggable center guide. Keep its bright pixels inside the 1280x720 frame."
 visible = false
 layout_mode = 0
-offset_left = 490.0
-offset_top = 60.0
-offset_right = 822.0
-offset_bottom = 745.0
+offset_left = 487.0
+offset_top = 62.0
+offset_right = 799.0
+offset_bottom = 692.0
 mouse_filter = 2
 texture = ExtResource("8_v2_guide")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="ArtGuideRight" type="TextureRect" parent="TutorialStage" unique_id=1368039225]
+editor_description = "PARAMETERS.png / RIGHT editable square. Inspector > Layout > Transform: Position (836, 34), Size (332, 685). Resize the independent guide in the 2D editor; only this stage's square is shown during RIGHT calibration."
 visible = false
 layout_mode = 0
 offset_left = 836.0
-offset_top = 60.0
-offset_right = 1168.0
-offset_bottom = 745.0
+offset_top = 62.0
+offset_right = 1148.0
+offset_bottom = 692.0
 mouse_filter = 2
 texture = ExtResource("8_v2_guide")
 expand_mode = 1
@@ -591,9 +536,9 @@ stretch_mode = 5
 
 [node name="ArtArrowCenter" type="TextureRect" parent="TutorialStage" unique_id=1070318143]
 layout_mode = 0
-offset_left = 404.0
+offset_left = 384.0
 offset_top = 310.0
-offset_right = 540.0
+offset_right = 520.0
 offset_bottom = 446.0
 mouse_filter = 2
 texture = ExtResource("9_v2_arrow")
@@ -627,34 +572,40 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="ArtTitleCenter" type="TextureRect" parent="TutorialStage" unique_id=1463487908]
+editor_description = "Updated STAY IN THE CENTER.png is 1672x432 with its lettering across the full PNG. Use original texture directly; DO NOT crop it with a previous art version's AtlasTexture."
 layout_mode = 0
-offset_left = 325.0
-offset_right = 955.0
-offset_bottom = 155.0
+offset_left = 320.0
+offset_top = 28.0
+offset_right = 960.0
+offset_bottom = 176.0
 mouse_filter = 2
-texture = SubResource("V2TitleCenterVisible")
+texture = ExtResource("11_v2_title_center")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="ArtTitleRight" type="TextureRect" parent="TutorialStage" unique_id=1292491791]
+editor_description = "Updated STAY ON THE RIGHT.png is 1672x432. Full updated PNG, no legacy crop; drag/resize its independent rectangle in Godot's 2D editor."
 visible = false
 layout_mode = 0
-offset_left = 359.0
-offset_right = 921.0
-offset_bottom = 156.0
+offset_left = 320.0
+offset_top = 28.0
+offset_right = 960.0
+offset_bottom = 176.0
 mouse_filter = 2
-texture = SubResource("V2TitleRightVisible")
+texture = ExtResource("12_v2_title_right")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="ArtTitleLeft" type="TextureRect" parent="TutorialStage" unique_id=1856740181]
+editor_description = "Updated STAY OF THE LEFT.png is 1672x432. Full updated PNG, no legacy crop; its inspector rectangle is individually editable."
 visible = false
 layout_mode = 0
-offset_left = 325.0
-offset_right = 955.0
-offset_bottom = 158.0
+offset_left = 320.0
+offset_top = 28.0
+offset_right = 960.0
+offset_bottom = 176.0
 mouse_filter = 2
-texture = SubResource("V2TitleLeftVisible")
+texture = ExtResource("13_v2_title_left")
 expand_mode = 1
 stretch_mode = 5
 
@@ -694,7 +645,7 @@ texture = SubResource("V2Step3Visible")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PlaneStepBadge" type="Panel" parent="TutorialStage"]
+[node name="PlaneStepBadge" type="Panel" parent="TutorialStage" unique_id=1297479937]
 editor_description = "Human Plane only: one standing-center calibration hold. The normal three-step art remains untouched and can be moved independently."
 visible = false
 layout_mode = 0
@@ -705,7 +656,7 @@ offset_bottom = 110.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StepBadgeStyle")
 
-[node name="CenterOnlyLabel" type="Label" parent="TutorialStage/PlaneStepBadge"]
+[node name="CenterOnlyLabel" type="Label" parent="TutorialStage/PlaneStepBadge" unique_id=1814046330]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -717,16 +668,17 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0.92)
 theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 37
-text = "CENTER ONLY"
+text = "ONE POSE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="ArtCountdownBadge" type="TextureRect" parent="TutorialStage" unique_id=1048207494]
+editor_description = "3/2/1 artwork display rectangle. Set independently in the Inspector; current 1280x720 canvas bounds are Position (1035,12), Size (228,172)."
 layout_mode = 0
 offset_left = 1075.0
-offset_top = -21.0
+offset_top = -19.0
 offset_right = 1303.0
-offset_bottom = 151.0
+offset_bottom = 153.0
 mouse_filter = 2
 texture = ExtResource("19_v2_count3")
 expand_mode = 1
@@ -737,9 +689,9 @@ visible = false
 material = SubResource("V2CountdownMaterial")
 layout_mode = 0
 offset_left = 1075.0
-offset_top = -21.0
+offset_top = -19.0
 offset_right = 1303.0
-offset_bottom = 151.0
+offset_bottom = 153.0
 mouse_filter = 2
 texture = ExtResource("17_v2_count1")
 expand_mode = 1
@@ -750,9 +702,9 @@ visible = false
 material = SubResource("V2CountdownMaterial")
 layout_mode = 0
 offset_left = 1075.0
-offset_top = -21.0
+offset_top = -19.0
 offset_right = 1303.0
-offset_bottom = 151.0
+offset_bottom = 153.0
 mouse_filter = 2
 texture = ExtResource("18_v2_count2")
 expand_mode = 1
@@ -762,23 +714,13 @@ stretch_mode = 5
 visible = false
 layout_mode = 0
 offset_left = 1075.0
-offset_top = -21.0
+offset_top = -19.0
 offset_right = 1303.0
-offset_bottom = 151.0
+offset_bottom = 153.0
 mouse_filter = 2
 texture = ExtResource("19_v2_count3")
 expand_mode = 1
 stretch_mode = 5
-
-[node name="CalibrationGuideCursor" type="ColorRect" parent="TutorialStage" unique_id=1681285472]
-visible = false
-layout_mode = 0
-offset_left = 188.0
-offset_top = 553.0
-offset_right = 204.0
-offset_bottom = 561.0
-mouse_filter = 2
-color = Color(0, 0, 0, 0)
 
 [node name="CameraUnavailableLabel" type="Label" parent="TutorialStage" unique_id=1959146735]
 layout_mode = 0
@@ -845,9 +787,9 @@ clip_text = true
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 275.0
-offset_top = 534.0
+offset_top = 517.0
 offset_right = 1005.0
-offset_bottom = 560.0
+offset_bottom = 543.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.92)
 theme_override_constants/outline_size = 5
@@ -879,9 +821,9 @@ autowrap_mode = 3
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 275.0
-offset_top = 563.0
+offset_top = 546.0
 offset_right = 1005.0
-offset_bottom = 586.0
+offset_bottom = 569.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.92)
 theme_override_constants/outline_size = 5
@@ -905,9 +847,9 @@ stretch_mode = 5
 
 [node name="ArtMoveHintCenter" type="TextureRect" parent="TutorialStage" unique_id=886219052]
 layout_mode = 0
-offset_left = 130.0
+offset_left = 116.0
 offset_top = 299.0
-offset_right = 457.0
+offset_right = 443.0
 offset_bottom = 472.0
 mouse_filter = 2
 texture = ExtResource("10_v2_move")
@@ -917,9 +859,9 @@ stretch_mode = 5
 [node name="ArtMoveHintRight" type="TextureRect" parent="TutorialStage" unique_id=103691925]
 visible = false
 layout_mode = 0
-offset_left = 483.0
+offset_left = 497.0
 offset_top = 305.0
-offset_right = 789.0
+offset_right = 803.0
 offset_bottom = 478.0
 mouse_filter = 2
 texture = ExtResource("10_v2_move")
@@ -929,54 +871,77 @@ stretch_mode = 5
 [node name="ArtMoveHintLeft" type="TextureRect" parent="TutorialStage" unique_id=1937786579]
 visible = false
 layout_mode = 0
-offset_left = 490.0
-offset_top = 298.0
-offset_right = 812.0
-offset_bottom = 471.0
+offset_left = 480.0
+offset_top = 304.0
+offset_right = 802.0
+offset_bottom = 477.0
 mouse_filter = 2
 texture = ExtResource("10_v2_move")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ContinueButton" type="Button" parent="TutorialStage" unique_id=1952404439]
+[node name="PlaneSteeringTitle" type="Label" parent="TutorialStage" unique_id=1862367200]
+editor_description = "Human Plane only: edit this 3-step STEERING heading directly in the 2D editor. Its text changes per stage; all offsets remain authored here."
 visible = false
 layout_mode = 0
-offset_left = 1101.0
-offset_top = 649.0
-offset_right = 1262.0
-offset_bottom = 704.0
-mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_disabled_color = Color(0.8, 0.8, 0.8, 1)
+offset_left = 283.0
+offset_top = 36.0
+offset_right = 997.0
+offset_bottom = 141.0
+theme_override_colors/font_color = Color(1, 1, 0.91, 1)
+theme_override_colors/font_outline_color = Color(0.15, 0.08, 0.05, 0.96)
+theme_override_constants/outline_size = 7
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 25
-theme_override_styles/normal = SubResource("DisabledButton")
-theme_override_styles/pressed = SubResource("DisabledButton")
-theme_override_styles/hover = SubResource("DisabledButton")
-theme_override_styles/disabled = SubResource("DisabledButton")
-theme_override_styles/focus = SubResource("FocusButton")
-disabled = true
-text = "CONTINUE"
+theme_override_font_sizes/font_size = 43
+text = "RELAX • FACE THE CAMERA"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
 
-[node name="BackButton" type="Button" parent="TutorialStage"]
-editor_description = "Always available after the 2.5-second introduction, including when the camera fails. Move or resize in the Godot 2D editor; keep clear of LiveCameraInset and the CALIB artwork."
+[node name="PlaneSteeringFootnote" type="Label" parent="TutorialStage" unique_id=676750900]
+editor_description = "Human Plane only: place one steady-feet instruction where it does not obstruct camera bones; its dimensions remain editable."
+visible = false
 layout_mode = 0
-offset_left = 47.0
-offset_top = 650.0
-offset_right = 302.0
-offset_bottom = 707.0
-focus_mode = 2
-mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_disabled_color = Color(0.8, 0.8, 0.8, 1)
+offset_left = 333.0
+offset_top = 593.0
+offset_right = 1042.0
+offset_bottom = 648.0
+theme_override_colors/font_color = Color(1, 1, 0.87, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.07, 0.04, 1)
+theme_override_constants/outline_size = 6
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 25
-theme_override_styles/normal = SubResource("PurpleButton")
-theme_override_styles/pressed = SubResource("PurpleButton")
-theme_override_styles/hover = SubResource("PurpleButton")
-theme_override_styles/disabled = SubResource("DisabledButton")
-theme_override_styles/focus = SubResource("FocusButton")
-text = "BACK TO MAIN"
+text = "FEET STILL • HANDS VISIBLE • HOLD 2–3 SEC"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BackButton" type="Button" parent="TutorialStage" unique_id=1419374582]
+editor_description = "Uses the latest Components/Gameplay/Calibration/BACK.png. No decorative yellow/blue focus rectangle. Keep this authored image button easy to resize without altering navigation."
+layout_mode = 0
+offset_left = 497.0
+offset_top = 640.0
+offset_right = 790.0
+offset_bottom = 720.0
+tooltip_text = "Back to Choose Activity"
+mouse_default_cursor_shape = 2
+accessibility_name = "Back to Choose Activity"
+theme_override_styles/normal = SubResource("TransparentArtButton")
+theme_override_styles/pressed = SubResource("TransparentArtButton")
+theme_override_styles/hover = SubResource("TransparentArtButton")
+theme_override_styles/disabled = SubResource("TransparentArtButton")
+theme_override_styles/focus = SubResource("TransparentArtButton")
+
+[node name="Artwork" type="TextureRect" parent="TutorialStage/BackButton" unique_id=268662787]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("18_rxbyu")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="IntroOverlay" type="ColorRect" parent="TutorialStage" unique_id=2045608685]
 visible = false
@@ -1051,19 +1016,29 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="IntroBackButton" type="Button" parent="TutorialStage/IntroOverlay" unique_id=1844479000]
+editor_description = "Same latest BACK.png artwork and invisible focus style as the active calibration Back button. Routes to Choose Activity."
 layout_mode = 0
 offset_left = 47.0
-offset_top = 650.0
+offset_top = 622.0
 offset_right = 302.0
 offset_bottom = 707.0
+tooltip_text = "Back to Choose Activity"
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_disabled_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 25
-theme_override_styles/normal = SubResource("PurpleButton")
-theme_override_styles/pressed = SubResource("PurpleButton")
-theme_override_styles/hover = SubResource("PurpleButton")
-theme_override_styles/disabled = SubResource("DisabledButton")
-theme_override_styles/focus = SubResource("FocusButton")
-text = "BACK TO MAIN"
+accessibility_name = "Back to Choose Activity"
+theme_override_styles/normal = SubResource("TransparentArtButton")
+theme_override_styles/pressed = SubResource("TransparentArtButton")
+theme_override_styles/hover = SubResource("TransparentArtButton")
+theme_override_styles/disabled = SubResource("TransparentArtButton")
+theme_override_styles/focus = SubResource("TransparentArtButton")
+
+[node name="Artwork" type="TextureRect" parent="TutorialStage/IntroOverlay/IntroBackButton" unique_id=1589767462]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("20_back_calibration")
+expand_mode = 1
+stretch_mode = 5

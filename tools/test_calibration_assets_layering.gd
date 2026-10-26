@@ -11,7 +11,7 @@ const SCENE_PATH := "res://ui/vision/calibration.tscn"
 const INSTALLED_ART := "res://Components/Gameplay/Calibration/"
 const SOURCE_ART := "C:/Users/Yue/Downloads/CALIB/"
 const ART_NAMES := [
-	"1.png", "2.png", "3.png", "ARROW.png", "BACKGROUND.png",
+		"1.png", "2.png", "3.png", "ARROW.png", "BACK.png", "BACKGROUND.png",
 	"BORDER.png", "MOVE TO HIGHLIGHTED AREA.png",
 	"PARAMETERS.png", "STARS.png", "STAY IN THE CENTER.png",
 	"STAY OF THE LEFT.png", "STAY ON THE RIGHT.png",
@@ -27,6 +27,7 @@ const HOLD_DURATION := 3.0
 const INTRO_DURATION := 2.5
 var checks := 0
 var failures: Array[String] = []
+var capture_enabled := false
 
 
 func _initialize() -> void:
@@ -34,6 +35,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	capture_enabled = OS.get_cmdline_user_args().has("--capture") and DisplayServer.get_name() != "headless"
 	var service := root.get_node_or_null("PoseService")
 	_expect(service != null, "PoseService autoload exists without launching a webcam")
 	if service == null:
@@ -86,6 +88,8 @@ func _check_viewport(packed: PackedScene, dimensions: Vector2i, service: Node) -
 	_expect(camera != null and camera.owner == view, "%s: live-feed slot is editor-authored TextureRect" % dimensions)
 	_expect(intro != null and intro.owner == view and intro.is_visible_in_tree(),
 		"%s: scene-authored intro appears at start" % dimensions)
+	if capture_enabled:
+		await _capture_ui("intro", dimensions)
 	_expect(_inside(view.get_global_rect(), dimensions), "%s: entire scene stays within display" % dimensions)
 	if stage == null or camera == null:
 		view.queue_free()
@@ -153,7 +157,17 @@ func _check_viewport(packed: PackedScene, dimensions: Vector2i, service: Node) -
 		"%s: stage has editor-authored step indicator" % dimensions)
 	var back_main := intro.get_node_or_null("IntroBackButton") as Button if intro != null else null
 	_expect(back_main != null and back_main.owner == view and back_main.is_visible_in_tree(),
-		"%s: intro has visible authored Back to Main" % dimensions)
+			"%s: intro has visible authored Back to Choose Activity" % dimensions)
+	for title_name in ["ArtTitleCenter", "ArtTitleRight", "ArtTitleLeft"]:
+		var title_image := stage.get_node_or_null(title_name) as TextureRect
+		_expect(title_image != null and title_image.texture != null
+			and not (title_image.texture is AtlasTexture)
+			and title_image.texture.get_size() == Vector2(1672, 432),
+			"%s: %s renders the complete updated 1672x432 title PNG without an obsolete crop" %
+			[dimensions, title_name])
+	var center_guide := stage.get_node_or_null("ArtGuideCenter") as TextureRect
+	_expect(center_guide != null and center_guide.owner == view,
+		"%s: PARAMETERS center rectangle remains editor-draggable" % dimensions)
 	if intro != null:
 		for child in stage.get_children():
 			if child is Control and child != intro:
@@ -165,6 +179,19 @@ func _check_viewport(packed: PackedScene, dimensions: Vector2i, service: Node) -
 	for number in ["1.png", "2.png", "3.png"]:
 		var matches: Array = observed.get(number, [])
 		_expect(matches.size() >= 1, "%s: circle %s is independently movable" % [dimensions, number])
+	# Keep all native artwork pixel geometry intact when nudging scene-authored
+	# transforms. Position edits must not stretch the original CALIB designs.
+	var frame_art := stage.get_node_or_null("ArtCameraFrame") as TextureRect
+	_expect(frame_art != null and frame_art.size.is_equal_approx(Vector2(1150, 700)),
+		"%s: BORDER.png keeps its original undistorted 1150x700 authored rectangle" % dimensions)
+	for guide_name in ART_ZONES:
+		var guide_image := stage.get_node_or_null(guide_name) as TextureRect
+		_expect(guide_image != null and guide_image.size.is_equal_approx(Vector2(332, 685)),
+			"%s: %s remains original 332x685, moved without deformation" % [dimensions, guide_name])
+	for circle_name in ["ArtCountdownBadge", "ArtCountdown1", "ArtCountdown2", "ArtCountdown3"]:
+		var circle_image := stage.get_node_or_null(circle_name) as TextureRect
+		_expect(circle_image != null and circle_image.size.is_equal_approx(Vector2(228, 172)),
+			"%s: %s stays original 228x172, never distorted to fit" % [dimensions, circle_name])
 	# The stand boxes are on Godot UI, NOT drawn into YOLO/camera pixels. They
 	# must be siblings of the live camera TextureRect, behind no camera children.
 	for zone_name in STANDING_ZONES:
@@ -173,6 +200,9 @@ func _check_viewport(packed: PackedScene, dimensions: Vector2i, service: Node) -
 		if zone != null:
 			_expect(zone.get_parent() == camera.get_parent(),
 				"%s: %s is sibling of LiveCameraInset, NOT inside camera image" % [dimensions, zone_name])
+			_expect(not zone.visible and zone.modulate.a <= 0.01
+				and zone.self_modulate.a <= 0.01,
+				"%s: %s older green box stays completely hidden behind current PARAMETERS.png" % [dimensions, zone_name])
 			_expect(camera.get_global_rect().encloses(zone.get_global_rect()),
 				"%s: %s guide fits inside UI camera placeholder" % [dimensions, zone_name])
 			_expect(_inside(zone.get_global_rect(), dimensions),
@@ -218,12 +248,16 @@ func _check_viewport(packed: PackedScene, dimensions: Vector2i, service: Node) -
 		var step_count := 0
 		for path in STANDING_ZONES:
 			var zone := stage.get_node_or_null(path) as Control
-			if zone != null and zone.is_visible_in_tree():
+			_expect(zone != null and not zone.is_visible_in_tree(),
+				"%s: old green %s overlay stays hidden" % [dimensions, path])
+		for path in ART_ZONES:
+			var guide := stage.get_node_or_null(path) as Control
+			if guide != null and guide.is_visible_in_tree():
 				step_count += 1
-				_expect(path == STANDING_ZONES[index],
-					"%s: only %s guide active, not %s" % [dimensions, stage_phases[index], path])
+				_expect(path == ART_ZONES[index],
+					"%s: only %s PARAMETERS.png guide active, not %s" % [dimensions, stage_phases[index], path])
 		_expect(step_count == 1,
-			"%s: %s step has exactly ONE highlighted UI standing region" % [dimensions, stage_phases[index]])
+			"%s: %s step has exactly ONE highlighted PARAMETERS.png guide" % [dimensions, stage_phases[index]])
 		if step_badge != null:
 			_expect(step_badge.text.contains(str(index + 1)),
 				"%s: step plaque text updates to stage %d" % [dimensions, index + 1])
@@ -262,6 +296,8 @@ func _check_viewport(packed: PackedScene, dimensions: Vector2i, service: Node) -
 			_expect(circles_shown == 1,
 					"%s: stage %d shows ONE countdown circle after %.1fs" %
 					[dimensions, index + 1, elapsed])
+		if capture_enabled:
+			await _capture_ui(stage_phases[index].to_lower(), dimensions)
 	# Synthetic preview proves this UI compositing never modifies camera pixels.
 	var camera_image := Image.create(160, 90, false, Image.FORMAT_RGB8)
 	camera_image.fill(Color(0.2, 0.3, 0.4))
@@ -379,6 +415,19 @@ func _inside(rect: Rect2, full_size: Vector2i) -> bool:
 	return rect.has_area() and rect.position.x >= -3.0 and rect.position.y >= -3.0 \
 		and rect.end.x <= float(full_size.x) + 3.0 \
 		and rect.end.y <= float(full_size.y) + 3.0
+
+
+func _capture_ui(stage_name: String, dimensions: Vector2i) -> void:
+	await process_frame
+	await RenderingServer.frame_post_draw
+	var frame := root.get_texture().get_image()
+	if frame == null or frame.is_empty() or frame.get_size() != dimensions:
+		_expect(false, "%s GPU calibration %s screenshot has correct resolution" % [dimensions, stage_name])
+		return
+	var output := "user://_qa_calibration_layout_%dx%d_%s.png" % [dimensions.x, dimensions.y, stage_name]
+	_expect(frame.save_png(ProjectSettings.globalize_path(output)) == OK,
+		"%s GPU calibration %s screenshot saves to user://" % [dimensions, stage_name])
+	print("CALIB SCREENSHOT: ", ProjectSettings.globalize_path(output))
 
 
 func _expect(ok: bool, explanation: String) -> void:

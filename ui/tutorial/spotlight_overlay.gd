@@ -24,6 +24,10 @@ signal skipped
 @export_range(0.0, 80.0, 1.0) var spotlight_padding_px: float = 12.0
 @export_range(0.0, 100.0, 1.0) var spotlight_corner_radius_px: float = 18.0
 @export_range(0.0, 30.0, 1.0) var spotlight_feather_px: float = 4.0
+@export_group("Editable Highlight Positions")
+@export var use_editor_highlights: bool = true
+## Default uses Overlay/FocusRegions/<Game>/<Step> editor-draggable
+## rectangles. Disable only to follow a moving live HUD or player node.
 @export_group("Captions and Controls")
 @export var next_button_text: String = "NEXT  →"
 @export var last_button_text: String = "START GAME  ✓"
@@ -344,7 +348,11 @@ func _refresh_spotlight() -> void:
 	var target: Variant = _target_nodes.get(focus_key)
 	if target == null and focus_key.begins_with("mode_"):
 		target = _target_nodes.get("mode")
-	var rect := _rect_for_target(target)
+	# Authoring in the .tscn is the default: moving/resizing the invisible
+	# FocusRegions nodes in the Godot 2D editor changes the shader hole.
+	# Live-target following stays opt-in for genuinely moving elements.
+	var edited_region := _fallback_region(focus_key)
+	var rect := _rect_for_target(edited_region) if use_editor_highlights else _rect_for_target(target)
 	# Human Plane currently supplies its full-screen game root for play_area.
 	# That is a valid Control, but spotlighting the whole viewport would erase
 	# the dim and stop emphasizing the player's movement area. Use the editor-

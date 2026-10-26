@@ -2,7 +2,6 @@ extends Control
 
 signal requested(target: String, payload: Dictionary)
 
-const UI = preload("res://ui/play/play_ui.gd")
 const TITLE_FONT: Font = preload("res://assets/fonts/TitanOne-Regular.ttf")
 const GRAMMAR_BANK_PATH := "res://ui/minigames/grammar_bank.gd"
 
@@ -162,16 +161,8 @@ var tile_style_cache: Dictionary = {}
 @onready var lives_plaque: TextureRect = $HUDLayer/HUD/LivesPlaque
 @onready var pause_plaque: TextureRect = $HUDLayer/HUD/PausePlaque
 @onready var score_plaque: TextureRect = $HUDLayer/HUD/ScorePlaque
-@onready var title_label: Label = $HUDLayer/HUD/TitleLabel
-@onready var title_the_label: Label = $HUDLayer/HUD/TitleTheLabel
-@onready var title_word_label: Label = $HUDLayer/HUD/TitleWordLabel
 @onready var prompt_label: Label = $HUDLayer/HUD/PromptLabel
-@onready var score_label: Label = $HUDLayer/HUD/ScoreLabel
-@onready var lives_label: Label = $HUDLayer/HUD/LivesLabel
 @onready var time_label: Label = $HUDLayer/HUD/TimeLabel
-@onready var streak_label: Label = $HUDLayer/HUD/StreakLabel
-@onready var footer_label: Label = $HUDLayer/HUD/FooterLabel
-@onready var finish_button: Button = $HUDLayer/HUD/FinishButton
 @onready var pause_button: Button = $HUDLayer/HUD/PauseButton
 
 var hearts_box: HBoxContainer
@@ -348,11 +339,6 @@ func _build_controls() -> void:
 	if not pause_button.pressed.is_connected(_pause):
 		pause_button.pressed.connect(_pause)
 
-	UI.style_button(finish_button, UI.RED, 14)
-	if not finish_button.pressed.is_connected(_manual_finish):
-		finish_button.pressed.connect(_manual_finish)
-	finish_button.visible = false
-
 	if not hud.has_node("HeartsBox"):
 		hearts_box = HBoxContainer.new()
 		hearts_box.name = "HeartsBox"
@@ -416,11 +402,8 @@ func _build_controls() -> void:
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for plaque in [title_plaque, timer_plaque, lives_plaque, pause_plaque, score_plaque]:
 		plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# The PNG title owns all three words. The live labels are kept only so
-	# old scene references remain valid; never paint a second title.
-	for baked_title in [title_label, title_the_label, title_word_label]:
-		baked_title.visible = false
-	for label in [title_label, title_the_label, title_word_label, prompt_label, score_label, lives_label, time_label, streak_label, footer_label]:
+	# Only dynamic text remains: the static title/score are already in the PNG.
+	for label in [prompt_label, time_label]:
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.clip_text = true
 	prompt_label.add_theme_color_override("font_color", HUD_INK)
@@ -457,9 +440,7 @@ func _apply_generated_reference_assets() -> void:
 		if ResourceLoader.exists(life_path):
 			lives_texture_cache[life_count] = load(life_path) as Texture2D
 	using_reference_pngs = true
-	# Both PNG headings are already painted on the generated art.
-	for label in [title_label, title_the_label, title_word_label]:
-		label.visible = false
+	# PNG headings are the sole visible title and score labels.
 	if is_instance_valid(score_bottom_container):
 		for label in score_bottom_container.get_children():
 			if label is Label and label != score_bottom_number:
@@ -521,9 +502,6 @@ func _layout_controls() -> void:
 	_set_hud_rect(pause_plaque, Vector2(1199, 12), Vector2(71, 71))
 	_set_hud_rect(score_plaque, Vector2(1036, 554), Vector2(236, 150))
 
-	_set_hud_rect(title_label, Vector2(59, 27), Vector2(165, 49))
-	_set_hud_rect(title_the_label, Vector2(214, 27), Vector2(88, 49))
-	_set_hud_rect(title_word_label, Vector2(290, 27), Vector2(164, 49))
 	_set_hud_rect(prompt_label, Vector2(58, 77), Vector2(370, 36))
 	_set_hud_rect(time_label, Vector2(1085, 16), Vector2(98, 52))
 	_set_hud_rect(pause_button, Vector2(1217, 29), Vector2(36, 36))
@@ -553,10 +531,6 @@ func _layout_controls() -> void:
 			# safely within the dark carved inset of the supplied score board.
 			_set_hud_rect(score_bottom_container, Vector2(1053 + extra_x, 613 + extra_y), Vector2(174, 60))
 
-	score_label.visible = false
-	lives_label.visible = false
-	streak_label.visible = false
-	footer_label.visible = false
 
 
 func _set_hud_rect(control: Control, top_left: Vector2, dimensions: Vector2) -> void:
@@ -1267,8 +1241,6 @@ func _refresh_hud() -> void:
 		while prompt_size > 13 and TITLE_FONT.get_string_size(prompt_text, HORIZONTAL_ALIGNMENT_LEFT, -1, prompt_size).x > prompt_label.size.x - 10.0:
 			prompt_size -= 1
 		prompt_label.add_theme_font_size_override("font_size", prompt_size)
-	if score_label:
-		score_label.text = "SCORE %04d" % score
 	if score_bottom_number and (score != last_score_layout_value or score_bottom_number.text != str(score)):
 		last_score_layout_value = score
 		score_bottom_number.text = "%d" % score
@@ -1282,17 +1254,13 @@ func _refresh_hud() -> void:
 		lives_plaque.visible = false
 		time_label.visible = true
 		time_label.text = "%ds" % int(ceil(time_remaining))
-		lives_label.visible = false
 		if hearts_box:
 			hearts_box.visible = false
 	else:
 		timer_plaque.visible = false
 		lives_plaque.visible = true
 		time_label.visible = false
-		lives_label.visible = false
 		_update_hearts_visual()
-
-	streak_label.text = "STREAK %d" % streak
 
 
 func _update_hearts_visual() -> void:

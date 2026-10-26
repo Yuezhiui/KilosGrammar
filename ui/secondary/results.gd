@@ -75,7 +75,9 @@ func _refresh() -> void:
 	var activity := _context_text(["activity"], "")
 	%ActivityValue.text = activity
 	%ActivityValue.visible = not activity.is_empty()
-	if bool(_context.get("score_saved", false)):
+	if bool(_context.get("guided_tutorial", false)) or String(_context.get("entry_source", "")) == "tutorial":
+		%SaveStatus.text = "TUTORIAL PRACTICE ONLY - NO STUDENT DATA OR SCORE SAVED"
+	elif bool(_context.get("score_saved", false)):
 		%SaveStatus.text = "SCORE SAVED TO LOCAL POSTGRESQL"
 	elif bool(_context.get("database_saving", false)):
 		%SaveStatus.text = "SAVING COMPLETED SCORE TO LOCAL POSTGRESQL..."

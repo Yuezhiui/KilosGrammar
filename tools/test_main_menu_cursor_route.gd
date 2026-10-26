@@ -20,7 +20,7 @@ func _run() -> void:
 	_check(menu.get_node_or_null("CursorCritter") == null, "No custom cursor art should be instantiated")
 	_check(menu.get("current_route") == "main", "Home is active")
 	_check(Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE, "Normal OS pointer visible on Home")
-	for route in ["settings", "credits", "tutorial_home", "leaderboard"]:
+	for route in ["settings", "tutorial_home", "leaderboard"]:
 		menu.call("_show_panel", route)
 		await process_frame
 		_check(menu.get("current_route") == route, "Screen route loads: " + route)

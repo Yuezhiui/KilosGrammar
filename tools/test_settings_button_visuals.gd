@@ -9,7 +9,6 @@ const HOVER_SOUND := preload("res://assets/audio/lexispell_intro/button_hover.wa
 const CLICK_SOUND := preload("res://assets/audio/lexispell_intro/button_click.wav")
 const SETTINGS_FILE := "user://kilos_settings.cfg"
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
-const TABS := ["settings", "controls", "camera"]
 var failures: Array[String] = []
 var checks := 0
 
@@ -73,27 +72,16 @@ func _run() -> void:
 				continue
 			print("VIEWPORT ", resolution, " board=", board.get_global_rect(), " scroll=", scroll.get_global_rect())
 			_check(_fully_inside(board.get_global_rect(), viewport_rect, 1.5), "%s board extends beyond viewport: %s" % [resolution, board.get_global_rect()])
-			var sidebar := panel.find_child("SidebarPanel", true, false) as Control
-			_check(sidebar != null and _fully_inside(sidebar.get_global_rect(), board.get_global_rect(), 2.0), "%s sidebar extends past board" % resolution)
-			for tab_name in TABS:
-				var sidebar_button := panel.find_child("Sidebar" + tab_name.capitalize() + "Tab", true, false) as Button
-				_check_button(sidebar_button, viewport_rect, "%s sidebar/%s" % [resolution, tab_name], router)
-				if sidebar_button != null and sidebar != null:
-					_check(_fully_inside(sidebar_button.get_global_rect(), sidebar.get_global_rect(), 2.5), "%s sidebar/%s extends outside sidebar panel: %s" % [resolution, tab_name, sidebar_button.get_global_rect()])
+			for obsolete in ["SidebarPanel", "SidebarSettingsTab", "SidebarControlsTab",
+					"SidebarCameraTab", "ControlsPage", "CameraPage"]:
+				_check(panel.find_child(obsolete, true, false) == null,
+						"%s obsolete button/page not removed: %s" % [resolution, obsolete])
+			_check((panel.find_child("SettingsPage", true, false) as Control).visible,
+				"%s sole Audio & Display page stays visible" % resolution)
 			var home := panel.find_child("BackButton", true, false) as Button
 			_check_button(home, viewport_rect, "%s Home" % resolution, router)
 
-			for tab_name in TABS:
-				var sidebar_button := panel.find_child("Sidebar" + tab_name.capitalize() + "Tab", true, false) as Button
-				if sidebar_button != null:
-					sidebar_button.pressed.emit()
-					await process_frame
-					_check(String(panel.get("_active_tab")) == tab_name, "%s %s sidebar press did not activate page" % [resolution, tab_name])
-				for button_tab in TABS:
-					_check_tab_art(panel, "Sidebar" + button_tab.capitalize() + "Tab", button_tab, tab_name, true, resolution)
-				if tab_name != "settings":
-					await _check_aux_page_reachability(panel, board, scroll, tab_name, resolution)
-			panel.call("_switch_tab", "settings")
+			panel.call("_show_audio_display")
 			await process_frame
 			for node_name in ["MuteCheck", "FullscreenCheck"]:
 				var toggle := panel.find_child(node_name, true, false) as CheckButton
@@ -170,26 +158,10 @@ func _check_button(button: BaseButton, viewport_rect: Rect2, title: String, rout
 	_check(button.get_viewport().gui_get_focus_owner() == button, title + " did not take focus")
 
 
-func _check_tab_art(panel: Control, node_name: String, button_tab: String, active_tab: String, sidebar: bool, size: Vector2i) -> void:
-	var button := panel.find_child(node_name, true, false) as Button
-	if button == null:
-		return
-	var style := button.get_theme_stylebox("normal") as StyleBoxTexture
-	_check(style != null and style.texture != null, "%s %s missing sprite normal style" % [size, node_name])
-	if style == null or style.texture == null:
-		return
-	var actual := style.texture.resource_path.get_file()
-	var expected := ("tab_%s_%s.png" % [button_tab, "green" if button_tab == active_tab else "cream"]) if sidebar or button_tab == active_tab else "button_blank_purple.png"
-	_check(actual == expected, "%s %s wrong sprite for selected=%s: %s expected %s" % [size, node_name, active_tab, actual, expected])
-	if not sidebar:
-		var overlay := button.get_node_or_null("FooterLightInk") as TextureRect
-		_check(overlay != null and overlay.visible == (button_tab != active_tab), "%s %s footer lettering state incorrect" % [size, node_name])
-
-
 func _check_state_feedback(panel: Control) -> void:
 	# Compare the resources Godot actually draws, including texture and tint.
 	# If hover/pressed share identical art with normal, pointer states are invisible.
-	for node_name in ["SidebarSettingsTab", "SidebarControlsTab", "SidebarCameraTab", "SettingsTab", "ControlsTab", "CameraTab", "BackButton", "MuteCheck", "FullscreenCheck"]:
+	for node_name in ["BackButton", "MuteCheck", "FullscreenCheck"]:
 		var button := panel.find_child(node_name, true, false) as BaseButton
 		if button == null:
 			continue
@@ -199,46 +171,6 @@ func _check_state_feedback(panel: Control) -> void:
 		_check(not _identical_style(normal, hover), node_name + " has no distinct hover artwork/color")
 		_check(not _identical_style(normal, pressed), node_name + " has no distinct pressed artwork/color")
 		_check(button.has_theme_stylebox_override("focus"), node_name + " lacks visible focus style override")
-
-
-func _check_aux_page_reachability(panel: Control, board: Control, scroll: ScrollContainer, tab_name: String, size: Vector2i) -> void:
-	var page := panel.find_child(tab_name.capitalize() + "Page", true, false) as VBoxContainer
-	if page == null:
-		failures.append("%s %s page is missing" % [size, tab_name])
-		return
-	var artwork := board.find_child("BoardArtwork", true, false) as NinePatchRect
-	var rail_top := 0.0
-	var rail_end := 0.0
-	if artwork != null:
-		rail_end = artwork.get_global_rect().end.y
-		rail_top = rail_end - float(artwork.patch_margin_bottom)
-	for position in ["initial", "end"]:
-		if position == "end" and page.get_child_count() > 0:
-			var last := page.get_child(page.get_child_count() - 1) as Control
-			if last != null:
-				scroll.ensure_control_visible(last)
-				await process_frame
-				var last_labels: Array[Label] = []
-				_collect_labels(last, last_labels)
-				if not last_labels.is_empty():
-					var final_label: Label = last_labels.back()
-					_check(_fully_inside(final_label.get_global_rect(), scroll.get_global_rect(), 2.0), "%s %s final label unreachable after scroll-to-end: label=%s scroll=%s" % [size, tab_name, final_label.get_global_rect(), scroll.get_global_rect()])
-		var visible_labels: Array[Label] = []
-		_collect_labels(page, visible_labels)
-		var visible_count := 0
-		var rail_overlap: Array[String] = []
-		for label in visible_labels:
-			if not label.is_visible_in_tree() or label.get_global_rect().size.y < 1.0:
-				continue
-			var visible_slice := label.get_global_rect().intersection(scroll.get_global_rect())
-			if visible_slice.get_area() <= 1.0:
-				continue
-			visible_count += 1
-			if artwork != null and size.y <= 600 and visible_slice.end.y > rail_top + 2.0 and visible_slice.position.y < rail_end - 2.0:
-				rail_overlap.append("%s @ %s" % [label.name, visible_slice])
-		_check(visible_count > 0, "%s %s %s scroll leaves no visible text" % [size, tab_name, position])
-		_check(rail_overlap.is_empty(), "%s %s %s text extends beneath board lower rail y=%.1f..%.1f: %s" % [size, tab_name, position, rail_top, rail_end, ", ".join(rail_overlap)])
-		print("PAGE ", size, " ", tab_name, " ", position, " visible_labels=", visible_count, " scroll_y=", scroll.scroll_vertical, " lower_rail_y=", rail_top, "..", rail_end)
 
 
 func _collect_labels(node: Node, labels: Array[Label]) -> void:
@@ -269,7 +201,7 @@ func _check_sound_routes(panel: Control, router: Node) -> void:
 		return
 	# Exercise actual dynamically constructed Settings controls with the
 	# same stream player that the shared menu sound router uses.
-	for node_name in ["SidebarSettingsTab", "ControlsTab", "BackButton", "MuteCheck", "FullscreenCheck"]:
+	for node_name in ["BackButton", "MuteCheck", "FullscreenCheck"]:
 		var button := panel.find_child(node_name, true, false) as BaseButton
 		if button == null:
 			continue

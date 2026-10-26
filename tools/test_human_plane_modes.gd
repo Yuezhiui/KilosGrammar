@@ -67,7 +67,12 @@ func _check_mode(mode: String, diff: Dictionary) -> void:
 	_expect(int(game.get("attempts")) == 1, label + " idempotent gate resolution")
 	game.call("_start_wave")
 	game.call("_update_gate_wave", 1.0)
-	_expect(is_equal_approx(float(game.get("gate_progress")), float(diff["gate_speed"])), label + " retains difficulty gate speed")
+	# A correct answer above earned the permanent +14% speed increase.
+	# The game's existing difficulty baseline stays intact while travel
+	# includes all successfully earned speed bonuses.
+	_expect(is_equal_approx(float(game.get("gate_progress")),
+		float(diff["gate_speed"]) * float(game.get("speed_multiplier"))),
+		label + " retains difficulty baseline with cumulative earned speed")
 
 	# In both modes Pause freezes all progress; resume continues the same round.
 	var before_pause := float(game.get("time_remaining"))

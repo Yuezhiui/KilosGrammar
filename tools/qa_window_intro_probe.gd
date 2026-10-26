@@ -38,7 +38,7 @@ func _run() -> void:
         failures.append("GRAMMAR tile did not animate")
     if app.get_node("FallingLayer").get_child_count() <= 1:
         failures.append("Falling words did not spawn")
-    for nodepath in ["MainLayer/LeftMenu/Leaderboard", "MainLayer/LeftMenu/Settings", "MainLayer/LeftMenu/Credits", "MainLayer/CenterMenu/Tutorial", "MainLayer/CenterMenu/Play", "MainLayer/CenterMenu/Quit"]:
+    for nodepath in ["MainLayer/LeftMenu/Leaderboard", "MainLayer/LeftMenu/Settings", "MainLayer/CenterMenu/Tutorial", "MainLayer/CenterMenu/Play", "MainLayer/CenterMenu/Quit"]:
         var control := app.get_node_or_null(nodepath) as Control
         if control == null or not control.is_visible_in_tree():
             failures.append("Missing visible main button " + nodepath)

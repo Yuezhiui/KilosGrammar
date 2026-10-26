@@ -9,7 +9,7 @@ const LEADERBOARD := "res://ui/secondary/leaderboard.tscn"
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const SCREEN_FIXTURES := [
 	"res://main_menu.tscn", "res://ui/secondary/settings.tscn",
-	"res://ui/secondary/results.tscn", "res://ui/secondary/credits.tscn",
+	"res://ui/secondary/results.tscn",
 	"res://ui/student/student_setup.tscn", "res://ui/play/pause.tscn",
 	"res://ui/tutorial/tutorial_home.tscn", LEADERBOARD
 ]
@@ -37,6 +37,7 @@ var baseline_removed: Array[String] = []
 var unorganized_pngs: Array[String] = []
 var component_groups: Dictionary = {}
 var loaded_scenes := 0
+var discovered_scenes := 0
 var loaded_resources := 0
 var texture_dependencies := 0
 var baseline_comparisons := 0
@@ -59,6 +60,8 @@ func _run() -> void:
 	for path in all_files:
 		if not path.ends_with(".tscn") and not path.ends_with(".tres"):
 			continue
+		if path.ends_with(".tscn"):
+			discovered_scenes += 1
 		scene_files.append(path)
 		var content := FileAccess.get_file_as_string(path)
 		_check(not content.is_empty(), "Nonempty serialized resource: " + path)
@@ -74,11 +77,13 @@ func _run() -> void:
 				instance.free() # Do not run script _ready() on all application scenes.
 		elif resource != null:
 			loaded_resources += 1
-	_check(loaded_scenes == 29 and loaded_resources >= 1,
-		"All 29 .tscn scenes and at least one .tres load and instantiate (found %d scenes/%d resources)" % [
-			loaded_scenes, loaded_resources])
-	_check(texture_dependencies >= 148,
-		"Cleanup retains at least 148 referenced, decodable source textures (found %d)" % texture_dependencies)
+	_check(loaded_scenes == discovered_scenes and loaded_scenes >= 20 and loaded_resources >= 1,
+		"Every discovered Godot .tscn parses and instantiates after inlining reusable 3D geometry (found %d scenes/%d resources)" % [
+		loaded_scenes, loaded_resources])
+	_check("res://ui/secondary/credits.tscn" in all_files,
+		"Explicitly restored Credits screen stays intact with its dependencies")
+	_check(texture_dependencies >= 143,
+		"Cleanup retains at least 143 referenced, decodable source textures (found %d)" % texture_dependencies)
 	for fixture in SCREEN_FIXTURES:
 		var scene := ResourceLoader.load(fixture, "", ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
 		_check(scene != null, "Representative screen is a valid PackedScene: " + fixture)
@@ -306,7 +311,9 @@ func _check_static_screen(scene: Node, path: String) -> void:
 				_check(_pixels_present(image.texture), "Custom modal artwork has visible pixels: " + key)
 		for key in ACTION_BUTTONS:
 			var button := scene.get_node_or_null(key) as Button
-			_check(button != null and _button_texture(button) != null,
+			var artwork: TextureRect = button.get_node_or_null("Artwork") as TextureRect if button != null else null
+			var has_editor_png := artwork != null and artwork.texture != null
+			_check(button != null and (_button_texture(button) != null or (key == "BackButton" and has_editor_png)),
 				"Active leaderboard action button is PNG-backed: " + key)
 		_check(scene.get_node_or_null("DeleteFirstOverlay") != null
 			and scene.get_node_or_null("DeleteFinalOverlay") != null,

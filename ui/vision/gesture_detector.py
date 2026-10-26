@@ -24,8 +24,8 @@ class GestureState:
     # False means the hand signal is unknown, NOT deliberately lowered.
     # A missing/occluded wrist must not re-arm a Balloon Popping shot.
     hand_observation_valid: bool = False
-    # Legacy optional banking diagnostic (-1..1). Human Plane now moves
-    # horizontally using torso position while airplane_pose gates movement.
+    # Legacy optional banking diagnostic (-1..1). The current Human Plane
+    # movement path consumes the separate locked torso-X/one-wrist signal.
     wing_roll: float = 0.0
 
 
@@ -112,7 +112,7 @@ def _measure(points: Sequence[Sequence[float]]) -> _Measurements:
         # Keep the old wing-roll diagnostic for protocol compatibility. The
         # live worker mirrors the selfie camera BEFORE YOLO inference, so the
         # optional signed value uses visible screen-left/right shoulder X.
-        # It does not determine horizontal movement in Human Plane.
+        # It is retained for old gesture diagnostics only.
         screen_left = 0 if shoulders[0][0] < shoulders[1][0] else 1
         screen_right = 1 - screen_left
         left_drop = wrists[screen_left][1] - shoulders[screen_left][1]
@@ -165,9 +165,10 @@ class GestureDetector:
     """Debounced gesture state, with a held-hand latch across tracking gaps.
 
     A raised hand must be visibly lowered before shooting can be rearmed after
-    losing its pose. Airplane movement permission instead resumes automatically
-    when both arms are confidently extended again; torso X determines direction.
-    No movement or firing signal is exposed on an invalid/unselected frame.
+    losing its pose. The legacy airplane extension flag remains available to
+    older diagnostics; live Human Plane steering uses the separate torso-X
+    signal and does not require both arms extended. No movement or firing
+    gesture is exposed on an invalid/unselected frame.
     """
 
     def __init__(self, rise_seconds: float = 0.10, fall_seconds: float = 0.12):

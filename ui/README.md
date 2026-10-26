@@ -23,7 +23,7 @@ used throughout; no custom cat-shaped pointer overlays the UI.
   remains for earlier compatibility/tools, not a required guided step.
 - **Game Over → Retry** returns to Student & Game Setup with previous
   selections ready to edit; **Main Menu** exits the keyboard-playable round.
-- **Leaderboard**, **Settings**, **Credits** → standalone subpanels with Back.
+- **Leaderboard**, **Settings** → standalone subpanels with Back.
 - **Quit** → exit the application.
 
 ## Editing the Guided Tutorial visually (Godot 2D Inspector)
@@ -57,20 +57,19 @@ used throughout; no custom cat-shaped pointer overlays the UI.
   60-second timer, while Lives teaches the available three lives. Do not
   assume these independent modes are simultaneously enabled.
 
-## Credits and Settings visual system
+## Settings visual system
 
-- **Credits** uses a centered cream scroll panel and fixed dark-purple header.
-  KERNEL lists the verified contributor names without role descriptions; the
-  bottom of the scroll retains required Godot and Titan One license credits,
-  plus attribution for Comic Lemon by Khurasan.
+- The previous standalone Credits route was removed from the main menu at the
+  user's request. Its project contributors and license notices remain recorded
+  in `docs/asset-prune/credits-removal.md` rather than in a gameplay screen.
 - **Settings** uses one centered dark-purple card with readable cream labels,
   amber slider knobs, and functional SETTINGS / CONTROLS / CAMERA tabs.
 - The Settings tab row sits **outside and below** the card so it never covers
   the Fullscreen row, including at 1280×720.
-- Both titles use Comic Lemon and an animated Godot RichTextLabel wave effect
+- The Settings title uses Comic Lemon and a Godot RichTextLabel wave effect
   (`[wave amp=40.0 freq=4.0 connected=1]`). Titan One remains the clear,
-  stationary font for controls and contributor names.
-- Their palette is based on the user's local visual reference: cream `#FDE4B9`,
+  stationary font for controls.
+- The palette is based on the user's local visual reference: cream `#FDE4B9`,
   deep slate-purple `#474660`, sage `#57826C`, mint `#74AB8E`. The procedural
   `ui/shared/lexi_reference_backdrop` recreates the look with original polygons,
   not copied background artwork.

@@ -83,15 +83,15 @@ func _test_normal_play(app: Control, pose: Node) -> void:
 		for _tick in 3:
 			game.call("_on_countdown_tick")
 		_check(round.process_mode == Node.PROCESS_MODE_INHERIT and game.get("countdown_panel") == null, "Normal round begins only after countdown")
-	# The new explicit BACK TO MAIN returns to the title screen, so teachers
-	# can start a fresh setup and change the game mode safely.
+	# Calibration BACK keeps student/setup context and returns to Choose
+	# Activity, without forcing the teacher back to the title screen.
 	pose.set("active", true)
 	app.call("_on_panel_requested", "calibration", {"camera_requested": true, "keyboard_mode": false})
 	await process_frame
 	calibration = app.get("active_panel") as Control
 	calibration.call("_go_back")
 	await process_frame
-	_check(_route(app) == "main", "Calibration Back returns to Main as labeled")
+	_check(_route(app) == "play_activity", "Calibration Back returns to Choose Activity as labeled")
 	app.call("_on_panel_requested", "student_setup", {})
 	await process_frame
 	var fresh_form := app.get("active_panel") as Control

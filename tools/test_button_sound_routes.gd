@@ -7,7 +7,7 @@ const ROUTES := [
 	"tutorial_home", "grammar_guide",
 	"student_setup", "play_activity", "play_topic", "play_difficulty",
 	"camera_check", "calibration", "gameplay", "pause",
-	"results", "leaderboard", "settings", "credits"
+	"results", "leaderboard", "settings"
 ]
 var failures: Array[String] = []
 var checked_buttons := 0

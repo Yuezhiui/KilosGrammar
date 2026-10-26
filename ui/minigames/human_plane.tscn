@@ -2,7 +2,9 @@
 
 [ext_resource type="Script" uid="uid://cxteldxcjtbbn" path="res://ui/minigames/human_plane.gd" id="1_script"]
 [ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="2_font"]
-[ext_resource type="Texture2D" uid="uid://gl1oeatt1hsx" path="res://Components/Gameplay/Human Plane/BACKGROUND.png" id="r_background"]
+[ext_resource type="PackedScene" uid="uid://bwbpqxscoyr24" path="res://ui/minigames/human_plane_3d_view.tscn" id="3d_world"]
+[ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://Components/Gameplay/Catch the Word/HUD/generated/pause_badge.png" id="clone_pause"]
+[ext_resource type="Texture2D" uid="uid://boxmkr4bvdvqu" path="res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png" id="clone_title"]
 [ext_resource type="Texture2D" uid="uid://f87aeimycygk" path="res://Components/Gameplay/Human Plane/human_plane_gate_green_CENTER.png" id="r_gate_center"]
 [ext_resource type="Texture2D" uid="uid://1183yyysfqau" path="res://Components/Gameplay/Human Plane/human_plane_gate_purple_LEFT.png" id="r_gate_left"]
 [ext_resource type="Texture2D" uid="uid://dscev25f7jrqr" path="res://Components/Gameplay/Human Plane/human_plane_gate_blue_RIGHT.png" id="r_gate_right"]
@@ -10,10 +12,6 @@
 [ext_resource type="Texture2D" uid="uid://cxpokqd8myy66" path="res://Components/Gameplay/Human Plane/PLANE.png" id="r_plane"]
 [ext_resource type="Texture2D" uid="uid://d13sn4nsevrgu" path="res://Components/Gameplay/Catch the Word/HUD/generated/score_board.png" id="r_score"]
 [ext_resource type="Texture2D" uid="uid://fnw2gdx3u22i" path="res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png" id="r_timer"]
-
-
-[ext_resource type="Texture2D" uid="uid://boxmkr4bvdvqu" path="res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png" id="clone_title"]
-[ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://Components/Gameplay/Catch the Word/HUD/generated/pause_badge.png" id="clone_pause"]
 
 [node name="HumanPlane" type="Control" unique_id=877560333]
 layout_mode = 3
@@ -25,26 +23,9 @@ grow_vertical = 2
 focus_mode = 1
 script = ExtResource("1_script")
 
-[node name="SceneBackground" type="Control" parent="." unique_id=1282505689]
+[node name="WorldView3D" parent="." unique_id=328239310 instance=ExtResource("3d_world")]
+z_index = 3
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="SkyBackdrop" type="TextureRect" parent="SceneBackground" unique_id=97009929]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("r_background")
-expand_mode = 1
-stretch_mode = 6
 
 [node name="FlightPaths" type="Control" parent="." unique_id=782617239]
 layout_mode = 1
@@ -127,10 +108,8 @@ offset_right = 6.0
 offset_bottom = 6.0
 mouse_filter = 2
 
-[node name="AnswerLine" type="Control" parent="."]
-# Invisible, editor-draggable scoring guide. Crossing happens while the gate
-# artwork is still above the player's wings; no overlay is drawn on screen.
-layout_mode = 1
+[node name="AnswerLine" type="Control" parent="." unique_id=1363223888]
+anchors_preset = 0
 anchor_left = 0.5
 anchor_top = 0.665
 anchor_right = 0.5
@@ -425,9 +404,8 @@ text = "RIGHT"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="UpcomingGates" type="Control" parent="."]
+[node name="UpcomingGates" type="Control" parent="." unique_id=613603377]
 visible = false
-z_index = 0
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -436,7 +414,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="GateLeft" type="Control" parent="UpcomingGates"]
+[node name="GateLeft" type="Control" parent="UpcomingGates" unique_id=2081811681]
 layout_mode = 1
 anchor_left = 0.27375
 anchor_top = 0.21
@@ -448,7 +426,7 @@ offset_right = 80.600006
 offset_bottom = 110.79999
 mouse_filter = 2
 
-[node name="Interior" type="ColorRect" parent="UpcomingGates/GateLeft"]
+[node name="Interior" type="ColorRect" parent="UpcomingGates/GateLeft" unique_id=848003004]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -459,7 +437,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.985, 0.99, 0.97, 0.1)
 
-[node name="LeftPillar" type="ColorRect" parent="UpcomingGates/GateLeft"]
+[node name="LeftPillar" type="ColorRect" parent="UpcomingGates/GateLeft" unique_id=1498166813]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -468,7 +446,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.706, 0.467, 0.824, 1)
 
-[node name="RightPillar" type="ColorRect" parent="UpcomingGates/GateLeft"]
+[node name="RightPillar" type="ColorRect" parent="UpcomingGates/GateLeft" unique_id=51277710]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -478,7 +456,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.706, 0.467, 0.824, 1)
 
-[node name="TopBar" type="ColorRect" parent="UpcomingGates/GateLeft"]
+[node name="TopBar" type="ColorRect" parent="UpcomingGates/GateLeft" unique_id=1245028398]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -487,7 +465,7 @@ anchor_bottom = 0.31
 mouse_filter = 2
 color = Color(0.706, 0.467, 0.824, 1)
 
-[node name="GateArtwork" type="TextureRect" parent="UpcomingGates/GateLeft"]
+[node name="GateArtwork" type="TextureRect" parent="UpcomingGates/GateLeft" unique_id=2089702892]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -499,7 +477,7 @@ texture = ExtResource("r_gate_left")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="WordLabel" type="Label" parent="UpcomingGates/GateLeft"]
+[node name="WordLabel" type="Label" parent="UpcomingGates/GateLeft" unique_id=1566570389]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.15
@@ -514,7 +492,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
 
-[node name="LaneLabel" type="Label" parent="UpcomingGates/GateLeft"]
+[node name="LaneLabel" type="Label" parent="UpcomingGates/GateLeft" unique_id=1665363136]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -528,7 +506,7 @@ text = "LEFT"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="GateCenter" type="Control" parent="UpcomingGates"]
+[node name="GateCenter" type="Control" parent="UpcomingGates" unique_id=516445045]
 layout_mode = 1
 anchor_left = 0.44375
 anchor_top = 0.21
@@ -538,7 +516,7 @@ offset_top = 113.8
 offset_bottom = 113.79999
 mouse_filter = 2
 
-[node name="Interior" type="ColorRect" parent="UpcomingGates/GateCenter"]
+[node name="Interior" type="ColorRect" parent="UpcomingGates/GateCenter" unique_id=730264310]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -549,7 +527,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.985, 0.99, 0.97, 0.1)
 
-[node name="LeftPillar" type="ColorRect" parent="UpcomingGates/GateCenter"]
+[node name="LeftPillar" type="ColorRect" parent="UpcomingGates/GateCenter" unique_id=1836156276]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -558,7 +536,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.455, 0.671, 0.557, 1)
 
-[node name="RightPillar" type="ColorRect" parent="UpcomingGates/GateCenter"]
+[node name="RightPillar" type="ColorRect" parent="UpcomingGates/GateCenter" unique_id=1109792445]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -568,7 +546,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.455, 0.671, 0.557, 1)
 
-[node name="TopBar" type="ColorRect" parent="UpcomingGates/GateCenter"]
+[node name="TopBar" type="ColorRect" parent="UpcomingGates/GateCenter" unique_id=679639805]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -577,7 +555,7 @@ anchor_bottom = 0.31
 mouse_filter = 2
 color = Color(0.455, 0.671, 0.557, 1)
 
-[node name="GateArtwork" type="TextureRect" parent="UpcomingGates/GateCenter"]
+[node name="GateArtwork" type="TextureRect" parent="UpcomingGates/GateCenter" unique_id=367056500]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -589,7 +567,7 @@ texture = ExtResource("r_gate_center")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="WordLabel" type="Label" parent="UpcomingGates/GateCenter"]
+[node name="WordLabel" type="Label" parent="UpcomingGates/GateCenter" unique_id=1999270673]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.15
@@ -604,7 +582,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
 
-[node name="LaneLabel" type="Label" parent="UpcomingGates/GateCenter"]
+[node name="LaneLabel" type="Label" parent="UpcomingGates/GateCenter" unique_id=1764013740]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -618,7 +596,7 @@ text = "CENTER"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="GateRight" type="Control" parent="UpcomingGates"]
+[node name="GateRight" type="Control" parent="UpcomingGates" unique_id=1875297395]
 layout_mode = 1
 anchor_left = 0.61375
 anchor_top = 0.21
@@ -630,7 +608,7 @@ offset_right = -81.599976
 offset_bottom = 112.79999
 mouse_filter = 2
 
-[node name="Interior" type="ColorRect" parent="UpcomingGates/GateRight"]
+[node name="Interior" type="ColorRect" parent="UpcomingGates/GateRight" unique_id=1719137031]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -641,7 +619,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.985, 0.99, 0.97, 0.1)
 
-[node name="LeftPillar" type="ColorRect" parent="UpcomingGates/GateRight"]
+[node name="LeftPillar" type="ColorRect" parent="UpcomingGates/GateRight" unique_id=273697220]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -650,7 +628,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.384, 0.722, 0.91, 1)
 
-[node name="RightPillar" type="ColorRect" parent="UpcomingGates/GateRight"]
+[node name="RightPillar" type="ColorRect" parent="UpcomingGates/GateRight" unique_id=1831202854]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -660,7 +638,7 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0.384, 0.722, 0.91, 1)
 
-[node name="TopBar" type="ColorRect" parent="UpcomingGates/GateRight"]
+[node name="TopBar" type="ColorRect" parent="UpcomingGates/GateRight" unique_id=5429118]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -669,7 +647,7 @@ anchor_bottom = 0.31
 mouse_filter = 2
 color = Color(0.384, 0.722, 0.91, 1)
 
-[node name="GateArtwork" type="TextureRect" parent="UpcomingGates/GateRight"]
+[node name="GateArtwork" type="TextureRect" parent="UpcomingGates/GateRight" unique_id=918111069]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -681,7 +659,7 @@ texture = ExtResource("r_gate_right")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="WordLabel" type="Label" parent="UpcomingGates/GateRight"]
+[node name="WordLabel" type="Label" parent="UpcomingGates/GateRight" unique_id=1143883628]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.15
@@ -696,7 +674,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 clip_text = true
 
-[node name="LaneLabel" type="Label" parent="UpcomingGates/GateRight"]
+[node name="LaneLabel" type="Label" parent="UpcomingGates/GateRight" unique_id=32233502]
 visible = false
 layout_mode = 1
 anchors_preset = -1
@@ -849,7 +827,6 @@ offset_left = 1212.0
 offset_top = 25.0
 offset_right = 1260.0
 offset_bottom = 73.0
-focus_mode = 2
 mouse_default_cursor_shape = 2
 flat = true
 

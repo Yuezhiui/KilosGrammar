@@ -37,19 +37,13 @@ func _run() -> void:
 	var panel := app.get("active_panel") as Control
 	_check(panel != null, "Settings did not open from the actual menu")
 	if panel != null:
-		for tab_name in ["settings", "controls", "camera"]:
-			var sidebar_button := panel.find_child("Sidebar" + tab_name.capitalize() + "Tab", true, false) as Button
-			var bottom_button := panel.find_child("TabsRow", true, false)
-			_check(sidebar_button != null and sidebar_button.visible and not sidebar_button.disabled, tab_name + " sidebar tab missing or disabled")
-			_check(bottom_button == null, "Duplicate bottom tabs row should not exist")
-			if sidebar_button != null:
-				sidebar_button.pressed.emit()
-				await process_frame
-				_check(String(panel.get("_active_tab")) == tab_name, tab_name + " sidebar tab did not switch")
-
-		var active_settings_tab := panel.find_child("SidebarSettingsTab", true, false) as Button
-		if active_settings_tab != null:
-			active_settings_tab.pressed.emit()
+		for removed in ["SidebarPanel", "SidebarSettingsTab", "SidebarControlsTab",
+				"SidebarCameraTab", "ControlsPage", "CameraPage", "TabsRow"]:
+			_check(panel.find_child(removed, true, false) == null,
+				"Removed obsolete Settings UI must be absent: " + removed)
+		_check(String(panel.get("_active_tab")) == "settings"
+			and (panel.find_child("SettingsPage", true, false) as Control).visible,
+			"Audio & Display is the only active Settings page")
 		await process_frame
 		for info in [["VolumeSlider", "Master"], ["MusicSlider", "KilosMusic"], ["EffectsSlider", "KilosSFX"]]:
 			var bus_index := AudioServer.get_bus_index(info[1])
@@ -99,7 +93,7 @@ func _run() -> void:
 	else:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_FILE))
 	if failures.is_empty():
-		print("PASS settings live mixer, sidebar tabs, bottom tabs and Home")
+		print("PASS Audio & Display only, live mixer, fullscreen/mute and Home")
 		quit(0)
 	else:
 		for failure in failures:

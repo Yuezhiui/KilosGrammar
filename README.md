@@ -2,12 +2,12 @@
 
 **Learn English grammar through movement, play, and instant feedback.**
 
-KilosGrammar is a classroom-focused **2D English grammar learning game** built
+KilosGrammar is a classroom-focused **2D/3D English grammar learning game** built
 with **Godot 4.7.2 and GDScript**. It combines three arcade-style minigames,
 optional webcam/pose-controlled movement, guided body-position calibration,
 and **local PostgreSQL student records and completed-score leaderboards**.
 
-> **Project status:** Active beta source development (`0.1.0-beta.1`). Godot
+> **Project status:** Active beta source development (`0.2.0-beta.1`). Godot
 > gameplay, local PostgreSQL persistence, and a camera/YOLO pose bridge are
 > implemented. Camera play requires a separately installed local Python/pose
 > model runtime and a compatible webcam; automated tests do not replace
@@ -28,15 +28,15 @@ authorization safeguards.
 | --- | --- |
 | **Catch the Word** | Move the selected character's basket to collect matching words; four independent, editor-adjustable character rigs and collected-word layers. |
 | **Balloon Popping** | Identify and pop the correct grammar answers with the game's interactive launcher and voice feedback. |
-| **Human Plane** | Fly through the correct word gate by shifting calibrated body position, with **both arms wide** required to steer; lowered arms or lost tracking freeze movement. |
+| **Human Plane** | Fly through editable 3D cloud portals with calibrated torso left/center/right motion following one neutral center hold. Temporary one-wrist occlusion is supported after a reliable student lock. |
 
 ## Features
 
-- Three 2D minigames with difficulty settings, scores, **60-second Seconds
+- Three minigames (two 2D, one 3D) with difficulty settings, scores, **60-second Seconds
   rounds**, Lives mode, pause/resume, results, and tutorials.
 - Grammar practice for **Noun, Pronoun, Verb, Adjective,** and **Adverb**.
 - Optional local webcam/YOLO pose worker with student lock, camera preview,
-  and **CENTER -> RIGHT -> LEFT** calibration guidance.
+  and **CENTER -> RIGHT -> LEFT** calibration for Catch/Balloon and one neutral hold for Human Plane.
 - Native Godot, scene-editable UI artwork, responsive leaderboard controls,
   shared button hover/press feedback, and Main Menu/Settings sound effects.
 - Local PostgreSQL-backed student lookup, registration, completed-round scores,
@@ -65,6 +65,11 @@ made here.
 | Navigate menus | Mouse and on-screen buttons |
 
 Controls and behavior can vary slightly across screens.
+
+
+### Public 3D assets and attribution
+
+The public source beta uses the CC BY 4.0 stylize-clouds model by ragad.sallabi and the CC BY 4.0 Toy Plane by l3clarke; full author/source/license terms are included with those model files. The local developer workspace has a different user-supplied red aircraft and hidden legacy terrain models whose redistribution authorization is not established; these are excluded from GitHub. Public flight uses the licensed Toy Plane fallback and is not visually identical to the local developer aircraft. You can replace the model through Godot's scene Inspector if you have redistribution rights for your preferred asset.
 
 ## Getting started
 
@@ -124,7 +129,7 @@ kilos-grammar/
 │   ├── tutorial/             # Tutorials and grammar guide
 │   ├── vision/               # Camera/YOLO pose bridge and calibration
 │   ├── shared/               # Global button hover effects and audio wiring
-│   └── secondary/            # Settings, leaderboard, results, credits
+│   └── secondary/            # Settings, leaderboard, results
 ├── assets/                   # Fonts, audio, icons, and UI assets
 ├── database/                 # Local HTTP API, PostgreSQL schema and QA tests
 ├── Components/               # Shared visual assets
@@ -145,7 +150,7 @@ For more information about existing screens and their routes, see
 - [x] Three grammar minigames with Seconds/Lives scoring
 - [x] Scoring, results, and gameplay pause/resume
 - [x] Local webcam/YOLO pose bridge and body-position steering integration
-- [x] Center/Right/Left calibrated player guidance
+- [x] Game-specific body calibration: three positions for Catch/Balloon, neutral hold for Human Plane
 - [x] Local PostgreSQL profiles, completed-score schema and API reconnect
 - [x] Editable leaderboard with activity-aware records and CSV actions
 - [ ] On-site webcam performance and school/classroom acceptance testing

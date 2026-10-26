@@ -1,17 +1,15 @@
 extends SceneTree
 
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_assets_pose.gd
-# All five original PNG files are checked byte-for-byte via SHA256.
+# The four currently referenced plane/gate PNGs are checked byte-for-byte via SHA256.
 const SCENE := preload("res://ui/minigames/human_plane.tscn")
 const ASSETS := {
-	"BACKGROUND.png": ["719c02bc595678295c3f8a48b61b1748dc65bbd6b600fc3fe278299fb630dee0", Vector2i(1672, 941)],
 	"PLANE.png": ["81826ebd6e13131793ff6bf8dafe4f03499b94661a1953ec24b2351189944b0e", Vector2i(1254, 1254)],
 	"human_plane_gate_purple_LEFT.png": ["3e476898a6d996484bd6e8ff99297a35554a2d45848ceeea8aa21efc34c4f146", Vector2i(724, 724)],
 	"human_plane_gate_green_CENTER.png": ["37cbd228e8c844f55e0c119a55be399f1ef2682acda9850de549bc03dc430e42", Vector2i(724, 724)],
 	"human_plane_gate_blue_RIGHT.png": ["011b8452faaad74ab05ede0eff510e3bf70e53662f45294b5d8fda882c706ed8", Vector2i(724, 724)]
 }
 const AUTHORED_IMAGES := {
-	"SceneBackground/SkyBackdrop": "BACKGROUND.png",
 	"PlaneRig/PlaneArtwork": "PLANE.png",
 	"MovingGates/GateLeft/GateArtwork": "human_plane_gate_purple_LEFT.png",
 	"MovingGates/GateCenter/GateArtwork": "human_plane_gate_green_CENTER.png",
