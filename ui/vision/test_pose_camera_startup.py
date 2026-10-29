@@ -265,10 +265,13 @@ class WorkerStaleInferenceTests(unittest.TestCase):
             def __init__(self):
                 self.calls = 0
 
-            def track(self, *_args, **_kwargs):
+            def predict(self, *_args, **_kwargs):
                 self.calls += 1
                 time.sleep(pose_worker.MAX_CAMERA_SAMPLE_AGE_SECONDS + 0.15)
                 return [types.SimpleNamespace(boxes=None, keypoints=None)]
+
+            def track(self, *_args, **_kwargs):
+                raise AssertionError("No persistent tracker during gameplay")
 
         receiving = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         receiving.bind(("127.0.0.1", 0))

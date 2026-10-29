@@ -4,7 +4,7 @@ extends SceneTree
 # stationary, measured arm/torso roll targets (LEFT / CENTER / RIGHT) while
 # the same locked student's fresh steering packet is eligible. This tests
 # post-calibration flight smoothing, without opening a webcam.
-const PLANE_SCENE := preload("res://ui/minigames/human_plane.tscn")
+const PLANE_SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 var checks := 0
 var failures: Array[String] = []
 

@@ -4,7 +4,7 @@ extends SceneTree
 # --headless --path . --script res://tools/test_catch_seconds_layering.gd
 # Exercises the Seconds/Lives timer contract and runtime score draw order.
 
-const CATCH_SCENE := preload("res://ui/minigames/catch_word.tscn")
+const CATCH_SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1600, 900)]
 var failures: Array[String] = []
 var checks := 0
@@ -33,7 +33,10 @@ func _run() -> void:
 		_check(game.score_draw_layer != null and game.score_draw_layer.z_index < game.character_group.z_index,
 			"%s score must remain behind the character" % viewport_size)
 		_check(game.score_plaque.get_parent() == game.score_draw_layer, "%s plaque is not in score layer" % viewport_size)
-		_check(game.score_bottom_container.get_parent() == game.score_draw_layer, "%s number is not in score layer" % viewport_size)
+		_check(game.score_bottom_number.get_parent() == game.score_draw_layer
+			and game.get_node_or_null("ScoreDrawLayer/ScoreNumber") == game.score_bottom_number
+			and not game.has_node("ScoreDrawLayer/ScoreBottomContainer"),
+			"%s authored numeric score must sit directly in score layer without a container" % viewport_size)
 		_check(game.score_draw_layer.get_parent() == game, "%s score remains on high HUD CanvasLayer" % viewport_size)
 		# The score moves canvas, but retains its HUD-scaled viewport geometry.
 		var expected_score_pos: Vector2 = game.hud.get_global_transform_with_canvas() * game.score_plaque.position

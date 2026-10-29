@@ -2,11 +2,12 @@ extends SceneTree
 
 # Revert acceptance regression for Catch the Word. Test ONLY; no source edits.
 # Godot 4.7.2: --headless --path . --script res://tools/test_catch_revert_hud.gd
-# Expected final: OLD four character sprites and original collected basket
+# Expected final: five replacement animal sprites and preserved collected basket
 # apples, NEW falling word-apple PNG and baked-art HUD, three exact static
 # heart-panel PNGs (1/2/3 lives), with no objective plaque or feedback UI.
 
-const SCENE := "res://ui/minigames/catch_word.tscn"
+const SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
+const GameAudio = preload("res://ui/shared/game_audio.gd")
 const ART := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const OLD_CHAR := "res://Components/Gameplay/Catch the Word/Characters/"
 const OLD_BASKET_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
@@ -18,7 +19,7 @@ const HEART_STATE_PATHS := {
 	3: "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png",
 }
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(875, 500)]
 const PLAQUES := {
 	"TitlePlaque": "title_board.png",
@@ -77,6 +78,9 @@ func _verify_viewport(packed: PackedScene, physical_size: Vector2i) -> void:
 	root.size = physical_size
 	await process_frame
 	await process_frame
+	var manager := GameAudio.ensure(self) as Node
+	_check(manager != null and manager.get_parent() == root,
+		"persistent root-owned soundtrack exists before Catch fixture mounts")
 	var initial_count := root.get_child_count()
 	var host := Control.new()
 	host.name = "RevertHUDHost"
@@ -95,9 +99,9 @@ func _verify_viewport(packed: PackedScene, physical_size: Vector2i) -> void:
 	game.set_process(false)
 
 	var hud := game.get_node_or_null("HUDLayer/HUD") as Control
-	var body := game.get_node_or_null("Boy/Body") as Sprite2D
-	var basket := game.get_node_or_null("Boy/Basket") as Sprite2D
-	var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+	var body := game.get_node_or_null("Bear/Body") as Sprite2D
+	var basket := game.get_node_or_null("Bear/Basket") as Sprite2D
+	var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
 	var time_label := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimerPlaque") as TextureRect
 	var heart_box := game.get_node_or_null("HUDLayer/HUD/HeartsBox") as HBoxContainer
@@ -157,7 +161,7 @@ func _verify_viewport(packed: PackedScene, physical_size: Vector2i) -> void:
 				"activity": "Catch the Word",
 				"topic": topic,
 				"game_mode": mode,
-				"catch_character": "Girl",
+				"catch_character": "Cat",
 				"catch_map": "City",
 				"difficulty": "Normal",
 				"lives": 3,
@@ -335,9 +339,9 @@ func _check_visible_bounds(hud: Control, physical: Vector2i, label: String) -> v
 	_check(logical.x > 0.0 and logical.y > 0.0,
 		label + ": valid logical viewport")
 	var names := ["TitlePlaque", "TimerPlaque", "LivesPlaque",
-		"PausePlaque", "ScorePlaque", "ScoreBottomContainer"]
+		"PausePlaque", "ScorePlaque", "ScoreNumber"]
 	for name in names:
-		var control := hud.get_parent().get_parent().get_node_or_null("ScoreDrawLayer/" + name) as Control if name in ["ScorePlaque", "ScoreBottomContainer"] else hud.get_node_or_null(name) as Control
+		var control := hud.get_parent().get_parent().get_node_or_null("ScoreDrawLayer/" + name) as Control if name in ["ScorePlaque", "ScoreNumber"] else hud.get_node_or_null(name) as Control
 		if control == null or not control.is_visible_in_tree():
 			continue
 		var actual := control.get_global_rect()

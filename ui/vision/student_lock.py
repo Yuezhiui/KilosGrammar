@@ -1,8 +1,17 @@
-"""Temporary, camera-local single-student tracking with automatic recovery.
+"""Single-occupant, fresh-pose gate for the classroom webcam.
 
-ByteTrack IDs are not biometric identities. Never hand control to a different
-visible track without a new, unambiguous CENTER hold. A short absence alone
-does not erase the student's calibrated movement range.
+ByteTrack ID is ONLY a diagnostic. It cannot authenticate a child, and is not
+used to select, enroll, stop, resume, or bind calibration. During a round:
+
+* NO person: no controller, pause until a fresh solo hold.
+* TWO OR MORE detected persons: no controller, regardless of relative size,
+  physical tracker ID or whether all keypoints are currently visible.
+* EXACTLY ONE real, eligible body: allow controls after a short consecutive,
+  spatially steady source-pose hold; keep the existing game's calibration.
+
+This explicitly does not promise to recognize the same human who left a
+completely empty classroom; occupancy cannot establish identity. The game
+should use the teacher-verified round/session if identity matters.
 """
 
 from __future__ import annotations
@@ -11,155 +20,195 @@ import math
 
 
 class StudentLock:
-    ENROLL_SECONDS = 1.2
-    ENROLL_FRAMES = 8
-    RECOVER_SECONDS = 2.4
-    RECOVER_FRAMES = 12
+    ENROLL_SECONDS = 0.65
+    ENROLL_FRAMES = 4
+    RECOVER_SECONDS = 0.65
+    RECOVER_FRAMES = 4
+    # Sparse but genuinely fresh 1-2 FPS inference should still finish a hold.
+    # This is a gap between new real YOLO source frames, never redraws.
+    MAX_SOURCE_GAP = 1.25
+    MAX_STABLE_X_SPREAD = 0.115
+    MAX_STABLE_SIZE_RATIO = 1.38
+    # A *confirmed* solo occupant is allowed to MOVE while playing. Treating
+    # a large between-inference X/box jump as loss forced another .65s hold,
+    # making classroom gameplay alternate PAUSE / PLAY on fast body motion.
+    # Spatial stability is checked when enrolling/recovering, not while active.
     MIN_BOX_HEIGHT = 0.20
-    CENTER_MIN = 0.28
-    CENTER_MAX = 0.72
-    DOMINANCE_RATIO = 1.45
-    MAX_LOST_SECONDS = 0.8
-    SAME_ID_GRACE_SECONDS = 10.0
-    MAX_DELTA_X = 0.18
-    MAX_SIZE_RATIO = 1.9
-    CLEAR_VIEW_SECONDS = 0.35
 
     def __init__(self) -> None:
+        # Legacy property retained as an always-unassigned diagnostic. This
+        # system NEVER registers a camera identity for the human.
         self.locked_id: int | None = None
-        self.candidate_id: int | None = None
-        self.candidate_since = 0.0
-        self.candidate_frames = 0
-        self.lost_since: float | None = None
-        self.needs_reenrollment = False
-        self.empty_since: float | None = None
+        self.physical_track_id = -1
+        self.tracking_epoch = 0
+        self.needs_recalibration = False
+        self.lock_reacquired = False
+        self.previous_locked_id: int | None = None
         self.view_was_clear = False
+        self.needs_reenrollment = False
+        self.lost_since: float | None = None
+        self.empty_since: float | None = None
+        self.previous_seen: float | None = None
         self.previous_x: float | None = None
         self.previous_height: float | None = None
-        self.previous_seen = 0.0
+        self.candidate_since: float | None = None
+        self.candidate_last_seen: float | None = None
+        self.candidate_frames = 0
+        self.candidate_x: float | None = None
+        self.candidate_height: float | None = None
 
     def require_clear_reenrollment(self) -> None:
-        """Used after worker restart, when prior ByteTrack IDs are all invalid."""
-        self.locked_id = -1  # Sentinel; real ByteTrack IDs are nonnegative.
-        self.needs_reenrollment = True
-        self.view_was_clear = False
-        self.empty_since = None
-        self._clear_enrollment()
+        """Worker restart: require a new solo hold, NOT an empty-camera ritual."""
+        self._suspend(None)
 
     @staticmethod
     def _valid(person: dict) -> bool:
+        """Only actual observed, trustworthy torso/box coordinates can steer."""
+        if not isinstance(person, dict) or person.get("eligible", True) is False:
+            return False
         try:
             x = float(person["x"])
             height = float(person["height"])
-            return math.isfinite(x) and math.isfinite(height) and 0 <= x <= 1 and height > 0
-        except (ValueError, TypeError, KeyError):
+            return (math.isfinite(x) and math.isfinite(height)
+                    and 0 <= x <= 1 and height >= StudentLock.MIN_BOX_HEIGHT)
+        except (ValueError, TypeError, KeyError, OverflowError):
             return False
 
-    def _continuous(self, target: dict, now: float) -> bool:
-        elapsed = min(max(now - self.previous_seen, 0.0), 1.0)
-        x = float(target["x"])
-        height = float(target["height"])
-        if self.previous_x is not None and abs(x - self.previous_x) > self.MAX_DELTA_X + elapsed * 0.25:
+    @staticmethod
+    def _physical_id(person: dict) -> int:
+        """Diagnostics only. Missing/invalid ByteTrack IDs never block play."""
+        try:
+            value = person.get("track_id", -1)
+            if value is None or isinstance(value, bool):
+                return -1
+            raw = float(value)
+            if not math.isfinite(raw) or raw < 0 or not raw.is_integer():
+                return -1
+            return int(raw)
+        except (TypeError, ValueError, OverflowError):
+            return -1
+
+    def _clear_candidate(self) -> None:
+        self.candidate_since = None
+        self.candidate_last_seen = None
+        self.candidate_frames = 0
+        self.candidate_x = None
+        self.candidate_height = None
+
+    def _suspend(self, now: float | None) -> None:
+        self.needs_reenrollment = True
+        if self.lost_since is None:
+            self.lost_since = now
+        self.previous_seen = None
+        self.physical_track_id = -1
+        self._clear_candidate()
+
+    def _continuous(self, person: dict, now: float) -> bool:
+        if (self.previous_seen is None or self.previous_x is None
+                or self.previous_height is None):
             return False
-        if self.previous_height is not None and self.previous_height > 0:
-            ratio = height / self.previous_height
-            if not (1.0 / self.MAX_SIZE_RATIO <= ratio <= self.MAX_SIZE_RATIO):
-                return False
-        return True
+        elapsed = now - self.previous_seen
+        return 0.0 <= elapsed <= self.MAX_SOURCE_GAP
 
-    def _record(self, target: dict, now: float) -> None:
-        self.locked_id = int(target["track_id"])
-        self.previous_x = float(target["x"])
-        self.previous_height = float(target["height"])
-        self.previous_seen = now
-        self.lost_since = None
-        self.needs_reenrollment = False
-        self.empty_since = None
-        self.view_was_clear = False
-        self._clear_enrollment()
+    def _temporarily_unusable_torso(self, now: float) -> None:
+        """One real person, but this frame has no trustworthy torso geometry.
 
-    def update(self, people: list[dict], now: float) -> tuple[dict | None, str, str]:
-        """Select a real detected student, or None with a child-friendly hint."""
-        people = [p for p in people if self._valid(p)]
+        Never return a controller for that frame. Retain a *recent* confirmed
+        solo hold so one poor-confidence frame does not trigger another .65s
+        enrollment. A prolonged run of bad torso frames is a genuine tracking
+        loss and requires fresh stable re-enrollment.
+        """
+        self.physical_track_id = -1
+        if self.previous_seen is None or now - self.previous_seen > self.MAX_SOURCE_GAP:
+            self._suspend(now)
 
-        if self.locked_id is not None and not self.needs_reenrollment:
-            target = next((p for p in people if p["track_id"] == self.locked_id), None)
-            if target is not None:
-                if now - self.previous_seen <= self.SAME_ID_GRACE_SECONDS and self._continuous(target, now):
-                    self._record(target, now)
-                    return target, "locked", "PLAYER FOUND! Keep playing."
-                self.needs_reenrollment = True
-                self.lost_since = self.lost_since if self.lost_since is not None else now
-                return None, "lost", "Please stand alone in CENTER so the camera can find you again."
-
-            if self.lost_since is None:
-                self.lost_since = now
-            if not people:
-                if self.empty_since is None:
-                    self.empty_since = now
-                if now - self.empty_since >= self.CLEAR_VIEW_SECONDS:
-                    self.view_was_clear = True
-            # Another track appeared while our student was hidden. It may be
-            # a classmate or a changed ByteTrack ID; neither can be trusted.
-            if people:
-                self.empty_since = None
-                self.needs_reenrollment = True
-            if now - self.lost_since <= self.MAX_LOST_SECONDS:
-                return None, "occluded", "I can't see you. Step back into the camera view."
-            if not self.needs_reenrollment:
-                return None, "lost", "Come back into view. Your game position is saved."
-
-        # Fresh enrollment and recovery both require an unobstructed student
-        # in CENTER. A previously lost lock requires a longer steady hold.
-        recovering = self.locked_id is not None
-        if recovering and not people:
-            if self.empty_since is None:
-                self.empty_since = now
-            if now - self.empty_since >= self.CLEAR_VIEW_SECONDS:
-                self.view_was_clear = True
-        if recovering and not self.view_was_clear:
-            self._clear_enrollment()
-            return None, "lost", "Step out of view briefly, then stand alone in CENTER."
-        choices = [p for p in people if self.CENTER_MIN <= p["x"] <= self.CENTER_MAX
-                   and p["height"] >= self.MIN_BOX_HEIGHT]
-        if not choices:
-            self._clear_enrollment()
-            return None, "lost" if recovering else "waiting", (
-                "Stand alone in the CENTER box to reconnect." if recovering
-                else "Stand inside the CENTER box so I can find you.")
-
-        ranked = sorted(choices, key=lambda p: p["height"], reverse=True)
-        if len(ranked) > 1 and ranked[0]["height"] < ranked[1]["height"] * self.DOMINANCE_RATIO:
-            self._clear_enrollment()
-            return None, "ambiguous", "One student at a time, please! Clear the CENTER box."
-
-        # Recovery must be solo across the WHOLE view, not just the center;
-        # a nearby bystander with a different track must not gain control.
-        if recovering and len(people) != 1:
-            self._clear_enrollment()
-            return None, "lost", "Ask classmates to step aside while we reconnect."
-
-        selected = ranked[0]
-        person_id = int(selected["track_id"])
-        if self.candidate_id != person_id:
-            self.candidate_id = person_id
+    def _start_or_continue_hold(self, person: dict, now: float) -> float:
+        x = float(person["x"])
+        height = float(person["height"])
+        still = (
+            self.candidate_since is not None
+            and self.candidate_last_seen is not None
+            and self.candidate_x is not None
+            and self.candidate_height is not None
+            and 0 <= now - self.candidate_last_seen <= self.MAX_SOURCE_GAP
+            and abs(x - self.candidate_x) <= self.MAX_STABLE_X_SPREAD
+            and 1.0 / self.MAX_STABLE_SIZE_RATIO
+            <= height / self.candidate_height <= self.MAX_STABLE_SIZE_RATIO
+        )
+        if not still:
             self.candidate_since = now
             self.candidate_frames = 1
+            self.candidate_x = x
+            self.candidate_height = height
         else:
             self.candidate_frames += 1
+        self.candidate_last_seen = now
+        return now - self.candidate_since
 
-        required_seconds = self.RECOVER_SECONDS if recovering else self.ENROLL_SECONDS
-        required_frames = self.RECOVER_FRAMES if recovering else self.ENROLL_FRAMES
-        remaining = max(0.0, required_seconds - (now - self.candidate_since))
-        if remaining > 0 or self.candidate_frames < required_frames:
-            instruction = ("RECONNECTING" if recovering else "FINDING PLAYER")
-            return None, "lost" if recovering else "enrolling", (
-                f"{instruction}: stay still in CENTER ({remaining:.1f}s)")
+    def update(self, people: list[dict], now: float,
+               detected_count: int | None = None) -> tuple[dict | None, str, str]:
+        """Return a controller only for one fresh, stable REAL detected body.
 
-        self._record(selected, now)
-        return selected, "locked", "PLAYER FOUND! Keep playing."
+        The caller supplies exactly one update per genuinely fresh inference
+        frame (never once per Godot draw). detected_count is YOLO's raw
+        observed person count and takes precedence over missing tracker IDs
+        or unprocessable keypoints in people.
+        """
+        self.lock_reacquired = False
+        try:
+            count = len(people) if detected_count is None else int(detected_count)
+        except (TypeError, ValueError, OverflowError):
+            count = -1
+        if count < 0:
+            self._suspend(now)
+            return None, "ambiguous", "Camera detection unavailable. Wait for a fresh frame."
+        if count == 0:
+            self._suspend(now)
+            self.view_was_clear = True
+            if self.empty_since is None:
+                self.empty_since = now
+            return None, "lost", "Come back into the camera view. Your round is paused."
+        self.empty_since = None
+        self.view_was_clear = False
+        if count >= 2 or len(people) != 1:
+            self._suspend(now)
+            return None, "ambiguous", "Multiple people detected. One person at a time."
 
-    def _clear_enrollment(self) -> None:
-        self.candidate_id = None
-        self.candidate_frames = 0
-        self.candidate_since = 0.0
+        single = people[0]
+        if not self._valid(single):
+            self._temporarily_unusable_torso(now)
+            return None, "occluded", "One person visible. Show your torso clearly."
+
+        # A valid body may have a different/new/missing ByteTrack ID every
+        # frame. It never invalidates the same round's calibrated positions.
+        if not self.needs_reenrollment and self.tracking_epoch > 0 \
+                and self._continuous(single, now):
+            self._record(single, now)
+            return single, "locked", "ONE PLAYER FOUND. Keep playing."
+
+        # A real interruption (or old source position jump) must earn a modest
+        # new solo, steady pose hold, then gameplay resumes WITHOUT calibrating.
+        self.needs_reenrollment = True
+        elapsed = self._start_or_continue_hold(single, now)
+        seconds = self.RECOVER_SECONDS if self.tracking_epoch > 0 else self.ENROLL_SECONDS
+        frames = self.RECOVER_FRAMES if self.tracking_epoch > 0 else self.ENROLL_FRAMES
+        if elapsed < seconds or self.candidate_frames < frames:
+            return None, "enrolling", (
+                f"One person detected. Stand still ({max(0.0, seconds - elapsed):.1f}s).")
+        recovered = self.tracking_epoch > 0
+        self._record(single, now)
+        if not recovered:
+            self.tracking_epoch = 1
+        else:
+            self.lock_reacquired = True
+        return single, "locked", "ONE PLAYER READY. Round resumed." if recovered \
+            else "ONE PLAYER READY. Begin calibration."
+
+    def _record(self, person: dict, now: float) -> None:
+        self.previous_x = float(person["x"])
+        self.previous_height = float(person["height"])
+        self.previous_seen = now
+        self.physical_track_id = self._physical_id(person)
+        self.needs_reenrollment = False
+        self.lost_since = None
+        self._clear_candidate()

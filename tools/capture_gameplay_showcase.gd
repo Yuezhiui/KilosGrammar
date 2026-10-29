@@ -5,9 +5,9 @@ extends SceneTree
 # Godot --path . --rendering-method gl_compatibility --script res://tools/capture_gameplay_showcase.gd
 
 const SCENES := [
-	{"name": "Catch the Word", "filename": "catch_the_word.png", "path": "res://ui/minigames/catch_word.tscn"},
-	{"name": "Balloon Popping", "filename": "balloon_popping.png", "path": "res://ui/minigames/balloon_popping.tscn"},
-	{"name": "Human Plane", "filename": "human_plane.png", "path": "res://ui/minigames/human_plane.tscn"},
+	{"name": "Catch the Word", "filename": "catch_the_word.png", "path": "res://ui/minigames/catch_the_word/catch_word.tscn"},
+	{"name": "Balloon Popping", "filename": "balloon_popping.png", "path": "res://ui/minigames/balloon_popping/balloon_popping.tscn"},
+	{"name": "Human Plane", "filename": "human_plane.png", "path": "res://ui/minigames/human_plane/human_plane.tscn"},
 ]
 
 const SCREEN_SIZE := Vector2i(1280, 720)

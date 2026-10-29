@@ -2,7 +2,7 @@ extends SceneTree
 
 # Direct viewport pointer dispatch, not calling handlers or emitting pressed.
 # FILTERS is now deleted entirely; exercise the three remaining native controls.
-const SCENE := preload("res://ui/secondary/leaderboard.tscn")
+const SCENE := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 var failures := 0
 
 func _initialize() -> void:

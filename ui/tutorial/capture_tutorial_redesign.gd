@@ -7,9 +7,8 @@ const OUTPUT := "res://showcase/ui_redesign_m1"
 const DIMENSIONS := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const SCREENS := {
 	"tutorial_home": "res://ui/tutorial/tutorial_home.tscn",
-	"grammar_guide": "res://ui/tutorial/grammar_guide.tscn",
-	"camera_check": "res://ui/vision/camera_check.tscn",
-	"calibration": "res://ui/vision/calibration.tscn"
+	"grammar_guide": "res://ui/tutorial/grammar_guide/grammar_guide.tscn",
+	"calibration": "res://ui/vision/calibration/calibration.tscn"
 }
 
 func _initialize() -> void:
@@ -59,4 +58,4 @@ func _run() -> void:
 			screen.queue_free()
 			await process_frame
 	print("TUTORIAL REDESIGN: %d captures, %d failures" % [captures, failures])
-	quit(0 if failures == 0 and captures == 18 else 1)
+	quit(0 if failures == 0 and captures == SCREENS.size() * DIMENSIONS.size() else 1)

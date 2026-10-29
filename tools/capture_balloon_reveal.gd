@@ -5,7 +5,7 @@ extends SceneTree
 # Run WITHOUT --headless:
 # Godot --path . --script res://tools/capture_balloon_reveal.gd
 
-const SCENE: PackedScene = preload("res://ui/minigames/balloon_popping.tscn")
+const SCENE: PackedScene = preload("res://ui/minigames/balloon_popping/balloon_popping.tscn")
 const OUTPUT := "res://showcase/balloon_asset_review/fixed"
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const FRAME_TIMES := [0.0, 0.08, 0.18, 0.32, 0.49, 0.68, 0.91, 1.30]

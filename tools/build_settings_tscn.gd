@@ -5,7 +5,7 @@ const TITLE_FONT_PATH := "res://assets/fonts/Comic Lemon.otf"
 const BACKDROP_SCENE := preload("res://ui/shared/lexi_reference_backdrop.tscn")
 const SETTINGS_ART := "res://Components/Settings/Redesign/"
 const CLASSROOM_ART := "res://Components/Shared/Redesign/classroom_bg.png"
-const OUT_PATH := "res://ui/secondary/settings.tscn"
+const OUT_PATH := "res://ui/secondary/settings/settings.tscn"
 
 const INK := Color("#474660")
 const INK_DARK := Color("#152557")
@@ -258,7 +258,7 @@ func _run() -> void:
 	_apply_full_art_button(home_button, "button_home.png")
 	main_stage.add_child(home_button)
 
-	root_node.set_script(load("res://ui/secondary/settings.gd"))
+	root_node.set_script(load("res://ui/secondary/settings/settings.gd"))
 
 	# Set recursive owner to root_node so everything is saved to .tscn
 	_set_owner_recursive(root_node, root_node)
@@ -308,9 +308,6 @@ func _build_settings_page_to(page_scroll: ScrollContainer) -> void:
 	var sfx_slider := _slider("EffectsSlider")
 	var sfx_val := _value_label("EffectsValue")
 	audio_fields.add_child(_slider_row("EFFECTS", sfx_slider, sfx_val, "icon_star.png"))
-
-	var mute_check := _toggle("MuteCheck")
-	audio_fields.add_child(_toggle_row("MUTE ALL AUDIO", "Master bus mute", mute_check, "icon_muted.png"))
 
 	# Display card
 	var disp_fields := _add_settings_group(page, "DISPLAY", "icon_screen.png")

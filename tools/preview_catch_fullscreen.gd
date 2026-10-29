@@ -4,17 +4,17 @@ extends SceneTree
 # replace the application's main scene or modify the project's window settings.
 # Run through tools/run_catch_fullscreen.ps1 (or Godot --script with user args).
 
-const CATCH_SCENE := "res://ui/minigames/catch_word.tscn"
-const RESULTS_SCRIPT := preload("res://ui/secondary/results.gd")
+const CATCH_SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
+const RESULTS_SCRIPT := preload("res://ui/secondary/results/results.gd")
 const DEFAULTS := {
-	"character": "Boy",
+	"character": "Bear",
 	"topic": "Noun",
 	"map": "City",
 	"mode": "Seconds",
 	"difficulty": "Easy",
 }
 const ALLOWED := {
-	"character": ["Boy", "Girl", "Grandma", "Grandpa"],
+	"character": ["Bear", "Cat", "Dog", "Lion", "Panda"],
 	"topic": ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"],
 	"map": ["City", "Forest", "Mountain"],
 	"mode": ["Seconds", "Lives"],

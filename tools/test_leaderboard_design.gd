@@ -12,7 +12,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var scene := load("res://ui/secondary/leaderboard.tscn") as PackedScene
+	var scene := load("res://ui/secondary/leaderboard/leaderboard.tscn") as PackedScene
 	_check(scene != null, "Leaderboard scene loads")
 	if scene == null:
 		quit(1)

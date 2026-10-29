@@ -3,8 +3,8 @@ extends SceneTree
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_three_heart_hud.gd
 # Verify the HUMAN PLANE HUD is a genuine scene-authored clone of Catch the
 # Word, with original editable coordinates and precisely three life states.
-const SCENE := preload("res://ui/minigames/human_plane.tscn")
-const CATCH_SCENE := preload("res://ui/minigames/catch_word.tscn")
+const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
+const CATCH_SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const LIVES_STATE_3 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png")
 const LIVES_STATE_2 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_2.png")
 const LIVES_STATE_1 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_1.png")

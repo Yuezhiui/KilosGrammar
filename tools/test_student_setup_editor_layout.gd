@@ -3,14 +3,13 @@ extends SceneTree
 # Run: Godot --headless --path . --script res://tools/test_student_setup_editor_layout.gd
 # The authoring check happens BEFORE _ready(): nodes added from GDScript are
 # never mistaken for editable nodes saved in student_setup.tscn.
-const SCENE_PATH := "res://ui/student/student_setup.tscn"
+const SCENE_PATH := "res://ui/student/setup/student_setup.tscn"
 const REQUIRED_FIELDS := {
 	"_student_id_edit": "Student ID",
 	"_name_edit": "Student Name",
 	"_grade_edit": "Grade & Section",
 }
 const REQUIRED_ACTIONS := {
-	"_lookup_button": "Lookup",
 	"_back_button": "Back",
 	"_continue_button": "Continue",
 }
@@ -64,7 +63,7 @@ func _check_flow(packed: PackedScene, guided: bool) -> void:
 		if control is TextureRect and (control as TextureRect).texture != null:
 			textured_art.append(control as TextureRect)
 	_check(authored_inputs >= 3, label + " ID/name/grade fields must exist in .tscn before _ready")
-	_check(authored_buttons >= 13, label + " required native teacher/action buttons must exist in .tscn before _ready")
+	_check(authored_buttons >= 12, label + " five topics, two modes, three difficulties and two navigation buttons are editor-authored")
 	_check(textured_art.size() >= 3, label + " decorative PNGs must be inspectable TextureRects in .tscn")
 	for art in textured_art:
 		var inspectable_width := art.size.x > 0.0 or art.custom_minimum_size.x > 0.0 or art.anchor_right > art.anchor_left
@@ -76,9 +75,8 @@ func _check_flow(packed: PackedScene, guided: bool) -> void:
 	panel.set_context({"guided_tutorial": guided, "activity": "Catch the Word"} if guided else {})
 	await process_frame
 	await process_frame
-	var modal := panel.get("_score_dialog") as Node
 	var runtime_controls: Array[Control] = []
-	_collect_runtime_ui(panel, modal, runtime_controls)
+	_collect_runtime_ui(panel, runtime_controls)
 	var ghost_count := 0
 	for control in runtime_controls:
 		if control is LineEdit or control is Button or control is TextureRect:
@@ -116,8 +114,18 @@ func _check_flow(packed: PackedScene, guided: bool) -> void:
 	var game_card := panel.get("_game_card") as Control
 	_check(student_card != null and authored_ids.has(student_card.get_instance_id()), label + " Student Profile panel is scene-authored")
 	_check(game_card != null and authored_ids.has(game_card.get_instance_id()), label + " Game Setup panel is scene-authored")
-	var scroll := panel.get("_content_scroll") as ScrollContainer
-	_check(scroll != null and authored_ids.has(scroll.get_instance_id()), label + " setup scroll container is scene-authored")
+	var stage := panel.get_node_or_null("SetupStage") as Control
+	_check(stage != null and authored_ids.has(stage.get_instance_id())
+		and stage.size.is_equal_approx(Vector2(1280, 720)),
+		label + " teacher-edited SetupStage remains an authored 1280x720 stage")
+	var style_grid := panel.get_node_or_null("SetupStage/GameSetupCard/GameContent/GameStyleGrid") as Control
+	_check(style_grid != null and style_grid.get_child_count() == 5,
+		label + " only five authored grammar topic buttons survive")
+	for removed in ["PrepositionButton", "ConjunctionButton", "InterjectionButton"]:
+		_check(panel.find_child(removed, true, false) == null,
+			label + " no retired " + removed)
+	_check(panel.find_child("ExistingScoreDialog", true, false) == null,
+		label + " no removed ExistingScoreDialog modal")
 
 	var requested: Array[Dictionary] = []
 	panel.requested.connect(func(route: String, payload: Dictionary) -> void:
@@ -172,13 +180,11 @@ func _collect_authored(node: Node, scene_root: Control, ids: Dictionary, control
 		_collect_authored(child, scene_root, ids, controls)
 
 
-func _collect_runtime_ui(node: Node, modal: Node, controls: Array[Control]) -> void:
+func _collect_runtime_ui(node: Node, controls: Array[Control]) -> void:
 	for child in node.get_children():
-		if child == modal:
-			continue # Existing-score popup is an intentional separate PackedScene.
 		if child is Control:
 			controls.append(child as Control)
-		_collect_runtime_ui(child, modal, controls)
+		_collect_runtime_ui(child, controls)
 
 
 func _check(ok: bool, message: String) -> void:

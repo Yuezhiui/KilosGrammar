@@ -1,19 +1,14 @@
 extends SceneTree
 
-# Run: Godot --headless --path . --script res://tools/test_guided_onboarding.gd
-# Integration coverage for the real game wrapper, without webcam access.
-const WRAPPER := "res://ui/play/gameplay.tscn"
-const SPOTLIGHT := "res://ui/tutorial/spotlight_overlay.tscn"
-const COUNTDOWN := preload("res://ui/play/guided_countdown.tscn")
-const SCENARIOS := [
-	{"activity": "Catch the Word", "mode": "Seconds"},
-	{"activity": "Catch the Word", "mode": "Lives"},
-	{"activity": "Balloon Popping", "mode": "Seconds"},
-	{"activity": "Balloon Popping", "mode": "Lives"},
-	{"activity": "Human Plane", "mode": "Seconds"},
-	{"activity": "Human Plane", "mode": "Lives"}
-]
+# Godot 4.7.2 --headless --path . --script res://tools/test_guided_onboarding.gd
+# Distinct QA from the viewport matrix: scene-authored countdown, native
+# Pause behavior and no-countdown legacy normal Play. No camera/DB/network.
+const WRAPPER := "res://ui/play/gameplay/gameplay.tscn"
+const COUNTDOWN := "res://ui/play/gameplay/guided_countdown.tscn"
+const ACTIVITIES := ["Catch the Word", "Balloon Popping", "Human Plane"]
+const MODES := ["Seconds", "Lives"]
 
+var checks := 0
 var failures: Array[String] = []
 
 
@@ -23,34 +18,48 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	_expect(ResourceLoader.exists(SPOTLIGHT), "Scene-authored spotlight is installed")
-	var countdown := COUNTDOWN.instantiate() as Control
-	_expect(countdown != null, "Countdown is an editable Control scene")
-	if countdown != null:
-		_expect(countdown.get_node_or_null("CountdownNumber") is Label, "Countdown label is editor-authored")
-		_expect(countdown.get_node_or_null("GetReadyTitle") is Label, "Countdown headline is editor-authored")
-		_expect(countdown.get_node_or_null("CountdownTimer") is Timer, "Countdown timer is part of the .tscn")
-		countdown.free()
-	for scenario in SCENARIOS:
-		await _check_guided(String(scenario["activity"]), String(scenario["mode"]))
-	await _check_regular_play()
-	print("GUIDED ONBOARDING: ", "PASS" if failures.is_empty() else "FAIL (%d)" % failures.size())
-	for failure in failures:
-		printerr("FAIL guided-onboarding: ", failure)
-	quit(0 if failures.is_empty() else 1)
+	var pose := root.get_node_or_null("PoseService")
+	_expect(pose != null, "real PoseService exists")
+	if pose == null:
+		_finish()
+		return
+	pose.stop_camera()
+	pose.set_process(false)
+	_expect(not FileAccess.file_exists("res://ui/tutorial/spotlight/spotlight_overlay.tscn"),
+		"deleted standalone spotlight scene stays absent")
+	var authored := load(COUNTDOWN) as PackedScene
+	_expect(authored != null, "shared count-in PackedScene survives")
+	if authored != null:
+		var panel := authored.instantiate() as Control
+		_expect(panel != null and panel.get_node_or_null("CountdownNumber") is Label,
+			"3-2-1 digits are editor-authored")
+		_expect(panel != null and panel.get_node_or_null("CountdownTimer") is Timer,
+			"3-2-1 timing is editor-authored")
+		panel.free()
+	var scene := load(WRAPPER) as PackedScene
+	_expect(scene != null, "shared game wrapper survives")
+	if scene != null:
+		for activity in ACTIVITIES:
+			for mode in MODES:
+				await _guided_case(scene, activity, mode)
+		await _normal_play_native_pause(scene)
+	pose.worker_pid = -1
+	pose.stop_camera()
+	pose.set_process(true)
+	_finish()
 
 
-func _check_guided(activity: String, mode: String) -> void:
+func _guided_case(scene: PackedScene, activity: String, mode: String) -> void:
 	var label := "%s / %s" % [activity, mode]
-	var wrapper := (load(WRAPPER) as PackedScene).instantiate() as Control
+	var wrapper := scene.instantiate() as Control
 	root.add_child(wrapper)
 	wrapper.set_context({
 		"activity": activity, "game_mode": mode,
-		"guided_tutorial": true, "keyboard_mode": true,
-		"camera_live": false, "topic": "Noun", "game_style": "Noun",
+		"guided_tutorial": true, "start_countdown": true,
+		"camera_live": false, "keyboard_mode": false,
+		"calibration_measured": false, "topic": "Noun",
 		"difficulty": "Easy"
 	})
-	await process_frame
 	await process_frame
 	await process_frame
 	var game := wrapper.get_node_or_null("ActiveMiniGame") as Control
@@ -59,174 +68,115 @@ func _check_guided(activity: String, mode: String) -> void:
 		wrapper.queue_free()
 		await process_frame
 		return
-	_expect(game.process_mode == Node.PROCESS_MODE_DISABLED, label + ": gameplay/input frozen during tutorial")
-	_expect(String(wrapper.get("guided_stage")) == "tutorial", label + ": spotlight comes before gameplay")
-	var overlay := wrapper.get("spotlight_overlay") as CanvasLayer
-	_expect(overlay != null, label + ": spotlight is visible")
-	var focus := wrapper.call("_spotlight_targets") as Dictionary
-	_expect(focus.has("pause") and focus.has("play_area"), label + ": targets live game controls")
-	_expect(focus.has("prompt") and focus.has("score") and focus.has("mode"), label + ": prompt, score and mode HUD targets exist")
-	if focus.has("mode"):
-		var expected_mode := "LivesPlaque" if mode == "Lives" else "TimerPlaque"
-		_expect(String((focus["mode"] as Node).name) == expected_mode, label + ": spotlight selects proper time/life counter")
-	if activity == "Human Plane":
-		# Human Plane now uses the same scene-authored CanvasLayer/HUD nodes as
-		# Catch the Word. Obsolete HUD/* artwork paths silently fall back to
-		# generic spotlight rectangles and fail to highlight the live controls.
-		var hud_targets := {
-			"prompt": "HUDLayer/HUD/PromptLabel",
-			"mode": "HUDLayer/HUD/LivesPlaque" if mode == "Lives" else "HUDLayer/HUD/TimerPlaque",
-			"score": "HUDLayer/HUD/ScorePlaque",
-			"pause": "HUDLayer/HUD/PauseButton",
-			"play_area": "PlaneRig",
-		}
-		for key in hud_targets:
-			var expected := game.get_node_or_null(String(hud_targets[key])) as CanvasItem
-			_expect(expected != null, label + ": authored %s target exists (%s)" % [key, hud_targets[key]])
-			_expect(expected != null and focus.get(key) == expected,
-				label + ": %s resolves to live %s (not obsolete HUD/* or fallback)" % [key, hud_targets[key]])
-			if key in ["prompt", "mode", "score", "pause"] and expected != null:
-				_expect(expected.is_visible_in_tree(), label + ": %s target is actually visible" % key)
-		var inactive_mode_path := (
-			"HUDLayer/HUD/TimerPlaque" if mode == "Lives" else "HUDLayer/HUD/LivesPlaque"
-		)
-		var inactive_mode := game.get_node_or_null(inactive_mode_path) as CanvasItem
-		_expect(inactive_mode != null and not inactive_mode.is_visible_in_tree(),
-			label + ": inactive Seconds/Lives plaque stays hidden")
-		if overlay != null:
-			_check_human_plane_spotlight(overlay, focus, label)
-	var initial_time := float(game.get("time_remaining"))
-	var initial_score := int(game.get("score"))
-	var initial_lives := _remaining_lives(game, activity)
-	# Movement-only preview remains enabled during spotlight without running
-	# scoring/timers; Human Plane is now explicitly gated by BOTH arms outward.
-	var initial_x := _visual_player_x(game, activity)
-	game.call("set_body_x", 0.85)
-	wrapper.call("_preview_guided_movement", 0.2)
-	if activity == "Human Plane":
-		_expect(is_equal_approx(_visual_player_x(game, activity), initial_x), label + ": arms lowered prevent airplane movement even during tutorial")
-		# After three-position calibration, WIDE arms enable the same
-		# physical left/right stepping preview used by Catch the Word.
-		# Tilt/gyro angle no longer controls Human Plane.
-		game.call("set_airplane_pose_active", true)
-		game.call("set_body_x", 0.85)
-		wrapper.call("_preview_guided_movement", 0.2)
-		_expect(not is_equal_approx(_visual_player_x(game, activity), initial_x), label + ": wide arms and calibrated body X enable guided movement without starting round")
-		game.call("set_airplane_pose_active", false)
-	else:
-		_expect(not is_equal_approx(_visual_player_x(game, activity), initial_x), label + ": body movement previews without starting the round")
-	await create_timer(0.16).timeout
-	_expect(is_equal_approx(float(game.get("time_remaining")), initial_time), label + ": clock holds through spotlight")
-	_expect(int(game.get("score")) == initial_score, label + ": scoring holds through spotlight")
-	_expect(_remaining_lives(game, activity) == initial_lives, label + ": lives hold through spotlight")
-	# Calling ESC through the wrapper must not trigger ordinary Pause underneath.
+	_expect(game.process_mode == Node.PROCESS_MODE_DISABLED,
+		label + ": all gameplay input/timers/physics disabled before GO")
+	_expect(String(wrapper.get("guided_stage")) == "countdown",
+		label + ": Guided routes DIRECTLY to 3-2-1, no tutorial/Spotlight stage")
+	_expect(not _has_legacy_spotlight(wrapper)
+		and _count_named(wrapper, "GuidedSpotlight") == 0
+		and _count_named(wrapper, "SpotlightOverlay") == 0,
+		label + ": no phantom overlay node/property")
+	var panel := wrapper.get("countdown_panel") as Control
+	_expect(panel != null, label + ": direct scene-authored countdown mounted once")
+	var digits := panel.get_node_or_null("CountdownNumber") as Label if panel != null else null
+	_expect(digits != null and digits.text == "3", label + ": count-in begins at 3")
+	_expect(String(game.get("game_mode")) == mode, label + ": selected mode retained")
+	var hud_root := "HudLayer" if activity == "Balloon Popping" else "HUDLayer/HUD"
+	var hud_path := hud_root + ("/LivesPlaque" if mode == "Lives" else "/TimerPlaque")
+	var hud := game.get_node_or_null(hud_path) as CanvasItem
+	_expect(hud != null and hud.is_visible_in_tree(),
+		label + ": matching Seconds/Lives HUD is visible")
+	var baseline := _snapshot(game)
+	var original_id := game.get_instance_id()
 	wrapper.call("_pause")
-	_expect(String(wrapper.get("guided_stage")) == "tutorial", label + ": native Pause cannot bypass spotlight")
-	if overlay != null:
-		_expect(overlay.has_signal("skipped") and overlay.has_signal("finished"), label + ": overlay exposes close signals")
-		if mode == "Lives":
-			# Exercise the actual Next/Start controls through all five Spotlight
-			# steps, including the active lives rule and finished signal.
-			var steps := overlay.call("get_step_ids") as PackedStringArray
-			_expect(steps.size() == 5, label + ": five interactive spotlight steps")
-			_expect(steps.has(activity.to_lower().replace(" ", "_").replace("the_", "") + "_lives"), label + ": lives rule appears in the walkthrough")
-			for step in range(steps.size()):
-				overlay.call("go_next")
-		else:
-			overlay.call("skip")
-	await process_frame
-	_expect(String(wrapper.get("guided_stage")) == "countdown", label + ": skip starts 3-2-1")
-	_expect(game.process_mode == Node.PROCESS_MODE_DISABLED, label + ": minigame remains frozen for countdown")
-	var countdown_panel := wrapper.get("countdown_panel") as Control
-	_expect(countdown_panel != null, label + ": countdown scene mounted")
-	if countdown_panel != null:
-		var number := countdown_panel.get_node_or_null("CountdownNumber") as Label
-		_expect(number != null and number.text == "3", label + ": countdown begins at 3")
+	_expect(String(wrapper.get("guided_stage")) == "countdown",
+		label + ": Pause cannot skip the frozen countdown")
+	await create_timer(0.16).timeout
+	_expect(_snapshot(game) == baseline, label + ": no time, score, hearts or lives spent before GO")
+	for next_digit in ["2", "1"]:
 		wrapper.call("_on_countdown_tick")
-		_expect(number.text == "2", label + ": countdown reaches 2")
+		_expect(digits != null and digits.text == next_digit,
+			label + ": genuine countdown advances to " + next_digit)
+		_expect(game.process_mode == Node.PROCESS_MODE_DISABLED and _snapshot(game) == baseline,
+			label + ": game remains frozen at " + next_digit)
+	wrapper.call("_on_countdown_tick")
+	_expect(game.process_mode == Node.PROCESS_MODE_INHERIT and
+		wrapper.get("countdown_panel") == null and
+		String(wrapper.get("guided_stage")) == "",
+		label + ": GO releases original game and removes countdown")
+	for i in range(3):
 		wrapper.call("_on_countdown_tick")
-		_expect(number.text == "1", label + ": countdown reaches 1")
-		_expect(game.process_mode == Node.PROCESS_MODE_DISABLED, label + ": remains frozen through last number")
-		wrapper.call("_on_countdown_tick")
-		_expect(game.process_mode == Node.PROCESS_MODE_INHERIT, label + ": child released after final countdown tick")
-		_expect(wrapper.get_node_or_null("ActiveMiniGame") == game, label + ": countdown resumes original minigame instance")
-		_expect(wrapper.get("countdown_panel") == null, label + ": countdown overlay removed")
+		wrapper.call("_complete_countdown_start")
+	_expect(game.get_instance_id() == original_id and _count_named(wrapper, "GuidedCountdown") == 0
+		and wrapper.get("countdown_panel") == null,
+		label + ": no duplicate countdown or new minigame from stale callbacks")
 	wrapper.queue_free()
 	await process_frame
 	await process_frame
-	print("Checked guided flow: ", label)
 
 
-func _check_regular_play() -> void:
-	var wrapper := (load(WRAPPER) as PackedScene).instantiate() as Control
+func _normal_play_native_pause(scene: PackedScene) -> void:
+	# Deliberately no start_countdown: unlike measured camera sessions, a
+	# non-guided wrapper is expected to preserve ordinary native pause/resume.
+	var wrapper := scene.instantiate() as Control
 	root.add_child(wrapper)
 	wrapper.set_context({
 		"activity": "Catch the Word", "game_mode": "Seconds",
-		"guided_tutorial": false, "keyboard_mode": true,
+		"guided_tutorial": false, "start_countdown": false,
 		"camera_live": false, "topic": "Noun", "difficulty": "Easy"
 	})
 	await process_frame
 	await process_frame
 	var game := wrapper.get_node_or_null("ActiveMiniGame") as Control
-	_expect(game != null and game.process_mode == Node.PROCESS_MODE_INHERIT, "Ordinary Play mounts running minigame immediately")
-	_expect(wrapper.get("spotlight_overlay") == null and wrapper.get("countdown_panel") == null, "Ordinary Play bypasses guided UI")
-	var requested_routes: Array[String] = []
-	wrapper.requested.connect(func(route: String, _payload: Dictionary) -> void: requested_routes.append(route))
+	_expect(game != null and game.process_mode == Node.PROCESS_MODE_INHERIT,
+		"normal Play with no count-in mounts immediately playing minigame")
+	_expect(wrapper.get("countdown_panel") == null and not _has_legacy_spotlight(wrapper),
+		"normal Play does not invent guided UI")
+	var routes: Array[String] = []
+	wrapper.requested.connect(func(route: String, _payload: Dictionary) -> void:
+		routes.append(route))
 	wrapper.call("_pause")
-	_expect(requested_routes.has("pause"), "Ordinary Play retains native Pause navigation")
+	_expect(routes.has("pause"), "normal Play still routes native Pause")
 	wrapper.call("_resume")
-	_expect(bool(game.get("round_running")), "Ordinary Play resumes native round state")
+	_expect(game != null and bool(game.get("round_running")),
+		"normal Play can resume original round")
 	wrapper.queue_free()
 	await process_frame
 	await process_frame
 
 
-func _remaining_lives(game: Control, activity: String) -> int:
-	if activity == "Balloon Popping":
-		return int(game.get("hearts"))
-	return int(game.get("lives"))
+func _snapshot(game: Control) -> Dictionary:
+	var saved := {}
+	for field in ["score", "time_remaining", "lives", "hearts", "round_running", "round_completed"]:
+		for property in game.get_property_list():
+			if String(property.get("name", "")) == field:
+				saved[field] = game.get(field)
+				break
+	return saved
 
 
-func _check_human_plane_spotlight(overlay: CanvasLayer, focus: Dictionary, label: String) -> void:
-	# The shader hole must follow each actual live target, including the
-	# CanvasLayer HUD, while NEXT/BACK continue to work. Restore step 1 before
-	# the existing onboarding assertions exercise Skip or Start Game.
-	var sequence: Array[String] = ["prompt", "play_area", "mode", "score", "pause"]
-	for index in range(sequence.size()):
-		if index > 0:
-			overlay.call("go_next")
-		var key: String = sequence[index]
-		var target := focus.get(key) as Control
-		if target == null:
-			continue
-		var hole := overlay.call("get_spotlight_rect") as Rect2
-		var center := target.get_global_rect().get_center()
-		if bool(overlay.get("use_editor_highlights")):
-			var slot_name: String = String({
-				"prompt": "Prompt", "play_area": "PlayArea", "mode": "Seconds" if label.contains("Seconds") else "Lives",
-				"score": "Score", "pause": "Pause"
-			}.get(key, "Prompt"))
-			var guide := overlay.get_node_or_null("Overlay/FocusRegions/HumanPlane/" + String(slot_name)) as Control
-			if guide != null:
-				center = guide.get_global_rect().get_center()
-		_expect(hole.get_area() > 0.0 and hole.has_point(center),
-			label + ": step %d spotlight hole covers the editor-authored %s guide" % [index + 1, key])
-	for _index in range(sequence.size() - 1):
-		overlay.call("go_back")
-	_expect(String(overlay.call("get_current_step_id")) == "human_plane_prompt",
-		label + ": spotlight navigation returns to the original prompt step")
+func _has_legacy_spotlight(wrapper: Control) -> bool:
+	for item in wrapper.get_property_list():
+		if String(item.get("name", "")) == "spotlight_overlay":
+			return true
+	return false
 
 
-func _visual_player_x(game: Control, activity: String) -> float:
-	match activity:
-		"Catch the Word":
-			return float(game.get("basket_x"))
-		"Balloon Popping":
-			return float(game.get("launcher_x"))
-		_:
-			return float(game.get("plane_x_norm"))
+func _count_named(root_node: Node, wanted: String) -> int:
+	var total := 1 if root_node.name == wanted else 0
+	for child in root_node.get_children():
+		total += _count_named(child, wanted)
+	return total
 
 
 func _expect(condition: bool, message: String) -> void:
+	checks += 1
 	if not condition:
 		failures.append(message)
+		printerr("GUIDED ONBOARDING RED: ", message)
+
+
+func _finish() -> void:
+	print("GUIDED ONBOARDING: %s checks=%d failures=%d (3 games x 2 modes + normal Play)" %
+		["PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
+	quit(0 if failures.is_empty() else 1)

@@ -3,8 +3,8 @@ extends SceneTree
 # End-to-end offline neutral CENTER calibration -> PoseService -> gameplay
 # wrapper -> actual Human Plane renderer. No webcam, DB, or real child data.
 # Godot --headless --path . --script res://tools/test_human_plane_body_integration.gd
-const CALIBRATION_SCENE := "res://ui/vision/calibration.tscn"
-const GAMEPLAY_SCENE := "res://ui/play/gameplay.tscn"
+const CALIBRATION_SCENE := "res://ui/vision/calibration/calibration.tscn"
+const GAMEPLAY_SCENE := "res://ui/play/gameplay/gameplay.tscn"
 const SESSION_TOKEN := "stationary-flight-wrapper-qa-only"
 const STUDENT_ID := 31
 const CAMERA_X := 0.50
@@ -187,8 +187,10 @@ func _test_live_wrapper(payload: Dictionary, mode: String, dimensions: Vector2i)
 	_check(int(game.get("score")) == original_score and int(game.get("attempts")) == 0,
 		label + " steering cannot award points before actual ring crossing")
 	_check(game.has_method("_lane_hit_at_answer_line") and
-		game.get_node_or_null("WorldView3D/Viewport3D/FlightWorld/CloudFlight/CloudProps") != null,
-		label + " 3D cloud renderer and authoritative collision resolver both remain live")
+		game.get_node_or_null("WorldView3D") == null and
+		game.get_node_or_null("FlightBackground") is TextureRect and
+		game.get_node_or_null("MovingGates/GateCenter/GateArtwork") is TextureRect,
+		label + " one-scene pseudo-3D artwork and authoritative collision resolver both remain live")
 	wrapper.call("preserve_camera_for_restart")
 	wrapper.queue_free()
 	await process_frame

@@ -3,7 +3,7 @@ extends SceneTree
 # Godot 4.7 --headless --path . --script res://tools/test_human_plane_body_steering.gd
 # Integration-free synthetic calibrated X samples; the production wrapper
 # verifies fresh BOTH-ARMS-WIDE poses before calling these methods.
-const PLANE_SCENE := preload("res://ui/minigames/human_plane.tscn")
+const PLANE_SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1920, 1080)]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const MODES := ["Seconds", "Lives"]

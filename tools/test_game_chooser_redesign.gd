@@ -2,7 +2,7 @@ extends SceneTree
 
 # Godot 4.7.2 --headless --path . --script res://tools/test_game_chooser_redesign.gd
 # Synthetic-only UI regression: no live camera, database or score mutation.
-const SCENE := preload("res://ui/play/play_activity.tscn")
+const SCENE := preload("res://ui/play/activity/play_activity.tscn")
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const PREFIX := "LayoutMargins/Content/"
 const BUTTON_PREFIX := PREFIX + "GameRow/GameOptions/GameOptionsContent/"
@@ -38,12 +38,12 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	_check(ResourceLoader.exists("res://ui/play/play_activity.tscn"), "production scene retained at original route")
+	_check(ResourceLoader.exists("res://ui/play/activity/play_activity.tscn"), "production scene retained at original route")
 	_check(ResourceLoader.exists("res://Components/Shared/Redesign/classroom_bg.png"),
 		"shared classroom background available")
-	var scene_source := FileAccess.get_file_as_string("res://ui/play/play_activity.tscn")
-	var script_source := FileAccess.get_file_as_string("res://ui/play/play_activity.gd")
-	var host_source := FileAccess.get_file_as_string("res://main_menu.gd")
+	var scene_source := FileAccess.get_file_as_string("res://ui/play/activity/play_activity.tscn")
+	var script_source := FileAccess.get_file_as_string("res://ui/play/activity/play_activity.gd")
+	var host_source := FileAccess.get_file_as_string("res://ui/main_menu/main_menu.gd")
 	_check(script_source.contains("camera_model_prewarm_requested")
 		and host_source.contains("active_panel.connect(\"camera_model_prewarm_requested\"")
 		and host_source.contains("prewarm_camera_model"),

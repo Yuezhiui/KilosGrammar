@@ -3,7 +3,7 @@ extends SceneTree
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_continuous_integration.gd
 # Integration coverage for continuous, preloaded Human Plane gate trios.
 # Intentionally uses scene nodes and existing game methods, never a camera.
-const PLANE_SCENE := preload("res://ui/minigames/human_plane.tscn")
+const PLANE_SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const MODES := ["Seconds", "Lives"]
 const STEP := 0.025
@@ -92,8 +92,9 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 
 	# Drive the scene deterministically via a fixed delta. The older
 	# single-trio implementation leaves this entire pre-crossing view empty.
-	var prefetched_before_resolution := false
-	var overlap_with_six_words := false
+	# The next wave is intentionally dim and delayed; showing six bright
+	# options at the scoring instant was the user's visual regression.
+	var quiet_preview_seen := false
 	var next_seen_before_handoff := false
 	var resolved := false
 	var pre_handoff_next_positions: Dictionary = {}
@@ -121,13 +122,9 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 			shown_blank = true
 		if int(game.get("waves_completed")) == last_waves and not showing_next.is_empty():
 			next_seen_before_handoff = true
+			quiet_preview_seen = quiet_preview_seen or (next_trio[1] as Control).modulate.a <= 0.641
 		if int(game.get("attempts")) > attempts_on_first:
 			resolved = true
-			if showing_next.size() == 3 and _visible_gates(current_trio).size() == 3:
-				prefetched_before_resolution = true
-				var visible_words := _gate_word_set(visible_now)
-				if visible_words.size() == 6:
-					overlap_with_six_words = true
 			# Resolve collisions are idempotent even while next gates are already visible.
 			var before_attempts := int(game.get("attempts"))
 			var before_score := int(game.get("score"))
@@ -146,8 +143,7 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 			break
 	_check(resolved, label + " first trio reaches the answer plane")
 	_check(next_seen_before_handoff, label + " preloaded gate set is visible before previous wave completes")
-	_check(prefetched_before_resolution, label + " both trios are visible during the answer phase")
-	_check(overlap_with_six_words, label + " overlapping trios have six distinct on-screen words")
+	_check(quiet_preview_seen, label + " incoming trio remains dim and non-distracting until handoff")
 	_check(handoff_occurred, label + " first wave finishes without waiting for another spawn")
 	_check(not shown_blank, label + " never renders a blank gate corridor")
 	_check(int(game.get("attempts")) == 1, label + " one scored attempt per completed gate wave")
@@ -223,7 +219,7 @@ func _test_sustained_flight(game: Control, gates: Array[Control], label: String)
 		if active_words.size() != 3:
 			return
 		var answer_lane := int((active_data["valid_indices"] as Array)[0])
-		var saw_six := false
+		var saw_quiet_preview := false
 		var saw_reserved := false
 		var saw_blank := false
 		var handed_off := false
@@ -241,8 +237,9 @@ func _test_sustained_flight(game: Control, gates: Array[Control], label: String)
 				saw_blank = true
 			var next_data: Dictionary = game.get("next_round_data")
 			if not next_data.is_empty() and int(game.get("waves_completed")) == completed:
-				if visible.size() == 6 and _gate_word_set(visible).size() == 6:
-					saw_six = true
+				var pending_nodes: Array = game.get("_upcoming_gate_nodes")
+				if pending_nodes.size() == 3 and (pending_nodes[1] as Control).visible:
+					saw_quiet_preview = saw_quiet_preview or (pending_nodes[1] as Control).modulate.a <= 0.641
 				var future_words := _word_set(next_data)
 				var overlaps := false
 				for word in future_words:
@@ -261,7 +258,7 @@ func _test_sustained_flight(game: Control, gates: Array[Control], label: String)
 				break
 			if bool(game.get("finished")):
 				break
-		_check(saw_six, label + " cycle %d preloads six simultaneously visible gates" % cycle)
+		_check(saw_quiet_preview, label + " cycle %d preloads a dim upcoming trio without clutter" % cycle)
 		_check(saw_reserved, label + " cycle %d has three unique incoming words" % cycle)
 		_check(not saw_blank, label + " cycle %d never has an empty gate corridor" % cycle)
 		_check(handed_off, label + " cycle %d promotes prefetched trio without delay" % cycle)

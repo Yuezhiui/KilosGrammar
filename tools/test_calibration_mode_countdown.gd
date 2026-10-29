@@ -1,11 +1,15 @@
 extends SceneTree
 
 # Godot --headless --path . --script res://tools/test_calibration_mode_countdown.gd
-# End-to-end controller contract from VALID live camera calibration to gameplay.
-# Synthetic fresh pose status is test-only; production never fakes a camera.
+# End-to-end controller contract from authentic source-shaped camera calibration
+# to gameplay. Synthetic source-fresh SOLO packets stay inside this test and
+# NEVER open a webcam, start YOLO or contact the database.
 
-const CALIBRATION_PATH := "res://ui/vision/calibration.tscn"
-const GAMEPLAY_PATH := "res://ui/play/gameplay.tscn"
+const CALIBRATION_PATH := "res://ui/vision/calibration/calibration.tscn"
+const GAMEPLAY_PATH := "res://ui/play/gameplay/gameplay.tscn"
+const DT := 0.15
+const ZONE_ORDER := ["CENTER", "RIGHT", "LEFT"]
+const ZONE_X := {"CENTER": 0.50, "RIGHT": 0.80, "LEFT": 0.20}
 const CASES := [
 	{"mode": "Seconds", "guided": false},
 	{"mode": "Lives", "guided": false},
@@ -15,6 +19,8 @@ const CASES := [
 
 var checks := 0
 var failures: Array[String] = []
+var source_when := 6000.0
+var fake_udp: PacketPeerUDP
 
 
 func _initialize() -> void:
@@ -52,11 +58,30 @@ func _check_case(calibration_scene: PackedScene, game_scene: PackedScene, test_c
 	var label := "%s / %s" % ["Guided" if guided else "Normal Play", mode]
 	var service := root.get_node("PoseService")
 	service.stop_camera()
+	service.set_process(false)
+	# Authenticated raw SOLO occupancy requires a live local UDP transport
+	# and a running worker PID. A bound INERT test UDP port and this *test's*
+	# process ID satisfy those checks without creating any camera subprocess.
+	# The worker_pid is ALWAYS cleared before stop_camera (which can kill PIDs).
+	fake_udp = PacketPeerUDP.new()
+	_expect(fake_udp.bind(0, "127.0.0.1") == OK,
+		label + ": inert local camera packet transport bound for QA")
+	service.peer = fake_udp
+	service.worker_pid = OS.get_process_id()
+	service.session_token = "countdown-mode-test-" + mode + ("-guided" if guided else "-play")
+	service.active = true
 	var calibration := calibration_scene.instantiate() as Control
 	root.add_child(calibration)
 	calibration.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	calibration.set_process(false)
-	calibration.call("_process", 2.51) # Finish the authored 2.5-second intro.
+	calibration.set_context({
+		"activity": "Catch the Word", "game_mode": mode,
+		"topic": "Noun", "difficulty": "Easy",
+		"guided_tutorial": guided, "camera_requested": true, "keyboard_mode": true
+	})
+	calibration.call("_process", 3.01) # Authored 3-second intro earns ZERO hold credit.
+	_expect(not bool(calibration.get("intro_running")) and int(calibration.get("live_step")) == 0,
+		label + ": 3-second intro ends without earning fake camera hold time")
 	var routes: Array[Dictionary] = []
 	calibration.requested.connect(func(target: String, payload: Dictionary) -> void:
 		routes.append({"target": target, "payload": payload}))
@@ -66,24 +91,51 @@ func _check_case(calibration_scene: PackedScene, game_scene: PackedScene, test_c
 	calibration.call("_continue_flow", true)
 	calibration.call("_continue_flow", false)
 	_expect(routes.is_empty(), label + ": without a live pose neither skip nor continue can start gameplay")
-	# Simulate only the measurements that have already passed PoseService's
-	# validation API: no fake game, preview, or camera packet in production.
-	service.active = true
-	service.player_x = 0.50
-	service.current_status = {"state": "tracking", "pose": true, "lock_state": "locked"}
-	service.last_pose_ms = Time.get_ticks_msec()
-	_expect(service.set_calibration(0.20, 0.50, 0.80), label + ": PoseService accepts 3 real-valued position bounds")
-	calibration.set_context({
-		"activity": "Catch the Word", "game_mode": mode,
-		"topic": "Noun", "difficulty": "Easy",
-		"guided_tutorial": guided, "camera_requested": true, "keyboard_mode": true
-	})
-	calibration.call("_continue_flow", false)
+	_expect(calibration.call("_capture_order") == ZONE_ORDER,
+		label + ": Catch must complete CENTER -> RIGHT -> LEFT, not synthetic set_calibration")
+	_expect(float(calibration.call("_hold_seconds")) == 3.0,
+		label + ": each measured position requires genuine 3-second source-fresh hold")
+	for zone in ZONE_ORDER:
+		var x: float = ZONE_X[zone]
+		if zone != "CENTER":
+			# Crossing zones is not a stationary hold. An authentic camera
+			# observation of one person with temporarily untrusted keypoints
+			# retires the prior smoothed torso X without earning any sample.
+			_observation(service, calibration, x, 1, false)
+			_expect(int(calibration.get("live_step")) == ZONE_ORDER.find(zone),
+				label + ": moving toward " + zone + " cannot earn a 3-second hold")
+		for packet in range(19):
+			_observation(service, calibration, x, 1)
+		_expect(int(calibration.get("live_step")) == ZONE_ORDER.find(zone),
+			label + ": " + zone + " cannot advance after 2.85s of SOLO measurements")
+		for packet in range(4):
+			_observation(service, calibration, x, 1)
+		_expect(int(calibration.get("live_step")) == ZONE_ORDER.find(zone) + 1,
+			label + ": " + zone + " progresses only after >=3s and >=8 fresh source packets")
+	_expect(int(calibration.get("live_step")) == 3 and bool(service.calibration.get("valid", false))
+		and bool(calibration.get("success_running")),
+		label + ": real three-zone source capture latches success before gameplay routing")
+	_expect(routes.is_empty(), label + ": no route until complete 3-second success display")
+	# Missing or multiple raw persons freeze success, not redo the original
+	# physical captures or auto-release a ghost student into gameplay.
+	for people in [0, 2]:
+		for packet in range(6):
+			_observation(service, calibration, 0.20, people)
+		_expect(routes.is_empty() and int(calibration.get("live_step")) == 3
+			and bool(calibration.get("success_running")),
+			label + ": raw people=%d freezes already-finished success" % people)
+	for packet in range(23):
+		_observation(service, calibration, 0.20, 1)
 	_expect(routes.size() == 1 and String(routes[0].get("target", "")) == "gameplay",
-		label + ": validated live calibration requests shared game wrapper")
+		label + ": 3-second fresh raw SOLO releases saved calibration to shared game once")
+	for packet in range(7):
+		_observation(service, calibration, 0.20, 1)
+	_expect(routes.size() == 1, label + ": continued fresh tracking never double-routes gameplay")
 	if routes.is_empty():
+		service.worker_pid = -1
 		calibration.queue_free()
 		await process_frame
+		service.stop_camera()
 		return
 	var payload := routes[0]["payload"] as Dictionary
 	_expect(bool(payload.get("start_countdown", false)), label + ": countdown explicitly requested")
@@ -104,29 +156,27 @@ func _check_case(calibration_scene: PackedScene, game_scene: PackedScene, test_c
 	var minigame := wrapper.get_node_or_null("ActiveMiniGame") as Control
 	_expect(minigame != null, label + ": selected activity's real game is mounted")
 	if minigame == null:
+		# stop_camera() may kill worker_pid. NEVER leave the fake PID equal
+		# to this Godot QA process on an early failure branch.
+		service.worker_pid = -1
 		wrapper.queue_free()
 		await process_frame
+		service.stop_camera()
 		return
 	_expect(minigame.process_mode == Node.PROCESS_MODE_DISABLED,
 		label + ": gameplay score, timer and physics are frozen until 3-2-1 finishes")
-	var mode_target := wrapper.call("_spotlight_targets") as Dictionary
-	var expected_mode_node := "TimerPlaque" if mode == "Seconds" else "LivesPlaque"
-	_expect(mode_target.has("mode") and String((mode_target.get("mode") as Node).name) == expected_mode_node,
-		label + ": HUD targets the selected Seconds/Lives indicator")
-	var spotlight := wrapper.get("spotlight_overlay") as CanvasLayer
-	if guided:
-		_expect(String(wrapper.get("guided_stage")) == "tutorial" and spotlight != null,
-			label + ": guided spotlight comes before countdown")
-		_expect(wrapper.get("countdown_panel") == null,
-			label + ": countdown cannot overlap active spotlight")
-		if spotlight != null:
-			spotlight.call("skip")
-			await process_frame
-	else:
-		_expect(spotlight == null and String(wrapper.get("guided_stage")) == "countdown",
-			label + ": normal Play skips spotlight and starts 3-2-1 directly")
+	var mode_path := "HUDLayer/HUD/TimerPlaque" if mode == "Seconds" else "HUDLayer/HUD/LivesPlaque"
+	var counter := minigame.get_node_or_null(mode_path) as CanvasItem
+	_expect(counter != null and counter.is_visible_in_tree(),
+		label + ": real game HUD exposes the selected Seconds/Lives counter")
+	_expect(not _has_spotlight_property(wrapper)
+		and wrapper.get_node_or_null("GuidedSpotlight") == null
+		and wrapper.get_node_or_null("SpotlightOverlay") == null,
+		label + ": removed Spotlight API and scene nodes stay absent")
 	_expect(String(wrapper.get("guided_stage")) == "countdown",
-		label + ": countdown is active after calibration")
+		label + ": %s goes DIRECTLY to frozen 3-2-1" % ("Guided" if guided else "normal Play"))
+	_expect(String(wrapper.get("guided_stage")) == "countdown",
+		label + ": countdown is active immediately after authenticated calibration")
 	var countdown := wrapper.get("countdown_panel") as Control
 	_expect(countdown != null, label + ": actual scene-authored countdown overlay is mounted")
 	if countdown != null:
@@ -149,16 +199,47 @@ func _check_case(calibration_scene: PackedScene, game_scene: PackedScene, test_c
 			label + ": gameplay unfreezes after the final countdown tick")
 		_expect(wrapper.get("countdown_panel") == null,
 			label + ": 3-2-1 scene is removed without recreating the minigame")
+		for retry in range(2):
+			wrapper.call("_on_countdown_tick")
+		_expect(wrapper.get("countdown_panel") == null and
+			minigame.process_mode == Node.PROCESS_MODE_INHERIT,
+			label + ": late duplicate countdown timeouts never restart GO")
+	service.worker_pid = -1 # NEVER kill our own synthetic test process.
 	wrapper.queue_free()
 	await process_frame
 	await process_frame
+	service.stop_camera()
 	print("CALIBRATION COUNTDOWN CASE: ", label)
+
+
+func _observation(service: Node, calibration: Control, x: float, people: int,
+			pose_ok: bool = true) -> void:
+	source_when += DT
+	var packet := {
+		"kind": "pose", "token": service.session_token, "when": source_when,
+		"camera": true, "camera_phase": "tracking", "state": "tracking",
+		"people": people, "pose": people == 1 and pose_ok,
+		"lock_state": "locked" if pose_ok else "waiting",
+		"camera_frame_age_ms": 20, "x": x, "fps": 8.0,
+		"hand_observation_valid": true, "hand_up": false,
+		"both_hands_up": false, "both_hands_down": true,
+	}
+	service.call("_apply_pose_packet", packet, Time.get_ticks_msec())
+	service.call("_record_fresh_calibration_pose", packet, source_when)
+	calibration.call("_process", DT)
 
 
 func _expect(ok: bool, description: String) -> void:
 	checks += 1
 	if not ok:
 		failures.append(description)
+
+
+func _has_spotlight_property(wrapper: Control) -> bool:
+	for entry in wrapper.get_property_list():
+		if String(entry.get("name", "")) == "spotlight_overlay":
+			return true
+	return false
 
 
 func _finish() -> void:

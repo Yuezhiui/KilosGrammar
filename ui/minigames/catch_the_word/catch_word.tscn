@@ -1,0 +1,263 @@
+[gd_scene format=3 uid="uid://bcns0owcuap3q"]
+
+[ext_resource type="Script" uid="uid://bmhyrdbwye3jg" path="res://ui/minigames/catch_the_word/catch_word.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://rlmoubhjy47e" path="res://Components/Gameplay/Catch the Word/Maps/CityMap.png" id="2_map"]
+[ext_resource type="Texture2D" uid="uid://5an0k8emjhix" path="res://Components/Gameplay/Catch the Word/Characters/BEAR BODY.png" id="3_body"]
+[ext_resource type="Texture2D" uid="uid://dya81atv6rff2" path="res://Components/Gameplay/Catch the Word/Characters/BEAR BASKET.png" id="4_basket"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="5_font"]
+[ext_resource type="Texture2D" uid="uid://boxmkr4bvdvqu" path="res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png" id="6_title"]
+[ext_resource type="Texture2D" uid="uid://fnw2gdx3u22i" path="res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png" id="8_timer"]
+[ext_resource type="Texture2D" uid="uid://ba4ccsha5ri3j" path="res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png" id="9_lives"]
+[ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://Components/Gameplay/Catch the Word/HUD/generated/pause_badge.png" id="10_pause"]
+[ext_resource type="Texture2D" uid="uid://d13sn4nsevrgu" path="res://Components/Gameplay/Catch the Word/HUD/generated/score_board.png" id="11_score"]
+[ext_resource type="Texture2D" uid="uid://nn5v7364x6ui" path="res://Components/Gameplay/Catch the Word/Characters/CAT BODY.png" id="12_cat_body"]
+[ext_resource type="Texture2D" uid="uid://g2yeprtmvnv8" path="res://Components/Gameplay/Catch the Word/Characters/CAT BASKET.png" id="13_cat_basket"]
+[ext_resource type="Texture2D" uid="uid://gb07jjta3o1c" path="res://Components/Gameplay/Catch the Word/Characters/DOG BODY.png" id="14_dog_body"]
+[ext_resource type="Texture2D" uid="uid://c1lglc87kejbs" path="res://Components/Gameplay/Catch the Word/Characters/DOG BASKET.png" id="15_dog_basket"]
+[ext_resource type="Texture2D" uid="uid://coethyc37bb3q" path="res://Components/Gameplay/Catch the Word/Characters/LION BODY.png" id="16_lion_body"]
+[ext_resource type="Texture2D" uid="uid://bs8svw36vmuui" path="res://Components/Gameplay/Catch the Word/Characters/LION BASKET.png" id="17_lion_basket"]
+[ext_resource type="Texture2D" uid="uid://d1afudx80d54i" path="res://Components/Gameplay/Catch the Word/Characters/PANDA BODY.png" id="18_panda_body"]
+[ext_resource type="Texture2D" uid="uid://btqwdpn8e70n2" path="res://Components/Gameplay/Catch the Word/Characters/PANDA BASKET.png" id="19_panda_basket"]
+
+[node name="CatchTheWord" type="Control" unique_id=1403184396]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_script")
+caught_half_apple_basket_width_ratio = 0.28
+caught_half_apple_spacing_ratio = 1.0
+
+[node name="Background" type="TextureRect" parent="." unique_id=996659973]
+z_index = -20
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_map")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="FallingWordLayer" type="Node2D" parent="." unique_id=1456927821]
+z_index = 1
+
+[node name="Bear" type="Node2D" parent="." unique_id=669911193]
+visible = false
+position = Vector2(640, 700)
+
+[node name="Body" type="Sprite2D" parent="Bear" unique_id=1516257554]
+position = Vector2(0.136, -217.303)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("3_body")
+region_enabled = true
+region_rect = Rect2(23, 70, 843, 1602)
+
+[node name="Basket" type="Sprite2D" parent="Bear" unique_id=956352649]
+z_index = 2
+position = Vector2(6.105, -154.549)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("4_basket")
+region_enabled = true
+region_rect = Rect2(11, 890, 911, 432)
+
+[node name="CollectedWords" type="Node2D" parent="." unique_id=883634018]
+z_index = 1
+position = Vector2(640, 621)
+
+[node name="CollectedApplePlacement" type="Marker2D" parent="." unique_id=1901223301]
+position = Vector2(640, 639)
+
+[node name="Cat" type="Node2D" parent="." unique_id=311705792]
+visible = false
+position = Vector2(640, 815)
+
+[node name="Body" type="Sprite2D" parent="Cat" unique_id=1490883895]
+position = Vector2(0.135634, -222.329)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("12_cat_body")
+region_enabled = true
+region_rect = Rect2(19, 33, 894, 1639)
+
+[node name="Basket" type="Sprite2D" parent="Cat" unique_id=803945287]
+z_index = 2
+position = Vector2(0.135634, -155.186)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("13_cat_basket")
+region_enabled = true
+region_rect = Rect2(19, 876, 894, 448)
+
+[node name="Dog" type="Node2D" parent="." unique_id=764711831]
+position = Vector2(640, 815)
+
+[node name="Body" type="Sprite2D" parent="Dog" unique_id=170348412]
+position = Vector2(-4.607408, -212.016)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("14_dog_body")
+region_enabled = true
+region_rect = Rect2(24, 109, 906, 1563)
+
+[node name="Basket" type="Sprite2D" parent="Dog" unique_id=1205466285]
+z_index = 2
+position = Vector2(-7.862, -157.818)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("15_dog_basket")
+region_enabled = true
+region_rect = Rect2(1, 872, 928, 444)
+
+[node name="Lion" type="Node2D" parent="." unique_id=2090389336]
+visible = false
+position = Vector2(640, 815)
+
+[node name="Body" type="Sprite2D" parent="Lion" unique_id=1737243803]
+position = Vector2(-4.200426, -226.676)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("16_lion_body")
+region_enabled = true
+region_rect = Rect2(13, 1, 918, 1671)
+
+[node name="Basket" type="Sprite2D" parent="Lion" unique_id=1205801394]
+z_index = 2
+position = Vector2(-5.014, -150.037)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("17_lion_basket")
+region_enabled = true
+region_rect = Rect2(4, 897, 930, 444)
+
+[node name="Panda" type="Node2D" parent="." unique_id=1836818001]
+visible = false
+position = Vector2(640, 815)
+
+[node name="Body" type="Sprite2D" parent="Panda" unique_id=1836818002]
+position = Vector2(0.136, -215.676)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("18_panda_body")
+region_enabled = true
+region_rect = Rect2(19, 82, 894, 1590)
+
+[node name="Basket" type="Sprite2D" parent="Panda" unique_id=1836818003]
+z_index = 2
+position = Vector2(0.407, -152.46)
+scale = Vector2(0.27129, 0.27129)
+texture = ExtResource("19_panda_basket")
+region_enabled = true
+region_rect = Rect2(20, 894, 894, 432)
+
+[node name="HUDLayer" type="CanvasLayer" parent="." unique_id=1797021309]
+layer = 20
+
+[node name="HUD" type="Control" parent="HUDLayer" unique_id=724737202]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TitlePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=859901248]
+layout_mode = 0
+offset_left = 13.0
+offset_top = -9.0
+offset_right = 519.0
+offset_bottom = 148.0
+mouse_filter = 2
+texture = ExtResource("6_title")
+expand_mode = 1
+
+[node name="TimerPlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1596940150]
+layout_mode = 0
+offset_left = 908.0
+offset_top = 17.0
+offset_right = 1191.0
+offset_bottom = 112.0
+mouse_filter = 2
+texture = ExtResource("8_timer")
+expand_mode = 1
+
+[node name="LivesPlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1349845206]
+visible = false
+layout_mode = 0
+offset_left = 926.0
+offset_top = 20.0
+offset_right = 1173.0
+offset_bottom = 110.0
+mouse_filter = 2
+texture = ExtResource("9_lives")
+expand_mode = 1
+
+[node name="PausePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=999468031]
+layout_mode = 0
+offset_left = 1165.0
+offset_top = 15.0
+offset_right = 1265.0
+offset_bottom = 115.0
+mouse_filter = 2
+texture = ExtResource("10_pause")
+expand_mode = 1
+
+[node name="ScorePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1188822547]
+layout_mode = 0
+offset_left = 981.0
+offset_top = 519.0
+offset_right = 1261.0
+offset_bottom = 719.0
+mouse_filter = 2
+texture = ExtResource("11_score")
+expand_mode = 1
+
+[node name="PromptLabel" type="Label" parent="HUDLayer/HUD" unique_id=982457133]
+layout_mode = 0
+offset_left = 115.0
+offset_top = 74.0
+offset_right = 421.0
+offset_bottom = 107.0
+theme_override_colors/font_color = Color(0.27, 0.12, 0.05, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 17
+text = "WHICH WORD IS A NOUN?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="HUDLayer/HUD" unique_id=1176703706]
+layout_mode = 0
+offset_left = 1008.0
+offset_top = 41.0
+offset_right = 1151.0
+offset_bottom = 89.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.156863, 0.133333, 0.203922, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 35
+text = "60s"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScoreNumber" type="Label" parent="HUDLayer/HUD" unique_id=1415204146]
+custom_minimum_size = Vector2(174, 60)
+layout_mode = 0
+offset_left = 1036.0
+offset_top = 607.0
+offset_right = 1224.0
+offset_bottom = 667.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.207843, 0.109804, 0.0666667, 1)
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 35
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PauseButton" type="Button" parent="HUDLayer/HUD" unique_id=129499625]
+layout_mode = 0
+offset_left = 1171.0
+offset_top = 22.0
+offset_right = 1258.0
+offset_bottom = 108.0

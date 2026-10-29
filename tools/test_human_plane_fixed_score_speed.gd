@@ -2,7 +2,7 @@ extends SceneTree
 
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_fixed_score_speed.gd
 # Exercises real authored gates in both game modes, without a camera or database.
-const GAME_SCENE := preload("res://ui/minigames/human_plane.tscn")
+const GAME_SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const MODES := ["Seconds", "Lives"]
 const EXPECTED_SPEEDS := {"Easy": 0.20, "Normal": 0.27, "Hard": 0.34}
@@ -82,7 +82,8 @@ func _check_game(mode: String, difficulty: String) -> void:
 			label + " repeated collision cannot grant points twice")
 		game.call("_start_wave")
 
-	# Mistakes cost no points; existing lives/streak rules remain intact.
+	# Mistakes cost no points. Lives loses exactly one heart per wrong/miss;
+	# Seconds has NO heart penalty and ends only at the 60-second clock zero.
 	var invalid := -1
 	var valid: Array = (game.get("round_data") as Dictionary).get("valid_indices", [])
 	for lane in range(3):
@@ -96,15 +97,17 @@ func _check_game(mode: String, difficulty: String) -> void:
 		var before_wrong := int(game.get("score"))
 		game.call("_resolve_at_answer_line")
 		_check(int(game.get("score")) == before_wrong, label + " wrong gate never subtracts points")
-		_check(int(game.get("lives")) == 2 and int(game.get("streak")) == 0,
-			label + " wrong gate loses one life and breaks streak")
+		_check(int(game.get("lives")) == (3 if mode == "Seconds" else 2)
+			and int(game.get("streak")) == 0,
+			label + " wrong gate breaks streak and deducts a heart only in Lives mode")
 		game.call("_start_wave")
 		game.set("plane_x_norm", -10.0)
 		_check(int(game.call("_lane_hit_at_answer_line")) == -1, label + " offscreen plane misses all gates")
 		var before_miss := int(game.get("score"))
 		game.call("_resolve_at_answer_line")
 		_check(int(game.get("score")) == before_miss, label + " missed gate never subtracts points")
-		_check(int(game.get("lives")) == 1, label + " miss loses exactly one life")
+		_check(int(game.get("lives")) == (3 if mode == "Seconds" else 1),
+			label + " miss never costs hearts in Seconds and loses exactly one in Lives")
 		game.call("_start_wave")
 		valid = (game.get("round_data") as Dictionary).get("valid_indices", [])
 		if not valid.is_empty():
@@ -113,7 +116,8 @@ func _check_game(mode: String, difficulty: String) -> void:
 			game.call("_resolve_at_answer_line")
 			_check(int(game.get("score")) == after_mistake + CORRECT_POINTS,
 				label + " correct gate after mistake still grants +100")
-			_check(int(game.get("lives")) == 1, label + " correct gate does not restore or deduct lives")
+			_check(int(game.get("lives")) == (3 if mode == "Seconds" else 1),
+				label + " correct gate never restores or deducts hearts in either mode")
 	game.queue_free()
 	await process_frame
 	await process_frame

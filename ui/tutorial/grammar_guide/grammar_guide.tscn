@@ -1,0 +1,448 @@
+[gd_scene format=3 uid="uid://ci15x41444d35"]
+
+[ext_resource type="Script" uid="uid://c7hxak0ainjx6" path="res://ui/tutorial/grammar_guide/grammar_guide.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dx1fsocdnlfsq" path="res://Components/Credits/Redesign/background1.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://diy0b2qjsrkbx" path="res://Components/Tutorial/Redesign/grammar_reference_b.png" id="3_board"]
+[ext_resource type="Texture2D" uid="uid://cpi385gmgaici" path="res://Components/Tutorial/Redesign/grammar_reference_a.png" id="4_heading"]
+[ext_resource type="Texture2D" uid="uid://d1ls6pec7nieq" path="res://Components/Tutorial/Redesign/grammar_button_back.png" id="5_back"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="6_font"]
+[ext_resource type="Texture2D" uid="uid://hrxy41jfht6o" path="res://Components/Tutorial/Redesign/grammar_noun.png" id="20_badge"]
+[ext_resource type="Texture2D" uid="uid://cx6jn7tuvgrp5" path="res://Components/Tutorial/Redesign/grammar_pronoun.png" id="21_badge"]
+[ext_resource type="Texture2D" uid="uid://b26ii813jd5du" path="res://Components/Tutorial/Redesign/grammar_verb.png" id="22_badge"]
+[ext_resource type="Texture2D" uid="uid://ko8ljrggxxxf" path="res://Components/Tutorial/Redesign/grammar_adjective.png" id="23_badge"]
+[ext_resource type="Texture2D" uid="uid://c5srv5ai4vv37" path="res://Components/Tutorial/Redesign/grammar_adverb.png" id="24_badge"]
+
+[sub_resource type="AtlasTexture" id="AtlasBoard"]
+atlas = ExtResource("3_board")
+region = Rect2(14, 39, 1642, 838)
+
+[sub_resource type="AtlasTexture" id="AtlasTitle"]
+atlas = ExtResource("4_heading")
+region = Rect2(0, 295, 1672, 375)
+
+[sub_resource type="AtlasTexture" id="AtlasBadge0"]
+atlas = ExtResource("20_badge")
+region = Rect2(0, 105, 1672, 700)
+
+[sub_resource type="AtlasTexture" id="AtlasBadge1"]
+atlas = ExtResource("21_badge")
+region = Rect2(0, 175, 1672, 590)
+
+[sub_resource type="AtlasTexture" id="AtlasBadge2"]
+atlas = ExtResource("22_badge")
+region = Rect2(0, 175, 1672, 590)
+
+[sub_resource type="AtlasTexture" id="AtlasBadge3"]
+atlas = ExtResource("23_badge")
+region = Rect2(0, 175, 1672, 590)
+
+[sub_resource type="AtlasTexture" id="AtlasBadge4"]
+atlas = ExtResource("24_badge")
+region = Rect2(0, 175, 1672, 590)
+
+[sub_resource type="StyleBoxEmpty" id="InvisibleHitbox"]
+
+[sub_resource type="AtlasTexture" id="AtlasBack"]
+atlas = ExtResource("5_back")
+region = Rect2(12, 214, 1644, 580)
+
+[node name="GrammarGuide" type="Control" unique_id=1213263067]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="ClassroomArtwork" type="TextureRect" parent="." unique_id=495295385]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TutorialStage" type="Control" parent="." unique_id=820480491]
+editor_description = "Entire EXPLORE GRAMMAR screen is authored here at 1280 x 720. Drag each illustration, topic card and word in Godot's 2D editor; runtime only letterboxes stage."
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="GrammarBoard" type="TextureRect" parent="TutorialStage" unique_id=127322643]
+editor_description = "Original illustrated cream/wood signboard with clovers."
+layout_mode = 0
+offset_left = 162.0
+offset_top = -2.0
+offset_right = 1115.0
+offset_bottom = 639.0
+mouse_filter = 2
+texture = SubResource("AtlasBoard")
+expand_mode = 1
+
+[node name="TitleArtwork" type="TextureRect" parent="TutorialStage" unique_id=2065526998]
+editor_description = "Original EXPlORE GRAMMAR! lettering and book/clover art, not a replacement text label."
+layout_mode = 0
+offset_left = 386.0
+offset_top = 117.0
+offset_right = 878.0
+offset_bottom = 234.0
+mouse_filter = 2
+texture = SubResource("AtlasTitle")
+expand_mode = 1
+
+[node name="GrammarCardScroll" type="ScrollContainer" parent="TutorialStage" unique_id=516854491]
+editor_description = "Mouse wheel, touch swipe and keyboard scrolling. All five card designs below remain editor-authored."
+layout_mode = 0
+offset_left = 53.0
+offset_top = 237.0
+offset_right = 1057.0
+offset_bottom = 559.0
+focus_mode = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="GridContainer" type="GridContainer" parent="TutorialStage/GrammarCardScroll" unique_id=1222732488]
+custom_minimum_size = Vector2(0, 207)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 8
+columns = 2
+
+[node name="NounCard" type="Control" parent="TutorialStage/GrammarCardScroll/GridContainer" unique_id=747626150]
+editor_description = "NOUN: independently draggable topic badge, heading, definition and examples; no card panel artwork."
+custom_minimum_size = Vector2(491, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="TopicBadge" type="TextureRect" parent="TutorialStage/GrammarCardScroll/GridContainer/NounCard" unique_id=1402537773]
+layout_mode = 0
+offset_left = 310.0
+offset_top = -6.0
+offset_right = 533.0
+offset_bottom = 67.0
+mouse_filter = 2
+texture = SubResource("AtlasBadge0")
+expand_mode = 1
+
+[node name="TopicName" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/NounCard" unique_id=354123226]
+layout_mode = 0
+offset_left = 408.0
+offset_top = 16.0
+offset_right = 503.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.16, 0.16, 0.2, 0.65)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 19
+text = "NOUN"
+vertical_alignment = 1
+
+[node name="Meaning" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/NounCard" unique_id=678743456]
+layout_mode = 0
+offset_left = 213.0
+offset_top = 61.0
+offset_right = 632.0
+offset_bottom = 87.0
+theme_override_colors/font_color = Color(0.21, 0.16, 0.17, 1)
+theme_override_font_sizes/font_size = 18
+text = "Names a person, place, thing, or idea."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Examples" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/NounCard" unique_id=188081130]
+layout_mode = 0
+offset_left = 213.0
+offset_top = 83.0
+offset_right = 632.0
+offset_bottom = 107.0
+theme_override_colors/font_color = Color(0.37, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "Try: teacher  •  park  •  pencil"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="PronounCard" type="Control" parent="TutorialStage/GrammarCardScroll/GridContainer" unique_id=1160030017]
+editor_description = "PRONOUN: independently draggable topic badge, heading, definition and examples; no card panel artwork."
+custom_minimum_size = Vector2(491, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="TopicBadge" type="TextureRect" parent="TutorialStage/GrammarCardScroll/GridContainer/PronounCard" unique_id=758304761]
+layout_mode = 0
+offset_left = 151.0
+offset_top = -2.0
+offset_right = 374.0
+offset_bottom = 63.0
+mouse_filter = 2
+texture = SubResource("AtlasBadge1")
+expand_mode = 1
+
+[node name="TopicName" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/PronounCard" unique_id=1367041851]
+layout_mode = 0
+offset_left = 248.0
+offset_top = 16.0
+offset_right = 346.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.16, 0.16, 0.2, 0.65)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 19
+text = "PRONOUN"
+vertical_alignment = 1
+
+[node name="Meaning" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/PronounCard" unique_id=1833715775]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 59.0
+offset_right = 474.0
+offset_bottom = 85.0
+theme_override_colors/font_color = Color(0.21, 0.16, 0.17, 1)
+theme_override_font_sizes/font_size = 18
+text = "Takes the place of a noun."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Examples" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/PronounCard" unique_id=1250741361]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 81.0
+offset_right = 474.0
+offset_bottom = 105.0
+theme_override_colors/font_color = Color(0.37, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "Try: I  •  she  •  they"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="VerbCard" type="Control" parent="TutorialStage/GrammarCardScroll/GridContainer" unique_id=1135687797]
+editor_description = "VERB: independently draggable topic badge, heading, definition and examples; no card panel artwork."
+custom_minimum_size = Vector2(491, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="TopicBadge" type="TextureRect" parent="TutorialStage/GrammarCardScroll/GridContainer/VerbCard" unique_id=390688936]
+layout_mode = 0
+offset_left = 310.0
+offset_top = -5.0
+offset_right = 533.0
+offset_bottom = 60.0
+mouse_filter = 2
+texture = SubResource("AtlasBadge2")
+expand_mode = 1
+
+[node name="TopicName" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/VerbCard" unique_id=1086976984]
+layout_mode = 0
+offset_left = 428.0
+offset_top = 13.0
+offset_right = 500.0
+offset_bottom = 43.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.16, 0.16, 0.2, 0.65)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 19
+text = "VERB"
+vertical_alignment = 1
+
+[node name="Meaning" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/VerbCard" unique_id=709791636]
+layout_mode = 0
+offset_left = 213.0
+offset_top = 61.0
+offset_right = 632.0
+offset_bottom = 87.0
+theme_override_colors/font_color = Color(0.21, 0.16, 0.17, 1)
+theme_override_font_sizes/font_size = 18
+text = "Shows an action or state."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Examples" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/VerbCard" unique_id=1648975627]
+layout_mode = 0
+offset_left = 213.0
+offset_top = 83.0
+offset_right = 632.0
+offset_bottom = 107.0
+theme_override_colors/font_color = Color(0.37, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "Try: run  •  read  •  is"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="AdjectiveCard" type="Control" parent="TutorialStage/GrammarCardScroll/GridContainer" unique_id=1303191813]
+editor_description = "ADJECTIVE: independently draggable topic badge, heading, definition and examples; no card panel artwork."
+custom_minimum_size = Vector2(491, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="TopicBadge" type="TextureRect" parent="TutorialStage/GrammarCardScroll/GridContainer/AdjectiveCard" unique_id=2013364287]
+layout_mode = 0
+offset_left = 157.0
+offset_top = -7.0
+offset_right = 380.0
+offset_bottom = 58.0
+mouse_filter = 2
+texture = SubResource("AtlasBadge3")
+expand_mode = 1
+
+[node name="TopicName" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/AdjectiveCard" unique_id=1202646454]
+layout_mode = 0
+offset_left = 245.0
+offset_top = 11.0
+offset_right = 350.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.16, 0.16, 0.2, 0.65)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 19
+text = "ADJECTIVE"
+vertical_alignment = 1
+
+[node name="Meaning" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/AdjectiveCard" unique_id=890511567]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 59.0
+offset_right = 474.0
+offset_bottom = 85.0
+theme_override_colors/font_color = Color(0.21, 0.16, 0.17, 1)
+theme_override_font_sizes/font_size = 18
+text = "Describes a noun or pronoun."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Examples" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/AdjectiveCard" unique_id=495837233]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 81.0
+offset_right = 474.0
+offset_bottom = 105.0
+theme_override_colors/font_color = Color(0.37, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "Try: bright  •  kind  •  small"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="AdverbCard" type="Control" parent="TutorialStage/GrammarCardScroll/GridContainer" unique_id=460913569]
+editor_description = "ADVERB: independently draggable topic badge, heading, definition and examples; no card panel artwork."
+custom_minimum_size = Vector2(491, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="TopicBadge" type="TextureRect" parent="TutorialStage/GrammarCardScroll/GridContainer/AdverbCard" unique_id=1620517042]
+layout_mode = 0
+offset_left = 302.0
+offset_top = -5.0
+offset_right = 525.0
+offset_bottom = 60.0
+mouse_filter = 2
+texture = SubResource("AtlasBadge4")
+expand_mode = 1
+
+[node name="TopicName" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/AdverbCard" unique_id=1022295286]
+layout_mode = 0
+offset_left = 406.0
+offset_top = 11.0
+offset_right = 497.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.16, 0.16, 0.2, 0.65)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 19
+text = "ADVERB"
+vertical_alignment = 1
+
+[node name="Meaning" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/AdverbCard" unique_id=1689848755]
+layout_mode = 0
+offset_left = 213.0
+offset_top = 61.0
+offset_right = 632.0
+offset_bottom = 87.0
+theme_override_colors/font_color = Color(0.21, 0.16, 0.17, 1)
+theme_override_font_sizes/font_size = 18
+text = "Tells how, when, or where."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Examples" type="Label" parent="TutorialStage/GrammarCardScroll/GridContainer/AdverbCard" unique_id=2086548877]
+layout_mode = 0
+offset_left = 205.0
+offset_top = 80.0
+offset_right = 624.0
+offset_bottom = 104.0
+theme_override_colors/font_color = Color(0.37, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "Try: quickly  •  today  •  here"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="BackButton" type="Button" parent="TutorialStage" unique_id=718885575]
+editor_description = "Only navigation control: returns to Tutorial. Native keyboard focus, mouse/touch input, PNG overlay."
+layout_mode = 0
+offset_left = 754.0
+offset_top = 637.0
+offset_right = 1068.0
+offset_bottom = 710.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("InvisibleHitbox")
+theme_override_styles/pressed = SubResource("InvisibleHitbox")
+theme_override_styles/hover = SubResource("InvisibleHitbox")
+theme_override_styles/focus = SubResource("InvisibleHitbox")
+text = "BACK TO TUTORIAL"
+
+[node name="Artwork" type="TextureRect" parent="TutorialStage/BackButton" unique_id=764064369]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("AtlasBack")
+expand_mode = 1
+
+[node name="ButtonLabel" type="Label" parent="TutorialStage/BackButton" unique_id=1574168509]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 101.0
+offset_right = -17.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.43, 0.05, 0.07, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 20
+text = "BACK TO TUTORIAL"
+horizontal_alignment = 1
+vertical_alignment = 1

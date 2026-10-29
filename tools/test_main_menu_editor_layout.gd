@@ -16,7 +16,7 @@ func _check(condition: bool, label: String) -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var menu := (load("res://main_menu.tscn") as PackedScene).instantiate() as Control
+	var menu := (load("res://ui/main_menu/main_menu.tscn") as PackedScene).instantiate() as Control
 	root.add_child(menu)
 	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await process_frame
@@ -73,7 +73,7 @@ func _run() -> void:
 	var board := menu.get_node("MainLayer/LeftMenu") as Control
 	_check(menu.get_node_or_null("MainLayer/LeftMenu/Credits") == null,
 		"Removed Credits button has no editor node")
-	_check(not FileAccess.get_file_as_string("res://main_menu.gd").contains('"credits":'),
+	_check(not FileAccess.get_file_as_string("res://ui/main_menu/main_menu.gd").contains('"credits":'),
 		"Removed Credits route has no panel mapping")
 	_check(board.position.is_equal_approx(Vector2(44, 474)),
 		"Original left menu position preserved after entrance animation")

@@ -13,15 +13,15 @@ const SIZES: Array[Vector2i] = [
 const GAMES: Array[Dictionary] = [
 	{
 		"activity": "Catch the Word",
-		"path": "res://ui/minigames/catch_word.tscn",
+		"path": "res://ui/minigames/catch_the_word/catch_word.tscn",
 	},
 	{
 		"activity": "Balloon Popping",
-		"path": "res://ui/minigames/balloon_popping.tscn",
+		"path": "res://ui/minigames/balloon_popping/balloon_popping.tscn",
 	},
 	{
 		"activity": "Human Plane",
-		"path": "res://ui/minigames/human_plane.tscn",
+		"path": "res://ui/minigames/human_plane/human_plane.tscn",
 	},
 ]
 
@@ -268,7 +268,7 @@ func _test_collision_idempotence(packed: PackedScene, activity: String) -> void:
 
 
 func _test_lane_generation() -> void:
-	const BANK_PATH := "res://ui/minigames/grammar_bank.gd"
+	const BANK_PATH := "res://ui/minigames/shared/grammar_bank.gd"
 	if not ResourceLoader.exists(BANK_PATH):
 		_fail("grammar_bank.gd missing")
 		return
@@ -309,8 +309,8 @@ func _test_lane_generation() -> void:
 
 func _test_early_exit_not_completed() -> void:
 	for info in [
-		{"path": "res://ui/minigames/catch_word.tscn", "activity": "Catch the Word", "method": "_manual_finish"},
-		{"path": "res://ui/minigames/balloon_popping.tscn", "activity": "Balloon Popping", "method": "_exit_to_results"}
+		{"path": "res://ui/minigames/catch_the_word/catch_word.tscn", "activity": "Catch the Word", "method": "_manual_finish"},
+		{"path": "res://ui/minigames/balloon_popping/balloon_popping.tscn", "activity": "Balloon Popping", "method": "_exit_to_results"}
 	]:
 		var packed := load(String(info["path"])) as PackedScene
 		var activity := String(info["activity"])
@@ -333,7 +333,7 @@ func _test_early_exit_not_completed() -> void:
 
 
 func _test_balloon_negative_prompts() -> void:
-	var packed := load("res://ui/minigames/balloon_popping.tscn") as PackedScene
+	var packed := load("res://ui/minigames/balloon_popping/balloon_popping.tscn") as PackedScene
 	var game := _instantiate_game(packed, "Balloon Popping")
 	var state := _context_for("Balloon Popping")
 	state["difficulty"] = "Hard"
@@ -342,7 +342,7 @@ func _test_balloon_negative_prompts() -> void:
 	var prompt: Label = game.get("prompt_label") as Label
 	var valid: Array = game.get("valid_lanes")
 	var balloons: Array = game.get("balloons")
-	var bank := load("res://ui/minigames/grammar_bank.gd") as Script
+	var bank := load("res://ui/minigames/shared/grammar_bank.gd") as Script
 	if prompt == null or not prompt.text.contains("NOT NOUNS"):
 		_fail("Hard Balloon Popping did not ask pupils to pop NON-nouns")
 	elif balloons.size() != 3 or valid.size() < 1 or valid.size() > 2:

@@ -1,6 +1,6 @@
 extends SceneTree
 
-const GrammarBank = preload("res://ui/minigames/grammar_bank.gd")
+const GrammarBank = preload("res://ui/minigames/shared/grammar_bank.gd")
 const TOPICS := ["Noun", "Verb", "Adjective", "Adverb", "Pronoun"]
 const EXPANDED_TOPICS := ["Noun", "Verb", "Adjective"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]

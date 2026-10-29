@@ -2,7 +2,7 @@ extends SceneTree
 
 ## No hardware/YOLO: inspect and adjust the manually editable green-skeleton
 ## placement control without changing actual student pose measurements.
-const SCENE_PATH := "res://ui/vision/calibration.tscn"
+const SCENE_PATH := "res://ui/vision/calibration/calibration.tscn"
 var errors: Array[String] = []
 var checks := 0
 
@@ -38,23 +38,25 @@ func _run() -> void:
 		await process_frame
 		calibration.set_process(false)
 		var stage := calibration.get_node("TutorialStage") as Control
-		var video := stage.get_node("LiveCameraInset") as TextureRect
-		var placement := stage.get_node("SkeletonPlacement") as ReferenceRect
+		var video := stage.get_node("CameraArea/LiveCameraInset") as TextureRect
+		var placement := stage.get_node("CameraArea/SkeletonPlacement") as ReferenceRect
 		_check(placement.owner == calibration, "SkeletonPlacement persists as editor-authored node at %s" % dimensions)
 		_check(placement.get_parent() == video.get_parent(), "Overlay transform is separately editable beside live camera")
 		_check(placement.editor_only, "The adjustment border is invisible to students")
-		_check(placement.position.is_equal_approx(video.position) and placement.size.is_equal_approx(video.size),
-			"Default skeleton is perfectly aligned to webcam rect at %s" % dimensions)
+		var authored_offset := (placement.position - video.position) / video.size
+		var authored_scale := placement.size / video.size
+		_check(placement.size.x > 0 and placement.size.y > 0,
+			"Authored skeleton overlay has editable positive dimensions at %s" % dimensions)
 		calibration.call("_apply_skeleton_placement")
-		_check(pose_service.skeleton_visual_offset.is_zero_approx() and
-			pose_service.skeleton_visual_scale.is_equal_approx(Vector2.ONE),
-			"At default sizes visual transformation is identity")
+		_check(pose_service.skeleton_visual_offset.is_equal_approx(authored_offset) and
+			pose_service.skeleton_visual_scale.is_equal_approx(authored_scale),
+			"Visual transform matches actual editor-authored overlay")
 		placement.position += Vector2(40, 20)
 		placement.size *= Vector2(0.85, 0.75)
 		calibration.call("_apply_skeleton_placement")
-		_check(pose_service.skeleton_visual_offset.is_equal_approx(Vector2(40, 20) / video.size),
+		_check(pose_service.skeleton_visual_offset.is_equal_approx(authored_offset + Vector2(40, 20) / video.size),
 			"2D editor position offsets the visual bones with proportional camera coordinates")
-		_check(pose_service.skeleton_visual_scale.is_equal_approx(Vector2(0.85, 0.75)),
+		_check(pose_service.skeleton_visual_scale.is_equal_approx(authored_scale * Vector2(0.85, 0.75)),
 			"2D editor resizing scales the green bones independently of camera")
 		_check(video.size.is_equal_approx(Vector2(1007, 446)),
 			"Original camera dimensions remain unchanged by skeleton placement")

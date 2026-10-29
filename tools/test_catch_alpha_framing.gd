@@ -1,17 +1,18 @@
 extends SceneTree
 
 # Pixel-grounded regression for all original Catch body/basket PNG assets.
+# The artist-authored bust framing intentionally puts the lower BODY offscreen;
+# visible face/torso and all opaque basket pixels must stay in the viewport.
 # Godot 4.7.2 --path . --rendering-method gl_compatibility \
 #   --script res://tools/test_catch_alpha_framing.gd
 # Also runs headlessly.  The graphical run additionally exercises the native
 # viewport/canvas transformation used by the Windows OpenGL presentation.
 
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const MAPS := ["City", "Forest", "Mountain"]
 const SOURCE_ROOT := "res://Components/Gameplay/Catch the Word/Characters/"
-const EXPECTED_RIG_ORIGIN := Vector2(640, 620)
 const TOLERANCE := 1.5
 const MIN_EDGE_CLEARANCE := 4.0
 
@@ -72,7 +73,8 @@ func _case(resolution: Vector2i, character: String, map_name: String) -> void:
 	var rig: Node2D = game.character_group
 	var frame := Rect2(Vector2.ZERO, Vector2(resolution))
 	var factor := float(resolution.y) / 720.0
-	_check(rig.position.y > 0.0 and absf(rig.position.y - EXPECTED_RIG_ORIGIN.y * factor) <= TOLERANCE,
+	var authored_position: Vector2 = game.character_editor_transforms[character]["position"]
+	_check(authored_position.y > 0.0 and rig.position.distance_to(authored_position * factor) <= TOLERANCE,
 		tag + ": runtime changed the editor-authored baseline")
 	_check(rig.scale.is_equal_approx(Vector2.ONE * factor),
 		tag + ": root editor scaling is not proportional to viewport")
@@ -93,17 +95,17 @@ func _case(resolution: Vector2i, character: String, map_name: String) -> void:
 		return
 	var body_rect: Rect2 = body_info["rect"]
 	var basket_rect: Rect2 = basket_info["rect"]
-	_check(_inside(frame, body_rect), tag + ": ORIGINAL opaque feet clipped: " + str(body_rect))
+	_check(_avatar_framed(frame, body_rect), tag + ": ORIGINAL face/torso clipped or moved outside authored bust framing: " + str(body_rect))
 	_check(_inside(frame, basket_rect), tag + ": ORIGINAL opaque basket clipped: " + str(basket_rect))
-	_check(frame.end.y - body_rect.end.y >= MIN_EDGE_CLEARANCE * factor,
-		tag + ": opaque feet too close to frame edge")
-	_check(frame.end.y - basket_rect.end.y >= MIN_EDGE_CLEARANCE * factor,
-		tag + ": opaque basket too close to frame edge")
+	_check(body_rect.end.y >= frame.end.y - TOLERANCE and body_rect.end.y <= frame.end.y + frame.size.y * 0.18,
+		tag + ": authored BODY crop no longer intersects bottom edge as expected")
+	_check(frame.end.y - basket_rect.end.y >= -TOLERANCE,
+		tag + ": opaque basket artwork overflows frame edge")
 	_check(body_rect.intersects(basket_rect),
 		tag + ": original body/basket artwork no longer overlaps naturally")
-	_check(body.z_index + group.z_index < game.get_node("CollectedWords").z_index and
-		game.get_node("CollectedWords").z_index < basket.z_index + group.z_index,
-		tag + ": fruit/body/basket layering changed")
+	_check(body.z_index + group.z_index == 0 and basket.z_index + group.z_index == 1
+		and game.get_node("CollectedWords").z_index == 2,
+		tag + ": approved Body 0 / Basket 1 / Collected Half Apples 2 layering changed")
 	_check(body.texture.resource_path == SOURCE_ROOT + character.to_upper() + " BODY.png" and
 		basket.texture.resource_path == SOURCE_ROOT + character.to_upper() + " BASKET.png",
 		tag + ": selected artwork no longer uses ORIGINAL PNGs")
@@ -121,7 +123,7 @@ func _case(resolution: Vector2i, character: String, map_name: String) -> void:
 		game._sync_character_position()
 		var steered_body: Rect2 = _actual_opaque_rect(body, tag + " steer body")["rect"]
 		var steered_basket: Rect2 = _actual_opaque_rect(basket, tag + " steer basket")["rect"]
-		_check(_inside(frame, steered_body), tag + ": steered opaque body clipped at %s" % direction)
+		_check(_avatar_framed(frame, steered_body), tag + ": steered face/torso clipped at %s" % direction)
 		_check(_inside(frame, steered_basket), tag + ": steered opaque basket clipped at %s" % direction)
 		_check(game._basket_rect().intersects(steered_basket),
 			tag + ": steered basket collision misses the image")
@@ -173,6 +175,16 @@ func _transform_rect(local: Rect2, transform: Transform2D) -> Rect2:
 
 func _inside(frame: Rect2, rect: Rect2) -> bool:
 	return rect.has_area() and frame.grow(0.5).encloses(rect)
+
+
+func _avatar_framed(frame: Rect2, rect: Rect2) -> bool:
+	if not rect.has_area():
+		return false
+	var visible_ratio := (minf(rect.end.y, frame.end.y) - maxf(rect.position.y, frame.position.y)) / rect.size.y
+	return rect.position.x >= frame.position.x - TOLERANCE and rect.end.x <= frame.end.x + TOLERANCE \
+		and rect.position.y >= frame.position.y - TOLERANCE and rect.position.y <= frame.size.y * 0.64 \
+		and rect.end.y >= frame.end.y - TOLERANCE and rect.end.y <= frame.end.y + frame.size.y * 0.18 \
+		and visible_ratio >= 0.75
 
 
 func _check(value: bool, reason: String) -> void:

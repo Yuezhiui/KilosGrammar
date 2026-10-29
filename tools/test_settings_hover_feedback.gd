@@ -3,7 +3,7 @@ extends SceneTree
 # Isolated, camera-free inspection of the REAL editor-authored Settings scene.
 # Godot 4.7.2 --headless --path . --script res://tools/test_settings_hover_feedback.gd
 # Does not click toggles, write preferences, use the database or start a camera.
-const SETTINGS := "res://ui/secondary/settings.tscn"
+const SETTINGS := "res://ui/secondary/settings/settings.tscn"
 
 var checks := 0
 var failures: Array[String] = []
@@ -25,12 +25,14 @@ func _run() -> void:
 		_check(scene.find_child(retired, true, false) == null,
 			"retired Settings tab/page is truly deleted: " + retired)
 	var buttons: Array[BaseButton] = []
-	for name in ["BackButton", "MuteCheck", "FullscreenCheck"]:
+	for name in ["BackButton", "FullscreenCheck"]:
 		var button := scene.find_child(name, true, false) as BaseButton
 		_check(button != null, name + " remains editor-authored")
 		if button != null:
 			buttons.append(button)
-	_check(buttons.size() == 3, "Home and the two live audio/display toggles remain")
+	_check(buttons.size() == 2, "Home and fullscreen switch remain")
+	_check(scene.find_child("MuteCheck", true, false) == null, "obsolete MuteCheck is absent")
+	_check(scene.find_child("ToggleMuteallaudioRow", true, false) == null, "obsolete mute row is absent")
 	_check(_empty_tooltips(scene), "no Control in Settings creates dark native hover popups")
 	for button in buttons:
 		var label := button.name

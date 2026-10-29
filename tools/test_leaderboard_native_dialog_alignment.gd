@@ -2,7 +2,7 @@ extends SceneTree
 
 # Synthetic, camera-free, database-free coverage of the seven columns and the
 # Downloads-default native Windows CSV chooser. No files are read or written.
-const BOARD := preload("res://ui/secondary/leaderboard.tscn")
+const BOARD := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const HEADER_WIDTH_IN_PNG := 1227.0
 const COLUMN_STARTS_IN_PNG := [32.0, 183.0, 543.0, 667.0, 827.0, 982.0]
 const LABEL_NAMES := ["StudentId", "StudentName", "Grade", "GameStyle", "GameMode", "Difficulty"]

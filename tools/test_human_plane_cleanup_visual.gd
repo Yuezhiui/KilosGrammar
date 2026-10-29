@@ -2,7 +2,7 @@ extends SceneTree
 
 # Capture a genuine graphical Godot viewport without editing the user's scene.
 # Godot --path . --rendering-method gl_compatibility --script res://tools/test_human_plane_cleanup_visual.gd
-const SCENE := preload("res://ui/minigames/human_plane.tscn")
+const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 
 
 func _initialize() -> void:

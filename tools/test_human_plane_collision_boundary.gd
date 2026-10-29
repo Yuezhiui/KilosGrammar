@@ -4,7 +4,7 @@ extends SceneTree
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_collision_boundary.gd
 # All test movements are synthetic editor-authored Control geometry. No
 # webcam, live pose service, database, or external score saving.
-const GAME := preload("res://ui/minigames/human_plane.tscn")
+const GAME := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 
 var checks := 0

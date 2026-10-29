@@ -3,7 +3,7 @@ extends SceneTree
 # Regression: Human Plane never deducts points for an incorrect or missed gate.
 # Godot 4.7.2 --headless --path . --script res://tools/test_gameplay_nonnegative_scoring.gd
 # Real PackedScene logic, synthetic inputs, no camera/DB or wrapper side effects.
-const SCENE := preload("res://ui/minigames/human_plane.tscn")
+const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const MODES := ["Seconds", "Lives"]

@@ -5,12 +5,12 @@ extends SceneTree
 ## Godot --headless --path . --script res://tools/test_asset_cleanup_integrity.gd
 ## Optional: compare serialized refs with `git show HEAD:<resource>` if git exists.
 
-const LEADERBOARD := "res://ui/secondary/leaderboard.tscn"
+const LEADERBOARD := "res://ui/secondary/leaderboard/leaderboard.tscn"
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const SCREEN_FIXTURES := [
-	"res://main_menu.tscn", "res://ui/secondary/settings.tscn",
-	"res://ui/secondary/results.tscn",
-	"res://ui/student/student_setup.tscn", "res://ui/play/pause.tscn",
+	"res://ui/main_menu/main_menu.tscn", "res://ui/secondary/settings/settings.tscn",
+	"res://ui/secondary/results/results.tscn",
+	"res://ui/student/setup/student_setup.tscn", "res://ui/play/pause/pause.tscn",
 	"res://ui/tutorial/tutorial_home.tscn", LEADERBOARD
 ]
 const MODAL_PNG_BUTTONS := {
@@ -20,6 +20,15 @@ const MODAL_PNG_BUTTONS := {
 	"DeleteFinalOverlay/ConfirmPanel/FinalDeleteButton": "permanent delete if add_.png"
 }
 const ACTION_BUTTONS := ["BackButton", "ImportCsvButton", "ExportCsvButton", "DeleteAllButton"]
+## These are intentionally NOT screen artwork under Components: two downloaded
+## airplane model textures (one retained source variant) and two active gameplay
+## title sprites. Reject all other non-Components PNGs unless they are QA captures.
+const APPROVED_SOURCE_PNGS := {
+	"res://assets/models/cartoon_plane/plane_basecolor_1024.png": "downloaded 3D plane texture",
+	"res://assets/models/cartoon_plane/legacy/plane_color_512.png": "original 3D plane source variant",
+	"res://assets/ui/game_titles/balloon_popping.png": "active Balloon title artwork",
+	"res://assets/ui/game_titles/human_plane.png": "active Human Plane title artwork",
+}
 const REQUIRED_MODAL_ART := [
 	"DeleteFirstOverlay/BoardArtwork", "DeleteFirstOverlay/WarningHeader",
 	"DeleteFinalOverlay/ConfirmPanel", "DeleteFinalOverlay/HeaderArtwork",
@@ -80,7 +89,7 @@ func _run() -> void:
 	_check(loaded_scenes == discovered_scenes and loaded_scenes >= 20 and loaded_resources >= 1,
 		"Every discovered Godot .tscn parses and instantiates after inlining reusable 3D geometry (found %d scenes/%d resources)" % [
 		loaded_scenes, loaded_resources])
-	_check("res://ui/secondary/credits.tscn" in all_files,
+	_check("res://ui/secondary/credits/credits.tscn" in all_files,
 		"Explicitly restored Credits screen stays intact with its dependencies")
 	_check(texture_dependencies >= 143,
 		"Cleanup retains at least 143 referenced, decodable source textures (found %d)" % texture_dependencies)
@@ -144,12 +153,21 @@ func _check_components_png_organization(all_files: Array[String]) -> void:
 				component_groups[sections[0]] = true
 			else:
 				unorganized_pngs.append(path + " (no screen-specific folder)")
+		elif APPROVED_SOURCE_PNGS.has(path):
+			# A source image can be outside Components only when its exact, reviewed
+			# resource path is explicitly approved and its live import is healthy.
+			_check(FileAccess.file_exists(path + ".import"),
+				"Non-Components approved source retains its import metadata: " + path)
+			var external_texture := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as Texture2D
+			_check(external_texture != null and external_texture.get_size().x > 0.0
+				and external_texture.get_size().y > 0.0,
+				"Approved external source PNG still decodes: " + path)
 		elif not _is_optional_qa_image(path):
 			unorganized_pngs.append(path)
 	_check(component_groups.size() >= 3,
 		"Components organizes UI PNGs in at least three separate screen/functional groups")
 	_check(unorganized_pngs.is_empty(),
-		"All production PNG assets live under Components/<screen>/; found %d outside" % unorganized_pngs.size())
+		"All PNGs reside in organized Components, explicitly approved source paths, or QA captures; found %d unclassified" % unorganized_pngs.size())
 
 
 func _is_optional_qa_image(path: String) -> bool:
@@ -329,8 +347,8 @@ func _check_static_screen(scene: Node, path: String) -> void:
 				"Final destructive action has original disabled artwork")
 			_check(_pixels_present(_button_texture(disabled_style, "disabled")),
 				"Disabled destructive action has visible PNG rather than blank image")
-	elif path in ["res://main_menu.tscn", "res://ui/secondary/settings.tscn",
-			"res://ui/student/student_setup.tscn", "res://ui/tutorial/tutorial_home.tscn"]:
+	elif path in ["res://ui/main_menu/main_menu.tscn", "res://ui/secondary/settings/settings.tscn",
+			"res://ui/student/setup/student_setup.tscn", "res://ui/tutorial/tutorial_home.tscn"]:
 		# Other secondary screens can intentionally render vector/solid fills
 		# with no image files. Check PNGs only on screens that actually use them.
 		var count := _count_display_textures(scene)

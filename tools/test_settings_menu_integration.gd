@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Validate Settings through the real menu host, with its real Music/SFX buses.
-const MENU := "res://main_menu.tscn"
+const MENU := "res://ui/main_menu/main_menu.tscn"
 const SETTINGS_FILE := "user://kilos_settings.cfg"
 var failures: Array[String] = []
 
@@ -54,13 +54,18 @@ func _run() -> void:
 				await process_frame
 				var level := db_to_linear(AudioServer.get_bus_volume_db(bus_index))
 				_check(absf(level - 0.37) < 0.01, info[1] + " live volume slider does not control its bus")
-		var mute_button := panel.find_child("MuteCheck", true, false) as CheckButton
 		var fullscreen_button := panel.find_child("FullscreenCheck", true, false) as CheckButton
-		_check(mute_button != null and fullscreen_button != null, "Mute/fullscreen controls missing")
-		if mute_button != null:
-			mute_button.button_pressed = true
+		_check(fullscreen_button != null, "Fullscreen control missing")
+		_check(panel.find_child("MuteCheck", true, false) == null, "Obsolete mute switch was not deleted")
+		_check(panel.find_child("ToggleMuteallaudioRow", true, false) == null, "Obsolete mute row was not deleted")
+		var master_slider := panel.find_child("VolumeSlider", true, false) as HSlider
+		if master_slider != null:
+			master_slider.value = 0.0
 			await process_frame
-			_check(AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Mute control failed")
+			_check(AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Master 0% must silence audio")
+			master_slider.value = 37.0
+			await process_frame
+			_check(not AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Master >0% must restore audio")
 		var home := panel.find_child("BackButton", true, false) as Button
 		_check(home != null, "Home button missing")
 		if home != null:
@@ -93,7 +98,7 @@ func _run() -> void:
 	else:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_FILE))
 	if failures.is_empty():
-		print("PASS Audio & Display only, live mixer, fullscreen/mute and Home")
+		print("PASS Audio & Display only, live mixer, Master 0% silence, fullscreen and Home")
 		quit(0)
 	else:
 		for failure in failures:

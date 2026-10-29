@@ -1,0 +1,128 @@
+[
+  {
+    "id": "catch_word_prompt",
+    "filename": "catch_word_prompt.wav",
+    "text": "Look at the question at the top of the screen. Read it carefully, then find the matching word on a falling apple.",
+    "game": "catch_word",
+    "step": "prompt"
+  },
+  {
+    "id": "catch_word_movement",
+    "filename": "catch_word_movement.wav",
+    "text": "Move your body left, center, or right to guide your basket. Catch the apple with the correct word. You've got this!",
+    "game": "catch_word",
+    "step": "movement"
+  },
+  {
+    "id": "catch_word_seconds",
+    "filename": "catch_word_seconds.wav",
+    "text": "In Seconds mode, you have sixty seconds. Catch as many correct words as you can before the timer reaches zero!",
+    "game": "catch_word",
+    "step": "seconds"
+  },
+  {
+    "id": "catch_word_lives",
+    "filename": "catch_word_lives.wav",
+    "text": "In Lives mode, you start with three hearts. Catching a wrong apple costs one heart, so look carefully before you move.",
+    "game": "catch_word",
+    "step": "lives"
+  },
+  {
+    "id": "catch_word_score",
+    "filename": "catch_word_score.wav",
+    "text": "Every correct apple earns one hundred points! A wrong answer never takes away points you have already earned. Keep trying!",
+    "game": "catch_word",
+    "step": "score"
+  },
+  {
+    "id": "catch_word_pause",
+    "filename": "catch_word_pause.wav",
+    "text": "Need a little break? Press Pause to stop for a moment. Press Resume when you're ready to play again!",
+    "game": "catch_word",
+    "step": "pause"
+  },
+  {
+    "id": "balloon_popping_prompt",
+    "filename": "balloon_popping_prompt.wav",
+    "text": "Read the grammar question on the screen. Look at each balloon, then choose the one with the word that answers the question.",
+    "game": "balloon_popping",
+    "step": "prompt"
+  },
+  {
+    "id": "balloon_popping_movement",
+    "filename": "balloon_popping_movement.wav",
+    "text": "Move your body to aim. Raise either hand to shoot once. Lower your hand, wait one and a half seconds, then raise it again!",
+    "game": "balloon_popping",
+    "step": "movement"
+  },
+  {
+    "id": "balloon_popping_seconds",
+    "filename": "balloon_popping_seconds.wav",
+    "text": "In Seconds mode, you have sixty seconds. Pop as many balloons with correct answers as you can before time runs out!",
+    "game": "balloon_popping",
+    "step": "seconds"
+  },
+  {
+    "id": "balloon_popping_lives",
+    "filename": "balloon_popping_lives.wav",
+    "text": "In Lives mode, you have three hearts. Popping a wrong balloon can cost one heart. Take your time and choose carefully!",
+    "game": "balloon_popping",
+    "step": "lives"
+  },
+  {
+    "id": "balloon_popping_score",
+    "filename": "balloon_popping_score.wav",
+    "text": "Each correct balloon adds one hundred points! A wrong balloon never takes away the points you've already earned. Great work!",
+    "game": "balloon_popping",
+    "step": "score"
+  },
+  {
+    "id": "balloon_popping_pause",
+    "filename": "balloon_popping_pause.wav",
+    "text": "Want a quick rest? Press Pause to take a break. Press Resume when you're ready to pop more balloons!",
+    "game": "balloon_popping",
+    "step": "pause"
+  },
+  {
+    "id": "human_plane_prompt",
+    "filename": "human_plane_prompt.wav",
+    "text": "Read the question before your flight. Three word gates are coming toward you. Choose the correct word and fly through the center of its ring!",
+    "game": "human_plane",
+    "step": "prompt"
+  },
+  {
+    "id": "human_plane_movement",
+    "filename": "human_plane_movement.wav",
+    "text": "Spread both arms wide like airplane wings. Step left, center, or right to steer. Lower either arm to freeze your plane. Spread both arms again to keep flying!",
+    "game": "human_plane",
+    "step": "movement"
+  },
+  {
+    "id": "human_plane_seconds",
+    "filename": "human_plane_seconds.wav",
+    "text": "In Seconds mode, you have sixty seconds. Fly through as many correct rings as you can before the timer reaches zero!",
+    "game": "human_plane",
+    "step": "seconds"
+  },
+  {
+    "id": "human_plane_lives",
+    "filename": "human_plane_lives.wav",
+    "text": "In Lives mode, you start with three hearts. A wrong ring or a missed answer can cost one heart. Choose your gate carefully!",
+    "game": "human_plane",
+    "step": "lives"
+  },
+  {
+    "id": "human_plane_score",
+    "filename": "human_plane_score.wav",
+    "text": "Fly through the correct ring to earn one hundred points! A wrong answer never removes your earned points. Keep your eyes on the next gate!",
+    "game": "human_plane",
+    "step": "score"
+  },
+  {
+    "id": "human_plane_pause",
+    "filename": "human_plane_pause.wav",
+    "text": "Need to rest your arms? Press Pause for a quick break. Press Resume when you're ready to fly again!",
+    "game": "human_plane",
+    "step": "pause"
+  }
+]

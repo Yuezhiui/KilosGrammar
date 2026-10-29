@@ -2,9 +2,12 @@ extends SceneTree
 
 # Full camera-free Balloon Popping input bridge: calibrated LEFT/CENTER/RIGHT
 # steering stays independent of either-hand shooting; no real camera or DB.
-const GAMEPLAY_SCENE := "res://ui/play/gameplay.tscn"
+const GAMEPLAY_SCENE := "res://ui/play/gameplay/gameplay.tscn"
+const SESSION_TOKEN := "balloon-three-lane-synthetic"
 var checks := 0
 var failures: Array[String] = []
+var mock_worker: PacketPeerUDP
+var next_source_when := 20.0
 
 
 func _initialize() -> void:
@@ -20,10 +23,24 @@ func _run() -> void:
 		return
 	service.stop_camera()
 	service.set_process(false)
+	# The strict source gate requires an authenticated live camera session, a
+	# current local worker process and a bound receiver. Use localhost UDP only;
+	# neither a physical webcam nor the Python pose worker is launched.
+	service.peer = PacketPeerUDP.new()
+	_check(service.peer.bind(0, "127.0.0.1") == OK, "synthetic PoseService UDP receiver is bound")
+	mock_worker = PacketPeerUDP.new()
+	_check(mock_worker.set_dest_address("127.0.0.1", service.peer.get_local_port()) == OK,
+		"synthetic worker sends authenticated packets on localhost")
+	service.worker_pid = OS.get_process_id() # Test-only liveness; unset BEFORE stop_camera().
 	service.active = true
-	service.session_token = "balloon-three-lane-synthetic"
+	service.session_token = SESSION_TOKEN
+	service._launch_ms = Time.get_ticks_msec()
+	service._latest_worker_packet_time = -1.0
 	_check(service.set_calibration(0.18, 0.50, 0.82), "three-stage calibration supports left/center/right")
-	_emit_pose(service, 0.50, false, true)
+	await _emit_pose(service, 0.50, false, true)
+	_check(service.fresh_camera_population() == 1 and service.has_valid_pose() \
+		and service.has_valid_hand_observation(),
+		"fresh authenticated solo tracking exposes valid movement and hand observation")
 
 	var wrapper := (load(GAMEPLAY_SCENE) as PackedScene).instantiate() as Control
 	root.add_child(wrapper)
@@ -36,22 +53,24 @@ func _run() -> void:
 	var game := wrapper.get("active_game") as Control
 	_check(game != null, "Balloon scene mounted in real gameplay wrapper")
 	if game == null:
+		service.worker_pid = -1
+		mock_worker.close()
 		service.stop_camera()
 		quit(1)
 		return
 	game.set_process(false)
 	game.set_physics_process(false)
 	_check(game.round_active and game.timer_running, "game round is live")
-	_check(game.HAND_RAISE_RELOAD_MS == 1500, "existing reload remains 1.5 seconds")
+	_check(game.HAND_RAISE_RELOAD_MS == 500, "new reload is 0.5 seconds")
 
 	# An *invalid* hand observation with a tracked torso must neither re-arm
 	# nor shoot. Reacquiring the SAME raised pose is still disarmed.
-	_emit_pose(service, 0.50, false, false)
+	await _emit_pose(service, 0.50, false, false)
 	for _i in range(5):
 		wrapper.call("_update_gesture_input")
 	_check(not service.has_valid_hand_observation(), "tracked torso with occluded wrists is invalid for shooting")
 	_check(not game.hand_raise_armed, "occluded wrists cannot re-arm gun")
-	_emit_pose(service, 0.50, true, true, true, false)
+	await _emit_pose(service, 0.50, true, true, true, false)
 	_wrapper_raise(wrapper, game)
 	_check(game.projectiles.is_empty(), "raised arm after occlusion cannot fire without genuine low")
 
@@ -61,11 +80,11 @@ func _run() -> void:
 	for lane in range(3):
 		# Restore a trustworthy lower-hand observation before aiming. The
 		# movement pipeline processes camera position separately from the gun.
-		_emit_pose(service, lane_xs[lane], false, true)
+		await _emit_pose(service, lane_xs[lane], false, true)
 		for _frame in range(55):
 			# Real YOLO delivers a succession of position samples, not one
 			# isolated new x followed by 55 repeated rendered frames.
-			_emit_pose(service, lane_xs[lane], false, true)
+			await _emit_pose(service, lane_xs[lane], false, true)
 			wrapper.call("_process", 0.04)
 			game.call("_update_launcher", 0.04)
 		game.hand_raise_sample_since_ms = Time.get_ticks_msec() - 200
@@ -79,7 +98,7 @@ func _run() -> void:
 		# The camera's aggregate 'hand_up' can come from EITHER wrist. The
 		# per-wrist fields are metadata: they cannot steer the gun by themselves.
 		var left_hand := lane != 1
-		_emit_pose(service, lane_xs[lane], true, true, left_hand, not left_hand)
+		await _emit_pose(service, lane_xs[lane], true, true, left_hand, not left_hand)
 		_wrapper_raise(wrapper, game)
 		_check(game.projectiles.size() == 1,
 			"%s arm raise fires one stone (shots=%d, armed=%s, confirmed=%s, last=%d, now=%d, active=%s)" %
@@ -101,8 +120,8 @@ func _run() -> void:
 			# Headless Godot timer callbacks may advance virtual frames faster
 			# than the Time.get_ticks_msec() monotonic cooldown clock. Simulate
 			# time elapsed by shifting ONLY the test instance's last-shot mark.
-			# Exact 1499/1500ms behavior is covered by the dedicated state test.
-			game.hand_raise_last_shot_ms = Time.get_ticks_msec() - 1600
+			# Exact 499/500ms behavior is covered by the dedicated state test.
+			game.hand_raise_last_shot_ms = Time.get_ticks_msec() - 600
 			wrapper.call("_update_gesture_input")
 			_check(game.projectiles.is_empty(),
 				"%s holding an arm up cannot re-fire when cooldown expires" % lane_names[lane])
@@ -114,16 +133,20 @@ func _run() -> void:
 
 	# Same person still raising a hand after wrist loss must not shoot again,
 	# even after the reload duration completes.
-	_emit_pose(service, 0.82, true, false)
+	await _emit_pose(service, 0.82, true, false)
 	wrapper.call("_update_gesture_input")
 	_check(not game.hand_raise_armed, "loss of hand confidence disarms firing")
-	_emit_pose(service, 0.82, true, true)
+	await _emit_pose(service, 0.82, true, true)
 	_wrapper_raise(wrapper, game)
 	_check(game.projectiles.is_empty(), "recovered raised arm never creates a phantom shot")
 
+	# Gameplay._exit_tree() also calls stop_camera(); revoke the test-only
+	# process-ID stub BEFORE freeing that wrapper, or it would kill this runner.
+	service.worker_pid = -1
 	wrapper.queue_free()
 	await process_frame
 	await process_frame
+	mock_worker.close()
 	service.stop_camera()
 	if failures.is_empty():
 		print("PASS Balloon three-lane hand bridge: %d assertions" % checks)
@@ -143,13 +166,20 @@ func _wrapper_raise(wrapper: Control, game: Control) -> void:
 
 func _emit_pose(service: Node, x: float, hand_up: bool, observation_valid: bool,
 		left: bool = false, right: bool = false) -> void:
-	service._apply_pose_packet({
-		"kind": "pose", "token": "balloon-three-lane-synthetic",
-		"state": "tracking", "pose": true, "x": x,
+	next_source_when += 0.05
+	var packet := {
+		"kind": "pose", "token": SESSION_TOKEN,
+		"state": "tracking", "camera": true, "camera_phase": "tracking",
+		"camera_frame_age_ms": 20, "people": 1, "lock_state": "locked",
+		"pose": true, "x": x, "when": next_source_when,
 		"hand_up": hand_up, "left_hand_up": left, "right_hand_up": right,
 		"hand_observation_valid": observation_valid,
 		"airplane_pose": false, "wing_roll": 0.0
-	}, Time.get_ticks_msec())
+	}
+	_check(mock_worker.put_packet(JSON.stringify(packet).to_utf8_buffer()) == OK,
+		"authenticated source timestamp delivered to the local PoseService receiver")
+	await process_frame
+	service._process(0.016)
 
 
 func _check(ok: bool, message: String) -> void:

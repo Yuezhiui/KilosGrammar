@@ -3,7 +3,7 @@ extends SceneTree
 # Graphical-only screenshot QA (Godot 4.7.2).
 # --rendering-method gl_compatibility --path . --script res://tools/test_human_plane_three_heart_visual.gd
 # Temporary screenshots go into user://, NEVER the source art/assets folder.
-const SCENE := preload("res://ui/minigames/human_plane.tscn")
+const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 
 
 func _initialize() -> void:

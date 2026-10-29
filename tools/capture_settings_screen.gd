@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SETTINGS_SCENE := preload("res://ui/secondary/settings.tscn")
+const SETTINGS_SCENE := preload("res://ui/secondary/settings/settings.tscn")
 const OUT_DIR := "user://_qa_settings_audio_only"
 
 func _initialize() -> void:

@@ -1,13 +1,20 @@
 extends SceneTree
 
-# Godot --headless --path . --script res://tools/test_calibration_minimal_ui.gd
-# Synthetic pose packets only. Does not start a real camera or fake a success
-# in production; checks the actual calibration screen/state machine.
+# Godot 4.7.2 --headless --path . --script res://tools/test_calibration_minimal_ui.gd
+# Post-prune contract: editor-authored five-PNG screen, 3-second dark intro,
+# strict 3-second fresh-pose holds and shared Play/Tutorial handoff.
+# No real camera, YOLO worker, database or keyboard/skip fallback.
 
-const SCENE := "res://ui/vision/calibration.tscn"
+const SCENE := "res://ui/vision/calibration/calibration.tscn"
+const HOLD_DT := 0.15
+const POSES := ["PoseGuides/PoseGuideDefault", "PoseGuides/PoseGuideBalloonRaise", "PoseGuides/PoseGuidePlaneCenter",
+	"PoseGuides/PoseGuidePlaneLeft", "PoseGuides/PoseGuidePlaneRight"]
+const ZONES := [0.50, 0.80, 0.20]
+
 var failures: Array[String] = []
 var checks := 0
 var pose: Node
+var packet_when := 400.0
 
 
 func _initialize() -> void:
@@ -17,130 +24,215 @@ func _initialize() -> void:
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
 	pose = root.get_node_or_null("PoseService")
-	_assert(pose != null, "PoseService autoload is connected")
+	_check(pose != null, "PoseService autoload is connected")
 	if pose == null:
-		quit(1)
+		_finish()
 		return
 	pose.stop_camera()
+	pose.set_process(false)
 	var packed := load(SCENE) as PackedScene
-	_assert(packed != null, "Full-screen scene parses")
+	_check(packed != null, "Full-screen five-PNG scene parses")
 	if packed == null:
-		quit(1)
+		_finish()
 		return
-	var screen := packed.instantiate() as Control
+	for tutorial in [true, false]:
+		await _run_case(packed, tutorial)
+	pose.worker_pid = -1
+	pose.stop_camera()
+	_finish()
+
+
+func _run_case(scene: PackedScene, tutorial: bool) -> void:
+	var label := "Tutorial" if tutorial else "Play"
+	pose.worker_pid = -1
+	pose.stop_camera()
+	pose.peer = PacketPeerUDP.new()
+	_check(pose.peer.bind(0, "127.0.0.1") == OK, label + " test-only UDP receiver")
+	pose.worker_pid = OS.get_process_id() # Mock liveness only; disarm before cleanup.
+	pose.session_token = "minimal-five-png-" + label
+	pose.active = true
+	var screen := scene.instantiate() as Control
 	root.add_child(screen)
-	var stage := screen.get_node("TutorialStage") as Control
-	for removed in ["SkipButton", "RetryButton", "DemoButton", "KeyboardButton"]:
-		_assert(stage.get_node_or_null(removed) == null, "Removed unwanted control: " + removed)
-	_assert(stage.get_node_or_null("BackButton") is Button, "Teacher Back button remains editor-authored")
-	_assert(stage.get_node_or_null("IntroOverlay/IntroBackButton") is Button, "Intro Back button remains editor-authored")
-	_assert(stage.get_node_or_null("ContinueButton") == null, "Unused Continue removed; auto-advance remains active")
-	var new_dimmer := screen.get_node("ClassroomDimmer") as ColorRect
-	_assert(new_dimmer.color.r <= 0.01 and new_dimmer.color.g <= 0.01
-		and new_dimmer.color.b <= 0.01 and new_dimmer.color.a >= 0.0
-		and new_dimmer.color.a <= 0.15,
-		"New CALIB reference stays bright (at most 15% black dimming)")
-	_assert(is_zero_approx((stage.get_node("IntroOverlay") as ColorRect).color.a), "Intro does not add a second dark overlay")
-	_assert(bool(screen.get("intro_running")), "Intro begins first")
+	screen.set_process(false)
+	var stage := screen.get_node_or_null("TutorialStage") as Control
+	_check(stage != null, label + " stage editor-authored")
+	if stage == null:
+		pose.worker_pid = -1
+		screen.queue_free()
+		await process_frame
+		return
+	for removed in ["SkipButton", "RetryButton", "DemoButton", "KeyboardButton",
+			"ContinueButton", "ArtGuideLeft", "ArtGuideCenter", "ArtGuideRight",
+			"LeftCalibrationLane", "CenterCalibrationLane", "RightCalibrationLane"]:
+		_check(stage.get_node_or_null(removed) == null,
+			label + " obsolete node pruned: " + removed)
+	for name in POSES:
+		var art := stage.get_node_or_null(name) as TextureRect
+		_check(art != null and art.owner == screen and art.texture != null,
+			label + " authored pose guide retained: " + name)
+	_check(stage.get_node_or_null("CameraArea/LiveCameraInset") is TextureRect
+		and stage.get_node_or_null("CameraArea/SkeletonPlacement") is ReferenceRect,
+		label + " camera and skeleton positions remain editor-editable")
+	var back := stage.get_node_or_null("Navigation/BackButton") as Button
+	var intro := stage.get_node_or_null("IntroOverlay") as ColorRect
+	var success := stage.get_node_or_null("SuccessOverlay") as ColorRect
+	_check(back != null and intro != null and success != null,
+		label + " Back, Intro and Success overlays remain editor-authored")
+	if back == null or intro == null or success == null:
+		pose.worker_pid = -1
+		screen.queue_free()
+		await process_frame
+		return
+	var dimmer := screen.get_node_or_null("ClassroomDimmer") as ColorRect
+	var darkness: float = 1.0 - (1.0 - dimmer.color.a) * (1.0 - intro.color.a)
+	_check(darkness >= 0.60 and darkness <= 0.70, label + " CALIBRATION intro is 60-70% dark")
+	_check(screen.intro_running and intro.visible, label + " intro starts before hold")
 	for child in stage.get_children():
-		if child is Control and child.name != "IntroOverlay":
-			_assert(not (child as Control).visible, "HUD/guide hidden for intro: " + child.name)
-	var routed: Array[Dictionary] = []
+		if child is Control and child != intro:
+			_check(not (child as Control).visible, label + " intro hides HUD and guides: " + child.name)
+	for removed in ["IntroBackButton", "IntroHeading", "IntroDescription", "IntroCountdown"]:
+		_check(intro.get_node_or_null(removed) == null, label + " obsolete intro control removed: " + removed)
+	_check(intro.get_node_or_null("ArtIntroTitle") is Label
+		and success.get_node_or_null("SuccessTitle") is Label
+		and success.get_node_or_null("SuccessSubtitle") is Label,
+		label + " intro title and success text are independently editor-authored")
+	_check(is_equal_approx(success.color.a, intro.color.a)
+		and not success.visible, label + " success initially hidden and uses intro darkness")
+	var routes: Array[Dictionary] = []
 	screen.requested.connect(func(target: String, payload: Dictionary) -> void:
-		routed.append({"target": target, "payload": payload}))
+		routes.append({"target": target, "payload": payload}))
+	screen.set_context({"activity": "Catch the Word", "entry_source": "tutorial" if tutorial else "play",
+		"guided_tutorial": tutorial, "camera_requested": false, "keyboard_mode": true,
+		"game_mode": "Seconds", "topic": "Noun", "difficulty": "Easy"})
 	screen.call("_continue_flow")
 	screen.call("_continue_flow", true)
-	_assert(routed.is_empty(), "No bypass without a real calibrated pose; legacy skip ignored")
-	screen.call("_process", 2.6)
-	_assert(not bool(screen.get("intro_running")), "Intro finishes after 2.5 s")
-	_assert((stage.get_node("BackButton") as Button).visible, "Teacher Back is visible after intro")
-	var zones := [
-			stage.get_node("ArtGuideLeft") as Control,
-			stage.get_node("ArtGuideCenter") as Control,
-			stage.get_node("ArtGuideRight") as Control
-	]
-	_check_one_zone(zones, 1, "CENTER")
-	_assert(stage.get_node("LiveCameraInset") is TextureRect, "Live camera is an editor-authored TextureRect")
-	_assert((stage.get_node("InstructionFIL") as Label).visible, "Filipino instruction visible")
-	_assert(stage.get_node("StageHeading") is Label, "Gochi Hand stage title is scene-authored")
-	_assert(stage.get_node("CountdownLabel") is Label, "Three-second countdown is scene-authored")
-	# No context was supplied, so a screen inspection did not open a device.
-	_assert(not bool(pose.get("active")), "Static scene inspection never starts the webcam")
-	# Simulate fresh YOLO packets without launching a device: if camera state
-	# disagrees or tracking goes stale, the state machine must refuse progress.
-	pose.active = true
-	pose.current_status = {"state": "tracking", "pose": true}
-	for stage_x in [0.50, 0.79, 0.20]:
-		for index in range(10):
-			pose.player_x = stage_x + 0.002 * float(index % 2)
-			pose.packet_sequence += 1
-			pose.last_pose_ms = Time.get_ticks_msec()
-			screen.call("_process", 0.40)
-		var live_step := int(screen.get("live_step"))
-		if stage_x == 0.50:
-			_assert(live_step == 1, "CENTER saves only after real hold and fresh packets")
-			_check_one_zone(zones, 2, "RIGHT")
-		elif stage_x == 0.79:
-			_assert(live_step == 2, "RIGHT saves only after real hold and fresh packets")
-			_check_one_zone(zones, 0, "LEFT")
-	_assert(bool(pose.calibration.get("valid", false)), "Three measured positions form valid calibration")
-	_assert(int(screen.get("live_step")) == 3, "All steps measured")
-	_assert(routed.is_empty(), "No gameplay request until completion transition")
-	screen.call("set_context", {"guided_tutorial": true, "keyboard_mode": true, "camera_requested": false})
-	_assert(not bool((screen.get("context") as Dictionary).get("keyboard_mode", true)), "Stale keyboard request is rejected")
-	screen.call("_continue_flow")
-	_assert(routed.size() == 1 and String(routed[0].get("target", "")) == "gameplay", "Guided success opens gameplay")
-	if routed.size() == 1:
-		var payload := routed[0]["payload"] as Dictionary
-		_assert(bool(payload.get("guided_tutorial", false)), "Guided route is preserved")
-		_assert(bool(payload.get("camera_live", false)), "Gameplay has real camera controls")
-		_assert(not bool(payload.get("keyboard_mode", true)), "No keyboard fallback in payload")
-		_assert(not bool(payload.get("calibration_skipped", true)), "Calibrated result is not skipped")
-		_assert(bool(payload.get("start_countdown", false)), "Gameplay countdown begins once")
+	_check(routes.is_empty(), label + " neither skip nor fake direct continue bypasses calibration")
+	screen.call("_process", 2.99)
+	_check(screen.intro_running and routes.is_empty(), label + " 2.99s intro has not credited hold")
+	screen.call("_process", 0.01)
+	_check(not screen.intro_running and not intro.visible and back.visible,
+		label + " intro ends at 3s and Back is usable")
+	_check((stage.get_node("PoseGuides/PoseGuideDefault") as Control).visible,
+		label + " default PNG replaces old neon on CENTER")
+	for zone_index in range(ZONES.size()):
+		for sample in range(36):
+			_send_pose(float(ZONES[zone_index]), screen)
+			if screen.live_step > zone_index:
+				break
+		_check(int(screen.live_step) == zone_index + 1,
+			label + " authentic 3-second source packets complete zone %d (actual=%d, measured=%s, time=%.2f)" %
+			[zone_index, int(screen.live_step), str(screen.measured_points), float(screen.live_timer)])
+		if zone_index < ZONES.size() - 1:
+				var next_guide := "PoseGuides/PoseGuideRight" if zone_index == 0 else "PoseGuides/PoseGuideLeft"
+				_check((stage.get_node(next_guide) as Control).visible
+					and not (stage.get_node("PoseGuides/PoseGuideDefault") as Control).visible,
+					label + " next location uses its independently editable DEFAULT.png guide")
+	_check(bool(pose.calibration.get("valid", false)) and bool(screen.transition_queued),
+		label + " three physically measured zones yield valid calibration")
+	_check(routes.is_empty() and screen.success_running and success.visible,
+		label + " completed holds enter 3-second authored success screen")
+	for child in stage.get_children():
+		if child is Control and child != success:
+			_check(not (child as Control).visible,
+				label + " successful pose hides all guides, digits, camera, title and Back: " + child.name)
+	_check(not bool(screen.context.get("keyboard_mode", true)), label + " keyboard input stays prohibited")
 	screen.call("_continue_flow", true)
-	_assert(routed.size() == 1, "Obsolete skip call cannot open a second route")
-	screen.free()
+	_check(routes.is_empty(), label + " skip never bypasses completed calibration")
+	screen.call("_continue_flow", false)
+	_check(routes.is_empty(), label + " manual Continue cannot bypass 3-second success")
+	# A completed real three-stage calibration is LATCHED. Fresh raw one-
+	# person YOLO boxes (NOT newly visible wrists) can finish the success
+	# countdown; expired source, raw 0 or 2+ must freeze without recapturing.
+	for tick in range(18):
+		_send_pose(0.20, screen)
+	_check(routes.is_empty() and success.visible and screen.success_elapsed < 3.0,
+		label + " 2.7 seconds of fresh SOLO data never route early")
+	var measured_once: Dictionary = screen.measured_points.duplicate(true)
+	var elapsed_before_freeze: float = float(screen.success_elapsed)
+	pose._last_occupancy_packet_ms = Time.get_ticks_msec() - int(pose.OCCUPANCY_STALE_MS) - 100
+	screen._process(HOLD_DT)
+	_check(routes.is_empty() and success.visible and screen.success_running
+			and screen.live_step == 3 and screen.measured_points == measured_once
+			and bool(pose.calibration.get("valid", false))
+			and is_equal_approx(float(screen.success_elapsed), elapsed_before_freeze),
+			label + " expired raw source FREEZES success but retains actual measurements")
+	# A current raw camera packet with zero people (Tutorial) or two (Play)
+	# cannot authorize GO; neither erases finished CENTER/RIGHT/LEFT.
+	_send_ambiguous_pose(0 if tutorial else 2, screen)
+	_check(routes.is_empty() and success.visible and screen.live_step == 3
+			and screen.measured_points == measured_once
+			and is_equal_approx(float(screen.success_elapsed), elapsed_before_freeze),
+			label + " authentic 0/2+ count freezes without recapturing successful holds")
+	# The returning solo student may be physically moving; raw YOLO
+	# occupancy is genuine and fresh even when pose/keypoints are absent.
+	for tick in range(5):
+		_send_raw_solo_without_pose(screen)
+	_check(routes.size() == 1 and String(routes[0].get("target", "")) == "gameplay",
+		label + " success resumes exactly once on raw SOLO, no second holds")
+	if routes.size() == 1:
+		var payload := routes[0]["payload"] as Dictionary
+		_check(bool(payload.get("guided_tutorial", false)) == tutorial
+			and bool(payload.get("calibration_measured", false))
+			and bool(payload.get("start_countdown", false))
+			and bool(payload.get("camera_live", false))
+			and not bool(payload.get("keyboard_mode", true)),
+			label + " preserves Play/Tutorial flags and count-in with no keyboard fallback")
+	for tick in range(3):
+		_send_raw_solo_without_pose(screen)
+	_check(routes.size() == 1, label + " no duplicate gameplay transitions after success")
+	# Do not leave the fake Godot PID bound to any camera teardown path.
+	pose.worker_pid = -1
+	screen.queue_free()
+	await process_frame
+	await process_frame
 	pose.stop_camera()
-	# Normal Play uses the exact same calibrated-camera handoff, but no guided
-	# overlay flag. Prefill only synthetic existing calibration for route QA.
-	pose.active = true
-	pose.player_x = 0.50
-	pose.current_status = {"state": "tracking", "pose": true}
-	pose.last_pose_ms = Time.get_ticks_msec()
-	pose.calibration = {"left": 0.20, "center": 0.50, "right": 0.80, "valid": true}
-	var regular := packed.instantiate() as Control
-	root.add_child(regular)
-	var normal_routes: Array[Dictionary] = []
-	regular.requested.connect(func(target: String, payload: Dictionary) -> void:
-		normal_routes.append({"target": target, "payload": payload}))
-	regular.call("set_context", {"entry_source": "play", "keyboard_mode": true, "camera_requested": false})
-	regular.call("_process", 2.6)
-	regular.call("_continue_flow")
-	_assert(normal_routes.size() == 1 and String(normal_routes[0].get("target", "")) == "gameplay", "Normal Play also routes to gameplay")
-	if normal_routes.size() == 1:
-		var normal_payload := normal_routes[0]["payload"] as Dictionary
-		_assert(not bool(normal_payload.get("guided_tutorial", false)), "Normal play has no tutorial overlay flag")
-		_assert(bool(normal_payload.get("camera_live", false)), "Normal play requires camera")
-		_assert(not bool(normal_payload.get("keyboard_mode", true)), "Even stale keyboard entry never enables keyboard mode")
-		_assert(bool(normal_payload.get("start_countdown", false)), "Normal play receives countdown")
-	regular.call("_go_back")
-	_assert(normal_routes.size() == 2 and String(normal_routes[1].get("target", "")) == "play_activity", "Teacher Back returns Choose Activity")
-	_assert(not bool(pose.get("active")), "Teacher Back stops camera")
-	regular.free()
-	pose.stop_camera()
-	print("CALIBRATION MINIMAL UI: %s (%d checks, %d failures)" % [
-		"PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
-	quit(0 if failures.is_empty() else 1)
 
 
-func _check_one_zone(zones: Array, active_index: int, label: String) -> void:
-	for index in range(zones.size()):
-		_assert((zones[index] as Control).visible == (index == active_index),
-			"%s stage displays only the correct yellow PNG guide %d" % [label, index])
+func _send_pose(x: float, screen: Control) -> void:
+	packet_when += HOLD_DT
+	var packet: Dictionary = {"token": pose.session_token, "kind": "pose",
+		"camera": true, "camera_phase": "tracking", "state": "tracking",
+		"people": 1, "pose": true, "lock_state": "locked",
+		"camera_frame_age_ms": 20, "fps": 8.0, "x": x,
+		"hand_observation_valid": true, "hand_up": false}
+	pose._apply_pose_packet(packet, Time.get_ticks_msec())
+	pose._record_fresh_calibration_pose(packet, packet_when)
+	screen._process(HOLD_DT)
 
 
-func _assert(ok: bool, description: String) -> void:
+func _send_ambiguous_pose(people: int, screen: Control) -> void:
+	packet_when += HOLD_DT
+	var packet: Dictionary = {"token": pose.session_token, "kind": "pose",
+		"camera": true, "camera_phase": "tracking", "state": "tracking",
+		"people": people, "pose": false, "lock_state": "crowded" if people > 1 else "lost",
+		"camera_frame_age_ms": 20, "fps": 8.0, "x": -1.0,
+		"hand_observation_valid": false, "hand_up": false}
+	pose._apply_pose_packet(packet, Time.get_ticks_msec())
+	pose._record_fresh_calibration_pose(packet, packet_when)
+	screen._process(HOLD_DT)
+
+
+func _send_raw_solo_without_pose(screen: Control) -> void:
+	packet_when += HOLD_DT
+	var packet: Dictionary = {"token": pose.session_token, "kind": "pose",
+		"camera": true, "camera_phase": "tracking", "state": "tracking",
+		"people": 1, "pose": false, "lock_state": "pending",
+		"camera_frame_age_ms": 20, "fps": 8.0, "x": -1.0,
+		"hand_observation_valid": false, "hand_up": false}
+	pose._apply_pose_packet(packet, Time.get_ticks_msec())
+	# No source-valid skeleton packet can enter the old 3s holds here.
+	pose._record_fresh_calibration_pose(packet, packet_when)
+	screen._process(HOLD_DT)
+
+
+func _check(ok: bool, description: String) -> void:
 	checks += 1
 	if not ok:
 		failures.append(description)
-		printerr("FAIL calibration minimal UI: ", description)
+		printerr("CALIBRATION MINIMAL UI FAIL: ", description)
+
+
+func _finish() -> void:
+	print("CALIBRATION MINIMAL UI: %s checks=%d failures=%d" %
+		["PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
+	quit(0 if failures.is_empty() else 1)

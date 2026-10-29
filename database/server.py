@@ -22,6 +22,10 @@ from typing import Any, Protocol
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from .config import Config
+from .recovery_store import (
+    LookupUnavailable, RecoveryPendingError, RecoveryRequestConflict,
+    RecoveryStore, UnknownStudentForScore,
+)
 from .storage import MAX_BULK_ROWS, BulkLimitExceeded, PostgreSQLStore, SchemaNotReady, StudentIdentityConflict
 
 LEGACY_MINIGAME = "Legacy"
@@ -157,6 +161,7 @@ def _create_admin_token() -> str:
 class Store(Protocol):
     def health(self) -> dict[str, Any]: ...
     def find_student(self, student_id: str) -> dict[str, Any] | None: ...
+    def find_students_by_name(self, student_name: str) -> list[dict[str, Any]]: ...
     def register_student(self, student_id: str, student_name: str, grade_section: str) -> tuple[dict[str, Any], bool]: ...
     def update_student(self, student_id: str, changes: dict[str, str]) -> dict[str, Any] | None: ...
     def find_score(
@@ -234,6 +239,14 @@ def _translate_database_error(error: Exception) -> ApiError:
         return ApiError(409, "student_exists", "This student ID is already registered")
     if isinstance(error, StudentIdentityConflict):
         return ApiError(409, "student_exists", "This student ID has different registered details; use explicit update")
+    if isinstance(error, RecoveryRequestConflict):
+        return ApiError(409, "request_id_conflict", "This request ID was already used with different score details")
+    if isinstance(error, RecoveryPendingError):
+        return ApiError(409, "recovery_pending", "Finish recovering pending student scores before data administration")
+    if isinstance(error, LookupUnavailable):
+        return ApiError(503, "lookup_unavailable", "Full-name uniqueness cannot be verified until PostgreSQL reconnects")
+    if isinstance(error, UnknownStudentForScore):
+        return ApiError(404, "student_not_found", "Register the student before recording scores")
     if isinstance(error, BulkLimitExceeded):
         return ApiError(413, "csv_too_large", "Complete CSV export exceeds the supported row limit")
     if getattr(error, "sqlstate", None) == "23503":
@@ -310,6 +323,18 @@ class API:
                 raise ApiError(400, "invalid_input", "Unexpected query parameters")
             return 200, self.store.health()
 
+        if method == "GET" and path == "/students/by-name":
+            params = query_params(parsed.query, {"name"})
+            name = text_field(params["name"], "name")
+            if not hasattr(self.store, "find_students_by_name"):
+                raise ApiError(503, "lookup_unavailable", "Full-name lookup is unavailable")
+            matches = self.store.find_students_by_name(name)
+            if len(matches) > 1:
+                raise ApiError(409, "student_ambiguous", "Multiple student IDs share this full name; enter student ID instead")
+            if not matches:
+                raise ApiError(404, "student_not_found", "No student registered with this full name")
+            return 200, {"student": matches[0], "match": "full_name"}
+
         if path.startswith("/students/"):
             student_id = student_id_field(unquote(path[len("/students/"):]))
             if parsed.query:
@@ -339,7 +364,9 @@ class API:
                 text_field(request["student_name"], "student_name"),
                 text_field(request["grade_section"], "grade_section"),
             )
-            return (201 if created else 200), {"student": student}
+            return (201 if created else 200), {
+                "student": student, "recovery_pending": bool(student.get("recovery_pending", False)),
+            }
 
         if method == "GET" and path == "/scores":
             params = query_params(parsed.query, {"student_id", "game_style", "game_mode", "difficulty"}, {"minigame"})
@@ -355,9 +382,9 @@ class API:
         if method == "POST" and path in {"/rounds/complete", "/scores/completed"}:
             request = object_body(
                 body, {"student_id", "game_style", "game_mode", "difficulty", "score"},
-                {"student_id", "minigame", "game_style", "game_mode", "difficulty", "score"},
+                {"student_id", "minigame", "game_style", "game_mode", "difficulty", "score", "request_id"},
             )
-            result = self.store.complete_round_and_replace_score(
+            args = (
                 student_id_field(request["student_id"]),
                 text_field(request["game_style"], "game_style"),
                 text_field(request["game_mode"], "game_mode"),
@@ -365,7 +392,19 @@ class API:
                 score_field(request["score"]),
                 text_field(request["minigame"], "minigame") if "minigame" in request else LEGACY_MINIGAME,
             )
-            return 200, {"score": result}
+            if "request_id" in request:
+                request_id = request["request_id"]
+                if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", request_id):
+                    raise ApiError(400, "invalid_input", "request_id must be a stable 1-128 character identifier")
+                if not isinstance(self.store, RecoveryStore):
+                    result = self.store.complete_round_and_replace_score(*args)
+                else:
+                    result = self.store.complete_round_and_replace_score(*args, request_id=request_id)
+            else:
+                result = self.store.complete_round_and_replace_score(*args)
+            return 200, {
+                "score": result, "recovery_pending": bool(result.get("recovery_pending", False)),
+            }
 
         if method == "GET" and path == "/leaderboard":
             params = query_params(
@@ -548,16 +587,30 @@ def make_handler(api: API) -> type[BaseHTTPRequestHandler]:
 
 def main() -> None:
     config = Config.from_env()
-    api = API(PostgreSQLStore(config))
+    recovery = RecoveryStore(PostgreSQLStore(config))
+    api = API(recovery)
     with ThreadingHTTPServer(("127.0.0.1", config.http_port), make_handler(api)) as server:
         # Bind the port BEFORE replacing the token file. A second accidental
         # launch must not rotate the credential used by an already-live API.
         api._admin_token = _create_admin_token()
         print(f"KILOS GRAMMAR database API listening at http://127.0.0.1:{config.http_port}")
+        stop_retry = threading.Event()
+
+        def retry_recovery() -> None:
+            # No user requests are necessary for an offline queue to drain.
+            # The lock inside RecoveryStore prevents concurrent replay.
+            while not stop_retry.wait(3.0):
+                recovery.sync()
+
+        retry_thread = threading.Thread(target=retry_recovery, name="KilosRecoveryRetry", daemon=True)
+        retry_thread.start()
         try:
             server.serve_forever(poll_interval=0.5)
         except KeyboardInterrupt:
             pass
+        finally:
+            stop_retry.set()
+            retry_thread.join(timeout=4.0)
 
 
 if __name__ == "__main__":

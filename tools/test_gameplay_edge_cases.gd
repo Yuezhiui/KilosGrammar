@@ -31,7 +31,7 @@ func _run() -> void:
 
 
 func _new_balloon() -> Control:
-	var packed := load("res://ui/minigames/balloon_popping.tscn") as PackedScene
+	var packed := load("res://ui/minigames/balloon_popping/balloon_popping.tscn") as PackedScene
 	var game := packed.instantiate() as Control
 	root.add_child(game)
 	game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -173,7 +173,7 @@ func _dispose(game: Node) -> void:
 
 
 func _plane_hitbox_alignment() -> void:
-	var packed := load("res://ui/minigames/human_plane.tscn") as PackedScene
+	var packed := load("res://ui/minigames/human_plane/human_plane.tscn") as PackedScene
 	var game := packed.instantiate() as Control
 	root.add_child(game)
 	game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -192,7 +192,7 @@ func _plane_hitbox_alignment() -> void:
 
 
 func _plane_answer_gate_selection() -> void:
-	var packed := load("res://ui/minigames/human_plane.tscn") as PackedScene
+	var packed := load("res://ui/minigames/human_plane/human_plane.tscn") as PackedScene
 	var game := packed.instantiate() as Control
 	root.add_child(game)
 	game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -224,7 +224,7 @@ func _plane_answer_gate_selection() -> void:
 
 
 func _catch_last_life_guard() -> void:
-	var packed := load("res://ui/minigames/catch_word.tscn") as PackedScene
+	var packed := load("res://ui/minigames/catch_the_word/catch_word.tscn") as PackedScene
 	var game := packed.instantiate() as Control
 	root.add_child(game)
 	game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -271,7 +271,7 @@ func _catch_last_life_guard() -> void:
 
 
 func _catch_spawn_spacing_guard() -> void:
-	var scene := load("res://ui/minigames/catch_word.tscn") as PackedScene
+	var scene := load("res://ui/minigames/catch_the_word/catch_word.tscn") as PackedScene
 	for mode in ["Seconds", "Lives"]:
 		for difficulty in ["Easy", "Normal", "Hard"]:
 			for topic in ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]:
@@ -399,8 +399,8 @@ func _catch_spawn_spacing_guard() -> void:
 
 
 func _balloon_negative_topics() -> void:
-	var packed := load("res://ui/minigames/balloon_popping.tscn") as PackedScene
-	var bank := load("res://ui/minigames/grammar_bank.gd") as Script
+	var packed := load("res://ui/minigames/balloon_popping/balloon_popping.tscn") as PackedScene
+	var bank := load("res://ui/minigames/shared/grammar_bank.gd") as Script
 	for topic in ["Noun", "Verb", "Adjective", "Adverb", "Pronoun"]:
 		var game := packed.instantiate() as Control
 		root.add_child(game)

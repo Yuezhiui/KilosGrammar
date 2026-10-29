@@ -25,7 +25,13 @@ All three chooser game Buttons retain `focus_mode = FOCUS_ALL`. The former cyan 
 
 GPU-rendered chooser screenshots were inspected at 1280 × 720 for default and selected states. The art, Back, footer Next button and focus controls remain legible without clipped button lettering.
 
-## Complete original 31-scene inventory
+## Historical original 31-scene inventory
+
+**Update, October 29, 2026:** This table records the earlier audit, not the
+current scene inventory. The separate Ready, Camera Check and Existing Score
+screens and their folders have since been removed at the teacher's request,
+with gameplay countdown and Calibration retained. Do not restore any retired
+scene based on a historical "Retain" entry below.
 
 The route or owner listed below explains why a scene must be retained despite being instantiated dynamically or referenced indirectly:
 
@@ -52,16 +58,16 @@ The route or owner listed below explains why a scene must be retained despite be
 | `ui/secondary/leaderboard_row.tscn` | Dynamic per-row preload in `leaderboard.gd` | Retain |
 | `ui/secondary/leaderboard.tscn` | `main_menu.gd` route | Retain |
 | `ui/secondary/credits.tscn` | No production route; depended on removed `credits.gd` | **Delete** |
-| `ui/minigames/catch_word.tscn` | Dynamic activity lookup in `gameplay.gd` | Retain |
-| `ui/minigames/balloon_popping.tscn` | Dynamic activity lookup in `gameplay.gd` | Retain |
+| `ui/minigames/catch_the_word/catch_word.tscn` | Dynamic activity lookup in `gameplay.gd` | Retain |
+| `ui/minigames/balloon_popping/balloon_popping.tscn` | Dynamic activity lookup in `gameplay.gd` | Retain |
 | `ui/minigames/human_plane.tscn` | Dynamic activity lookup in `gameplay.gd` | Retain |
 | `ui/minigames/human_plane_3d_view.tscn` | PackedScene in Human Plane; actively developed | Retain |
 | `ui/minigames/human_plane_3d_ring.tscn` | 3D ownership/transition under separate worker | Independently removed by 3D scene worker after authoring rings into the sole 3D view |
-| `ui/minigames/balloon_art/balloon_blue.tscn` | `balloon_popping.tscn` PackedScene | Retain |
-| `ui/minigames/balloon_art/balloon_green.tscn` | `balloon_popping.tscn` PackedScene | Retain |
-| `ui/minigames/balloon_art/balloon_purple.tscn` | `balloon_popping.tscn` PackedScene | Retain |
-| `ui/minigames/balloon_art/launcher.tscn` | `balloon_popping.tscn` PackedScene | Retain |
-| `ui/minigames/balloon_art/stone.tscn` | `balloon_popping.gd` preload | Retain |
+| `ui/minigames/balloon_popping/balloon_art/balloon_blue.tscn` | `balloon_popping.tscn` PackedScene | Retain |
+| `ui/minigames/balloon_popping/balloon_art/balloon_green.tscn` | `balloon_popping.tscn` PackedScene | Retain |
+| `ui/minigames/balloon_popping/balloon_art/balloon_purple.tscn` | `balloon_popping.tscn` PackedScene | Retain |
+| `ui/minigames/balloon_popping/balloon_art/launcher.tscn` | `balloon_popping.tscn` PackedScene | Retain |
+| `ui/minigames/balloon_popping/balloon_art/stone.tscn` | `balloon_popping.gd` preload | Retain |
 
 **Only scene deletion by this worker:** `ui/secondary/credits.tscn`. Its accompanying `credits.gd` and `credits.gd.uid` were already removed by the owner; it had no standalone `.tscn.uid` sidecar. A separate 3D worker also removed `human_plane_3d_ring.tscn` during the same run, leaving **29 scenes** in the current working tree. The user-requested removal of Credits is corroborated by active main-menu routes, integration tests expecting the scene to be absent, and `docs/asset-prune/credits-removal.md`, which retains the contributor names and license notice formerly displayed in Credits. This cleanup did not delete author/model attributions or third-party license files.
 

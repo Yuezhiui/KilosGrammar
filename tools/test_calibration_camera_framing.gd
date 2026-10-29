@@ -20,7 +20,7 @@ func _check(ok: bool, message: String) -> void:
 
 
 func _run() -> void:
-	var scene := load("res://ui/vision/calibration.tscn") as PackedScene
+	var scene := load("res://ui/vision/calibration/calibration.tscn") as PackedScene
 	_check(scene != null, "Calibration scene can load after PoseService autoload")
 	if scene == null:
 		quit(1)
@@ -32,10 +32,18 @@ func _run() -> void:
 		screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		await process_frame
 		screen.set_process(false)
-		var camera := screen.get_node("TutorialStage/LiveCameraInset") as TextureRect
-		var backing := screen.get_node("TutorialStage/CameraBlackBacking") as ColorRect
-		var art := screen.get_node("TutorialStage/ArtCameraFrame") as TextureRect
+		# The camera, independent black backing and decorative frame now live
+		# together in the editor-authored CameraArea group. Keep verifying
+		# their actual Inspector geometry rather than removed root paths.
+		var camera := screen.get_node_or_null("TutorialStage/CameraArea/LiveCameraInset") as TextureRect
+		var backing := screen.get_node_or_null("TutorialStage/CameraArea/CameraBlackBacking") as ColorRect
+		var art := screen.get_node_or_null("TutorialStage/CameraArea/ArtCameraFrame") as TextureRect
 		_check(camera != null and camera.owner == screen, "Camera is editor-authored at %s" % viewport)
+		if camera == null or backing == null or art == null:
+			_check(false, "Grouped camera, backing and artwork must exist at %s" % viewport)
+			screen.queue_free()
+			await process_frame
+			continue
 		_check(backing.owner == screen and art.owner == screen,
 			"Camera backing and decorative border remain independent scene-authored UI at %s" % viewport)
 		_check(backing.get_node_or_null("CameraAmbientFill") == null,

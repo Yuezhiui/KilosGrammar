@@ -1,11 +1,12 @@
 extends SceneTree
+const GameAudio = preload("res://ui/shared/game_audio.gd")
 
 # Catch the Word integration regression at the 1280x720 design viewport.
 # Run: Godot --headless --path . --script res://tools/test_catch_visual_layout.gd
 # Exercises 5 grammar topics x 2 modes x 3 map selections, then mutates
 # score, timer and lives to prove the visible HUD is refreshed dynamically.
 
-const SCENE_PATH := "res://ui/minigames/catch_word.tscn"
+const SCENE_PATH := "res://ui/minigames/catch_the_word/catch_word.tscn"
 const VIEWPORT := Vector2i(1280, 720)
 const TOPICS: Array[String] = ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const MODES: Array[String] = ["Seconds", "Lives"]
@@ -43,6 +44,8 @@ func _run() -> void:
 		return
 
 	# Match the game's real parent hierarchy: a full-window gameplay Control.
+	var qa_music_manager := GameAudio.ensure(self) as Node
+	_check(qa_music_manager != null and qa_music_manager.get_parent() == root, "Root owns one persistent gameplay soundtrack service")
 	var existing_children := root.get_child_count()
 	var host := Control.new()
 	host.name = "CatchLayoutTestHost"
@@ -70,7 +73,7 @@ func _run() -> void:
 	var hud := game.get_node_or_null("HUDLayer/HUD") as Control
 	var background := game.get_node_or_null("Background") as TextureRect
 	var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
-	var score := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+	var score := game.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
 	var old_score := game.get_node_or_null("HUDLayer/HUD/ScoreLabel") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var hearts := game.get_node_or_null("HUDLayer/HUD/HeartsBox") as HBoxContainer
@@ -102,7 +105,7 @@ func _run() -> void:
 						"game_mode": mode,
 						"difficulty": "Normal",
 						"catch_map": map_name,
-						"catch_character": "Girl",
+						"catch_character": "Cat",
 						"score": 37,
 						"lives": 2,
 						"time_remaining": 42.0,

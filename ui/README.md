@@ -11,22 +11,18 @@ used throughout; no custom cat-shaped pointer overlays the UI.
   **START GUIDED TUTORIAL**, **GRAMMAR GUIDE**, and **BACK TO MAIN**.
   The guided path starts at **Choose Game** (Catch the Word / Balloon Popping /
   Human Plane), then asks for student/grammar setup, automatically starts
-  Camera & Calibration (CENTER → RIGHT → LEFT, 5-second holds), shows the
-  **in-game Spotlight guide**, and only then starts the **3–2–1 countdown**
-  and live round. The old standalone Movement Practice / completion panels
-  and their routes have been removed.
-- **Play** → Student & Game Setup (Student ID / Name / Grade & Section /
-  Grammar Style / Quiz or Activity / Difficulty) → Select Activity
-  → **Play Keyboard Now** → Ready → Playable 2D Game → Game Over.
-- Camera-based Play normally proceeds to auto calibration, with a keyboard
-  fallback when a camera is unavailable; the separate Camera Check panel
-  remains for earlier compatibility/tools, not a required guided step.
+  Camera & Calibration and then starts the **3–2–1 countdown** and live
+  round. The user retired the former in-game Spotlight overlay, step headings,
+  arrows, narration UI, and the old Movement Practice / completion panels.
+- **Play** → Student & Game Setup → Select Activity → automatic camera
+  calibration → the shared in-game 3–2–1 countdown → playable round → Results.
+  A separate Ready screen and keyboard bypass are no longer used.
 - **Game Over → Retry** returns to Student & Game Setup with previous
-  selections ready to edit; **Main Menu** exits the keyboard-playable round.
+  selections ready to edit; **Main Menu** exits the round.
 - **Leaderboard**, **Settings** → standalone subpanels with Back.
 - **Quit** → exit the application.
 
-## Editing the Guided Tutorial visually (Godot 2D Inspector)
+## Editing the Tutorial and Countdown (Godot 2D Inspector)
 
 - Open `res://ui/tutorial/tutorial_home.tscn`. The three independent native
   buttons each own their own editable image child; the title, background, cat,
@@ -34,28 +30,17 @@ used throughout; no custom cat-shaped pointer overlays the UI.
   Reposition a node in Godot's **2D** editor; replace any image using the
   respective `TextureRect.texture` property in the Inspector. No screenshots
   have been flattened into a single hitbox.
-- Open `res://ui/play/play_activity.tscn` to edit the **Choose Game** screen,
-  its native activity buttons, captions and artwork. `ready.tscn` houses the
-  pre-game ready UI separately.
-- Open `res://ui/tutorial/spotlight_overlay.tscn` to change the overlay,
-  five step arrows, caption panel, Next/Back/Replay Voice/Skip buttons, and
-  each activity's named `FocusRegions`. The actual spotlight hole dynamically
-  follows the currently relevant game element at runtime; the scene-authored
-  regions are the fallback targets if an element is unavailable. Runtime
-  movement of the highlight does **not** override your saved editor layout.
-- The owner's arrow is copied unchanged to
-  `res://Components/Tutorial/Spotlight/right-arrow.png`. Swap this Texture2D
-  directly on an Arrow `TextureRect` in the scene; do not change it in Downloads.
-- `res://ui/play/guided_countdown.tscn` is the editor-authored 3–2–1 overlay.
+- Open `res://ui/play/activity/play_activity.tscn` to edit the **Choose Game**
+  screen, its native activity buttons, captions and artwork. There is no
+  separate Ready screen; the countdown belongs to Gameplay.
+- `res://ui/play/gameplay/guided_countdown.tscn` is the editor-authored 3–2–1 overlay.
   The actual minigame remains frozen until after the countdown; camera
-  processing continues in parallel during onboarding.
-- For ElevenLabs, see `res://ui/tutorial/VOICEOVER_ELEVENLABS.md`. The
-  Spotlight node exports `voice_clips` (AudioStreams) and `voice_clip_paths`
-  (relative `res://` paths) dictionaries keyed by step ID. All captions remain
-  readable and Next/Skip work even without recording assets.
-- The guide explains **only the selected round rules**: Seconds means a
-  60-second timer, while Lives teaches the available three lives. Do not
-  assume these independent modes are simultaneously enabled.
+  processing continues in parallel. The existing 18 full-English WAV files
+  are retained as independent recordings, but the deleted Spotlight guide
+  no longer plays them during gameplay. Ordinary Play and the Guided entry
+  use the same countdown without duplicating GO.
+- Round rules are still selected independently: Seconds means a 60-second
+  timer; Lives means three hearts.
 
 ## Settings visual system
 
@@ -128,7 +113,7 @@ discard the suspended scene instead of letting it run in the background.
 
 ### Editing the game art manually in Godot
 
-Open `res://ui/minigames/catch_word.tscn` in the Godot 2D editor:
+Open `res://ui/minigames/catch_the_word/catch_word.tscn` in the Godot 2D editor:
 
 - `Background` is the editable full-screen map TextureRect. The active map
   texture is randomized on a new run from `res://Components/Gameplay/Catch the Word/Maps/`.
@@ -138,12 +123,12 @@ Open `res://ui/minigames/catch_word.tscn` in the Godot 2D editor:
   collected word cards; `FallingWordLayer` holds active falling words.
 - `HUDLayer/HUD` contains editor-adjustable labels and Pause/Finish buttons.
 
-Open `res://ui/minigames/balloon_popping.tscn`:
+Open `res://ui/minigames/balloon_popping/balloon_popping.tscn`:
 
 - `BoothBackdrop` is the booth background; `ForegroundCounter` is the rear
   table/ledge mask that hides descending balloons, not a set of table holes.
 - `BalloonLayer/LeftTarget`, `CenterTarget`, `RightTarget` are editable child
-  scenes under `res://ui/minigames/balloon_art/`; their position/collision
+  scenes under `res://ui/minigames/balloon_popping/balloon_art/`; their position/collision
   logic is controlled by the game script, while sprite/labels can be edited.
 - `LauncherLayer/Launcher` and `ProjectileLayer` separate the projectile
   controls from scenery; independent stone and launcher child scenes can be
@@ -164,9 +149,10 @@ use the shared `ui/minigames/grammar_bank.gd`, tested separately for valid,
 unambiguous one- and two-answer sets.
 
 **Quick manual test:** Press F5 → Play → complete the teacher setup form →
-choose a game → **Play Keyboard Now** → Start Countdown. To test the full
-proposed route instead, select **Next: Camera Check**. All played scores are
-currently local to the session and appear on Game Over as NOT SAVED.
+choose a game → automatic Calibration → the game's shared 3–2–1 countdown.
+The former separate Camera Check and Ready screens have been removed.
+Completed-round score persistence depends on the local database/recovery service;
+an interrupted or paused round must not be saved as completed.
 
 The three physical lanes (LEFT, CENTER, RIGHT) are logical states shared by all
 players. The vision integration must calibrate real-world boundaries separately

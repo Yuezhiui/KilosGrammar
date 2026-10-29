@@ -9,8 +9,9 @@ extends SceneTree
 # Prime confirmed exclusive score <500 cutoff (upper edge of user's 450-500
 # preference). Test exact 499 vs 500, and clearly low/high 200 vs 800.
 
-const CATCH_SCENE := "res://ui/minigames/catch_word.tscn"
-const RESULTS_SCENE := "res://ui/secondary/results.tscn"
+const CATCH_SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
+const RESULTS_SCENE := "res://ui/secondary/results/results.tscn"
+const GameAudio = preload("res://ui/shared/game_audio.gd")
 const BAD_END_CLIP := "res://assets/audio/catch_voice/Better Luck.mp3"
 const MODES := ["Seconds", "Lives"]
 const LOW_SCORE := 200
@@ -32,6 +33,15 @@ func _initialize() -> void:
 func _run() -> void:
 	var original_size := root.size
 	root.size = Vector2i(1280, 720)
+	# The new gameplay soundtrack is one persistent SceneTree-root service,
+	# not a leaked Catch/Results voice player. Establish its baseline BEFORE
+	# counting temporary gameplay children and detect any additional leaks.
+	var music_manager := GameAudio.ensure(self) as Node
+	_check(music_manager != null and music_manager.get_parent() == root,
+		"one root-owned gameplay soundtrack manager is initialized")
+	var baseline_root_players := _count_players(root)
+	_check(baseline_root_players == 1,
+		"one persistent root gameplay track is present before tests")
 	catch_scene = load(CATCH_SCENE) as PackedScene
 	results_scene = load(RESULTS_SCENE) as PackedScene
 	_check(catch_scene != null, "Catch the Word scene is loadable")
@@ -41,7 +51,7 @@ func _run() -> void:
 	source_clip = load(BAD_END_CLIP) as AudioStreamMP3
 	_check(source_clip != null and source_clip.get_length() > 0.1,
 		"Better Luck.mp3 decodes into a nonempty real MP3 stream")
-	var results_script: Script = load("res://ui/secondary/results.gd") as Script
+	var results_script: Script = load("res://ui/secondary/results/results.gd") as Script
 	if results_script != null:
 		_check(int(results_script.get("LOW_SCORE_CATCH_THRESHOLD")) == CONFIRMED_CUTOFF,
 			"Results uses prime-confirmed exclusive below-500 low-score cutoff")
@@ -53,7 +63,7 @@ func _run() -> void:
 			await _exercise_case(mode, "boundary_at", CONFIRMED_CUTOFF)
 			await _exercise_case(mode, "manual_exit", LOW_SCORE)
 			await _exercise_case(mode, "pause", LOW_SCORE)
-		await _assert_other_game_cannot_trigger_catch_voice()
+			await _assert_other_game_cannot_trigger_catch_voice(baseline_root_players)
 	root.size = original_size
 	if failures.is_empty():
 		print("PASS Catch round-end Results audio: %d checks, %d short round/route cases" %
@@ -91,7 +101,7 @@ func _exercise_case(mode: String, kind: String, starting_score: int) -> void:
 		"game_mode": mode,
 		"topic": "Noun",
 		"difficulty": "Normal",
-		"catch_character": "Boy",
+		"catch_character": "Bear",
 		"catch_map": "City",
 		"score": starting_score,
 		"student_id": "AudioTest",
@@ -179,7 +189,7 @@ func _exercise_case(mode: String, kind: String, starting_score: int) -> void:
 		retry_game.set_context({
 			"activity": "Catch the Word", "topic": "Noun",
 			"game_mode": mode, "difficulty": "Normal",
-			"catch_character": "Boy", "catch_map": "City",
+			"catch_character": "Bear", "catch_map": "City",
 		})
 		retry_game.set_process(false)
 		_check(int(retry_game.score) == 0 and not bool(retry_game.round_finished)
@@ -200,7 +210,7 @@ func _exercise_case(mode: String, kind: String, starting_score: int) -> void:
 		ctx + ": temporary scene and audio players freed without leaks")
 
 
-func _assert_other_game_cannot_trigger_catch_voice() -> void:
+func _assert_other_game_cannot_trigger_catch_voice(expected_root_players: int) -> void:
 	var host := Control.new()
 	root.add_child(host)
 	var ctx := "non-Catch completed low score"
@@ -214,8 +224,8 @@ func _assert_other_game_cannot_trigger_catch_voice() -> void:
 	host.queue_free()
 	await process_frame
 	await process_frame
-	_check(_count_players(root) == 0,
-		ctx + ": no leftover audio player after an unrelated game's result")
+	_check(_count_players(root) == expected_root_players,
+		ctx + ": unrelated Results frees all transient voices, retaining only root soundtrack")
 
 
 func _assert_results_route(host: Control, payload: Dictionary,

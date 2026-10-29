@@ -1,0 +1,19 @@
+Title: Cartoon Plane
+URL: http://sketchfab.com/3d-models/cartoon-plane-2b69a53022ec45b396ce8015291cc9ea
+Author: https://sketchfab.com/3DPolyForge
+
+Vertices: 7869
+Polygons: 15016
+Animations: 1
+
+Download Date: 29/10/2026
+Download Format: GLTF
+Download Path: D:\3d_Ripper_Pro_v110\Downloads\MahdiHasan\01- Cartoon.Plane\
+Download File: 2b69a53022ec45b396ce8015291cc9ea_Textured.gltf
+
+Textures: 5
+#1: 73967189f63d4364a9d08f5e29c8523e_R_plane_roughness.png
+#2: 798d9b9285514ddababd3c5b1eaeef7c_R_plane_AO.png
+#3: 9a9ac995d92f4b24a1131987f5313e7f_RGB_plane_basecolor.png
+#4: c600cf14d6254b8a92a1a81d96477e67_N_plane_normal.png
+#5: f60d02ce7b06482f994791f5f9523926_R_plane_metallic.png

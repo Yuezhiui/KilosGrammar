@@ -7,7 +7,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var packed := load("res://main_menu.tscn") as PackedScene
+	var packed := load("res://ui/main_menu/main_menu.tscn") as PackedScene
 	if packed == null:
 		quit(1)
 		return
@@ -26,7 +26,7 @@ func _run() -> void:
 			menu.call("_on_panel_requested", "gameplay", {
 				"activity": activity, "topic": "Noun", "difficulty": "Easy",
 				"game_mode": "Seconds", "catch_map": "City",
-				"catch_character": "Boy", "camera_live": false
+				"catch_character": "Bear", "camera_live": false
 			})
 			await process_frame
 			await process_frame
@@ -43,7 +43,7 @@ func _run() -> void:
 				var preloader := menu.get("catch_asset_preloader") as Node
 				if preloader != null:
 					var requested := preloader.get("_wanted") as Dictionary
-					if requested.has("res://ui/minigames/catch_word.tscn"):
+					if requested.has("res://ui/minigames/catch_the_word/catch_word.tscn"):
 						printerr("MAIN MENU AUDIO FAIL: scripted Catch PackedScene was sent to threaded loader")
 						quit(1)
 						return

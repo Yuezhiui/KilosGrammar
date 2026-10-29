@@ -1,0 +1,9 @@
+# Kilos Grammar voice and gameplay music
+
+`kids_voice/` contains the **39 WAV files currently supplied** in the user's `VOICE` folder: 15 positive praise cues and 24 supportive coaching cues. `gameplay_music/children_soundtrack_4.wav` contains the separately supplied gameplay music. All 40 files were copied without transcoding, and SHA-256-verified against the source files on October 28, 2026. A 40th voice recording was not in the source folder.
+
+`res://ui/shared/game_audio.gd` manages one root-owned music player, `KilosGameAudio/GameplayTrack`, on the `KilosMusic` bus. Use `const GameAudio = preload("res://ui/shared/game_audio.gd")`, then `var music = GameAudio.ensure(get_tree())`. Its methods are `start_gameplay()`, `pause_music()`, `resume_music()`, `stop_gameplay()`, and `duck_for_voice(seconds)`. `ensure()` loads the WAV before gameplay begins; `start_gameplay()` is called when the GO countdown completes. The separate main-menu TitleMusic should be paused while a game is mounted and unpaused on returning to menus. Voice ducking adjusts only the music player's gain, so changing Settings' `KilosMusic` bus remains authoritative.
+
+`res://ui/shared/kids_voice_feedback.gd` provides child-friendly recordings for each answer category. Create one instance per live minigame, call `.setup(self)` once, then `.play_correct()`, `.play_wrong()` or `.play_missed()`. Call `.stop()` on pause/round end and `.release()` on scene exit. The voice uses `KilosSFX` and asks the shared music controller to duck for the WAV's duration. The original `assets/audio/catch_voice/*.mp3` remains for existing screens until all callers have migrated and been verified.
+
+Headless validation: `Godot --headless --editor --path . --quit`, then `Godot --headless --path . -s res://tools/test_kids_gameplay_audio.gd`. Speaker output and loudness balance require an actual Windows audio-device listening test.

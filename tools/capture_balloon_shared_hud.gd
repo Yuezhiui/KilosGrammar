@@ -6,7 +6,7 @@ extends SceneTree
 # Lives (3/2/1 hearts), plus a nonzero-score frame per size.
 # QA for unsqueezed Catch timer/hearts, raised score, and center cannon.
 
-const SCENE: PackedScene = preload("res://ui/minigames/balloon_popping.tscn")
+const SCENE: PackedScene = preload("res://ui/minigames/balloon_popping/balloon_popping.tscn")
 const OUTPUT := "res://showcase/balloon_asset_review/fixed"
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const HEART_IMAGES := {

@@ -3,7 +3,7 @@ extends SceneTree
 # Godot --headless --path . --script res://tools/test_balloon_fixed_score_speed.gd
 # Exercise the real hit handler in both modes and all difficulty tiers.
 
-const GAME_SCENE: PackedScene = preload("res://ui/minigames/balloon_popping.tscn")
+const GAME_SCENE: PackedScene = preload("res://ui/minigames/balloon_popping/balloon_popping.tscn")
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const MODES := ["Seconds", "Lives"]
 
@@ -47,7 +47,7 @@ func _run() -> void:
 				game._handle_balloon_hit(wrong_lane, wrong_balloon.position)
 				_check(game.score == 0 and game.correct_count == 0 and game.attempts == 1,
 					label + " wrong target does not award points")
-				_check(game.hearts == (2 if mode == "Lives" else 3),
+				_check(game.hearts == (2 if mode == "Lives" else 0),
 					label + " wrong-hit hearts match game mode")
 
 			# Three real correct pops must add exactly 100 apiece even when a

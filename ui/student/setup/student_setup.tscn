@@ -1,0 +1,642 @@
+[gd_scene format=3 uid="uid://dcl0lrqxjicg4"]
+
+[ext_resource type="Texture2D" uid="uid://bcwxujdrw2oh8" path="res://Components/StudentSetup/Redesign/ADJECTIVE.png" id="adjective"]
+[ext_resource type="Texture2D" uid="uid://dwvqth4843bot" path="res://Components/StudentSetup/Redesign/ADVERB.png" id="adverb"]
+[ext_resource type="Texture2D" uid="uid://fc8ri0qp6ksc" path="res://Components/StudentSetup/Redesign/BACK PROCEED.png" id="back"]
+[ext_resource type="Texture2D" uid="uid://nubefm23arcf" path="res://Components/StudentSetup/Redesign/background.png" id="board"]
+[ext_resource type="Texture2D" uid="uid://dx1fsocdnlfsq" path="res://Components/Credits/Redesign/background1.png" id="classroom"]
+[ext_resource type="Texture2D" uid="uid://c1xi4rdv4a55f" path="res://Components/Student Setup/Redesign/btn_continue.png" id="continue"]
+[ext_resource type="Texture2D" uid="uid://db3l4wbntjpe4" path="res://Components/Student Setup/Redesign/btn_uncontinue.png" id="continue_disabled"]
+[ext_resource type="Texture2D" uid="uid://cb6d7gjupfqnv" path="res://Components/StudentSetup/Redesign/easy.png" id="difficulty_easy_art"]
+[ext_resource type="Texture2D" uid="uid://bwkt5myvefpg8" path="res://Components/StudentSetup/Redesign/hard.png" id="difficulty_hard_art"]
+[ext_resource type="Texture2D" uid="uid://cytp5dde250a7" path="res://Components/StudentSetup/Redesign/normal.png" id="difficulty_normal_art"]
+[ext_resource type="Texture2D" uid="uid://bgno3ucwb2pd5" path="res://Components/StudentSetup/Redesign/DIFFICULTY.png" id="difficulty_title"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="font"]
+[ext_resource type="Texture2D" uid="uid://cwqpgd3vmquy4" path="res://Components/StudentSetup/Redesign/qw.png" id="game_title"]
+[ext_resource type="Texture2D" uid="uid://8b00s6n7spko" path="res://Components/StudentSetup/Redesign/GRADE & SECTION.png" id="grade"]
+[ext_resource type="Script" uid="uid://cxq6swo4mowc4" path="res://ui/student/setup/student_setup.gd" id="logic"]
+[ext_resource type="Texture2D" uid="uid://413ixxckctmk" path="res://Components/StudentSetup/Redesign/3 lives.png" id="mode_lives_art"]
+[ext_resource type="Texture2D" uid="uid://ogvp2aw5odk" path="res://Components/StudentSetup/Redesign/60s.png" id="mode_seconds_art"]
+[ext_resource type="Texture2D" uid="uid://dij56fw2vmy2p" path="res://Components/StudentSetup/Redesign/GAME MODE & UI PREVIEW.png" id="mode_title"]
+[ext_resource type="Texture2D" uid="uid://ceu7akpspwhky" path="res://Components/StudentSetup/Redesign/NOUN.png" id="noun"]
+[ext_resource type="Texture2D" uid="uid://cl68pxm27bpjl" path="res://Components/StudentSetup/Redesign/PRONOUN.png" id="pronoun"]
+[ext_resource type="Texture2D" uid="uid://c7nq3hi1hek5p" path="res://Components/StudentSetup/Redesign/STUDENT ID.png" id="student_id"]
+[ext_resource type="Texture2D" uid="uid://cdxfranbndunn" path="res://Components/StudentSetup/Redesign/NAME.png" id="student_name"]
+[ext_resource type="Texture2D" uid="uid://cxfaok08vlbsb" path="res://Components/StudentSetup/Redesign/STUDENT PROIFILE.png" id="student_title"]
+[ext_resource type="Texture2D" uid="uid://bv7cnar5fi5ke" path="res://Components/StudentSetup/Redesign/STUDENT GAME SETUP.png" id="title"]
+[ext_resource type="Texture2D" uid="uid://1g3500yjpc0e" path="res://Components/StudentSetup/Redesign/GAME STYLE & GRAMMAR TOPIC.png" id="topic_title"]
+[ext_resource type="Texture2D" uid="uid://cnq0ma4sd6wxk" path="res://Components/StudentSetup/Redesign/VERB.png" id="verb"]
+
+[sub_resource type="StyleBoxEmpty" id="FieldClear"]
+
+[sub_resource type="StyleBoxEmpty" id="BlankButton"]
+
+[sub_resource type="StyleBoxFlat" id="ChoiceHover"]
+bg_color = Color(1, 0.95, 0.6, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.23, 0.57, 0.29, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="StudentSetup" type="Control" unique_id=2135781869]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("logic")
+
+[node name="StudentClassroomBackdrop" type="TextureRect" parent="." unique_id=2078968326]
+editor_description = "Exact Credits/Redesign classroom background requested by the user."
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("classroom")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="StudentReadabilityOverlay" type="ColorRect" parent="." unique_id=1516080509]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.08, 0.11, 0.1, 0.12)
+
+[node name="SetupStage" type="Control" parent="." unique_id=950873517]
+editor_description = "Drag/resize authored UI pieces in the Godot 2D editor. Design resolution 1280×720; game script scales stage for 16:9 viewports."
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 1
+
+[node name="WoodenSetupBoard" type="TextureRect" parent="SetupStage" unique_id=272010963]
+editor_description = "The original double-cream-panel wood art, separate from every editable form and button."
+layout_mode = 0
+offset_left = 58.0
+offset_top = 10.0
+offset_right = 1222.0
+offset_bottom = 645.0
+mouse_filter = 2
+texture = ExtResource("board")
+expand_mode = 1
+
+[node name="MainHeading" type="TextureRect" parent="SetupStage" unique_id=1536998399]
+editor_description = "STUDENT & GAME SETUP supplied header with graduation cap, books and cat."
+layout_mode = 0
+offset_left = 275.0
+offset_top = -29.0
+offset_right = 987.0
+offset_bottom = 193.0
+mouse_filter = 2
+texture = ExtResource("title")
+expand_mode = 1
+
+[node name="StudentProfileCard" type="Control" parent="SetupStage" unique_id=1399405252]
+anchors_preset = 0
+offset_left = 105.0
+offset_top = 180.0
+offset_right = 610.0
+offset_bottom = 600.0
+mouse_filter = 1
+
+[node name="StudentCardTitle" type="TextureRect" parent="SetupStage/StudentProfileCard" unique_id=543837274]
+layout_mode = 0
+offset_left = 3.0
+offset_top = -69.0
+offset_right = 508.0
+offset_bottom = 101.0
+mouse_filter = 2
+texture = ExtResource("student_title")
+expand_mode = 1
+
+[node name="StudentIdGroup" type="Control" parent="SetupStage/StudentProfileCard" unique_id=1432412253]
+anchors_preset = 0
+offset_left = 37.0
+offset_top = 61.0
+offset_right = 480.0
+offset_bottom = 148.0
+mouse_filter = 1
+
+[node name="StudentIdArtwork" type="TextureRect" parent="SetupStage/StudentProfileCard/StudentIdGroup" unique_id=1967918542]
+layout_mode = 0
+offset_right = 394.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("student_id")
+expand_mode = 1
+
+[node name="StudentIdEdit" type="LineEdit" parent="SetupStage/StudentProfileCard/StudentIdGroup" unique_id=313633725]
+layout_mode = 0
+offset_left = 73.0
+offset_top = 43.0
+offset_right = 384.0
+offset_bottom = 80.0
+theme_override_colors/font_color = Color(0.2, 0.16, 0.12, 1)
+theme_override_colors/font_placeholder_color = Color(0.48, 0.42, 0.36, 0.8)
+theme_override_colors/caret_color = Color(0.2, 0.16, 0.12, 1)
+theme_override_font_sizes/font_size = 21
+theme_override_styles/normal = SubResource("FieldClear")
+theme_override_styles/read_only = SubResource("FieldClear")
+theme_override_styles/focus = SubResource("FieldClear")
+placeholder_text = "Enter student ID"
+max_length = 100
+
+[node name="StudentNameGroup" type="Control" parent="SetupStage/StudentProfileCard" unique_id=1026095883]
+anchors_preset = 0
+offset_left = 37.0
+offset_top = 163.0
+offset_right = 480.0
+offset_bottom = 249.0
+mouse_filter = 1
+
+[node name="StudentNameArtwork" type="TextureRect" parent="SetupStage/StudentProfileCard/StudentNameGroup" unique_id=103547691]
+layout_mode = 0
+offset_right = 394.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("student_name")
+expand_mode = 1
+
+[node name="StudentNameEdit" type="LineEdit" parent="SetupStage/StudentProfileCard/StudentNameGroup" unique_id=531830969]
+layout_mode = 0
+offset_left = 73.0
+offset_top = 39.0
+offset_right = 384.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(0.2, 0.16, 0.12, 1)
+theme_override_colors/font_placeholder_color = Color(0.48, 0.42, 0.36, 0.8)
+theme_override_colors/caret_color = Color(0.2, 0.16, 0.12, 1)
+theme_override_font_sizes/font_size = 21
+theme_override_styles/normal = SubResource("FieldClear")
+theme_override_styles/read_only = SubResource("FieldClear")
+theme_override_styles/focus = SubResource("FieldClear")
+placeholder_text = "Enter complete name"
+max_length = 100
+
+[node name="GradeSectionGroup" type="Control" parent="SetupStage/StudentProfileCard" unique_id=1702888827]
+anchors_preset = 0
+offset_left = 37.0
+offset_top = 260.0
+offset_right = 431.0
+offset_bottom = 344.0
+mouse_filter = 1
+
+[node name="GradeSectionArtwork" type="TextureRect" parent="SetupStage/StudentProfileCard/GradeSectionGroup" unique_id=696334202]
+layout_mode = 0
+offset_right = 394.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("grade")
+expand_mode = 1
+
+[node name="GradeSectionEdit" type="LineEdit" parent="SetupStage/StudentProfileCard/GradeSectionGroup" unique_id=173789156]
+layout_mode = 0
+offset_left = 73.0
+offset_top = 38.0
+offset_right = 384.0
+offset_bottom = 81.0
+theme_override_colors/font_color = Color(0.2, 0.16, 0.12, 1)
+theme_override_colors/font_placeholder_color = Color(0.48, 0.42, 0.36, 0.8)
+theme_override_colors/caret_color = Color(0.2, 0.16, 0.12, 1)
+theme_override_font_sizes/font_size = 21
+theme_override_styles/normal = SubResource("FieldClear")
+theme_override_styles/read_only = SubResource("FieldClear")
+theme_override_styles/focus = SubResource("FieldClear")
+placeholder_text = "Grade and section"
+max_length = 100
+
+[node name="GameSetupCard" type="Control" parent="SetupStage" unique_id=2009489831]
+anchors_preset = 0
+offset_left = 664.0
+offset_top = 180.0
+offset_right = 1170.0
+offset_bottom = 600.0
+mouse_filter = 1
+
+[node name="GameCardTitle" type="TextureRect" parent="SetupStage/GameSetupCard" unique_id=2062941707]
+layout_mode = 0
+offset_left = 15.0
+offset_top = -63.0
+offset_right = 498.0
+offset_bottom = 96.0
+mouse_filter = 2
+texture = ExtResource("game_title")
+expand_mode = 1
+
+[node name="TopicCaption" type="TextureRect" parent="SetupStage/GameSetupCard" unique_id=1782671143]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 61.0
+offset_right = 300.0
+offset_bottom = 107.0
+mouse_filter = 2
+texture = ExtResource("topic_title")
+expand_mode = 1
+
+[node name="GameContent" type="Control" parent="SetupStage/GameSetupCard" unique_id=377099421]
+anchors_preset = 0
+offset_left = 17.0
+offset_top = -37.0
+offset_right = 502.0
+offset_bottom = 373.0
+mouse_filter = 1
+
+[node name="GameStyleGrid" type="Control" parent="SetupStage/GameSetupCard/GameContent" unique_id=367619691]
+anchors_preset = 0
+offset_left = -13.0
+offset_top = 142.0
+offset_right = 491.0
+offset_bottom = 242.0
+pivot_offset = Vector2(218, 76)
+mouse_filter = 1
+
+[node name="NounButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid" unique_id=411648164]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 3.0
+offset_right = 148.0
+offset_bottom = 48.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid/NounButton" unique_id=785636926]
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 45.0
+mouse_filter = 2
+texture = ExtResource("noun")
+expand_mode = 1
+
+[node name="PronounButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid" unique_id=1946994661]
+layout_mode = 0
+offset_left = 148.0
+offset_top = 3.0
+offset_right = 268.0
+offset_bottom = 48.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid/PronounButton" unique_id=878680874]
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 45.0
+mouse_filter = 2
+texture = ExtResource("pronoun")
+expand_mode = 1
+
+[node name="VerbButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid" unique_id=1821063022]
+layout_mode = 0
+offset_left = 267.0
+offset_top = 3.0
+offset_right = 387.0
+offset_bottom = 48.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid/VerbButton" unique_id=1063447097]
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 45.0
+mouse_filter = 2
+texture = ExtResource("verb")
+expand_mode = 1
+
+[node name="AdjectiveButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid" unique_id=1358234025]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 50.0
+offset_right = 150.0
+offset_bottom = 95.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid/AdjectiveButton" unique_id=645829195]
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 45.0
+mouse_filter = 2
+texture = ExtResource("adjective")
+expand_mode = 1
+
+[node name="AdverbButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid" unique_id=2102080222]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 50.0
+offset_right = 270.0
+offset_bottom = 95.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/GameStyleGrid/AdverbButton" unique_id=1304697714]
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 45.0
+mouse_filter = 2
+texture = ExtResource("adverb")
+expand_mode = 1
+
+[node name="LowerSelections" type="Control" parent="SetupStage/GameSetupCard/GameContent" unique_id=523963944]
+anchors_preset = 0
+offset_left = 23.0
+offset_top = 243.0
+offset_right = 471.0
+offset_bottom = 389.0
+mouse_filter = 1
+
+[node name="ModeColumn" type="Control" parent="SetupStage/GameSetupCard/GameContent/LowerSelections" unique_id=1767571217]
+anchors_preset = 0
+offset_left = -3.0
+offset_right = 217.0
+offset_bottom = 89.0
+mouse_filter = 1
+
+[node name="ModeCaption" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/ModeColumn" unique_id=343869046]
+layout_mode = 0
+offset_left = -2.0
+offset_top = -4.0
+offset_right = 209.0
+offset_bottom = 31.0
+mouse_filter = 2
+texture = ExtResource("mode_title")
+expand_mode = 1
+
+[node name="ModeRow" type="Control" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/ModeColumn" unique_id=494556757]
+anchors_preset = 0
+offset_left = -2.0
+offset_top = 31.0
+offset_right = 207.0
+offset_bottom = 74.0
+mouse_filter = 1
+
+[node name="SecondsButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/ModeColumn/ModeRow" unique_id=1697459549]
+layout_mode = 0
+offset_right = 105.0
+offset_bottom = 42.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.28, 0.13, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.15, 0.36, 0.16, 1)
+theme_override_colors/font_hover_color = Color(0.19, 0.28, 0.1, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("ChoiceHover")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/ModeColumn/ModeRow/SecondsButton" unique_id=1574682456]
+layout_mode = 0
+offset_right = 105.0
+offset_bottom = 42.0
+mouse_filter = 2
+texture = ExtResource("mode_seconds_art")
+expand_mode = 1
+
+[node name="LivesButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/ModeColumn/ModeRow" unique_id=416904833]
+layout_mode = 0
+offset_left = 103.0
+offset_right = 208.0
+offset_bottom = 42.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.28, 0.13, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.15, 0.36, 0.16, 1)
+theme_override_colors/font_hover_color = Color(0.19, 0.28, 0.1, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("ChoiceHover")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/ModeColumn/ModeRow/LivesButton" unique_id=1096960684]
+layout_mode = 0
+offset_right = 105.0
+offset_bottom = 42.0
+mouse_filter = 2
+texture = ExtResource("mode_lives_art")
+expand_mode = 1
+
+[node name="DifficultyColumn" type="Control" parent="SetupStage/GameSetupCard/GameContent/LowerSelections" unique_id=1089855152]
+anchors_preset = 0
+offset_left = 5.0
+offset_top = 70.0
+offset_right = 260.0
+offset_bottom = 159.0
+mouse_filter = 1
+
+[node name="DifficultyCaption" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/DifficultyColumn" unique_id=130034038]
+layout_mode = 0
+offset_left = -8.0
+offset_top = 6.0
+offset_right = 217.0
+offset_bottom = 43.0
+mouse_filter = 2
+texture = ExtResource("difficulty_title")
+expand_mode = 1
+
+[node name="DifficultyRow" type="Control" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/DifficultyColumn" unique_id=1837304356]
+anchors_preset = 0
+offset_left = -45.0
+offset_top = 35.0
+offset_right = 302.0
+offset_bottom = 100.0
+mouse_filter = 1
+
+[node name="EasyButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow" unique_id=1165184450]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 11.0
+offset_right = 132.0
+offset_bottom = 53.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.28, 0.13, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.15, 0.36, 0.16, 1)
+theme_override_colors/font_hover_color = Color(0.19, 0.28, 0.1, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("ChoiceHover")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow/EasyButton" unique_id=861621442]
+layout_mode = 0
+offset_right = 100.0
+offset_bottom = 42.0
+mouse_filter = 2
+texture = ExtResource("difficulty_easy_art")
+expand_mode = 1
+
+[node name="NormalButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow" unique_id=2039041459]
+layout_mode = 0
+offset_left = 131.0
+offset_top = 11.0
+offset_right = 231.0
+offset_bottom = 53.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.28, 0.13, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.15, 0.36, 0.16, 1)
+theme_override_colors/font_hover_color = Color(0.19, 0.28, 0.1, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("ChoiceHover")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow/NormalButton" unique_id=396807750]
+layout_mode = 0
+offset_right = 100.0
+offset_bottom = 42.0
+mouse_filter = 2
+texture = ExtResource("difficulty_normal_art")
+expand_mode = 1
+
+[node name="HardButton" type="Button" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow" unique_id=1391363560]
+layout_mode = 0
+offset_left = 231.0
+offset_top = 11.0
+offset_right = 337.0
+offset_bottom = 53.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.28, 0.13, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.15, 0.36, 0.16, 1)
+theme_override_colors/font_hover_color = Color(0.19, 0.28, 0.1, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("ChoiceHover")
+toggle_mode = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/GameSetupCard/GameContent/LowerSelections/DifficultyColumn/DifficultyRow/HardButton" unique_id=1699156986]
+layout_mode = 0
+offset_right = 106.0
+offset_bottom = 42.0
+mouse_filter = 2
+texture = ExtResource("difficulty_hard_art")
+expand_mode = 1
+
+[node name="ValidationPanel" type="Control" parent="SetupStage/GameSetupCard/GameContent" unique_id=792132430]
+editor_description = "Keep hidden unless user needs validation; no database connection messages."
+anchors_preset = 0
+offset_left = 19.0
+offset_top = 428.0
+offset_right = 480.0
+offset_bottom = 456.0
+mouse_filter = 1
+
+[node name="ValidationLabel" type="Label" parent="SetupStage/GameSetupCard/GameContent/ValidationPanel" unique_id=1627046373]
+layout_mode = 0
+offset_right = 461.0
+offset_bottom = 28.0
+theme_override_colors/font_color = Color(0.65, 0.15, 0.1, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+
+[node name="SetupActions" type="Control" parent="SetupStage" unique_id=2019999969]
+anchors_preset = 0
+offset_left = 371.0
+offset_top = 622.0
+offset_right = 909.0
+offset_bottom = 710.0
+mouse_filter = 1
+
+[node name="BackButton" type="Button" parent="SetupStage/SetupActions" unique_id=1270788254]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 13.0
+offset_right = 261.0
+offset_bottom = 83.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/SetupActions/BackButton" unique_id=2108709397]
+layout_mode = 0
+offset_right = 244.0
+offset_bottom = 70.0
+mouse_filter = 2
+texture = ExtResource("back")
+expand_mode = 1
+
+[node name="ContinueButton" type="Button" parent="SetupStage/SetupActions" unique_id=998466047]
+layout_mode = 0
+offset_left = 272.0
+offset_top = 13.0
+offset_right = 518.0
+offset_bottom = 83.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/disabled = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+disabled = true
+
+[node name="ButtonArtwork" type="TextureRect" parent="SetupStage/SetupActions/ContinueButton" unique_id=1002466374]
+visible = false
+layout_mode = 0
+offset_right = 244.0
+offset_bottom = 70.0
+mouse_filter = 2
+texture = ExtResource("continue")
+expand_mode = 1
+
+[node name="ContinueDisabledArtwork" type="TextureRect" parent="SetupStage/SetupActions/ContinueButton" unique_id=73992493]
+editor_description = "Gray by default; only the completed profile, topic, mode and difficulty unlock green Continue."
+layout_mode = 0
+offset_right = 244.0
+offset_bottom = 70.0
+mouse_filter = 2
+texture = ExtResource("continue_disabled")
+expand_mode = 1

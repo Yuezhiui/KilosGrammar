@@ -1,11 +1,13 @@
 extends SceneTree
 
 # Godot 4.7.2: --headless --path . --script res://tools/test_catch_apple_foreground.gd
-# Actual Catch scene, not mock nodes; no webcam/PNG edits. The default 2D
-# canvas inherits parent z values, so assert the COMPLETE effective z chain.
+# Actual Catch scene, not mock nodes; no webcam/PNG edits. Assert the current
+# user-approved BODY 0 / BASKET 1 / COLLECTED HALF APPLES 2 layering. The
+# saved animal rigs intentionally extend below the bottom of the view: test
+# visible face/torso and basket, not an obsolete full-body-on-screen demand.
 
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const PARTS := ["Body", "Basket"]
 const EPSILON := 2.0
@@ -19,7 +21,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var scene := SCENE.instantiate() as Control
-	var authored_rig := scene.get_node_or_null("Boy") as Node2D
+	var authored_rig := scene.get_node_or_null("Bear") as Node2D
 	_check(authored_rig != null and authored_rig.position.y >= 450.0,
 		"Boy root sibling has its actual saved editor baseline (never silently parsed as y=0)")
 	scene.free()
@@ -54,10 +56,9 @@ func _verify_case(size: Vector2i, character: String) -> void:
 	_check(score != null and _effective_z(score) < _effective_z(body),
 		tag + ": score plaque is BEHIND avatar, not above player")
 	_check(_effective_z(bg) < _effective_z(score), tag + ": background remains behind score and avatar")
-	_check(_effective_z(body) < _effective_z(caught)
-		and _effective_z(caught) < _effective_z(basket)
-		and _effective_z(basket) < _effective_z(falling),
-		tag + ": full draw order background < score < body < caught < basket < falling")
+	_check(_effective_z(body) == 0 and _effective_z(basket) == 1
+		and _effective_z(caught) == 2 and _effective_z(falling) >= _effective_z(basket),
+		tag + ": current draw order is Body 0 / Basket 1 / Collected Half Apples 2; falling words not below Body")
 	_check(hud.layer >= 20 and score.get_parent() == game
 		and game.score_plaque.get_parent() == score,
 		tag + ": normal HUD stays high; ONLY score sits behind avatar")
@@ -79,10 +80,10 @@ func _verify_case(size: Vector2i, character: String) -> void:
 			tag + ": real spawned AppleSprite is textured, visible, and not an empty placeholder")
 		_check(label != null and label.is_visible_in_tree() and label.text.strip_edges() != "",
 			tag + ": apple label is visible with its grammar word")
-		_check(_effective_z(node) > _effective_z(basket)
-			and (art == null or _effective_z(art) > _effective_z(basket))
-			and (label == null or _effective_z(label) > _effective_z(basket)),
-			tag + ": BOTH apple image and label render in front of avatar and basket")
+		_check(_effective_z(node) > _effective_z(body)
+			and (art == null or _effective_z(art) >= _effective_z(basket))
+			and (label == null or _effective_z(label) >= _effective_z(basket)),
+			tag + ": falling word apple/label stay at gameplay level, above Body and not below Basket")
 
 	var screen := Rect2(Vector2.ZERO, Vector2(size))
 	var scale_factor := minf(float(size.x) / 1280.0, float(size.y) / 720.0)
@@ -108,7 +109,7 @@ func _verify_case(size: Vector2i, character: String) -> void:
 		Input.action_release(keyboard_action)
 		_check(absf(rig.position.x - before_x) < 0.01,
 			tag + ": keyboard action %s cannot steer the character" % keyboard_action)
-	var source_text := FileAccess.get_file_as_string("res://ui/minigames/catch_word.gd")
+	var source_text := FileAccess.get_file_as_string("res://ui/minigames/catch_the_word/catch_word.gd")
 	_check(not source_text.contains("Input.get_axis(")
 		and not source_text.contains("Input.is_key_pressed(KEY_A)")
 		and not source_text.contains("Input.is_key_pressed(KEY_D)"),
@@ -130,8 +131,8 @@ func _verify_case(size: Vector2i, character: String) -> void:
 		var pos := basket.global_position
 		apple.position = pos - game.APPLE_SIZE * 0.5
 		_check(_effective_z(apple) > _effective_z(body)
-			and _effective_z(img) > _effective_z(basket),
-			tag + ": apple still foreground at the avatar's actual basket position")
+			and _effective_z(img) >= _effective_z(basket),
+			tag + ": falling word apple remains at the gameplay layer at basket collision")
 	_check(_effective_z(game.get_node("HUDLayer/HUD/PauseButton") as CanvasItem)
 		<= _effective_z(falling) and hud.layer > 0,
 		tag + ": HUD remains on its separate top CanvasLayer, not mistakenly reparented with falling apples")
@@ -141,10 +142,29 @@ func _verify_case(size: Vector2i, character: String) -> void:
 
 
 func _check_clipping(body: Sprite2D, basket: Sprite2D, screen: Rect2, tag: String) -> void:
-	for item in [body, basket]:
-		var rect := _sprite_rect(item)
-		_check(screen.grow(EPSILON).encloses(rect),
-			"%s: %s visually inside screen (%s)" % [tag, item.name, rect])
+	var body_rect := _sprite_rect(body)
+	var basket_rect := _sprite_rect(basket)
+	# Native captures confirm a deliberate bust/torso crop at the bottom edge;
+	# a regression would cut the face/top, move the avatar off a side, or make
+	# most of the painted body disappear. Do not move editor-authored sprites.
+	_check(_avatar_framed(body_rect, screen),
+		"%s: face/torso outside intentional viewport framing (%s)" % [tag, body_rect])
+	_check(screen.grow(EPSILON).encloses(basket_rect),
+		"%s: selected basket visually clipped (%s)" % [tag, basket_rect])
+
+
+func _avatar_framed(rect: Rect2, screen: Rect2) -> bool:
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return false
+	var visible_bottom := minf(rect.end.y, screen.end.y)
+	var visible_ratio := (visible_bottom - maxf(rect.position.y, screen.position.y)) / rect.size.y
+	return rect.position.x >= screen.position.x - EPSILON \
+		and rect.end.x <= screen.end.x + EPSILON \
+		and rect.position.y >= screen.position.y - EPSILON \
+		and rect.position.y <= screen.size.y * 0.64 \
+		and rect.end.y >= screen.end.y - EPSILON \
+		and rect.end.y <= screen.end.y + screen.size.y * 0.18 \
+		and visible_ratio >= 0.75
 
 
 func _check_hitbox(game: Control, basket: Sprite2D, tag: String) -> void:

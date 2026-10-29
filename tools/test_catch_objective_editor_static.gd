@@ -1,8 +1,9 @@
 extends SceneTree
+const GameAudio = preload("res://ui/shared/game_audio.gd")
 
 # Static editor (.tscn) and runtime regression after removing the objective UI.
 # Godot 4.7.2 --headless --path . --script res://tools/test_catch_objective_editor_static.gd
-const SCENE := "res://ui/minigames/catch_word.tscn"
+const SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
 const REMOVED := ["ObjectivePlaque", "FeedbackLabel", "TopicIcon"]
 const WINDOWS := [Vector2i(1280, 720), Vector2i(875, 500)]
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
@@ -47,6 +48,8 @@ func _check_window(packed: PackedScene, physical: Vector2i) -> void:
 	root.size = physical
 	await process_frame
 	await process_frame
+	var qa_music_manager := GameAudio.ensure(self) as Node
+	_check(qa_music_manager != null and qa_music_manager.get_parent() == root, "Root owns one persistent gameplay soundtrack service")
 	var old_children := root.get_child_count()
 
 	# Disable the root gameplay script to inspect the actual saved editor controls.
@@ -62,6 +65,11 @@ func _check_window(packed: PackedScene, physical: Vector2i) -> void:
 		var static_prompt := raw.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
 		_check(static_prompt != null and static_prompt.text.contains("NOUN"),
 			"%s: authored wooden grammar question is retained" % physical)
+		var authored_number := raw.get_node_or_null("HUDLayer/HUD/ScoreNumber") as Label
+		_check(authored_number != null and authored_number.get_parent() == raw.get_node("HUDLayer/HUD"),
+			"%s: editor authors ScoreNumber directly under HUD" % physical)
+		_check(not raw.has_node("HUDLayer/HUD/ScoreBottomContainer") and not raw.has_node("ScoreDrawLayer"),
+			"%s: no obsolete editor score container or runtime draw layer serialized" % physical)
 		root.remove_child(raw)
 		raw.free()
 
@@ -87,7 +95,7 @@ func _check_window(packed: PackedScene, physical: Vector2i) -> void:
 				"topic": topic,
 				"game_mode": mode,
 				"difficulty": "Normal",
-				"catch_character": "Boy",
+				"catch_character": "Bear",
 				"catch_map": "City",
 				"score": 18,
 				"lives": 2,
@@ -98,12 +106,16 @@ func _check_window(packed: PackedScene, physical: Vector2i) -> void:
 			var ctx := "%s %s %s" % [physical, mode, topic]
 			_assert_hud_without_objective(live, ctx)
 			var prompt := live.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
-			var score := live.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+			var score := live.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
 			_check(prompt != null and prompt.is_visible_in_tree()
 				and prompt.text.contains(topic.to_upper()),
 				ctx + ": live grammar question remains visible")
 			_check(score != null and score.is_visible_in_tree() and score.text == "18",
 				ctx + ": numeric score remains visible and editable")
+			_check(score != null and score.get_parent() == live.get_node_or_null("ScoreDrawLayer")
+				and not live.has_node("HUDLayer/HUD/ScoreNumber")
+				and not live.has_node("ScoreDrawLayer/ScoreBottomContainer"),
+				ctx + ": original ScoreNumber is directly reparented behind character without a container")
 			_check(_count_sound_players(live) == 1 and live.get_node_or_null("CatchVoicePlayer") is AudioStreamPlayer,
 				ctx + ": context preserves exactly one reusable recorded voice player")
 	root.remove_child(live)

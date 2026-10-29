@@ -6,7 +6,7 @@ const SIZES: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1600, 900), Vector
 const ROUTES: Array[String] = [
 	"tutorial_home", "grammar_guide",
 	"student_setup", "play_activity", "play_topic", "play_difficulty",
-	"camera_check", "calibration", "gameplay", "pause",
+		"calibration", "gameplay", "pause",
 	"results", "leaderboard", "settings"
 ]
 
@@ -19,7 +19,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var scene: PackedScene = load("res://main_menu.tscn")
+	var scene: PackedScene = load("res://ui/main_menu/main_menu.tscn")
 	if scene == null:
 		push_error("Cannot load main scene")
 		quit(1)

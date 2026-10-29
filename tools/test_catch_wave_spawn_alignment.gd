@@ -3,10 +3,10 @@ extends SceneTree
 # Top-edge and viewport-alignment QA for immediately falling three-apple
 # waves. Real scene transforms, scoreboard and apple graphics are inspected.
 # Run Godot --headless --path . --script res://tools/test_catch_wave_spawn_alignment.gd
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const RESOLUTIONS := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1600, 900)]
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const MODES := ["Seconds", "Lives"]
 
 var checked := 0

@@ -1,9 +1,9 @@
 extends SceneTree
 
-# No physical webcam is opened. Injects simulated service states into the
-# autoload to validate gameplay freeze/resume and editor-authored feedback.
-const WRAPPER := "res://ui/play/gameplay.tscn"
-const SELECTION := "res://ui/play/play_activity.tscn"
+# No physical webcam is opened. Uses authenticated synthetic camera packets,
+# a localhost UDP receiver and mock PID for gameplay freeze/resume feedback.
+const WRAPPER := "res://ui/play/gameplay/gameplay.tscn"
+const SELECTION := "res://ui/play/activity/play_activity.tscn"
 const GAMES := ["Catch the Word", "Balloon Popping", "Human Plane"]
 
 var checks := 0
@@ -20,6 +20,9 @@ func _run() -> void:
 	if service == null:
 		quit(1)
 		return
+		# The worker must not auto-restart during synthetic pose-packet injection.
+		# This test never opens the real webcam or launches Python.
+	service.set_process(false)
 	var selection := (load(SELECTION) as PackedScene).instantiate() as Control
 	_check(selection.get_node_or_null("LayoutMargins/Content/Footer/PlayKeyboardButton") == null,
 		"Game selection has no keyboard fallback button")
@@ -31,7 +34,9 @@ func _run() -> void:
 		await process_frame
 		for activity in GAMES:
 			await _check_game(activity, service)
+	service.worker_pid = -1
 	service.call("stop_camera")
+	service.set_process(true)
 	for failure in failures:
 		printerr("FAIL CAMERA RECOVERY: ", failure)
 	print("CAMERA-ONLY TRACKING RECOVERY: %s (%d checks)" % ["PASS" if failures.is_empty() else "FAIL", checks])
@@ -39,12 +44,30 @@ func _run() -> void:
 
 
 func _check_game(activity: String, service: Node) -> void:
-	# Deliberately emulate a valid service sample without touching a webcam.
-	service.set("active", true)
-	service.set("current_status", {"state": "tracking", "pose": true})
-	service.set("player_x", 0.5)
-	service.set("last_pose_ms", Time.get_ticks_msec())
-	service.set("calibration", {"valid": true, "left": 0.2, "center": 0.5, "right": 0.8})
+	# Strict camera occupancy requires a live authenticated localhost transport.
+	service.worker_pid = -1
+	service.stop_camera()
+	var udp := PacketPeerUDP.new()
+	_check(udp.bind(0, "127.0.0.1") == OK, "localhost mock camera socket binds")
+	service.peer = udp
+	service.worker_pid = OS.get_process_id()
+	service.session_token = "recovery-mock-session"
+	service.active = true
+	var student_id := 71
+	_send(service, activity, 1, true, student_id, 0.5)
+	if activity == "Human Plane":
+		# The current Human Plane contract is ONE neutral, same locked student,
+		# with fresh torso steering and one observed wrist. It no longer uses
+		# old synthetic LEFT/CENTER/RIGHT side calibration for flight.
+		var neutral := {"valid": true, "mode": "plane_stationary", "center": 0.5,
+			"camera_center_x": 0.5, "locked_id": student_id,
+			"sensitivity": 0.18, "deadzone": 0.018,
+			"steering_mode": "centered_torso_x_one_wrist"}
+		service.set("plane_calibration", neutral.duplicate(true))
+		service.set("calibration", neutral.duplicate(true))
+	else:
+		service.set("plane_calibration", {})
+		service.set("calibration", {"valid": true, "left": 0.2, "center": 0.5, "right": 0.8})
 	var wrapper := (load(WRAPPER) as PackedScene).instantiate() as Control
 	root.add_child(wrapper)
 	wrapper.set_context({
@@ -58,6 +81,7 @@ func _check_game(activity: String, service: Node) -> void:
 	_check(game != null, activity + ": actual game scene is present")
 	_check(notice != null and not notice.visible, activity + ": notice exists but begins hidden")
 	if game == null or notice == null:
+		service.worker_pid = -1 # Even failure cleanup must not kill Godot itself.
 		wrapper.queue_free()
 		await process_frame
 		return
@@ -68,20 +92,32 @@ func _check_game(activity: String, service: Node) -> void:
 	wrapper.call("_process", 0.02)
 	_check(bool(wrapper.get("last_pose_valid")), activity + ": accepts valid calibrated pose")
 
-	# Remove pose temporarily; neither keyboard fallback nor a second
-	# calibration is allowed to make gameplay proceed.
-	service.set("player_x", -1.0)
-	service.set("current_status", {"state": "lost", "pose": false})
+	# First real zero-person inference freezes the minigame immediately and
+	# displays COME BACK without a grace delay.
+	_send(service, activity, 0, false, -1)
 	wrapper.call("_process", 0.71)
-	_check(notice.visible, activity + ": clear return-to-camera instruction appears")
+	_check(notice.visible and (notice.get_node("Title") as Label).text == "COME BACK INTO THE CAMERA!",
+		activity + ": first fresh empty frame immediately shows Come Back")
 	_check(game.process_mode == Node.PROCESS_MODE_DISABLED,
 		activity + ": gameplay freezes instead of unfairly consuming time/lives")
 	_check(bool((service.get("calibration") as Dictionary).get("valid", false)),
 		activity + ": valid calibration survives loss of pose")
+	# Subsequent fresh empty-camera observations keep the warning visible.
+	_send(service, activity, 0, false, -1)
+	wrapper.call("_process", 0.60)
+	_check(notice.visible, activity + ": repeated fresh empty-camera observations show return instruction")
+	_send(service, activity, 1, false, -1)
+	wrapper.call("_process", 0.80)
+	_check(not notice.visible and game.process_mode != Node.PROCESS_MODE_DISABLED \
+		and not bool(wrapper.get("last_pose_valid")),
+		activity + ": a single bystander with no usable pose keeps game playing without stale motion")
+	_send(service, activity, 2, false, -1)
+	wrapper.call("_process", 0.01)
+	_check(notice.visible and (notice.get_node("Title") as Label).text == "ONLY ONE PLAYER!"
+		and game.process_mode == Node.PROCESS_MODE_DISABLED,
+		activity + ": two detected players display one-player-only instruction")
 
-	service.set("current_status", {"state": "tracking", "pose": true})
-	service.set("player_x", 0.65)
-	service.set("last_pose_ms", Time.get_ticks_msec())
+	_send(service, activity, 1, true, student_id, 0.65)
 	wrapper.call("_process", 0.02)
 	_check(not notice.visible, activity + ": notice disappears when player returns")
 	_check(game.process_mode == Node.PROCESS_MODE_INHERIT,
@@ -91,10 +127,33 @@ func _check_game(activity: String, service: Node) -> void:
 		activity + ": saved calibration remains valid")
 	_check_no_keyboard_steering(game, activity)
 
+	service.worker_pid = -1 # Wrapper _exit_tree must not kill this Godot process.
 	wrapper.queue_free()
 	await process_frame
 	await process_frame
+	service.worker_pid = -1
 	service.call("stop_camera")
+
+
+func _send(service: Node, activity: String, people: int,
+		valid: bool, student_id: int, x: float = 0.5) -> void:
+	var packet := _locked_status(activity, student_id)
+	packet.merge({"token": service.session_token, "kind": "pose",
+		"camera_phase": "tracking", "state": "tracking", "people": people,
+		"pose": valid, "lock_state": "locked" if valid and people == 1 else "waiting",
+		"x": x if valid and people == 1 else -1.0,
+		"plane_steering": x, "plane_steering_valid": valid and people == 1}, true)
+	service.call("_apply_pose_packet", packet, Time.get_ticks_msec())
+
+
+func _locked_status(activity: String, student_id: int) -> Dictionary:
+	var sample := {"state": "tracking", "camera": true, "pose": true,
+		"people": 1, "lock_state": "locked", "locked_id": student_id,
+		"camera_frame_age_ms": 20, "x": 0.5, "camera_phase": "tracking"}
+	if activity == "Human Plane":
+		sample["plane_steering"] = 0.5
+		sample["plane_steering_valid"] = true
+	return sample
 
 
 func _check_no_keyboard_steering(game: Control, activity: String) -> void:

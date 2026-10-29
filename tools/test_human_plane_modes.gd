@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Run with Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_modes.gd
-const GAME_SCENE := preload("res://ui/minigames/human_plane.tscn")
+const GAME_SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const DIFFICULTIES := [
 	{"name": "Easy", "waves": 12, "seconds_lives": 3, "gate_speed": 0.20},
 	{"name": "Normal", "waves": 14, "seconds_lives": 3, "gate_speed": 0.27},

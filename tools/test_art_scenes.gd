@@ -4,21 +4,24 @@ extends SceneTree
 # scenes. This deliberately tests the serialized TSCN structure in addition to
 # runtime behavior so future refactors do not silently return to script-only art.
 
-const CATCH_SCENE := "res://ui/minigames/catch_word.tscn"
-const BALLOON_SCENE := "res://ui/minigames/balloon_popping.tscn"
+const CATCH_SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
+const BALLOON_SCENE := "res://ui/minigames/balloon_popping/balloon_popping.tscn"
+const CAUGHT_HALF_APPLE := "res://Components/Gameplay/Catch the Word/Items/APPLE HALF.png"
 
 const CATCH_ASSETS: Array[String] = [
 	"res://Components/Gameplay/Catch the Word/Maps/CityMap.png",
 	"res://Components/Gameplay/Catch the Word/Maps/ForestMap.png",
 	"res://Components/Gameplay/Catch the Word/Maps/MountainMap.png",
-	"res://Components/Gameplay/Catch the Word/Characters/BOY BODY.png",
-	"res://Components/Gameplay/Catch the Word/Characters/BOY BASKET.png",
-	"res://Components/Gameplay/Catch the Word/Characters/GIRL BODY.png",
-	"res://Components/Gameplay/Catch the Word/Characters/GIRL BASKET.png",
-	"res://Components/Gameplay/Catch the Word/Characters/GRANDMA BODY.png",
-	"res://Components/Gameplay/Catch the Word/Characters/GRANDMA BASKET.png",
-	"res://Components/Gameplay/Catch the Word/Characters/GRANDPA BODY.png",
-	"res://Components/Gameplay/Catch the Word/Characters/GRANDPA BASKET.png",
+	"res://Components/Gameplay/Catch the Word/Characters/BEAR BODY.png",
+	"res://Components/Gameplay/Catch the Word/Characters/BEAR BASKET.png",
+	"res://Components/Gameplay/Catch the Word/Characters/CAT BODY.png",
+	"res://Components/Gameplay/Catch the Word/Characters/CAT BASKET.png",
+	"res://Components/Gameplay/Catch the Word/Characters/DOG BODY.png",
+	"res://Components/Gameplay/Catch the Word/Characters/DOG BASKET.png",
+	"res://Components/Gameplay/Catch the Word/Characters/LION BODY.png",
+	"res://Components/Gameplay/Catch the Word/Characters/LION BASKET.png",
+	"res://Components/Gameplay/Catch the Word/Characters/PANDA BODY.png",
+	"res://Components/Gameplay/Catch the Word/Characters/PANDA BASKET.png",
 ]
 
 const BALLOON_ASSETS: Array[String] = [
@@ -27,11 +30,11 @@ const BALLOON_ASSETS: Array[String] = [
 	"res://Components/Gameplay/Balloon Popping/Balloons/purple.png",
 	"res://Components/Gameplay/Balloon Popping/Balloons/green.png",
 	"res://Components/Gameplay/Balloon Popping/Balloons/blue.png",
-	"res://ui/minigames/balloon_art/balloon_purple.tscn",
-	"res://ui/minigames/balloon_art/balloon_green.tscn",
-	"res://ui/minigames/balloon_art/balloon_blue.tscn",
-	"res://ui/minigames/balloon_art/launcher.tscn",
-	"res://ui/minigames/balloon_art/stone.tscn",
+	"res://ui/minigames/balloon_popping/balloon_art/balloon_purple.tscn",
+	"res://ui/minigames/balloon_popping/balloon_art/balloon_green.tscn",
+	"res://ui/minigames/balloon_popping/balloon_art/balloon_blue.tscn",
+	"res://ui/minigames/balloon_popping/balloon_art/launcher.tscn",
+	"res://ui/minigames/balloon_popping/balloon_art/stone.tscn",
 ]
 
 var failures: Array[String] = []
@@ -58,6 +61,7 @@ func _run() -> void:
 	else:
 		for failure in failures:
 			push_error("ART SCENE QA: " + failure)
+		print("FAIL  art scenes: %d checks / %d failures (exit 1)" % [checks, failures.size()])
 		for path in screenshot_paths:
 			print("ART_QA_SCREENSHOT  ", path)
 		quit(1)
@@ -76,7 +80,7 @@ func _test_serialized_scene_resources() -> void:
 	for expected in [
 		"[node name=\"Background\" type=\"TextureRect\"",
 		"[node name=\"FallingWordLayer\" type=\"Node2D\"",
-		"[node name=\"Boy\" type=\"Node2D\"",
+		"[node name=\"Bear\" type=\"Node2D\"",
 		"[node name=\"HUDLayer\" type=\"CanvasLayer\"",
 	]:
 		_assert(catch_text.contains(expected), "Catch TSCN serializes " + expected)
@@ -85,7 +89,7 @@ func _test_serialized_scene_resources() -> void:
 	_assert(not catch_text.contains("[node name=\"CharacterRig\""), "Catch no obsolete parent node")
 	_assert(_has_serialized_node(catch_text, "CollectedWords", "Node2D", "."),
 		"Catch CollectedWords is editor-authored root sibling")
-	for character_name in ["Boy", "Girl", "Grandma", "Grandpa"]:
+	for character_name in ["Bear", "Cat", "Dog", "Lion", "Panda"]:
 		_assert(_has_serialized_node(catch_text, character_name, "Node2D", "."),
 			"Catch %s scene-authored root group" % character_name)
 		for part in ["Body", "Basket"]:
@@ -104,10 +108,10 @@ func _test_serialized_scene_resources() -> void:
 	# each child is the expected instance *from the expected art file*,
 	# rather than accepting any scene or simply checking for "instance=".
 	for node_info in [
-		["LeftTarget", "BalloonLayer", "res://ui/minigames/balloon_art/balloon_purple.tscn"],
-		["CenterTarget", "BalloonLayer", "res://ui/minigames/balloon_art/balloon_green.tscn"],
-		["RightTarget", "BalloonLayer", "res://ui/minigames/balloon_art/balloon_blue.tscn"],
-		["Launcher", "LauncherLayer", "res://ui/minigames/balloon_art/launcher.tscn"],
+		["LeftTarget", "BalloonLayer", "res://ui/minigames/balloon_popping/balloon_art/balloon_purple.tscn"],
+		["CenterTarget", "BalloonLayer", "res://ui/minigames/balloon_popping/balloon_art/balloon_green.tscn"],
+		["RightTarget", "BalloonLayer", "res://ui/minigames/balloon_popping/balloon_art/balloon_blue.tscn"],
+		["Launcher", "LauncherLayer", "res://ui/minigames/balloon_popping/balloon_art/launcher.tscn"],
 	]:
 		_assert(_has_serialized_node(balloon_text, node_info[0], "", node_info[1], node_info[2]),
 			"Balloon TSCN serializes %s as instance of %s under %s" %
@@ -116,8 +120,8 @@ func _test_serialized_scene_resources() -> void:
 	var catch := await _instantiate(CATCH_SCENE)
 	if catch != null:
 		_assert(catch.get_node_or_null("Background") is TextureRect, "Catch Background is editor TextureRect")
-		_assert(catch.get_node_or_null("Boy/Body") is Sprite2D, "Catch Body is editor Sprite2D")
-		_assert(catch.get_node_or_null("Boy/Basket") is Sprite2D, "Catch Basket is editor Sprite2D")
+		_assert(catch.get_node_or_null("Bear/Body") is Sprite2D, "Catch Body is editor Sprite2D")
+		_assert(catch.get_node_or_null("Bear/Basket") is Sprite2D, "Catch Basket is editor Sprite2D")
 		_assert(catch.get_node_or_null("CollectedWords") is Node2D, "Catch CollectedWords is editor Node2D")
 		var bg := catch.get_node("Background") as TextureRect
 		var body := catch.get("body_sprite") as Sprite2D
@@ -193,7 +197,7 @@ func _test_catch_random_art() -> void:
 	var collision_center: Vector2 = (catch.call("_basket_rect") as Rect2).get_center()
 	var visual_center := basket.global_position
 	_assert(absf(visual_center.x - collision_center.x) < 8.0, "Catch visual basket stays horizontally aligned to gameplay basket")
-	for character_name in ["Boy", "Girl", "Grandma", "Grandpa"]:
+	for character_name in ["Bear", "Cat", "Dog", "Lion", "Panda"]:
 		catch.call("set_context", _catch_context({
 			"catch_character": character_name,
 			"catch_map": "City",
@@ -201,12 +205,17 @@ func _test_catch_random_art() -> void:
 		await process_frame
 		body = catch.get("body_sprite") as Sprite2D
 		basket = catch.get("basket_sprite") as Sprite2D
+		if character_name == "Bear":
+			print("ART_QA_GEOMETRY root=", root.size, " viewport=", catch.get_viewport_rect().size,
+				" scene=", catch.size, " character=", catch.get("character_group").position)
 		var body_rect := Rect2(body.global_position + body.get_rect().position * body.global_scale,
 			body.get_rect().size * body.global_scale)
 		var basket_rect := Rect2(basket.global_position + basket.get_rect().position * basket.global_scale,
 			basket.get_rect().size * basket.global_scale)
 		var character_bottom := body_rect.end.y
 		var basket_top := basket_rect.position.y
+		print("ART_QA_CHARACTER_BOUNDS ", character_name, " body=", body_rect,
+			" basket=", basket_rect, " scene=", catch.size)
 		_assert(body_rect.position.y >= 0.0 and character_bottom <= catch.size.y + 1.0
 			and character_bottom >= catch.size.y * 0.75,
 			"Catch %s entire original body and feet are in the screen" % character_name)
@@ -218,7 +227,7 @@ func _test_catch_random_art() -> void:
 		print("Catch original ", character_name, " basket_top=", basket_top, " viewport_height=", catch.size.y)
 		var lower_basket_limit: float = 0.48
 		_assert(basket_top > catch.size.y * lower_basket_limit and basket_top < catch.size.y * 0.70, "Catch %s basket sits near bottom rim" % character_name)
-	_assert(not _file_text("res://ui/minigames/catch_word.gd").contains("_draw_lane_guides"), "Catch renders no lane guides")
+	_assert(not _file_text("res://ui/minigames/catch_the_word/catch_word.gd").contains("_draw_lane_guides"), "Catch renders no lane guides")
 	await _dispose(catch)
 
 
@@ -227,29 +236,74 @@ func _test_catch_inventory_and_pause() -> void:
 	if catch == null:
 		return
 	catch.call("set_context", _catch_context({
-		"catch_character": "Boy",
+			"catch_character": "Bear",
 		"catch_map": "City",
 	}))
 	await process_frame
 
+	# Use five ACTUAL grade-matched vocabulary words from the same live bank,
+	# not manufactured "noun1" strings that grammar gameplay never displays.
+	var actual_words: Array[String] = []
+	var bank = catch.get("grammar_bank")
+	var seen_words: Dictionary = {}
+	_assert(bank != null and bank.has_method("pick_word"),
+		"Catch real grammar bank is present for collected-word art/scoring fixture")
+	if bank == null or not bank.has_method("pick_word"):
+		await _dispose(catch)
+		return
+	for index in range(5):
+		var word := String(bank.call("pick_word", "Noun", true, catch.get("rng"), "Normal", seen_words))
+		_assert(not word.is_empty() and not seen_words.has(word.to_lower()),
+			"Collected apple test uses distinct real Noun/Normal vocabulary")
+		seen_words[word.to_lower()] = true
+		actual_words.append(word)
 	for index in range(3):
-		catch.call("_handle_catch", {"matching": true, "word": "noun%d" % (index + 1)})
+		catch.call("_handle_catch", {"matching": true, "word": actual_words[index]})
 	await process_frame
 	var score_at_three := int(catch.get("score"))
 	var correct_at_three := int(catch.get("correct_count"))
-	catch.call("_handle_catch", {"matching": true, "word": "noun4"})
-	catch.call("_handle_catch", {"matching": true, "word": "noun5"})
+	catch.call("_handle_catch", {"matching": true, "word": actual_words[3]})
+	catch.call("_handle_catch", {"matching": true, "word": actual_words[4]})
 	await process_frame
 
 	var collected: Array = catch.get("collected_words")
 	var collected_layer := catch.get_node("CollectedWords") as Node2D
 	_assert(collected.size() == 3, "Catch visual inventory data caps at three words")
 	_assert(collected_layer.get_child_count() == 3, "Catch renders at most three collected apples")
+	var basket_width: float = float((catch.call("_basket_visual_size") as Vector2).x)
+	var collected_width := -1.0
 	for child in collected_layer.get_children():
 		_assert(child is TextureRect and (child as TextureRect).texture != null, "Caught item renders an apple texture")
-		_assert(child.get_child_count() == 1 and child.get_child(0) is Label, "Caught apple has its word label")
+		if child is TextureRect:
+			var collected_apple := child as TextureRect
+			_assert(collected_apple.texture.resource_path == CAUGHT_HALF_APPLE,
+				"Caught apple uses original APPLE HALF artwork, not falling apple artwork")
+			_assert(collected_apple.size.x > 0.0 and collected_apple.size.x <= basket_width * 0.29,
+				"Caught apple is small relative to authored basket, not oversized")
+			_assert(collected_width < 0.0 or is_equal_approx(collected_width, collected_apple.size.x),
+				"All three collected halves remain uniformly sized")
+			collected_width = collected_apple.size.x
+			_assert(collected_apple.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+				"Small caught half apples do not intercept gameplay input")
+		_assert(child.get_child_count() == 0,
+			"Caught APPLE HALF has no word label or other unwanted child overlay")
+	# Falling grammar apples are different: their real gameplay tile instances
+	# must still carry their word labels and their original, full apple artwork.
+	var falling: Array = catch.get("falling_tiles")
+	_assert(falling.size() == 3, "Active Catch wave contains three actual falling word apples")
+	for tile in falling:
+		var tile_node: Control = tile.get("node") as Control
+		var word := String(tile.get("word", ""))
+		var word_label := tile_node.get_node_or_null("WordLabel") as Label if tile_node != null else null
+		var full_apple := tile_node.get_node_or_null("AppleSprite") as TextureRect if tile_node != null else null
+		_assert(word_label != null and word_label.text == word.to_upper() and not word.is_empty(),
+			"Falling grammar apple retains its actual uppercase word label")
+		_assert(full_apple != null and full_apple.texture != null
+			and full_apple.texture == catch.get("gameplay_apple_texture"),
+			"Falling grammar apple retains its original full-size labeled artwork")
 	_assert(int(catch.get("correct_count")) == correct_at_three + 2, "Catch correct count continues after visual inventory is full")
-	_assert(int(catch.get("score")) > score_at_three, "Catch score continues after visual inventory is full")
+	_assert(int(catch.get("score")) == score_at_three + 2 * int(catch.get("CORRECT_ANSWER_POINTS")),
+		"Catch continues awarding exactly +100 per real correct grammar word after inventory fills")
 	var context: Dictionary = catch.call("get_context")
 	_assert((context.get("catch_collected_words", []) as Array).size() == 3, "Catch payload preserves three-word visual inventory")
 
@@ -376,12 +430,16 @@ func _test_balloon_reveal_hide_pause_and_collision() -> void:
 
 	# A real question transition marks the round inactive before hiding. Verify
 	# that an already-fired stone cannot score after that transition begins.
-	balloon.call("_launch_projectile")
+	_assert(not bool(balloon.call("_launch_projectile")),
+		"Direct projectile spawn cannot bypass the physical lower-then-raise gesture")
+	_assert(_fire_with_observed_raise(balloon),
+		"Stable observed lower-then-raise fires the first projectile")
 	var late_projectiles: Array = balloon.get("projectiles")
 	_assert(late_projectiles.size() == 1, "Balloon can have an in-flight stone before hide transition")
 	var late_attempts := int(balloon.get("attempts"))
 	var late_correct := int(balloon.get("correct_count"))
 	var late_score := int(balloon.get("score"))
+	var late_hearts := int(balloon.get("hearts"))
 	balloon.set("round_active", false)
 	_assert(not bool(balloon.get("round_active")), "Balloon hide transition is no longer answer-active")
 
@@ -402,9 +460,15 @@ func _test_balloon_reveal_hide_pause_and_collision() -> void:
 			balloon.call("_update_projectiles", 0.35)
 			if is_instance_valid(late_projectile):
 				balloon.call("_on_projectile_area_entered", slots[0], late_projectile)
+	if int(balloon.get("attempts")) != late_attempts:
+		print("ART_QA_LATE_PROJECTILE attempts_before=", late_attempts,
+			" attempts_after=", balloon.get("attempts"),
+			" round_active=", balloon.get("round_active"),
+			" hearts_after=", balloon.get("hearts"))
 	_assert(int(balloon.get("attempts")) == late_attempts, "Late stone during hide does not register an attempt")
 	_assert(int(balloon.get("correct_count")) == late_correct, "Late stone during hide does not register a correct answer")
 	_assert(int(balloon.get("score")) == late_score, "Late stone during hide cannot score")
+	_assert(int(balloon.get("hearts")) == late_hearts, "Late stone during hide must not deduct a Lives heart")
 	balloon.call("_clear_projectiles")
 	await create_timer(0.07).timeout
 	balloon.call("_pause")
@@ -445,7 +509,24 @@ func _test_balloon_reveal_hide_pause_and_collision() -> void:
 	var attempts_before := int(balloon.get("attempts"))
 	var correct_before := int(balloon.get("correct_count"))
 	var score_before := int(balloon.get("score"))
-	balloon.call("_launch_projectile")
+	# An early confirmed raise (1499ms after the last genuine projectile) must
+	# consume that gesture, not queue a delayed shot. A NEW lower-then-raise
+	# after the 1500ms cooldown may then fire the real stone.
+	var previous_shot_ms := int(balloon.get("hand_raise_last_shot_ms"))
+	_assert(previous_shot_ms >= 0 and int(balloon.get("HAND_RAISE_RELOAD_MS")) == 1500,
+		"Balloon stores real last stone launch and uses exactly 1500ms cooldown")
+	if previous_shot_ms >= 0:
+		var early_start := previous_shot_ms + 1100
+		balloon.call("set_hand_raise_state", false, true, early_start)
+		balloon.call("set_hand_raise_state", false, true, early_start + 200)
+		balloon.call("set_hand_raise_state", true, true, early_start + 201)
+		_assert(not bool(balloon.call("set_hand_raise_state", true, true, previous_shot_ms + 1499))
+			and (balloon.get("projectiles") as Array).is_empty(),
+			"Confirmed early hand raise at 1499ms is blocked without spawning a projectile")
+	_assert(_fire_with_observed_raise(balloon),
+		"Fresh LOWER-to-rearm then RAISE fires actual stone after 1500ms cooldown")
+	_assert(int(balloon.get("hand_raise_last_shot_ms")) - previous_shot_ms >= 1500,
+		"New stone launch timestamp honors full 1500ms cooldown")
 	var projectiles: Array = balloon.get("projectiles")
 	_assert(projectiles.size() == 1, "Balloon launches one editor-scene stone projectile")
 	if not projectiles.is_empty():
@@ -459,11 +540,25 @@ func _test_balloon_reveal_hide_pause_and_collision() -> void:
 		await process_frame
 	_assert(int(balloon.get("attempts")) == attempts_before + 1, "Exposed balloon registers one physical projectile collision")
 	_assert(int(balloon.get("correct_count")) == correct_before + 1, "Valid exposed balloon collision increments correct count")
-	_assert(int(balloon.get("score")) > score_before, "Valid exposed balloon collision increases score")
+	_assert(int(balloon.get("score")) == score_before + int(balloon.get("CORRECT_POP_SCORE")),
+		"Valid exposed balloon physical collision awards exactly +100")
 	_assert(target_zero.get_instance_id() == target_zero_id, "Balloon collision reuses editor target node rather than replacing it")
 	_assert(not target_zero.visible and not target_zero.monitoring, "Popped editor target is hidden and non-collidable")
 
 	await _dispose(balloon)
+
+
+func _fire_with_observed_raise(game: Control) -> bool:
+	# Launch permission is deliberately private to a fresh camera gesture. A
+	# legacy direct _launch_projectile() test was bypassing the new safety gate.
+	# Advance source times monotonically and honor the actual 180ms lowered,
+	# 80ms raised and 1500ms post-shot refractory requirements.
+	var last_shot := int(game.get("hand_raise_last_shot_ms"))
+	var start := maxi(Time.get_ticks_msec(), last_shot + int(game.get("HAND_RAISE_RELOAD_MS")) + 100)
+	game.call("set_hand_raise_state", false, true, start)
+	game.call("set_hand_raise_state", false, true, start + 200)
+	game.call("set_hand_raise_state", true, true, start + 201)
+	return bool(game.call("set_hand_raise_state", true, true, start + 300))
 
 
 func _catch_pair_for_seed(seed_value: int) -> Array[String]:
@@ -508,7 +603,12 @@ func _instantiate(path: String) -> Control:
 		_fail("Scene root is not Control: " + path)
 		return null
 	root.add_child(instance)
-	instance.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Headless Windows may expose a 64x64 root and a *square* logical
+	# get_viewport_rect() despite the project's 1280x720 game design. Mount
+	# the editor-authored scene in an exact 1280x720 logical test canvas rather
+	# than testing its geometry inside the headless fallback's 1280x1280 area.
+	instance.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	instance.size = Vector2(1280.0, 720.0)
 	await process_frame
 	await process_frame
 	return instance
@@ -596,8 +696,8 @@ func _has_serialized_node(scene_text: String, node_name: String, node_type: Stri
 
 
 func _assert(condition: bool, label: String) -> void:
+	checks += 1
 	if condition:
-		checks += 1
 		print("PASS  ", label)
 	else:
 		_fail(label)

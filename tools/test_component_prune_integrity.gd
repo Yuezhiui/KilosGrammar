@@ -54,10 +54,11 @@ func _run() -> void:
                 manifest_orphans.append(path)
                 _fail("Stale .png.import sidecar without source PNG: " + path)
     _check(scene_paths.size() >= 20,
-        "All current project scenes dynamically inventoried after inlining 3D assets (found %d)" % scene_paths.size())
-    _check("res://ui/minigames/human_plane_3d_view.tscn" in scene_paths,
-        "Human Plane single 3D world remains an editable PackedScene")
-    _check("res://ui/secondary/credits.tscn" in scene_paths,
+        "All current project scenes dynamically inventoried after 2D restoration (found %d)" % scene_paths.size())
+    _check("res://ui/minigames/human_plane/human_plane.tscn" in scene_paths
+        and "res://ui/minigames/human_plane_3d_view.tscn" not in scene_paths,
+        "Human Plane retains one editable pure-2D PackedScene without a 3D world")
+    _check("res://ui/secondary/credits/credits.tscn" in scene_paths,
         "Credits scene restored by explicit user request and kept in inventory")
     _check(not components_pngs.is_empty(),
         "Components contains independently stored and browsable source PNGs")

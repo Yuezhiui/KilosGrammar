@@ -3,8 +3,8 @@ extends SceneTree
 # Run: Godot_v4.7.2-stable_win64_console.exe --headless --path . \
 #      --script res://tools/test_catch_sibling_hierarchy.gd
 # The four scene-authored root characters and CollectedWords are siblings.
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const EPS := 1.5
 
@@ -53,7 +53,7 @@ func _check_character(resolution: Vector2i, selected: String) -> void:
 	var collected := game.get_node_or_null("CollectedWords") as Node2D
 	_check(collected != null and collected.get_parent() == game and collected.owner == game,
 		tag + ": CollectedWords is a separate editable root sibling")
-	var initial_collected_offset := collected.position - (game.get_node("Boy") as Node2D).position
+	var initial_collected_offset := collected.position - (game.get_node("Bear") as Node2D).position
 	# An Inspector drag before _ready must be respected by hitboxes and fruits.
 	var basket_drag := Vector2(12.0, -5.0)
 	selected_basket.position += basket_drag

@@ -3,7 +3,7 @@ extends SceneTree
 # Real graphical viewport screenshot harness for the authored Human Plane art.
 # Godot --path . --rendering-method gl_compatibility --script res://tools/test_human_plane_asset_visual.gd
 # Output files are disposable and may be removed after visual inspection.
-const SCENE := preload("res://ui/minigames/human_plane.tscn")
+const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const OUTPUT := "res://Components/Gameplay/Human Plane/_qa_visual_"
 
 

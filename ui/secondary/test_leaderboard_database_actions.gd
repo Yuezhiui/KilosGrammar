@@ -2,7 +2,7 @@ extends SceneTree
 
 # Isolated UI/signal regression. No PostgreSQL call or database writes occur.
 # Optional graphical capture: CAPTURE_LEADERBOARD_TRANSFER=1
-const LEADERBOARD := preload("res://ui/secondary/leaderboard.tscn")
+const LEADERBOARD := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const CONFIRMATION := "DELETE ALL DATA"
 
 var checks := 0

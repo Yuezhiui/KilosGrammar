@@ -2,9 +2,8 @@ extends SceneTree
 
 # No sockets, database, teacher records or physical webcam. MainMenu runs
 # against the existing deterministic no-socket client fixture.
-const MENU_PATH := "res://main_menu.tscn"
+const MENU_PATH := "res://ui/main_menu/main_menu.tscn"
 const MOCK_MENU_SCRIPT_PATH := "res://tools/test_postgres_csv_delete_menu_fixture.gd"
-const SPOTLIGHT_PATH := "res://ui/tutorial/spotlight_overlay.tscn"
 var checks := 0
 var failures: Array[String] = []
 
@@ -42,30 +41,37 @@ func _run() -> void:
 
 	app.set("database_online", true)
 	app.call("_on_panel_requested", "tutorial_home", {})
+	await process_frame
 	app.call("_on_panel_requested", "play_activity",
 		{"guided_tutorial": true, "entry_source": "tutorial"})
+	await process_frame
 	app.set("current_route", "student_setup")
 	app.call("_on_panel_requested", "play_activity",
 		{"student_id": "NO-WRITE-TUTORIAL", "student_name": "Practice",
 		"grade_section": "Sample", "guided_tutorial": true})
+	await process_frame
 	_check(db.call("count", "register_student") == 0,
 		"Tutorial never registers a student even while DB is reachable")
 	app.set("current_route", "gameplay")
 	app.call("_on_panel_requested", "results", {"score": 900,
 		"round_completed": true, "activity": "Catch the Word"})
+	await process_frame
 	_check(db.call("count", "complete_round") == 0,
 		"Completed Tutorial score never writes to database")
-	var status := (app.get("active_panel") as Control).get_node_or_null("%SaveStatus") as Label
-	_check(status != null and status.text.contains("TUTORIAL PRACTICE ONLY"),
-		"Tutorial Results explicitly reports practice-only and unsaved")
+	_check((app.get("active_panel") as Control).get_node_or_null("%SaveStatus") == null
+		and bool((app.get("session_state") as Dictionary).get("guided_tutorial", false))
+		and not bool((app.get("session_state") as Dictionary).get("score_saved", false)),
+		"Tutorial Results keeps practice-only state with no redundant status label")
 	app.call("_save_completed_round")
 	_check(db.call("count", "complete_round") == 0,
 		"Direct score-save entry point is guarded during Tutorial too")
 	app.call("_on_panel_requested", "student_setup", {})
+	await process_frame
 	_check(bool((app.get("session_state") as Dictionary).get("guided_tutorial", false)),
 		"Tutorial Retry never silently converts the session to Play")
 	app.set("current_route", "gameplay")
 	app.call("_on_panel_requested", "results", {"round_completed": true, "score": 550})
+	await process_frame
 	_check(db.call("count", "complete_round") == 0,
 		"Completed round after Tutorial Retry still cannot save scores")
 
@@ -74,39 +80,32 @@ func _run() -> void:
 	app.set("session_state", {
 		"entry_source": "play", "guided_tutorial": false,
 		"activity": "Catch the Word", "student_id": "SAFE-MOCK",
-		"game_style": "Noun", "game_mode": "Seconds", "difficulty": "Easy"
+			"game_style": "Noun", "game_mode": "Seconds", "difficulty": "Easy",
+			"database_connected": true, "student_lookup_connected": true
 	})
 	app.set("current_route", "gameplay")
 	app.call("_on_panel_requested", "results", {"round_completed": true,
 		"score": 100, "activity": "Catch the Word"})
+	await process_frame
 	_check(db.call("count", "complete_round") == 1,
 		"Ordinary Play alone still saves a completed round")
 
-	var overlay := (load(SPOTLIGHT_PATH) as PackedScene).instantiate() as CanvasLayer
-	root.add_child(overlay)
-	await process_frame
-	_check(bool(overlay.get("use_editor_highlights")),
-		"Spotlight uses independently authored editor highlight rectangles by default")
-	var regions := overlay.get_node_or_null("Overlay/FocusRegions") as Control
-	var arrows := overlay.get_node_or_null("Overlay/GuideArrows") as Control
-	var card := overlay.get_node_or_null("Overlay/CaptionCard") as Panel
-	_check(regions != null and regions.visible and arrows != null and card != null,
-		"Highlight layer, arrows and tutorial card exist in .tscn for drag/resizing")
-	if regions != null:
-		for game_name in ["CatchWord", "BalloonPopping", "HumanPlane"]:
-			for slot in ["Prompt", "PlayArea", "Seconds", "Lives", "Score", "Pause"]:
-				var guide := regions.get_node_or_null(game_name + "/" + slot) as Control
-				_check(guide != null and guide.size.x > 0 and guide.size.y > 0,
-					"%s/%s highlight has an independently editable scene rectangle" % [game_name, slot])
-	if arrows != null:
-		for arrow in ["CatchWordPromptArrow", "CatchWordPlayArrow", "ModeArrow", "ScoreArrow", "PauseArrow"]:
-			_check(arrows.get_node_or_null(arrow) is TextureRect,
-				arrow + " is editor-draggable artwork, not a hardcoded draw command")
-
-	overlay.queue_free()
+	# The user explicitly retired Spotlight. Tutorial isolation is now
+	# verified through the unsaved practice session and ordinary Play control
+	# above, without creating the deleted overlay resource.
+	_check(not ResourceLoader.exists("res://ui/tutorial/spotlight/spotlight_overlay.tscn"),
+		"Retired Spotlight scene is absent without affecting tutorial score isolation")
+	# This fixture deliberately ends on a low-scoring completed Play result,
+	# which starts Results' "Better Luck" MP3. As in the real Quit path,
+	# stop and drain the menu's audio players before removing the owning
+	# scene; freeing it and immediately quitting leaked MP3 playback RIDs.
+	await app.call("prepare_for_shutdown")
+	_check(bool(app.get("_shutdown_audio_drain_complete")),
+		"Completed Play audio drains before test teardown")
 	app.queue_free()
 	await process_frame
-	print("TUTORIAL NO DATA / CREDITS / EDITABLE GUIDES: %s (%d checks, %d failures)" %
+	await process_frame
+	print("TUTORIAL NO DATA / CREDITS: %s (%d checks, %d failures)" %
 		["PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
 	quit(0 if failures.is_empty() else 1)
 

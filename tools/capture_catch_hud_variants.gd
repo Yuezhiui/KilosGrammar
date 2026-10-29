@@ -4,26 +4,26 @@ extends SceneTree
 # Godot --path . --rendering-method gl_compatibility --script res://tools/capture_catch_hud_variants.gd
 
 const OUTPUT_DIR := "res://showcase/catch_word_hud"
-const SCENE := "res://ui/minigames/catch_word.tscn"
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const MAPS := ["City", "Forest", "Mountain"]
 const SHOWCASE_CASES := [
-	["Boy", "City", "Noun", "Seconds"], ["Boy", "Forest", "Verb", "Lives"],
-	["Boy", "Mountain", "Adjective", "Seconds"], ["Boy", "City", "Adverb", "Lives"],
-	["Girl", "City", "Pronoun", "Lives"], ["Girl", "Forest", "Adverb", "Seconds"],
-	["Girl", "Mountain", "Noun", "Lives"], ["Girl", "Forest", "Noun", "Seconds"],
-	["Grandma", "City", "Verb", "Seconds"], ["Grandma", "Forest", "Adjective", "Lives"],
-	["Grandma", "Mountain", "Adverb", "Seconds"], ["Grandma", "City", "Pronoun", "Seconds"],
-	["Grandpa", "City", "Adjective", "Seconds"], ["Grandpa", "Forest", "Pronoun", "Lives"],
-	["Grandpa", "Mountain", "Verb", "Lives"], ["Grandpa", "Mountain", "Noun", "Seconds"]
+	["Bear", "City", "Noun", "Seconds"], ["Bear", "Forest", "Verb", "Lives"],
+	["Bear", "Mountain", "Adjective", "Seconds"], ["Bear", "City", "Adverb", "Lives"],
+	["Cat", "City", "Pronoun", "Lives"], ["Cat", "Forest", "Adverb", "Seconds"],
+	["Cat", "Mountain", "Noun", "Lives"], ["Cat", "Forest", "Noun", "Seconds"],
+	["Dog", "City", "Verb", "Seconds"], ["Dog", "Forest", "Adjective", "Lives"],
+	["Dog", "Mountain", "Adverb", "Seconds"], ["Dog", "City", "Pronoun", "Seconds"],
+	["Lion", "City", "Adjective", "Seconds"], ["Lion", "Forest", "Pronoun", "Lives"],
+	["Lion", "Mountain", "Verb", "Lives"], ["Lion", "Mountain", "Noun", "Seconds"]
 ]
 const EXTRA_RESOLUTION_CASES := [
-	["Girl", "City", "Pronoun", "Lives", 1600, 900],
-	["Grandma", "Forest", "Adjective", "Lives", 1600, 900],
-	["Grandpa", "Mountain", "Verb", "Lives", 1920, 1080],
-	["Boy", "City", "Noun", "Seconds", 1920, 1080],
-	["Girl", "Forest", "Adverb", "Seconds", 875, 500],
-	["Grandpa", "City", "Adjective", "Seconds", 875, 500]
+	["Cat", "City", "Pronoun", "Lives", 1600, 900],
+	["Dog", "Forest", "Adjective", "Lives", 1600, 900],
+	["Lion", "Mountain", "Verb", "Lives", 1920, 1080],
+	["Bear", "City", "Noun", "Seconds", 1920, 1080],
+	["Cat", "Forest", "Adverb", "Seconds", 875, 500],
+	["Lion", "City", "Adjective", "Seconds", 875, 500]
 ]
 const CASES := [
 	{"topic": "Noun", "mode": "Seconds", "difficulty": "Easy"},

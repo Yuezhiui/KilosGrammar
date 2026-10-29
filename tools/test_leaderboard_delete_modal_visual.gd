@@ -4,7 +4,7 @@ extends SceneTree
 ## No transport, PostgreSQL client, destructive method or real student data.
 ## godot --headless --path . --script res://tools/test_leaderboard_delete_modal_visual.gd
 ## Optional graphical screenshots: CAPTURE_LEADERBOARD_DELETE_VISUAL=1
-const SCENE := preload("res://ui/secondary/leaderboard.tscn")
+const SCENE := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const PHRASE := "DELETE ALL DATA"
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 # These are the teacher-adjusted offsets/sizing in leaderboard.tscn. Checking
@@ -130,9 +130,24 @@ func _run() -> void:
 		first_escape.pressed = true
 		root.push_input(first_escape)
 		await process_frame
-		_check(not first.visible and not final.visible and emitted.is_empty(),
-			"Escape cancels initial warning before final confirmation at %s" % resolution)
-		delete.pressed.emit()
+		_check(first.visible and not final.visible and emitted.is_empty(),
+			"Escape is inert: first warning stays open and no deletion is dispatched at %s" % resolution)
+		_check(not notice.visible,
+			"Escape in first warning never opens a generic notice at %s" % resolution)
+		first_cancel.grab_focus()
+		await process_frame
+		_check(root.gui_get_focus_owner() == first_cancel,
+			"First warning Cancel can receive keyboard focus at %s" % resolution)
+		_send_tab(false)
+		await process_frame
+		_check(root.gui_get_focus_owner() == first_continue,
+			"Tab moves from Cancel to Continue in first warning at %s" % resolution)
+		_send_tab(true)
+		await process_frame
+		_check(root.gui_get_focus_owner() == first_cancel,
+			"Shift+Tab returns from Continue to Cancel in first warning at %s" % resolution)
+		_check(first.visible and not final.visible and emitted.is_empty(),
+			"Focus cycling cannot dismiss first warning or dispatch deletion at %s" % resolution)
 		first_continue.pressed.emit()
 		await process_frame
 		_check(not first.visible and final.visible and permanent.disabled,
@@ -163,6 +178,11 @@ func _run() -> void:
 		permanent.pressed.emit()
 		_check(permanent.disabled and emitted.is_empty(),
 			"Wrong phrase cannot trigger sensitive signal at %s" % resolution)
+		_send_escape()
+		await process_frame
+		_check(not first.visible and final.visible and input.text == "DELETE ALL DAT"
+			and permanent.disabled and emitted.is_empty(),
+			"Escape preserves incorrect typed phrase and locked final modal at %s" % resolution)
 		input.text = PHRASE
 		input.text_changed.emit(input.text)
 		_check(not permanent.disabled,
@@ -175,22 +195,47 @@ func _run() -> void:
 				_visible_frame_in_button(permanent, "disabled")),
 			"Enabled and disabled artwork remain equally sized after switch at %s" % resolution)
 		await _capture("final_enabled", resolution)
-		# An actual Escape key event must cancel the second stage and clear the text.
-		var esc := InputEventKey.new()
-		esc.keycode = KEY_ESCAPE
-		esc.pressed = true
-		root.push_input(esc)
+		# Global policy: Escape cannot dismiss the destructive modal or erase
+		# the exact confirmation. Only its authored Cancel may close it.
+		_send_escape()
 		await process_frame
+		_check(not first.visible and final.visible and input.text == PHRASE
+			and not permanent.disabled and emitted.is_empty()
+			and not bool(panel.get("_transfer_pending")),
+			"Escape is inert: final modal and exact typed confirmation remain intact without dispatch at %s" % resolution)
+		_check(not notice.visible,
+			"Escape in final stage does not resurrect an empty status popup at %s" % resolution)
+		input.grab_focus()
+		await process_frame
+		_check(root.gui_get_focus_owner() == input,
+			"Typed confirmation is keyboard-focusable at %s" % resolution)
+		_send_tab(false)
+		await process_frame
+		_check(root.gui_get_focus_owner() == final_cancel,
+			"Tab moves from confirmation input to Cancel at %s" % resolution)
+		_send_tab(false)
+		await process_frame
+		_check(root.gui_get_focus_owner() == permanent,
+			"Tab reaches enabled Permanent Delete without activating it at %s" % resolution)
+		_send_tab(true)
+		await process_frame
+		_check(root.gui_get_focus_owner() == final_cancel,
+			"Shift+Tab moves from Permanent Delete to Cancel at %s" % resolution)
+		_send_tab(true)
+		await process_frame
+		_check(root.gui_get_focus_owner() == input,
+			"Shift+Tab returns from Cancel to confirmation input at %s" % resolution)
+		_check(final.visible and input.text == PHRASE and emitted.is_empty(),
+			"Tab and Shift+Tab preserve exact confirmation without dispatch at %s" % resolution)
+		final_cancel.pressed.emit()
 		_check(not first.visible and not final.visible and input.text.is_empty()
 			and permanent.disabled and emitted.is_empty(),
-			"Escape cancels final stage, clears confirmation and preserves data at %s" % resolution)
-		_check(not notice.visible,
-			"Escape from final stage does not resurrect an empty status popup at %s" % resolution)
+			"Authored final Cancel alone dismisses and clears typed confirmation at %s" % resolution)
 		delete.pressed.emit()
-		_check(first.visible and not final.visible, "Canceled stage can reopen at %s" % resolution)
+		_check(first.visible and not final.visible, "Canceled final stage can reopen at %s" % resolution)
 		first_continue.pressed.emit()
 		_check(input.text.is_empty() and permanent.disabled,
-			"Reopening from Escape resets typed state at %s" % resolution)
+			"Reopening after authored Cancel resets typed state at %s" % resolution)
 		final_cancel.pressed.emit()
 		_check(not first.visible and not final.visible and input.text.is_empty(),
 			"Second-stage Cancel closes and resets both modal stages at %s" % resolution)
@@ -371,6 +416,24 @@ func _capture(stage: String, resolution: Vector2i) -> void:
 	_check(result == OK, "Graphical screenshot saved for %s at %s" % [stage, resolution])
 	if result == OK:
 		print("DELETE MODAL SCREENSHOT: ", ProjectSettings.globalize_path(path))
+
+
+func _send_escape() -> void:
+	var event := InputEventKey.new()
+	event.keycode = KEY_ESCAPE
+	event.pressed = true
+	root.push_input(event)
+
+
+func _send_tab(backwards: bool) -> void:
+	# Send actual hardware-style Tab / Shift+Tab events through Viewport,
+	# rather than directly invoking leaderboard's private focus helper.
+	var event := InputEventKey.new()
+	event.keycode = KEY_TAB
+	event.physical_keycode = KEY_TAB
+	event.pressed = true
+	event.shift_pressed = backwards
+	root.push_input(event)
 
 
 func _check(ok: bool, description: String) -> void:

@@ -29,7 +29,7 @@ This folder contains the **cleanup record** for the existing Godot project. The 
 | `Components/Leaderboard/2026-10-24/` | Current dropdown/button background states and an untracked user image |
 | `Components/Leaderboard/NotifLeader/` | All **eight** original separate PNGs used by the custom Delete CSV modals |
 | `ui/redesign/assets/` | Active Settings, Main Menu, Student, tutorial and game-over sprite packs |
-| `ui/minigames/catch_hud/`, `ui/minigames/balloon_art/` | Live sprites, generated image sources, editor references and extraction tooling |
+| `ui/minigames/catch_the_word/catch_hud/`, `ui/minigames/balloon_popping/balloon_art/` | Live sprites, generated image sources, editor references and extraction tooling |
 | `Components/Gameplay/Catch the Word/Maps/`, `Components/Gameplay/Catch the Word/Characters/` | Dynamically selected map and character files |
 | `Components/Gameplay/Balloon Popping/Background/`, `Components/Gameplay/Balloon Popping/Balloons/` | Runtime balloon and carnival assets; unused alternative colors are deliberately retained |
 | `assets/fonts/`, `assets/audio/`, `assets/icons/` | Active fonts, feedback and controls, including dynamically loaded voiceover paths |

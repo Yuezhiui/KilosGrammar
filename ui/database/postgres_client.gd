@@ -113,8 +113,10 @@ func _on_startup_health_result(result: Dictionary) -> void:
 		_finish_startup("offline", "cancelled")
 		return
 	var payload: Variant = result.get("data", null)
+	# Recovery API remains available when its primary PostgreSQL connection
+	# is down: the service can durably queue records in local SQLite.
 	var healthy := bool(result.get("ok", false)) and payload is Dictionary \
-		and String(payload.get("database", "")) == "connected"
+		and String(payload.get("database", "")) in ["connected", "recovery"]
 	if healthy:
 		_finish_startup("online", "")
 		return
@@ -210,7 +212,7 @@ func _on_watchdog_health_result(result: Dictionary) -> void:
 		return
 	var payload: Variant = result.get("data", null)
 	if bool(result.get("ok", false)) and payload is Dictionary \
-		and String(payload.get("database", "")) == "connected":
+		and String(payload.get("database", "")) in ["connected", "recovery"]:
 		_watchdog_online = true
 		_schedule_watchdog()
 		return
@@ -293,6 +295,15 @@ func find_student(student_id: String, context: Dictionary = {}) -> int:
 	return _send("find_student", HTTPClient.METHOD_GET, "/students/" + sid.uri_encode(), {}, info)
 
 
+func find_student_by_name(full_name: String, context: Dictionary = {}) -> int:
+	var name_text := full_name.strip_edges()
+	var info := _with_fields(context, {"student_name": name_text})
+	if not _valid_text(name_text, MAX_NAME_LENGTH) or name_text.split(" ", false).size() < 2:
+		return _reject("find_student_by_name", info, "invalid_full_name")
+	return _send("find_student_by_name", HTTPClient.METHOD_GET,
+		"/students/by-name?name=" + name_text.uri_encode(), {}, info)
+
+
 func register_student(student_id: String, student_name: String, grade_section: String, context: Dictionary = {}) -> int:
 	var sid := student_id.strip_edges()
 	var name_text := student_name.strip_edges()
@@ -368,6 +379,12 @@ func complete_round(student_id: String, game_style: String, game_mode: String, d
 	# latest completed score, preventing a Human Plane round from overwriting
 	# a Catch the Word score for the same student/topic/mode/difficulty.
 	payload["minigame"] = _score_minigame(context)
+	# The immutable Godot recovery-event ID identifies one physical round.
+	# If an HTTP acknowledgement disappears, the SQLite service can safely
+	# deduplicate the retry instead of replaying the same score twice.
+	var recovery_id := String(context.get("recovery_event_id", "")).strip_edges()
+	if not recovery_id.is_empty():
+		payload["request_id"] = recovery_id
 	return _send("complete_round", HTTPClient.METHOD_POST, "/rounds/complete", payload, info)
 
 

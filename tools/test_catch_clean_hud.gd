@@ -2,19 +2,20 @@ extends SceneTree
 
 # Headless regression for the objective-free Catch HUD with one recorded voice player.
 # Godot 4.7.2 --headless --path . --script res://tools/test_catch_clean_hud.gd
-# Runs 80 real scene configurations: two windows, five topics, two modes,
-# four original characters. Each configuration catches both types of fruit
+# Runs 100 real scene configurations: two windows, five topics, two modes,
+# five selectable animals. Each configuration catches both types of fruit
 # through _update_tiles() and then resets its scene.
 
-const SCENE_PATH := "res://ui/minigames/catch_word.tscn"
-const SOURCE_PATH := "res://ui/minigames/catch_word.gd"
+const SCENE_PATH := "res://ui/minigames/catch_the_word/catch_word.tscn"
+const GameAudio = preload("res://ui/shared/game_audio.gd")
+const SOURCE_PATH := "res://ui/minigames/catch_the_word/catch_word.gd"
 const ART := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const HEART_ART := ART + "replacement/"
 const OLD_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
 const NEW_APPLE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const MODES := ["Seconds", "Lives"]
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const WINDOWS := [Vector2i(1280, 720), Vector2i(875, 500)]
 const REMOVED := ["ObjectivePlaque", "FeedbackLabel", "TopicIcon"]
 const HUD_ART := {
@@ -36,6 +37,9 @@ func _initialize() -> void:
 
 func _run() -> void:
     var original_size := root.size
+    var root_audio := GameAudio.ensure(self) as Node
+    _check(root_audio != null and root_audio.get_parent() == root,
+        "one shared soundtrack service exists before character scenes mount")
     var source := FileAccess.get_file_as_string(SOURCE_PATH).to_lower()
     _check(not source.is_empty(), "Catch gameplay source can be read")
     for token in ["tts_speak(", "_play_sound(", "play_sfx(", "sfx_player"]:
@@ -61,7 +65,7 @@ func _run() -> void:
     for cleanup_frame in range(4):
         await process_frame
     await create_timer(0.15).timeout
-    if failures.is_empty() and scenarios == 80:
+    if failures.is_empty() and scenarios == WINDOWS.size() * TOPICS.size() * MODES.size() * CHARACTERS.size():
         print("PASS clean Catch HUD: %d checks across %d real window/topic/mode/character scenarios" %
             [checks, scenarios])
         quit(0)
@@ -97,7 +101,7 @@ func _verify_window(packed: PackedScene, physical: Vector2i) -> void:
     await process_frame
     game.set_process(false)
     var hud := game.get_node_or_null("HUDLayer/HUD") as Control
-    var number := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+    var number := game.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
     var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
     var apples := game.get_node_or_null("CollectedWords") as Node2D
     _check(hud != null and number != null and prompt != null and apples != null,

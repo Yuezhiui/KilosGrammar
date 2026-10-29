@@ -3,8 +3,8 @@ extends SceneTree
 # Regression for restoring ORIGINAL transparent WordCatcherCharacters artwork
 # across repeated character selections and round resets. Neither the entire
 # body nor any basket pixel can be cropped below the game viewport.
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
-const NAMES := ["Boy", "Girl", "Grandma", "Grandpa"]
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
+const NAMES := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const MAPS := ["City", "Forest", "Mountain"]
 var failures: Array[String] = []
 

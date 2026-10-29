@@ -5,13 +5,13 @@ extends SceneTree
 # Use actual Catch gameplay logic and scene textures, with controlled time
 # steps for deterministic catch/miss/restart assertions.
 
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const MODES := ["Seconds", "Lives"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const APPLE_TEXTURE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
-const COLLECTED_TEXTURE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
+const COLLECTED_TEXTURE := "res://Components/Gameplay/Catch the Word/Items/APPLE HALF SEAMLESS.png"
 const STATES := {
     "Easy": {"speed": 105.0},
     "Normal": {"speed": 185.0},
@@ -44,7 +44,7 @@ func _run() -> void:
     for cleanup_frame in range(4):
         await process_frame
     await create_timer(0.15).timeout
-    if failures.is_empty() and cases == 120:
+    if failures.is_empty() and cases == DIFFICULTIES.size() * MODES.size() * CHARACTERS.size() * TOPICS.size():
         print("PASS Catch three-apple waves: %d checks across %d topic/character/mode/difficulty cases" % [checks, cases])
         quit(0)
     else:
@@ -151,7 +151,7 @@ func _run_case(topic: String, character: String, mode: String, difficulty: Strin
         var basket_words := game.get_node("CollectedWords") as Node2D
         _check(basket_words.get_child_count() == 1 and
             (basket_words.get_child(0) as TextureRect).texture.resource_path == COLLECTED_TEXTURE,
-            label + ": original basket apple stays in use")
+            label + ": seam-fixed half-apple remains in the basket")
     _check(String(game.get("wave_phase")) == "clearing",
         label + ": one collision resolves wave and starts clearing")
     var before_second_attempt: int = game.attempts
@@ -162,15 +162,20 @@ func _run_case(topic: String, character: String, mode: String, difficulty: Strin
         and game.lives == before_second_lives,
         label + ": remaining two apples cannot score or damage twice")
 
-    # Next wave follows automatically, and speed rises gradually.
+    # Next wave follows automatically. Speed rises after a correct catch,
+    # not merely because a new wave began or a wrong answer was caught.
     if not _wait_for_wave_after(game, initial_wave, 3.0):
         _fail(label + ": next complete wave failed after one-apple catch")
         host.queue_free()
         await process_frame
         return
     _verify_wave(game, label + " wave2")
-    _check(_wave_speed(game) > initial_speed,
-        label + ": progressive fall speed increases between waves")
+    if should_catch_correct:
+        _check(_wave_speed(game) > initial_speed,
+            label + ": correct catch increases subsequent falling speed")
+    else:
+        _check(absf(_wave_speed(game) - initial_speed) <= 0.01,
+            label + ": wrong catch does not increase falling speed")
     var wave_two := int(game.get("wave_index"))
     var wave_two_speed := _wave_speed(game)
 
@@ -199,8 +204,8 @@ func _run_case(topic: String, character: String, mode: String, difficulty: Strin
             _fail(label + ": all-missed wave never times out into a new wave")
         else:
             _verify_wave(game, label + " wave3")
-            _check(_wave_speed(game) > wave_two_speed,
-                label + ": speed increases again after skipped wave")
+            _check(absf(_wave_speed(game) - wave_two_speed) <= 0.01,
+                label + ": skipped wave does not increase falling speed")
 
     # Reset must release every old apple and tween, restore lives and start
     # again with exactly three synced word apples and no stale score.

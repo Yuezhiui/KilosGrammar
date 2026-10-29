@@ -8,7 +8,7 @@ extends SceneTree
 # Play / Student Setup / Activity navigation and the Settings fullscreen toggle.
 # No camera or pose service is started. The existing user:// settings file is
 # snapshotted byte-for-byte and restored after the test.
-const MAIN_SCENE := "res://main_menu.tscn"
+const MAIN_SCENE := "res://ui/main_menu/main_menu.tscn"
 const PREF_PATH := "user://kilos_settings.cfg"
 const FULLSCREEN_DESIGN := Vector2i(1920, 1080)
 const WINDOWED_DESIGN := Vector2i(1600, 900)

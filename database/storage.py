@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from typing import Any
+import unicodedata
 
 from .config import Config
 
 Record = dict[str, Any]
+
+
+def normalized_full_name(value: str) -> str:
+    """Normalize Unicode compatibility, whitespace and case for exact names."""
+    return " ".join(unicodedata.normalize("NFKC", value).split()).casefold()
 
 
 def json_record(record: Record | None) -> Record | None:
@@ -56,6 +62,27 @@ class PostgreSQLStore:
                 (student_id,),
             ).fetchone()
         return json_record(row)
+
+    def find_students_by_name(self, student_name: str) -> list[Record]:
+        """Exact Unicode-normalized, case-insensitive full-name lookup.
+
+        Stop after two distinct IDs, enough to reject ambiguity without
+        returning a roster. A name is never a unique database identifier.
+        """
+        normalized = normalized_full_name(student_name)
+        matches: list[Record] = []
+        with self._connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT student_id, student_name, grade_section, created_at, updated_at "
+                    "FROM students ORDER BY student_id"
+                )
+                for row in cursor:
+                    if normalized_full_name(row["student_name"]) == normalized:
+                        matches.append(json_record(row))
+                        if len(matches) == 2:
+                            break
+        return matches
 
     def register_student(self, student_id: str, student_name: str, grade_section: str) -> tuple[Record, bool]:
         with self._connect() as connection:

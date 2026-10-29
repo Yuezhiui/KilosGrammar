@@ -3,7 +3,7 @@ extends SceneTree
 # Godot 4.7 --headless --path . --script res://tools/test_human_plane_visual_gate_depth.gd
 # Also run with OpenGL to save real renderer screenshots at two resolutions.
 # Verifies authored scene/gate depth with three-position, wide-arm body motion.
-const SCENE := preload("res://ui/minigames/human_plane.tscn")
+const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const SIZES := [Vector2i(1280, 720), Vector2i(1920, 1080)]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const MODES := ["Seconds", "Lives"]
@@ -41,6 +41,42 @@ func _exercise(dimensions: Vector2i, level: String, mode: String) -> void:
 	await process_frame
 	game.set_process(false)
 	var title := "%s/%s/%s" % [dimensions, level, mode]
+	var hybrid := game.get_node_or_null("HybridFlight3D") as Node2D
+	_check(hybrid != null and bool(hybrid.get("hybrid_enabled"))
+		and bool(hybrid.get("draw_3d_gates"))
+		and not (game.get_node("PlaneRig/PlaneArtwork") as TextureRect).visible,
+		title + " native 3D airplane and TorusMesh gates load by default")
+	if hybrid != null:
+		hybrid.set("hybrid_enabled", true)
+		hybrid.set("draw_3d_gates", true)
+		hybrid.call("_process", 0.0)
+	_check(hybrid != null and bool(hybrid.get("hybrid_enabled"))
+		and bool(hybrid.get("draw_3d_gates")),
+		title + " native 3D gate/airplane renderer can be explicitly enabled")
+	if hybrid != null:
+		var viewport := hybrid.get_node_or_null("RenderViewport") as SubViewport
+		var camera := hybrid.get_node_or_null("RenderViewport/FlightWorld3D/Camera") as Camera3D
+		_check(viewport != null and camera != null and not viewport.transparent_bg
+			and viewport.own_world_3d and camera.projection == Camera3D.PROJECTION_PERSPECTIVE,
+			title + " genuinely composited perspective 3D sky scene exists")
+		var before_words := (game.get("round_data") as Dictionary).duplicate(true)
+		hybrid.set("hybrid_enabled", false)
+		hybrid.call("_process", 0.0)
+		_check(_fully_opaque_trio(game.get("_gate_nodes") as Array[Control])
+			and (game.get_node("PlaneRig/PlaneArtwork") as TextureRect).visible,
+			title + " original 2D aircraft and solid PNG gates restore when hybrid disabled")
+		hybrid.set("hybrid_enabled", true)
+		hybrid.set("draw_3d_gates", false)
+		hybrid.call("_process", 0.0)
+		_check(_fully_opaque_trio(game.get("_gate_nodes") as Array[Control])
+			and not (game.get_node("PlaneRig/PlaneArtwork") as TextureRect).visible,
+			title + " fallback gate PNGs work independently of native 3D airplane")
+		hybrid.set("draw_3d_gates", true)
+		hybrid.call("_process", 0.0)
+		_check(_fully_opaque_trio(game.get("_gate_nodes") as Array[Control])
+			and (game.get("round_data") as Dictionary) == before_words
+			and int(game.get("attempts")) == 0 and int(game.get("score")) == 0,
+			title + " native TorusMesh gates restore without changing words, hits or score")
 	var current := game.get_node("MovingGates") as Control
 	var incoming := game.get_node("UpcomingGates") as Control
 	var airplane := game.get_node("PlaneRig") as Control
@@ -56,31 +92,31 @@ func _exercise(dimensions: Vector2i, level: String, mode: String) -> void:
 		_check(speed > float(game.DIFFICULTY_CONFIG["Easy"]["gate_speed"]), title + " normal progression")
 	if level == "Hard":
 		_check(speed > float(game.DIFFICULTY_CONFIG["Normal"]["gate_speed"]), title + " hard progression")
-	# Students calibrate three actual positions as in Catch the Word.
-	# Both arms wide ENABLES movement; only measured BODY x selects a lane.
+	# Center T-pose calibration precedes proportional signed arm-bank steering.
 	game.call("set_airplane_pose_active", true)
 	game.call("set_body_x", 0.40)
 	var x_before := float(game.get("plane_x_norm"))
 	for _i in range(30):
 		game.call("_update_plane_motion", STEP)
 	var x_right := float(game.get("plane_x_norm"))
-	_check(x_right > x_before + 0.07 and x_right < x_before + 0.27,
-		title + " calibrated right body movement is proportional and smooth")
+	# 40% arm bank requests 40% of the .82/s cap, not full-speed .82/s.
+	_check(x_right > x_before + 0.10 and x_right <= x_before + 0.40 * 0.82 * 0.5 + 0.001,
+		title + " right arm bank advances smoothly at capped velocity")
 	game.call("set_body_x", 0.0)
 	for _i in range(48):
 		game.call("_update_plane_motion", STEP)
 	var x_neutral := float(game.get("plane_x_norm"))
-	_check(absf(x_neutral - 0.5) < absf(x_right - 0.5) * 0.1,
-		title + " stepping back to measured CENTER recenters airplane")
+	_check(absf(x_neutral - x_right) < 0.04,
+		title + " neutral T-pose brakes and holds current position")
 	for _i in range(15):
 		game.call("_update_plane_motion", STEP)
-	_check(absf(float(game.get("plane_x_norm")) - 0.5) < 0.012,
-		title + " calibrated CENTER position keeps middle flight path")
+	_check(absf(float(game.get("plane_x_norm")) - x_neutral) < 0.002,
+		title + " sustained neutral T-pose holds its flight path")
 	game.call("set_body_x", -0.40)
 	for _i in range(30):
 		game.call("_update_plane_motion", STEP)
-	_check(float(game.get("plane_x_norm")) < x_neutral - 0.04,
-		title + " stepping left sends airplane left")
+	_check(float(game.get("plane_x_norm")) < x_neutral - 0.10,
+		title + " left arm bank smoothly sends airplane left")
 	game.call("set_airplane_pose_active", false)
 	var lost_x := float(game.get("plane_x_norm"))
 	for _i in range(30):
@@ -94,22 +130,31 @@ func _exercise(dimensions: Vector2i, level: String, mode: String) -> void:
 		game.call("_sync_visuals")
 		var gate: Control = (game.get("_gate_nodes") as Array)[1]
 		var predicted: Rect2 = game.call("_gate_rect", 1, p)
-		_check(gate.get_rect().is_equal_approx(predicted),
-			title + " gate rectangle matches collision at %.2f" % p)
+		# The hitbox remains on its editor-authored lane, while its *painted*
+		# wooden word plaque follows the actual TorusMesh projection. Compare
+		# against the real 3D projection, not the obsolete unprojected hitbox.
+		var visible_rect: Rect2 = game.call("_gate_visible_rect_with_offsets", 1, p,
+			game.get("_authored_gate_rect_offsets"), game.get("_gate_nodes"))
+		var projected: Vector2 = hybrid.call("gate_screen_center", 1, p, visible_rect,
+			false, game.get("_authored_gate_rect_offsets"), game.get("_gate_nodes"))
+		var expected_center := predicted.get_center() + projected - visible_rect.get_center()
+		_check(gate.get_rect().size.is_equal_approx(predicted.size) and
+			gate.get_rect().get_center().distance_to(expected_center) < 1.5 and
+			visible_rect.has_area(),
+			title + " editable collision lane intact and 2D plaque matches projected torus at %.2f" % p)
 	_check(float(game.call("_gate_y", 0.3)) < float(game.call("_gate_y", 0.6)),
 		title + " eased path still approaches monotonically")
 	var answer_p := float(game.call("_progress_for_answer_line"))
 	_check(answer_p > 0.0 and answer_p < 1.0 and
 		absf(float(game.call("_gate_y", answer_p)) - float(game.call("_answer_line_y"))) < 1.0,
 		title + " easing keeps answer collision aligned to painted gate")
-	_check(float(game.call("_active_gate_opacity", answer_p)) > 0.95,
-		title + " question remains readable through scoring line")
-	_check(float(game.call("_active_gate_opacity", minf(answer_p + 0.19, 1.0))) < 0.04,
-		title + " departing gates fade before covering airplane")
-	_check(float(game.call("_distant_gate_opacity", 0.0)) >= 0.65 and
-		float(game.call("_distant_gate_opacity", 0.0)) < 0.75 and
-		float(game.call("_distant_gate_opacity", 0.30)) >= 0.99,
-		title + " distance fades in incoming gates")
+	for progress in [answer_p, minf(answer_p + 0.19, 1.0)]:
+		game.set("gate_progress", progress)
+		game.call("_sync_visuals")
+		_check(_fully_opaque_trio(game.get("_gate_nodes") as Array[Control]),
+			title + " all three volumetric 3D gates and editor word plaques stay solid at %.2f" % progress)
+		_check(current.visible and not incoming.visible and _ring_pool_count(hybrid) == 6,
+			title + " current real ring trio survives scoring depth with fixed six-ring pool at %.2f" % progress)
 	# Restore the active motion and drive the real two-wave handoff.
 	game.set("gate_progress", 0.0)
 	game.call("_sync_visuals")
@@ -125,11 +170,19 @@ func _exercise(dimensions: Vector2i, level: String, mode: String) -> void:
 	game.call("_sync_visuals")
 	_check(not (game.get("next_round_data") as Dictionary).is_empty(),
 		title + " next wave preloads before current passes")
-	_check(((game.get("_upcoming_gate_nodes") as Array)[1] as Control).visible,
-		title + " authored horizon trio visible")
+	_check(incoming.visible and current.visible and
+		_fully_opaque_trio(game.get("_gate_nodes") as Array[Control]) and
+		_fully_opaque_trio(game.get("_upcoming_gate_nodes") as Array[Control], true) and
+		_ring_pool_count(hybrid) == 6,
+		title + " six real bounded torus rings with two genuine opaque vocabulary trios, no ghosts")
 	var incoming_gate: Control = (game.get("_upcoming_gate_nodes") as Array)[1]
-	_check(incoming_gate.get_rect().size.y < first_gate.get_rect().size.y,
-		title + " upcoming trio smaller than approaching answers")
+	var queued_rect: Rect2 = game.call("_gate_rect_with_offsets", 1,
+		float(game.get("next_gate_progress")), game.get("_upcoming_rect_offsets"))
+	_check(queued_rect.size.y < first_gate.get_rect().size.y,
+		title + " visible incoming trio keeps its authored earlier flight depth")
+	var outgoing_group := first_gate.get_parent() as Control
+	var incoming_group := incoming_gate.get_parent() as Control
+	var queued_id := incoming_gate.get_instance_id()
 	if DisplayServer.get_name() != "headless" and level == "Normal" and mode == "Seconds":
 		await _capture(game, dimensions, "approach")
 	var approach_data := (game.get("next_round_data") as Dictionary).duplicate(true)
@@ -149,15 +202,47 @@ func _exercise(dimensions: Vector2i, level: String, mode: String) -> void:
 			approach_data.get("options", []), title + " prefetched unique options promoted")
 		_check((game.get("round_data") as Dictionary).get("options", []) !=
 			first_words.get("options", []), title + " different incoming word set")
-		var on_promoted_alpha := incoming_gate.modulate.a
+		_check(incoming_gate.get_instance_id() == queued_id and
+			(game.get("_gate_nodes") as Array)[1] == incoming_gate,
+			title + " actual prefetched editor gate becomes active without re-creation")
+		_check(incoming_group.visible and not outgoing_group.visible and
+			_fully_opaque_trio(game.get("_gate_nodes") as Array[Control]) and
+			_ring_pool_count(hybrid) == 6,
+			title + " atomic handoff promotes prefetched real trio, reusing all six ring instances")
 		game.call("_update_gate_wave", STEP)
 		game.call("_sync_visuals")
 		_check(incoming_gate.position.distance_to(incoming_pos) < dimensions.y * 0.03,
 			title + " handoff has no image position pop")
-		_check(absf(incoming_gate.modulate.a - on_promoted_alpha) < 0.08,
-			title + " handoff has no alpha pop")
+		_check(_fully_opaque_trio(game.get("_gate_nodes") as Array[Control])
+			and not outgoing_group.visible,
+			title + " outgoing trio remains hidden and incoming gate does not alpha-fade")
 		_check(float(game.get("gate_progress")) < answer_p,
 			title + " student has time to steer before next answer")
+		# Check the corrected 3D crossing presentation on an ACTUAL answer-line
+		# event: the outgoing labels/wooden plaques disappear, but the matching
+		# TorusMesh rings persist through the camera with their source node IDs.
+		var valid_lanes: Array = (game.get("round_data") as Dictionary).get("valid_indices", [])
+		_check(not valid_lanes.is_empty(), title + " promoted authentic wave contains a correct grammar lane")
+		if not valid_lanes.is_empty():
+			var chosen := int(valid_lanes[0])
+			var scored_centers: PackedFloat32Array = game.call("_normalized_scoring_lane_centers", answer_p)
+			game.set("plane_x_norm", float(scored_centers[chosen]))
+			_check(int(game.call("_lane_hit_at_answer_line")) == chosen,
+				title + " real airplane hitbox enters the correct torus")
+			var before_score := int(game.get("score"))
+			var before_attempts := int(game.get("attempts"))
+			game.set("gate_progress", minf(answer_p + 0.03, 0.97))
+			game.call("_resolve_at_answer_line")
+			game.call("_sync_visuals")
+			_check(int(game.get("score")) == before_score + 100 and
+				int(game.get("attempts")) == before_attempts + 1 and
+				bool(game.get("selected_was_correct")) and
+				_fully_opaque_trio(game.get("_gate_nodes") as Array[Control]),
+				title + " +100 correct collision, outgoing 2D word labels hidden while 3D torus remains")
+			game.call("_resolve_at_answer_line")
+			_check(int(game.get("score")) == before_score + 100 and
+				int(game.get("attempts")) == before_attempts + 1,
+				title + " no double score when outgoing ring remains in 3D")
 		if DisplayServer.get_name() != "headless" and level == "Normal" and mode == "Seconds":
 			await _capture(game, dimensions, "handoff")
 	elif completed:
@@ -183,3 +268,83 @@ func _check(condition: bool, reason: String) -> void:
 	if not condition:
 		issues.append(reason)
 		printerr("HUMAN PLANE DEPTH FAIL: " + reason)
+
+
+func _ring_pool_count(hybrid: Node2D) -> int:
+	if hybrid == null:
+		return 0
+	var pools: Array = hybrid.get("_ring_pools")
+	if pools.size() != 2:
+		return 0
+	var ids := {}
+	for pool in pools:
+		if not pool is Array or (pool as Array).size() != 3:
+			return 0
+		for instance in pool:
+			var gate := instance as Node3D
+			if gate == null or ids.has(gate.get_instance_id()):
+				return 0
+			var ring := gate.get_node_or_null("Ring") as MeshInstance3D
+			if ring == null or not (ring.mesh is TorusMesh):
+				return 0
+			ids[gate.get_instance_id()] = true
+	return ids.size()
+
+
+func _fully_opaque_trio(gates: Array[Control], upcoming: bool = false) -> bool:
+	if gates.size() != 3:
+		return false
+	var group := gates[0].get_parent() as Control
+	var game := group.get_parent() as Control if group != null else null
+	if game == null or not group.visible:
+		return false
+	var hybrid := game.get_node_or_null("HybridFlight3D") as Node2D
+	var using_3d: bool = hybrid != null and bool(hybrid.get("hybrid_enabled")) and bool(hybrid.get("draw_3d_gates"))
+	var data: Dictionary = game.get("next_round_data") if upcoming else game.get("round_data")
+	var options: Array = data.get("options", [])
+	var valid: Array = data.get("valid_indices", [])
+	if options.size() != 3 or valid.is_empty():
+		return false
+	var seen := {}
+	var bank: Script = game.get("grammar_bank") as Script
+	for i in range(3):
+		var word := String(options[i]).strip_edges().to_lower()
+		if (word.is_empty() or seen.has(word) or bank == null or
+				bool(bank.call("is_matching", word, String(game.get("topic")))) != (i in valid)):
+			return false
+		seen[word] = true
+	var progress := float(game.get("next_gate_progress")) if upcoming else float(game.get("gate_progress"))
+	var resolved: bool = not upcoming and bool(game.get("gate_resolved"))
+	var passage_alpha := float(game.call("_gate_passage_alpha", progress)) if resolved else 1.0
+	if hybrid != null:
+		hybrid.call("_process", 0.0)
+	if using_3d:
+		var overlay := hybrid.get_node_or_null("OverlayTexture") as TextureRect
+		if overlay == null or not overlay.visible or overlay.texture == null or _ring_pool_count(hybrid) != 6:
+			return false
+	var pools: Array = hybrid.get("_ring_pools") if hybrid != null else []
+	var group_index := 0 if group == game.get_node("MovingGates") else 1
+	for i in range(3):
+		var gate := gates[i]
+		if not gate.visible or absf(gate.modulate.a - passage_alpha) > 0.002:
+			return false
+		var artwork := gate.get_node_or_null("GateArtwork") as TextureRect
+		var word := gate.get_node_or_null("WordLabel") as Label
+		var plate := gate.get_node_or_null("WordPlate") as CanvasItem
+		if (artwork == null or artwork.texture == null or artwork.visible == using_3d or word == null or plate == null or
+				word.visible == resolved or plate.visible == resolved or word.modulate.a < 0.999 or
+				word.text != String(options[i]).to_upper()):
+			return false
+		if using_3d:
+			var ring3d := (pools[group_index] as Array)[i] as Node3D
+			if ring3d == null or ring3d.visible != (passage_alpha > 0.001):
+				return false
+			if not ring3d.visible:
+				continue
+			var mesh := ring3d.get_node_or_null("Ring") as MeshInstance3D
+			if (mesh == null or not mesh.visible or not (mesh.mesh is TorusMesh) or
+					not (mesh.material_override is StandardMaterial3D) or
+					absf((mesh.material_override as StandardMaterial3D).albedo_color.a - passage_alpha) > 0.002 or
+					ring3d.scale.x <= 0.0 or ring3d.scale.y <= 0.0):
+				return false
+	return true

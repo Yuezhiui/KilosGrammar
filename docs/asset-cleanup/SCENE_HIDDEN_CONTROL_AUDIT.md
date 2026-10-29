@@ -7,8 +7,8 @@ Godot scenes inspected: **29**.
 | Scene | Initially hidden nodes | Initially hidden buttons |
 | --- | ---: | ---: |
 | `main_menu.tscn` | 2 | 0 |
-| `ui/minigames/balloon_popping.tscn` | 1 | 0 |
-| `ui/minigames/catch_word.tscn` | 13 | 1 |
+| `ui/minigames/balloon_popping/balloon_popping.tscn` | 1 | 0 |
+| `ui/minigames/catch_the_word/catch_word.tscn` | 13 | 1 |
 | `ui/minigames/human_plane.tscn` | 33 | 0 |
 | `ui/play/gameplay.tscn` | 1 | 0 |
 | `ui/secondary/leaderboard.tscn` | 6 | 2 |

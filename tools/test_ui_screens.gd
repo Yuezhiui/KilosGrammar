@@ -6,7 +6,7 @@ extends SceneTree
 const ROUTES := [
 	"tutorial_home", "grammar_guide",
 	"student_setup", "play_activity", "play_topic", "play_difficulty",
-	"camera_check", "calibration", "gameplay", "pause",
+		"calibration", "gameplay", "pause",
 	"results", "leaderboard", "settings", "credits"
 ]
 
@@ -19,7 +19,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var packed: PackedScene = load("res://main_menu.tscn") as PackedScene
+	var packed: PackedScene = load("res://ui/main_menu/main_menu.tscn") as PackedScene
 	if packed == null:
 		push_error("Could not load original main menu")
 		quit(1)
@@ -102,7 +102,7 @@ func _run() -> void:
 	var restored_credits := app.get_node_or_null("MainLayer/LeftMenu/Credits") as Button
 	if restored_credits == null or restored_credits.disabled:
 		failures.append("Credits Main Menu button was not restored")
-	if not ResourceLoader.exists("res://ui/secondary/credits.tscn"):
+	if not ResourceLoader.exists("res://ui/secondary/credits/credits.tscn"):
 		failures.append("Restored Credits scene is missing")
 
 	# Verify complete teacher setup and single-pass game configuration.
@@ -144,11 +144,10 @@ func _run() -> void:
 	var calibration_panel := app.get("active_panel") as Control
 	if calibration_panel.get_node_or_null("TutorialStage/SkipButton") != null:
 		failures.append("Calibration still contains a SKIP control")
-	(calibration_panel.get_node("TutorialStage/IntroOverlay/IntroBackButton") as Button).pressed.emit()
+	calibration_panel.call("_process", 3.01) # Title-only intro has no Back action.
+	(calibration_panel.get_node("TutorialStage/Navigation/BackButton") as Button).pressed.emit()
 	await process_frame
 	_assert_route(app, "play_activity", "Calibration Back -> Choose Activity preserves teacher setup")
-	app.call("_on_panel_requested", "camera_check", {})
-	await process_frame
 	# Gameplay/results can be smoke-tested independently by explicit router
 	# injection. This does NOT signal a completed camera calibration.
 	calibration_state["keyboard_mode"] = false
@@ -201,11 +200,7 @@ func _run() -> void:
 		_assert_route(app, "play_activity", "Guided Tutorial begins with game selection")
 		if not bool((app.get("session_state") as Dictionary).get("guided_tutorial", false)):
 			failures.append("Guided Tutorial lost its flow flag at game selection")
-	app.call("_on_panel_requested", "camera_check", {"entry_source": "play", "setup_preview": false})
-	await process_frame
-	(app.get("active_panel") as Control).call("_go_back")
-	await process_frame
-	_assert_route(app, "tutorial_home", "Tutorial Camera Back returns to Tutorial, not Play's Difficulty")
+		_assert_route(app, "play_activity", "Guided Tutorial remains in game selection until measured calibration")
 	app.call("_return_to_main")
 	await process_frame
 	if String(app.get("current_route")) != "main":

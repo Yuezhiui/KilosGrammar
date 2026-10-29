@@ -11,7 +11,7 @@ func _run() -> void:
     print("WINDOW_PROBE prefs_path=",cfgpath," status=",status," fullscreen_key=",cfg.get_value("display","fullscreen","ABSENT"))
     if graphical:
         DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
-    var packed := load("res://main_menu.tscn") as PackedScene
+    var packed := load("res://ui/main_menu/main_menu.tscn") as PackedScene
     var app := packed.instantiate() as Control
     root.add_child(app)
     await process_frame

@@ -1,4 +1,58 @@
-# Calibration UI — updated PNGs and editable square guides
+# Calibration pose guides — current editor workflow and archived layout
+
+## Current editable guides (October 28, 2026)
+
+Open `ui/vision/calibration.tscn` in Godot and expand `TutorialStage`.
+
+The active artwork is now organized in six independently selectable **Control**
+groups instead of a long flat list beneath TutorialStage:
+
+| Control path under `TutorialStage` | What you can edit |
+| --- | --- |
+| `CameraArea` | `LiveCameraInset`, its frame/backing, and `SkeletonPlacement` (real YOLO bone drawing) |
+| `PoseGuides` | The nine independent default, Balloon and Plane pose PNG TextureRects |
+| `Directions` | `ArtTitle*`, `ArtArrow*`, `ArtStep*`, and `ArtMoveHint*` artwork |
+| `CountdownArtwork` | The three `ArtCountdown1/2/3` visual digits |
+| `CameraFeedback` | The camera unavailable/feedback indicators |
+| `Navigation` | `BackButton` and `BackButton/Artwork` |
+
+`IntroOverlay` stays directly below `TutorialStage`; moving it under another
+group would alter the isolated three-second intro. Every group is an editor-
+authored full-canvas zero-offset Control, while each artwork child keeps its
+previous position, size and transform. The user-requested obsolete 16 labels,
+panels and duplicate badges have been deleted from the scene and corresponding
+script bindings; they are not merely hidden. **Play and Tutorial share this
+same Calibration scene** and retain their distinct score-saving rules.
+
+- `PoseGuideDefault` — **CENTER** for Catch/default Balloon pose.
+- `PoseGuideRight` — **RIGHT**, independent duplicate of `PoseGuideDefault`.
+- `PoseGuideLeft` — **LEFT**, independent duplicate of `PoseGuideDefault`.
+- `PoseGuideBalloonRaise`, `PoseGuideBalloonRaiseRight`, and
+  `PoseGuideBalloonRaiseLeft` — separate raised-hand art for each Balloon zone.
+- `PoseGuidePlaneCenter`, `PoseGuidePlaneLeft`, and `PoseGuidePlaneRight` —
+  **separate Human Plane poses**, not copies of the default standing artwork.
+
+`PosePlacementLeft`, `PosePlacementCenter`, and `PosePlacementRight` have been
+**removed at the user's request**. The script never overwrites a guide's X,
+Y, size, or scale; it only changes which existing TextureRect is visible.
+Drag or resize any of these guides in the Godot 2D editor, save the scene,
+and the authored changes will be respected in every calibration stage.
+`SkeletonPlacement` is **different**: it controls real YOLO bone alignment
+against `LiveCameraInset`, so leave it alone when moving the decorative PNGs.
+
+## Historical pre-migration layout (do not recreate)
+
+> **October 28, 2026 — historical document only.** The five-pose PNG update
+> replaced `ArtGuideLeft`, `ArtGuideCenter`, `ArtGuideRight` and the three
+> `*CalibrationLane` panels. Those scene nodes, their unused style resources,
+> and the retired `Components/Gameplay/Calibration/PARAMETERS.png` asset are
+> now removed. **Do not recreate these neon/legacy nodes** from the old
+> measurements below. Edit `TutorialStage/PoseGuides/PoseGuideDefault`,
+> `PoseGuideBalloonRaise`, `PoseGuidePlaneCenter`, `PoseGuidePlaneLeft`, and
+> `PoseGuidePlaneRight` within that group instead. See
+> `tools/FIVE_POSE_PNG_CALIBRATION_QA.md` for the current mode-specific holds.
+
+The following records the obsolete pre-migration layout for history only.
 
 This is a **UI/artwork-only** revision. Human Plane remains an airplane and its
 existing pose-calibration logic is unchanged; the possible car redesign is

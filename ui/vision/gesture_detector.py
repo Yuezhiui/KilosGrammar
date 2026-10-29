@@ -21,6 +21,10 @@ class GestureState:
     airplane_pose: bool = False
     left_hand_up: bool = False
     right_hand_up: bool = False
+    # Strict, CURRENT-source bilateral evidence for Balloon calibration only.
+    # Gameplay still accepts either single hand for a normal balloon shot.
+    both_hands_up: bool = False
+    both_hands_down: bool = False
     # False means the hand signal is unknown, NOT deliberately lowered.
     # A missing/occluded wrist must not re-arm a Balloon Popping shot.
     hand_observation_valid: bool = False
@@ -35,6 +39,9 @@ class _Measurements:
     left_hold: bool | None = None
     right_rise: bool | None = None
     right_hold: bool | None = None
+    # Distinct from "not raised": a T-pose is NOT two lowered arms.
+    left_down: bool = False
+    right_down: bool = False
     plane_rise: bool = False
     plane_hold: bool = False
     wing_roll: float = 0.0
@@ -72,12 +79,15 @@ def _measure(points: Sequence[Sequence[float]]) -> _Measurements:
     on_height = max(0.06, 0.24 * torso)
     keep_height = max(0.02, 0.08 * torso)
     hand = []
+    lowered = []
     for shoulder, wrist in zip(shoulders, wrists):
         if shoulder is None or wrist is None:
             hand.append((None, None))
+            lowered.append(False)
         else:
             height = shoulder[1] - wrist[1]
             hand.append((height >= on_height, height >= keep_height))
+            lowered.append(height <= -max(0.07, 0.30 * torso))
 
     plane_on = plane_keep = False
     if shoulder_width >= 0.065 and all(p is not None for p in (*shoulders, *elbows, *wrists)):
@@ -124,7 +134,7 @@ def _measure(points: Sequence[Sequence[float]]) -> _Measurements:
             roll = math.copysign(min((magnitude - 0.10) / 0.65, 1.0), signed)
 
     return _Measurements(hand[0][0], hand[0][1], hand[1][0], hand[1][1],
-                         plane_on, plane_keep, roll)
+                         lowered[0], lowered[1], plane_on, plane_keep, roll)
 
 
 class _DebouncedFlag:
@@ -201,6 +211,8 @@ class GestureDetector:
         measured = _measure(keypoints)
         left_valid = measured.left_rise is not None
         right_valid = measured.right_rise is not None
+        both_lifted = measured.left_rise is True and measured.right_rise is True
+        both_lowered = measured.left_down and measured.right_down
         hand_rise = measured.left_rise is True or measured.right_rise is True
         hand_keep = measured.left_hold is True or measured.right_hold is True
         # One good wrist can prove an up gesture; only TWO good, lowered wrists
@@ -228,7 +240,8 @@ class GestureDetector:
             # "hands lowered". Suppressed high poses are not down events.
             return GestureState(airplane_pose=airplane,
                                 wing_roll=measured.wing_roll if airplane else 0.0,
-                                hand_observation_valid=not self._require_hand_release)
+                                hand_observation_valid=not self._require_hand_release,
+                                both_hands_down=both_lowered and not self._require_hand_release)
 
         if not known:
             return GestureState(airplane_pose=airplane,
@@ -239,6 +252,8 @@ class GestureDetector:
             hand_up=active, airplane_pose=airplane,
             left_hand_up=active and measured.left_hold is True,
             right_hand_up=active and measured.right_hold is True,
+            both_hands_up=active and both_lifted,
+            both_hands_down=not active and both_lowered,
             hand_observation_valid=True,
             wing_roll=measured.wing_roll if airplane else 0.0,
         )

@@ -1,10 +1,11 @@
 extends SceneTree
+const GameAudio = preload("res://ui/shared/game_audio.gd")
 
 # Headless regression for Catch the Word's generated PNG HUD.
 # Godot 4.7.2: --headless --path . --script res://tools/test_catch_hud_ui.gd
 # Covers all topics, modes, viewports, characters and map choices.
 
-const SCENE_PATH := "res://ui/minigames/catch_word.tscn"
+const SCENE_PATH := "res://ui/minigames/catch_the_word/catch_word.tscn"
 const GENERATED_HUD_DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const REFERENCE_PNG_READY := "res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png"
 const SIZES: Array[Vector2i] = [
@@ -32,7 +33,7 @@ const STATIC_LIVES := {
 }
 const FALLING_APPLE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
 const CAUGHT_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
-const CHARACTERS: Array[String] = ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS: Array[String] = ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const MAPS: Array[String] = ["City", "Forest", "Mountain"]
 
 var failures: Array[String] = []
@@ -66,6 +67,8 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	root.size = viewport_size
 	await process_frame
 	await process_frame
+	var qa_music_manager := GameAudio.ensure(self) as Node
+	_check(qa_music_manager != null and qa_music_manager.get_parent() == root, "Root owns one persistent gameplay soundtrack service")
 	var original_children := root.get_child_count()
 	# In the app a minigame is mounted under the Gameplay Control wrapper;
 	# a Control directly parented to the root Viewport does not stretch.
@@ -143,7 +146,7 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	var title_the := game.get_node_or_null("HUDLayer/HUD/TitleTheLabel") as Label
 	var title_word := game.get_node_or_null("HUDLayer/HUD/TitleWordLabel") as Label
 	var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
-	var score := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+	var score := game.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var hearts := game.get_node_or_null("HUDLayer/HUD/HeartsBox") as HBoxContainer
 	var pause_button := game.get_node_or_null("HUDLayer/HUD/PauseButton") as Button
@@ -174,7 +177,7 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 					"lives": 2,
 					"time_remaining": 42.0,
 					"round_running": true, # Restore an elapsed Seconds clock from a paused snapshot.
-					"catch_character": "Boy",
+					"catch_character": "Bear",
 					"catch_map": "City",
 				}
 				game.call("set_context", values)
@@ -222,8 +225,10 @@ func _test_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 
 				_assert_frame(score, viewport_size, test_name + " score")
 				_assert_frame(pause_button, viewport_size, test_name + " pause button")
-				_check(score.get_parent() == game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer"),
-					"%s: exactly one numeric scoreboard node is used" % test_name)
+				_check(score.get_parent() == game.get_node_or_null("ScoreDrawLayer")
+					and not game.has_node("ScoreDrawLayer/ScoreBottomContainer")
+					and not hud.has_node("ScoreNumber"),
+					"%s: single numeric score is reparented directly below character, with no legacy container" % test_name)
 
 				# Alignment is checked once per mode; topics only replace the words.
 				if topic == TOPICS[0]:

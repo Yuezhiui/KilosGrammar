@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Synthetic scoring tests: no webcam, PostgreSQL writes or real round replay.
-const GAME := preload("res://ui/minigames/catch_word.tscn")
+const GAME := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const DIFFICULTY_SPEEDS := {"Easy": 105.0, "Normal": 185.0, "Hard": 245.0}
 const MODES := ["Seconds", "Lives"]
 
@@ -22,7 +22,7 @@ func _run() -> void:
 			game.set_process(false)
 			game.call("set_context", {
 				"topic": "Noun", "difficulty": difficulty, "game_mode": mode,
-				"catch_character": "Boy", "catch_map": "City"
+				"catch_character": "Bear", "catch_map": "City"
 			})
 			game.set_process(false)
 			var case := "%s %s" % [difficulty, mode]

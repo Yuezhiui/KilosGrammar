@@ -7,8 +7,8 @@ extends SceneTree
 const OUTPUT := "res://showcase/ui_redesign_m1"
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const SCENES := [
-	{"key": "main", "path": "res://main_menu.tscn"},
-	{"key": "student_setup", "path": "res://ui/student/student_setup.tscn"},
+	{"key": "main", "path": "res://ui/main_menu/main_menu.tscn"},
+	{"key": "student_setup", "path": "res://ui/student/setup/student_setup.tscn"},
 ]
 
 var failures: Array[String] = []

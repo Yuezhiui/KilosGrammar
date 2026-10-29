@@ -12,7 +12,7 @@ func _run() -> void:
 		printerr("Native mouse-pointer graphical test requires a display")
 		quit(1)
 		return
-	var menu := (load("res://main_menu.tscn") as PackedScene).instantiate() as Control
+	var menu := (load("res://ui/main_menu/main_menu.tscn") as PackedScene).instantiate() as Control
 	root.add_child(menu)
 	await process_frame
 	var success := true

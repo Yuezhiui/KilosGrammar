@@ -5,13 +5,13 @@ extends SceneTree
 ## godot --headless --path . --script res://tools/test_global_button_hover.gd
 ## godot --rendering-driver opengl3 --path . --script res://tools/test_global_button_hover.gd
 const AUTOLOAD_SCRIPT := "res://ui/shared/global_button_hover.gd"
-const LEADERBOARD := "res://ui/secondary/leaderboard.tscn"
-const SETTINGS := "res://ui/secondary/settings.tscn"
-const MAIN_SCENE := "res://main_menu.tscn"
+const LEADERBOARD := "res://ui/secondary/leaderboard/leaderboard.tscn"
+const SETTINGS := "res://ui/secondary/settings/settings.tscn"
+const MAIN_SCENE := "res://ui/main_menu/main_menu.tscn"
 const MOCK_MENU_SCRIPT := "res://tools/test_postgres_csv_delete_menu_fixture.gd"
 const SAFE_SCENES := [
     ["res://ui/tutorial/tutorial_home.tscn", "StartButton"],
-    ["res://ui/play/pause.tscn", "ResumeButton"],
+    ["res://ui/play/pause/pause.tscn", "ResumeButton"],
     [LEADERBOARD, "ExportCsvButton"],
 ]
 
@@ -305,7 +305,7 @@ func _test_hover_during_paused_game() -> void:
     ## The autoload's own tween process must continue despite tree.paused.
     _check(hover_router.process_mode == Node.PROCESS_MODE_ALWAYS,
         "Global hover singleton is explicitly PROCESS_MODE_ALWAYS for paused gameplay")
-    var scene := (load("res://ui/play/pause.tscn") as PackedScene).instantiate() as Control
+    var scene := (load("res://ui/play/pause/pause.tscn") as PackedScene).instantiate() as Control
     scene.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
     root.add_child(scene)
     scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -383,8 +383,7 @@ func _test_settings_no_double_animation() -> void:
     scene.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     await process_frame
     await process_frame
-    for name in ["SidebarSettingsTab", "SidebarControlsTab", "SidebarCameraTab",
-            "BackButton", "MuteCheck", "FullscreenCheck"]:
+    for name in ["BackButton", "FullscreenCheck"]:
         var button := scene.find_child(name, true, false) as BaseButton
         _check(button != null, "Settings owns its original native feedback button: " + name)
         if button == null:

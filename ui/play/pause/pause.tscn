@@ -1,0 +1,243 @@
+[gd_scene format=3 uid="uid://ci15x41444d37"]
+
+[ext_resource type="Script" uid="uid://maxenoxr3hst" path="res://ui/play/pause/pause.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dx1fsocdnlfsq" path="res://Components/Credits/Redesign/background1.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://bmi21hammylfs" path="res://Components/Pause/Redesign/pause_panel.png" id="3_panel"]
+[ext_resource type="Texture2D" uid="uid://csetbksjp36v2" path="res://Components/Pause/Redesign/pause_heading.png" id="4_heading"]
+[ext_resource type="Texture2D" uid="uid://cix4pn17fdn74" path="res://Components/Pause/Redesign/button_resume.png" id="5_button_resume"]
+[ext_resource type="Texture2D" uid="uid://egajnluobtvk" path="res://Components/Pause/Redesign/button_restart_round.png" id="6_button_restart_round"]
+[ext_resource type="Texture2D" uid="uid://b0jw5hujh3tw1" path="res://Components/Pause/Redesign/button_change_setup.png" id="7_button_change_setup"]
+[ext_resource type="Texture2D" uid="uid://x4tufkwnujpl" path="res://Components/Pause/Redesign/button_view_results.png" id="8_button_view_results"]
+[ext_resource type="Texture2D" uid="uid://p65ev1hjgyjr" path="res://Components/Pause/Redesign/button_main_menu.png" id="9_button_main_menu"]
+
+[sub_resource type="StyleBoxEmpty" id="BlankButton"]
+
+[node name="Pause" type="Control" unique_id=1644468252]
+process_mode = 3
+editor_description = "Teacher-only in-game pause menu. Pure standalone editor-authored original art; GlobalButtonHover and Main Menu's ButtonSounds provide button feedback."
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="ClassroomBackground" type="TextureRect" parent="." unique_id=309483466]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="BlackDim" type="ColorRect" parent="." unique_id=1333082965]
+editor_description = "User-requested 10% black dim overlay over Credits classroom background. Editable in Inspector."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.7764706)
+
+[node name="PauseStage" type="Control" parent="." unique_id=532982534]
+editor_description = "1280x720 editable stage scales uniformly and stays centered at 1280, 1600 and 1920."
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="PauseCard" type="Control" parent="PauseStage" unique_id=598979803]
+editor_description = "Purple original panel, independent PAUSED lettering and exactly five independent native art buttons."
+anchors_preset = 0
+offset_left = 391.0
+offset_top = 34.0
+offset_right = 889.0
+offset_bottom = 686.0
+mouse_filter = 2
+
+[node name="PanelArtwork" type="TextureRect" parent="PauseStage/PauseCard" unique_id=1884851043]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 71.0
+offset_right = -10.0
+offset_bottom = -38.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_panel")
+expand_mode = 1
+
+[node name="HeadingArtwork" type="TextureRect" parent="PauseStage/PauseCard" unique_id=1538522799]
+layout_mode = 0
+offset_left = -2.0
+offset_top = 10.0
+offset_right = 502.0
+offset_bottom = 187.0
+mouse_filter = 2
+texture = ExtResource("4_heading")
+expand_mode = 1
+
+[node name="ResumeButton" type="Button" parent="PauseStage/PauseCard" unique_id=1394817947]
+editor_description = "RESUME: accessible native action over independent supplied original PNG artwork."
+layout_mode = 0
+offset_left = 75.0
+offset_top = 174.0
+offset_right = 423.0
+offset_bottom = 242.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+text = "RESUME"
+
+[node name="Artwork" type="TextureRect" parent="PauseStage/PauseCard/ResumeButton" unique_id=1334095961]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5_button_resume")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RestartButton" type="Button" parent="PauseStage/PauseCard" unique_id=349859641]
+editor_description = "RESTART ROUND: accessible native action over independent supplied original PNG artwork."
+layout_mode = 0
+offset_left = 75.0
+offset_top = 247.0
+offset_right = 423.0
+offset_bottom = 315.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+text = "RESTART ROUND"
+
+[node name="Artwork" type="TextureRect" parent="PauseStage/PauseCard/RestartButton" unique_id=2003566629]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("6_button_restart_round")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ChangeSetupButton" type="Button" parent="PauseStage/PauseCard" unique_id=1303579607]
+editor_description = "CHANGE SETUP: accessible native action over independent supplied original PNG artwork."
+layout_mode = 0
+offset_left = 75.0
+offset_top = 320.0
+offset_right = 423.0
+offset_bottom = 388.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+text = "CHANGE SETUP"
+
+[node name="Artwork" type="TextureRect" parent="PauseStage/PauseCard/ChangeSetupButton" unique_id=364704990]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("7_button_change_setup")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ResultsButton" type="Button" parent="PauseStage/PauseCard" unique_id=622486491]
+editor_description = "VIEW RESULTS: accessible native action over independent supplied original PNG artwork."
+layout_mode = 0
+offset_left = 75.0
+offset_top = 393.0
+offset_right = 423.0
+offset_bottom = 461.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+text = "VIEW RESULTS"
+
+[node name="Artwork" type="TextureRect" parent="PauseStage/PauseCard/ResultsButton" unique_id=722782281]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("8_button_view_results")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MainMenuButton" type="Button" parent="PauseStage/PauseCard" unique_id=619127147]
+editor_description = "MAIN MENU: accessible native action over independent supplied original PNG artwork."
+layout_mode = 0
+offset_left = 75.0
+offset_top = 466.0
+offset_right = 423.0
+offset_bottom = 534.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("BlankButton")
+theme_override_styles/pressed = SubResource("BlankButton")
+theme_override_styles/hover = SubResource("BlankButton")
+theme_override_styles/focus = SubResource("BlankButton")
+text = "MAIN MENU"
+
+[node name="Artwork" type="TextureRect" parent="PauseStage/PauseCard/MainMenuButton" unique_id=1033194018]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("9_button_main_menu")
+expand_mode = 1
+stretch_mode = 5

@@ -2,7 +2,7 @@
 
 **Learn English grammar through movement, play, and instant feedback.**
 
-KilosGrammar is a classroom-focused **2D/3D English grammar learning game** built
+KilosGrammar is a classroom-focused **2D English grammar learning game** built
 with **Godot 4.7.2 and GDScript**. It combines three arcade-style minigames,
 optional webcam/pose-controlled movement, guided body-position calibration,
 and **local PostgreSQL student records and completed-score leaderboards**.
@@ -28,11 +28,11 @@ authorization safeguards.
 | --- | --- |
 | **Catch the Word** | Move the selected character's basket to collect matching words; four independent, editor-adjustable character rigs and collected-word layers. |
 | **Balloon Popping** | Identify and pop the correct grammar answers with the game's interactive launcher and voice feedback. |
-| **Human Plane** | Fly through editable 3D cloud portals with calibrated torso left/center/right motion following one neutral center hold. Temporary one-wrist occlusion is supported after a reliable student lock. |
+| **Human Plane** | Pilot the original 2D airplane through colorful pseudo-3D approaching arc gates over the original painted countryside. One neutral calibration hold enables torso left/center/right steering; short, verified one-wrist occlusions are supported. |
 
 ## Features
 
-- Three minigames (two 2D, one 3D) with difficulty settings, scores, **60-second Seconds
+- Three editable 2D minigames with difficulty settings, scores, **60-second Seconds
   rounds**, Lives mode, pause/resume, results, and tutorials.
 - Grammar practice for **Noun, Pronoun, Verb, Adjective,** and **Adverb**.
 - Optional local webcam/YOLO pose worker with student lock, camera preview,
@@ -67,9 +67,9 @@ made here.
 Controls and behavior can vary slightly across screens.
 
 
-### Public 3D assets and attribution
+### Human Plane 2D artwork
 
-The public source beta uses the CC BY 4.0 stylize-clouds model by ragad.sallabi and the CC BY 4.0 Toy Plane by l3clarke; full author/source/license terms are included with those model files. The local developer workspace has a different user-supplied red aircraft and hidden legacy terrain models whose redistribution authorization is not established; these are excluded from GitHub. Public flight uses the licensed Toy Plane fallback and is not visually identical to the local developer aircraft. You can replace the model through Godot's scene Inspector if you have redistribution rights for your preferred asset.
+Human Plane uses the editor-authored `ui/minigames/human_plane.tscn`, the original `PLANE.png`, three colorful 2D arc-gate PNGs, and `BACKGROUND.png`. Approaching-gate depth is simulated in 2D; no `Camera3D`, FBX, glTF, or separate 3D game scene is needed. Obsolete 3D models, scripts, and scene resources were removed from the project in the subsequent local development upgrade; they are not needed for gameplay. See `docs/human-plane-2d/` for the current visual/scoring design.
 
 ## Getting started
 

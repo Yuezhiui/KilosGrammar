@@ -2,16 +2,16 @@ extends SceneTree
 
 ## Scene lifecycle smoke/stress test; strictly NO database sockets, camera
 ## calls, file dialogs being opened, or destructive backend signal handlers.
-## All game scenes (including reusable 3D ring/world scenes), 3 resolutions x 2 cycles,
+## All game scenes (including the one 2D Human Plane scene), 3 resolutions x 2 cycles,
 ## then routed UI tests only for safe, isolated screens.
 ## godot --headless --path . --script res://tools/test_all_scenes_bruteforce.gd
 
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const CYCLES := 2
 const SAFE_SCREENS := [
-    "res://ui/secondary/results.tscn",
+    "res://ui/secondary/results/results.tscn",
     "res://ui/tutorial/tutorial_home.tscn",
-    "res://ui/secondary/leaderboard.tscn",
+    "res://ui/secondary/leaderboard/leaderboard.tscn",
 ]
 const REMOVED_LEADERBOARD_NODES := [
     "TransferStatusPanel", "TransferStatus", "DownloadButton",
@@ -38,10 +38,11 @@ func _run() -> void:
     _scan("res://")
     scene_paths.sort()
     _check(scene_paths.size() >= 20,
-        "All actual project PackedScenes scanned dynamically, including inlined 3D assets (found %d)" % scene_paths.size())
-    _check("res://ui/minigames/human_plane_3d_view.tscn" in scene_paths,
-        "Human Plane 3D world remains an independent editable Godot scene")
-    _check("res://ui/secondary/credits.tscn" in scene_paths,
+        "All actual project PackedScenes scanned dynamically (found %d)" % scene_paths.size())
+    _check("res://ui/minigames/human_plane/human_plane.tscn" in scene_paths
+        and "res://ui/minigames/human_plane_3d_view.tscn" not in scene_paths,
+        "One native 2D Human Plane scene replaces all obsolete 3D worlds")
+    _check("res://ui/secondary/credits/credits.tscn" in scene_paths,
         "User-requested Credits scene is restored and individually editor-authorable")
     var packed: Dictionary = {}
     for path in scene_paths:
@@ -78,7 +79,7 @@ func _run() -> void:
         await process_frame
         for path in SAFE_SCREENS:
             await _live_safe_screen(packed.get(path) as PackedScene, path, viewport)
-        await _live_fake_main_menu(packed.get("res://main_menu.tscn") as PackedScene, viewport)
+        await _live_fake_main_menu(packed.get("res://ui/main_menu/main_menu.tscn") as PackedScene, viewport)
     root.size = _base_size
     root.content_scale_size = _base_content
     var leaked_hosts := root.find_children("BruteSceneHost", "", false, false)
@@ -197,6 +198,10 @@ func _live_safe_screen(scene_resource: PackedScene, path: String, viewport: Vect
 
 func _check_navigation(screen: Control, button_path: String, destination: String) -> void:
     var button := screen.get_node_or_null(button_path) as BaseButton
+    # The image-led Results redesign keeps each button editor-authored under
+    # ResultsStage. Unique scene names, not a root-only path, are its stable API.
+    if button == null and screen.name == "Results" and button_path in ["MainButton", "RetryButton"]:
+        button = screen.get_node_or_null("%" + button_path) as BaseButton
     _check(button != null, "Navigation button retained " + button_path)
     if button == null:
         return
@@ -244,7 +249,7 @@ func _check_safe_leaderboard(board: Control) -> void:
     typed.text = "DELETE ALL"
     typed.text_changed.emit(typed.text)
     _check(permanent.disabled, "Partial phrase never arms red permanent-delete button")
-    # ESC should be caught by whichever input handler currently owns the modal.
+    # Escape is globally inert; it must never dismiss or submit a modal.
     var esc := InputEventKey.new()
     esc.keycode = KEY_ESCAPE
     esc.pressed = true
@@ -253,10 +258,9 @@ func _check_safe_leaderboard(board: Control) -> void:
     # mounted screen's _input; explicitly dispatch to the panel instead.
     board.call("_input", esc)
     await process_frame
-    _check(not first.visible and not final.visible and requests.is_empty(),
-        "Escape cancels delete modal with no signal to database")
-    start.pressed.emit()
-    advance.pressed.emit()
+    _check(not first.visible and final.visible and typed.text == "DELETE ALL"
+        and permanent.disabled and requests.is_empty(),
+        "Escape leaves delete modal and typed input intact, with no database signal")
     final_cancel.pressed.emit()
     _check(not final.visible and typed.text.is_empty() and permanent.disabled
         and requests.is_empty(), "Final cancel resets typed input/disabled red button")

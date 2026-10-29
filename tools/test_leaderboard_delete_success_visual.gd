@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Read-only visual/behavior QA: no real database, no real destructive requests.
 ## CAPTURE_DELETE_SUCCESS_VISUAL=1 enables full-window PNG screenshots in user://.
-const BOARD_SCENE := preload("res://ui/secondary/leaderboard.tscn")
+const BOARD_SCENE := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const NOTIFICATION_ART := [
 	"res://Components/Leaderboard/Success/bg.png",
@@ -31,7 +31,7 @@ func _run() -> void:
 	for path in NOTIFICATION_ART:
 		_check(ResourceLoader.exists(path) and FileAccess.file_exists(path + ".import"),
 			"Notification PNG and .import are installed locally: " + path.get_file())
-	var serialized := FileAccess.get_file_as_string("res://ui/secondary/leaderboard.tscn").to_lower()
+	var serialized := FileAccess.get_file_as_string("res://ui/secondary/leaderboard/leaderboard.tscn").to_lower()
 	_check(not serialized.contains("downloads") and not serialized.contains("notifleaderboard success")
 		and not serialized.contains("notif leader"),
 		"Production Leaderboard scene never references either external Downloads source folder")

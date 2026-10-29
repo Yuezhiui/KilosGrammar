@@ -2,7 +2,7 @@ extends SceneTree
 func _init():
     call_deferred("_test")
 func _test():
-    var packed := load("res://ui/secondary/settings.tscn") as PackedScene
+    var packed := load("res://ui/secondary/settings/settings.tscn") as PackedScene
     var scene := packed.instantiate() as Control
     root.add_child(scene)
     await process_frame

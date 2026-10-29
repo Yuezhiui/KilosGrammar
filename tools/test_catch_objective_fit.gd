@@ -1,11 +1,13 @@
 extends SceneTree
+const GameAudio = preload("res://ui/shared/game_audio.gd")
 
 # Acceptance regression for removing the objective/feedback UI while retaining
 # exactly one explicitly authorized recorded voice player for apple feedback.
 # Godot 4.7.2 --headless --path . --script res://tools/test_catch_objective_fit.gd
 # Keep this legacy filename so existing test runners still exercise the removal.
-const SCENE := "res://ui/minigames/catch_word.tscn"
-const GAME_SCRIPT := "res://ui/minigames/catch_word.gd"
+const SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
+const GAME_SCRIPT := "res://ui/minigames/catch_the_word/catch_word.gd"
+const KidsVoice = preload("res://ui/shared/kids_voice_feedback.gd")
 const REMOVED := ["ObjectivePlaque", "FeedbackLabel", "TopicIcon"]
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const MODES := ["Seconds", "Lives"]
@@ -57,6 +59,8 @@ func _run_viewport(packed: PackedScene, physical: Vector2i) -> void:
 	root.size = physical
 	await process_frame
 	await process_frame
+	var qa_music_manager := GameAudio.ensure(self) as Node
+	_check(qa_music_manager != null and qa_music_manager.get_parent() == root, "Root owns one persistent gameplay soundtrack service")
 	var old_children := root.get_child_count()
 	var host := Control.new()
 	host.name = "NoObjectiveQAHost"
@@ -81,7 +85,7 @@ func _run_viewport(packed: PackedScene, physical: Vector2i) -> void:
 	var hud := game.get_node_or_null("HUDLayer/HUD") as Control
 	var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
 	var title := game.get_node_or_null("HUDLayer/HUD/TitlePlaque") as TextureRect
-	var score := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+	var score := game.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimerPlaque") as TextureRect
 	var clock := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var lives := game.get_node_or_null("HUDLayer/HUD/LivesPlaque") as TextureRect
@@ -100,7 +104,7 @@ func _run_viewport(packed: PackedScene, physical: Vector2i) -> void:
 					"topic": topic,
 					"game_mode": mode,
 					"difficulty": difficulty,
-					"catch_character": "Boy",
+					"catch_character": "Bear",
 					"catch_map": "Forest",
 					"score": 94,
 					"lives": 3,
@@ -184,14 +188,11 @@ func _assert_one_voice_player(game: Node, ctx: String) -> void:
 		return
 	_check(player.bus in ["KilosSFX", "Master"],
 		"%s: feedback player uses the audio mixer (KilosSFX, Master fallback)" % ctx)
-	var streams: Dictionary = game.get("catch_voice_streams")
-	_check(streams.size() == 9,
-		"%s: nine user-recorded feedback files are available" % ctx)
-	for filename in ["GoodJob.mp3", "niceee.mp3", "Awesome.mp3", "Perfect.mp3",
-			"You Nailed it.mp3", "Awww.mp3", "Wrong Answer.mp3", "You Missed.mp3",
-			"Better Luck.mp3"]:
-		_check(streams.get(filename) is AudioStreamMP3,
-			"%s: authentic recorded %s MP3 loaded" % [ctx, filename])
+	var helper := game.get("_kids_voice") as RefCounted
+	_check(helper != null and helper.get_voice_player() == player,
+		"%s: shared children-voice helper owns the ONE real feedback player" % ctx)
+	_check(KidsVoice.CORRECT.size() == 15 and KidsVoice.ENCOURAGEMENT.size() == 24,
+		"%s: 15 praise + 24 coaching WAV recordings are configured" % ctx)
 
 
 func _assert_authorized_audio_source() -> void:
@@ -202,10 +203,12 @@ func _assert_authorized_audio_source() -> void:
 	_check(not scene_text.contains("AudioStream") and not scene_text.contains("AudioStreamPlayer"),
 		"authored Catch scene has no audio resource or playback node")
 	_check(script_text.contains('name = "CatchVoicePlayer"')
-		and script_text.contains("AudioStreamPlayer.new()")
-		and script_text.contains("CATCH_VOICE_DIR")
-		and script_text.contains("catch_voice_player.play()"),
-		"Catch source explicitly owns one reusable recorded MP3 feedback player")
+		and script_text.contains("KidsVoice.new()")
+		and script_text.contains("_kids_voice.setup(self)")
+		and script_text.contains("_kids_voice.play_correct()")
+		and script_text.contains("_kids_voice.play_wrong()")
+		and script_text.contains("_kids_voice.play_missed()"),
+		"Catch delegates three feedback outcomes to one reusable kids WAV player")
 	_check(not script_text.contains("DisplayServer.tts_speak")
 		and not script_text.contains("tts_get_voices_for_language"),
 		"Catch source does not use device-dependent synthetic TTS")

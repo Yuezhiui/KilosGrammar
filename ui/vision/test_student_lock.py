@@ -1,90 +1,137 @@
-"""Deterministic crowd/occlusion regression tests; never opens a camera."""
+"""Synthetic SINGLE OCCUPANT camera gate tests (no camera, YOLO or database)."""
 import unittest
-
 from student_lock import StudentLock
 
 
-def person(track_id: int, x: float, height: float = 0.6) -> dict:
-    return {"track_id": track_id, "x": x, "height": height}
+def person(track_id, x=0.5, height=0.65, eligible=True):
+    return {"track_id": track_id, "x": x, "height": height, "eligible": eligible}
 
 
-def enroll(lock: StudentLock, tracked: list[dict], t: float = 0) -> None:
-    for n in range(9):
-        chosen, _, _ = lock.update(tracked, t + n * 0.2)
-    assert chosen is not None
+def enter(lock, t=0.0, id=4, x=.5):
+    selected = None
+    for i in range(12):
+        selected, _, _ = lock.update([person(id, x)], t + i * .2)
+    assert selected is not None
+    return selected
 
 
 class StudentLockTest(unittest.TestCase):
-    def test_locks_nearest_center_student_not_background(self):
-        lock = StudentLock()
-        enroll(lock, [person(12, 0.51, 0.67), person(3, 0.55, 0.26)])
-        self.assertEqual(lock.locked_id, 12)
-        target, state, _ = lock.update([person(12, 0.54, 0.67), person(3, 0.55, 0.26)], 2)
+    def test_first_entry_needs_real_stable_frames_not_identity_registration(self):
+        gate = StudentLock()
+        self.assertIsNone(gate.locked_id)
+        for i in range(4):
+            target, _, _ = gate.update([person(None)], i * .2)
+            self.assertIsNone(target)
+        target, state, _ = gate.update([person(None)], .8)
         self.assertEqual(state, "locked")
-        self.assertEqual(target["track_id"], 12)
+        self.assertIsNotNone(target)
+        self.assertEqual(gate.physical_track_id, -1)
+        self.assertIsNone(gate.locked_id)
+        self.assertEqual(gate.tracking_epoch, 1)
 
-    def test_people_walking_into_background_do_not_interrupt(self):
-        lock = StudentLock()
-        enroll(lock, [person(5, 0.50)])
-        target, state, _ = lock.update([person(6, 0.42, 0.69), person(5, 0.55)], 2)
-        self.assertEqual((target["track_id"], state), (5, "locked"))
+    def test_zero_people_immediately_revokes_control(self):
+        gate = StudentLock()
+        enter(gate)
+        chosen, state, _ = gate.update([], 3.0)
+        self.assertIsNone(chosen)
+        self.assertEqual(state, "lost")
+        self.assertTrue(gate.needs_reenrollment)
 
-    def test_ambiguous_crowd_does_not_enroll_random_person(self):
-        lock = StudentLock()
-        for n in range(12):
-            person_seen, state, _ = lock.update([person(5, 0.47, 0.60), person(8, 0.58, 0.55)], n * 0.2)
-            self.assertIsNone(person_seen)
+    def test_second_person_any_size_immediately_revokes_control(self):
+        gate = StudentLock()
+        enter(gate)
+        for second in (.15, .5, .95):
+            selected, state, _ = gate.update(
+                [person(4, .5), person(-1, second, .21)], 3.0 + second)
+            self.assertIsNone(selected)
             self.assertEqual(state, "ambiguous")
-        self.assertIsNone(lock.locked_id)
+        self.assertEqual(gate.tracking_epoch, 1)
 
-    def test_player_outside_enrollment_zone_is_not_selected(self):
-        lock = StudentLock()
-        for n in range(12):
-            chosen, state, _ = lock.update([person(5, 0.1, 0.80)], n * 0.2)
+    def test_two_people_never_select_larger_nearer_or_old_id(self):
+        gate = StudentLock()
+        for index in range(16):
+            chosen, state, _ = gate.update(
+                [person(4, .5, .9), person(8, .94, .21)], index * .25)
             self.assertIsNone(chosen)
-            self.assertEqual(state, "waiting")
+            self.assertEqual(state, "ambiguous")
+        self.assertEqual(gate.tracking_epoch, 0)
 
-    def test_lost_student_never_replaced_automatically(self):
-        lock = StudentLock()
-        enroll(lock, [person(11, 0.5)])
-        target, state, _ = lock.update([person(12, 0.48)], 2)
-        self.assertIsNone(target)
-        self.assertEqual(state, "occluded")
-        target, state, _ = lock.update([person(12, 0.48)], 2.85)
-        self.assertIsNone(target)
-        self.assertEqual(state, "lost")
-        target, state, _ = lock.update([person(11, 0.51)], 3)
-        self.assertIsNone(target)
-        self.assertEqual(state, "lost")
+    def test_full_position_range_permitted_after_initial_center(self):
+        gate = StudentLock()
+        enter(gate)
+        t = 3.0
+        x = .5
+        for target_x in (.75, .95, .7, .4, .05, .5):
+            while abs(target_x - x) > .1:
+                x += .1 if target_x > x else -.1
+                selected, state, _ = gate.update([person(-1, x)], t)
+                self.assertEqual(state, "locked")
+                self.assertIsNotNone(selected)
+                t += .1
+        self.assertIsNone(gate.locked_id)
 
-    def test_short_occlusion_same_track_can_resume(self):
-        lock = StudentLock()
-        enroll(lock, [person(4, 0.5)])
-        self.assertEqual(lock.update([], 2)[1], "occluded")
-        target, state, _ = lock.update([person(4, 0.55)], 2.3)
+    def test_corrupted_pose_cannot_become_game_input(self):
+        gate = StudentLock()
+        enter(gate)
+        for invalid in (person(4, eligible=False), person(4, x=float("nan")),
+                        person(4, height=0.03)):
+            selected, state, _ = gate.update([invalid], 3.0)
+            self.assertIsNone(selected)
+            self.assertIn(state, ("occluded", "ambiguous"))
+
+    def test_tracker_ids_may_churn_every_frame_without_interrupting_solo(self):
+        gate = StudentLock()
+        enter(gate)
+        for i in range(140):
+            selected, state, _ = gate.update([person(i if i % 3 else None, .5)], 3 + .1 * i)
+            self.assertEqual(state, "locked")
+            self.assertIsNotNone(selected)
+        self.assertEqual(gate.tracking_epoch, 1)
+        self.assertFalse(gate.needs_recalibration)
+
+    def test_after_fifteen_or_sixty_seconds_absent_rejoins_without_recalibration(self):
+        for absence in (5, 15, 60):
+            with self.subTest(absence=absence):
+                gate = StudentLock()
+                enter(gate)
+                gate.update([], 3)
+                for i in range(1, int(absence * 5)):
+                    gate.update([], 3 + i * .2)
+                resumed = False
+                for i in range(8):
+                    person_now, state, _ = gate.update(
+                        [person(None, .74, .63)], 3 + absence + 0.2 * (i + 1))
+                    resumed = resumed or (person_now is not None)
+                self.assertTrue(resumed)
+                self.assertEqual(state, "locked")
+                self.assertEqual(gate.tracking_epoch, 1)
+                self.assertFalse(gate.needs_recalibration)
+
+    def test_two_people_after_loss_never_resume_until_one_stable(self):
+        gate = StudentLock()
+        enter(gate)
+        gate.update([], 3)
+        for i in range(24):
+            chosen, state, _ = gate.update(
+                [person(10), person(11, .7)], 4 + .2 * i)
+            self.assertIsNone(chosen)
+            self.assertEqual(state, "ambiguous")
+        resumed = False
+        for i in range(8):
+            chosen, state, _ = gate.update([person(12, .6)], 9 + i * .2)
+            resumed = resumed or chosen is not None
+        self.assertTrue(resumed)
         self.assertEqual(state, "locked")
-        self.assertEqual(target["track_id"], 4)
 
-    def test_track_id_jump_is_rejected(self):
-        lock = StudentLock()
-        enroll(lock, [person(1, 0.5)])
-        target, state, _ = lock.update([person(1, 0.92)], 2.0)
-        self.assertIsNone(target)
+    def test_detected_count_overrides_malformed_or_idless_boxes(self):
+        gate = StudentLock()
+        enter(gate)
+        chosen, state, _ = gate.update([person(4)], 3.0, detected_count=2)
+        self.assertIsNone(chosen)
+        self.assertEqual(state, "ambiguous")
+        chosen, state, _ = gate.update([person(4)], 3.2, detected_count=0)
+        self.assertIsNone(chosen)
         self.assertEqual(state, "lost")
-
-    def test_abrupt_size_change_is_rejected(self):
-        lock = StudentLock()
-        enroll(lock, [person(1, 0.5, 0.6)])
-        target, state, _ = lock.update([person(1, 0.53, 0.2)], 2)
-        self.assertIsNone(target)
-        self.assertEqual(state, "lost")
-
-    def test_reset_requires_new_lock(self):
-        lock = StudentLock()
-        enroll(lock, [person(7, 0.50)])
-        lock = StudentLock()  # Explicit student reset starts a new worker.
-        self.assertIsNone(lock.locked_id)
-        self.assertEqual(lock.update([person(9, 0.50)], 0)[1], "enrolling")
 
 
 if __name__ == "__main__":

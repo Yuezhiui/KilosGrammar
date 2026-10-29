@@ -3,7 +3,7 @@ extends SceneTree
 	# Synthetic, camera-free verification that the locked student's arm-spread
 	# gate and measured LEFT/CENTER/RIGHT movement reach actual Human Plane.
 	# Tilt/gyro values are irrelevant. No webcam, database or student writes.
-const GAMEPLAY_PATH := "res://ui/play/gameplay.tscn"
+const GAMEPLAY_PATH := "res://ui/play/gameplay/gameplay.tscn"
 var failures: Array[String] = []
 var checks := 0
 

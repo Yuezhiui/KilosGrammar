@@ -1,8 +1,8 @@
 extends SceneTree
 
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 var failures: Array[String] = []
 var checked := 0
 
@@ -80,7 +80,7 @@ func _case(character: String, topic: String, difficulty: String, mode: String) -
 				failures.append(label + " retry retained active transient effect")
 	# Verify natural tween cleanup in both game modes, without delaying all
 	# 120 configurations for an identical timer implementation.
-	if character == "Boy" and topic == "Noun" and difficulty == "Easy":
+	if character == "Bear" and topic == "Noun" and difficulty == "Easy":
 		game._handle_catch({"word": "TEST", "matching": true})
 		await create_timer(1.35).timeout
 	await process_frame

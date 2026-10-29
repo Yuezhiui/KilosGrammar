@@ -38,7 +38,7 @@ class FakeNumpy(types.ModuleType):
 
 
 class WorkerPreparationTests(unittest.TestCase):
-    def test_model_warmup_initializes_tracker_on_camera_shaped_image(self):
+    def test_model_warmup_initializes_raw_detector_without_tracker_on_camera_shaped_image(self):
         models = []
 
         class Model:
@@ -47,9 +47,12 @@ class WorkerPreparationTests(unittest.TestCase):
                 self.calls = []
                 models.append(self)
 
-            def track(self, frame, **kwargs):
+            def predict(self, frame, **kwargs):
                 self.calls.append((frame, kwargs))
                 return []
+
+            def track(self, *_args, **_kwargs):
+                raise AssertionError("ByteTrack warmup filters raw detections")
 
         fake_ultralytics = types.ModuleType("ultralytics")
         fake_ultralytics.YOLO = Model
@@ -63,8 +66,8 @@ class WorkerPreparationTests(unittest.TestCase):
         self.assertEqual(len(model.calls), 1)
         image, options = model.calls[0]
         self.assertEqual(image[0], (480, 640, 3))
-        self.assertEqual(options["tracker"], "bytetrack.yaml")
-        self.assertTrue(options["persist"])
+        self.assertNotIn("tracker", options)
+        self.assertNotIn("persist", options)
         self.assertEqual(options["imgsz"], 320)
         self.assertEqual(options["classes"], [0])
 
@@ -76,7 +79,7 @@ class WorkerPreparationTests(unittest.TestCase):
             def __init__(self, weights):
                 models.append(self)
 
-            def track(self, _frame, **kwargs):
+            def predict(self, _frame, **kwargs):
                 calls.append(kwargs["device"])
                 if kwargs["device"] == 0:
                     raise RuntimeError("CUDA driver initialization failed")
@@ -102,7 +105,7 @@ class WorkerPreparationTests(unittest.TestCase):
             def __init__(self, _weights):
                 pass
 
-            def track(self, _frame, **_kwargs):
+            def predict(self, _frame, **_kwargs):
                 raise ValueError("invalid model weights")
 
         fake_ultralytics = types.ModuleType("ultralytics")
@@ -115,7 +118,7 @@ class WorkerPreparationTests(unittest.TestCase):
 
     @unittest.skipUnless(os.environ.get("KILOSGRAMMAR_POSE_MODEL"),
                          "Optional real local-model cold-start probe; no camera is opened")
-    def test_real_offline_tracker_warmup(self):
+    def test_real_offline_detector_warmup(self):
         from pathlib import Path
         model_path = Path(os.environ["KILOSGRAMMAR_POSE_MODEL"])
         self.assertTrue(model_path.is_file(), "A local model must already exist")

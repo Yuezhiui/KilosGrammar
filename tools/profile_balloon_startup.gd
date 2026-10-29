@@ -3,7 +3,7 @@ extends SceneTree
 # Measure scene resource parsing, PackedScene instantiation, runtime _ready()
 # including raw PNG decoding, and a warm repeated mount.
 # Godot --headless --path . --script res://tools/profile_balloon_startup.gd
-const SCENE_PATH := "res://ui/minigames/balloon_popping.tscn"
+const SCENE_PATH := "res://ui/minigames/balloon_popping/balloon_popping.tscn"
 const ART_PATHS := [
     "res://Components/Gameplay/Balloon Popping/Background/0826b13c-250f-42e1-9398-a83d2922a1d8.png",
     "res://Components/Gameplay/Balloon Popping/Background/95ae2a22-302d-48f7-9b5f-e12b0104c822.png",

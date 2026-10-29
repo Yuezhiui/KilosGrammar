@@ -75,14 +75,19 @@ func _run() -> void:
         var loaded := ResourceLoader.load(resource_path, "", ResourceLoader.CACHE_MODE_IGNORE)
         _check(loaded != null, "Failed serialized resource load: " + resource_path)
     _check(scene_paths.size() >= 20,
-        "All project scenes discovered with optional inlined 3D cloud and ring geometry: " + str(scene_paths.size()))
-    _check("res://ui/minigames/human_plane_3d_view.tscn" in scene_paths,
-        "Authorable Human Plane world remains a real PackedScene")
-    _check("res://ui/secondary/credits.tscn" in scene_paths,
+        "All project scenes discovered, including pure 2D gameplay: " + str(scene_paths.size()))
+    _check("res://ui/minigames/human_plane/human_plane.tscn" in scene_paths
+        and "res://ui/minigames/human_plane_3d_view.tscn" not in scene_paths,
+        "Human Plane is the only active editor-authored 2D flight scene")
+    _check("res://ui/secondary/credits/credits.tscn" in scene_paths,
         "Restored Credits is a valid source scene with dependencies")
     _check(checked_imports > 100, "Too few image/font/audio import sidecars: " + str(checked_imports))
-    _check(checked_model_textures > 0, "No relative glTF textures checked")
-    _check(checked_model_buffers > 0, "No relative glTF binary buffers checked")
+    # Imported glTF files are no longer required: the teacher explicitly
+    # retired the full 3D Human Plane models. Any remaining glTF files are
+    # still validated individually by _check_gltf() when discovered.
+    _check(not all_paths.has("res://ui/minigames/human_plane_3d_view.tscn")
+        and not all_paths.has("res://Components/Gameplay/Human Plane/3D/Skybox/StylizeClouds/scene.gltf"),
+        "Retired Human Plane 3D source and models have no orphan project copies")
     print("PROJECTWIDE ORPHAN QA files=%d scenes=%d tres=%d scripts=%d imports=%d uids=%d literals=%d gltf_textures=%d gltf_buffers=%d dynamic_paths=%d checks=%d failures=%d" % [
         all_paths.size(), scene_paths.size(), resource_paths.size(),
         checked_scripts, checked_imports, checked_uids, checked_literals, checked_model_textures,

@@ -1,4 +1,4 @@
-extends "res://main_menu.gd"
+extends "res://ui/main_menu/main_menu.gd"
 
 ## UI TEST FIXTURE ONLY. The runnable SceneTree entrypoint is
 ## test_postgres_csv_delete_menu.gd. The harness loads this subclass at runtime

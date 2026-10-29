@@ -21,7 +21,7 @@ func _run() -> void:
 	DisplayServer.window_set_size(SIZE)
 	root.content_scale_size = Vector2i(1280, 720)
 	root.size = SIZE
-	var setup := (load("res://ui/student/student_setup.tscn") as PackedScene).instantiate() as Control
+	var setup := (load("res://ui/student/setup/student_setup.tscn") as PackedScene).instantiate() as Control
 	root.add_child(setup)
 	setup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	await process_frame

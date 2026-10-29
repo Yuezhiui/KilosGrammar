@@ -2,7 +2,7 @@ extends SceneTree
 
 # Backward-compatible script name. The old angle/gyro movement was retired:
 # this verifies measured three-zone POSITION steering and wide-arms gating.
-const GAMEPLAY_PATH := "res://ui/play/gameplay.tscn"
+const GAMEPLAY_PATH := "res://ui/play/gameplay/gameplay.tscn"
 var checks := 0
 var failures: Array[String] = []
 

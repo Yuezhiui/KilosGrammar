@@ -3,8 +3,8 @@ extends SceneTree
 # Headless regression:
 # Godot --headless --path . --script res://tools/test_balloon_difficulty_vocabulary.gd
 
-const SCENE := preload("res://ui/minigames/balloon_popping.tscn")
-const BANK := preload("res://ui/minigames/grammar_bank.gd")
+const SCENE := preload("res://ui/minigames/balloon_popping/balloon_popping.tscn")
+const BANK := preload("res://ui/minigames/shared/grammar_bank.gd")
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const TOPICS := ["Noun", "Verb", "Adjective"]
 
@@ -157,21 +157,33 @@ func _exercise_long_word_labels() -> void:
 
 
 func _exercise_exhaustion() -> void:
-	# Pronoun keeps a deliberately small matching pool: a long Lives round
-	# should finish when new three-word questions are no longer available.
+	# Pronoun has a small eligible matching pool. After exhaustion, that pool
+	# must recycle without ending the Lives game or repeating adjacent rounds.
 	var game := await _create_game("Pronoun", "Easy")
 	game.set_context({"topic": "Pronoun", "difficulty": "Easy", "game_mode": "Lives"})
 	var rounds := 0
-	while not game.finishing and rounds < 160:
+	var previous_words: Dictionary = {}
+	while rounds < 160:
+		var current_words: Dictionary = {}
+		for lane in range(game.balloons.size()):
+			var word := String((game.balloon_slots[lane].get_node("WordLabel") as Label).text).to_lower()
+			_check(not current_words.has(word), "Recycled question has three distinct displayed words")
+			_check(not previous_words.has(word), "Recycled question avoids immediate previous-round word")
+			_check(game.used_words.has(word), "Recycled displayed word belongs to active cycle history")
+			current_words[word] = true
+		previous_words = current_words
 		game._start_new_round()
 		game.set_process(false)
 		game.set_physics_process(false)
 		rounds += 1
-	_check(game.finishing and game.round_completed and not game.round_active,
-		"Exhausted word pool finishes gracefully with results")
-	_check(not game.next_round_pending and not game.timer_running,
-		"Exhausted pool leaves no pending question loop")
-	_check(game.used_words.size() > 0, "Exhaustion retains displayed word history")
+		_check(not game.finishing and not game.round_completed and game.round_active
+			and game.timer_running and game.hearts == 3,
+			"Vocabulary cycling never ends Lives while three hearts remain")
+	_check(game.used_words.size() > 0, "Recycled pool retains displayed word cycle history")
+	_check(game.round_index >= 161, "Small Pronoun bank supports more than 160 real rounds")
+	game._finish_round()
+	_check(not game.finishing and game.hearts == 3,
+		"Only losing final heart, never vocabulary exhaustion, may finish Lives")
 	_check(game._normalize_round({"options": ["abc", "ABC", "def"], "valid_indices": [0]}).is_empty(),
 		"Round validation rejects repeated words independent of casing")
 	_check(game._normalize_round({"options": [], "valid_indices": []}).is_empty(),

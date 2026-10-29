@@ -16,14 +16,5 @@ __pycache__/
 *.pyc
 ui/redesign/assets/.qa_*.jpg.import
 
-# Unverified/private source models: keep local Godot user art, never publish.
-/Components/Gameplay/Human Plane/3D/red-plane/
-/Components/Gameplay/Human Plane/3D/mountain/
-/Components/Gameplay/Human Plane/3D/grass-green/
-/Components/Gameplay/Human Plane/3D/pbr/
-/Components/Gameplay/Human Plane/3D/*.fbx
-/Components/Gameplay/Human Plane/3D/*.fbx.import
-/Components/Gameplay/Human Plane/3D/Skybox/textures/clouds_anime_6k.jpg
-/Components/Gameplay/Human Plane/3D/Skybox/textures/clouds_anime_6k.jpg.import
-/ui/minigames/human_plane_3d_foliage.gd*
-/ui/minigames/human_plane_3d_mountains.gd*
+# The retired Human Plane 3D source and models are no longer project assets.
+# Do not re-introduce them to the 2D-only game or to exported resources.

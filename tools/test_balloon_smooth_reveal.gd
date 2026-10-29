@@ -6,7 +6,7 @@ extends SceneTree
 #
 # Godot 4.7.2 --headless --path . --script res://tools/test_balloon_smooth_reveal.gd
 
-const SCENE := preload("res://ui/minigames/balloon_popping.tscn")
+const SCENE := preload("res://ui/minigames/balloon_popping/balloon_popping.tscn")
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 const ART_PATHS := [
     "res://Components/Gameplay/Balloon Popping/Balloons/purple.png",

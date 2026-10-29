@@ -18,7 +18,9 @@ func _run() -> void:
 	pose_service.active = true
 	pose_service.session_token = "unit-test-only"
 	var now := Time.get_ticks_msec()
-	var measured := {"kind": "pose", "token": "unit-test-only", "state": "tracking", "pose": true, "x": 0.43}
+	var measured := {"kind": "pose", "token": "unit-test-only", "state": "tracking",
+		"pose": true, "camera": true, "people": 1, "lock_state": "locked",
+		"camera_frame_age_ms": 20, "x": 0.43}
 	pose_service._apply_pose_packet(measured, now)
 	_check(pose_service.has_valid_pose(), "Measured packet yields live pose")
 	_check(is_equal_approx(pose_service.player_x, 0.43), "Actual measured camera x is preserved")
@@ -32,7 +34,8 @@ func _run() -> void:
 	pose_service._apply_pose_packet(wrong_token, now)
 	_check(is_equal_approx(pose_service.player_x, 0.43), "Old session packets are rejected")
 
-	var missing := {"kind": "pose", "token": "unit-test-only", "state": "tracking", "pose": false, "x": -1.0, "lock_state": "occluded"}
+	var missing := {"kind": "pose", "token": "unit-test-only", "state": "tracking",
+		"pose": false, "camera": true, "people": 0, "x": -1.0, "lock_state": "lost"}
 	pose_service._apply_pose_packet(missing, now + 1)
 	_check(not pose_service.has_valid_pose() and pose_service.player_x < 0.0, "Pose loss invalidates controls immediately")
 	_check(pose_service.packet_sequence == 1, "Missing pose does not earn calibration samples")
@@ -40,7 +43,11 @@ func _run() -> void:
 	_check(is_zero_approx(pose_service.normalized_body_x()), "Invalid tracking produces no movement")
 
 	pose_service._smoothed_x = -1.0
-	pose_service._apply_pose_packet({"kind": "pose", "token": "unit-test-only", "state": "tracking", "pose": true, "x": 0.85}, now + 2)
+	var return_packet := measured.duplicate()
+	return_packet["x"] = 0.85
+	return_packet["locked_id"] = -1 # No ID registration on fresh solo recovery.
+	return_packet["tracking_epoch"] = 90
+	pose_service._apply_pose_packet(return_packet, now + 2)
 	_check(pose_service.has_valid_pose(), "Real pose can return without recalibration")
 	_check(absf(pose_service.normalized_body_x() - 1.0) < 0.001, "Right measured limit maps to +1")
 

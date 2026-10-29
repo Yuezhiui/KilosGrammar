@@ -18,6 +18,9 @@ func health(context: Dictionary = {}) -> int:
 func find_student(student_id: String, context: Dictionary = {}) -> int:
 	return _record("find_student", {"student_id": student_id}, context)
 
+func find_student_by_name(student_name: String, context: Dictionary = {}) -> int:
+	return _record("find_student_by_name", {"student_name": student_name}, context)
+
 
 func register_student(student_id: String, student_name: String, grade_section: String, context: Dictionary = {}) -> int:
 	return _record("register_student", {

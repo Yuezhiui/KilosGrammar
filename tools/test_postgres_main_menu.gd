@@ -1,4 +1,4 @@
-extends "res://main_menu.gd"
+extends "res://ui/main_menu/main_menu.gd"
 
 ## Allows the unmodified Main Menu scene and real panels to run without HTTP,
 ## microphone/camera calibration, database credentials, or background music.

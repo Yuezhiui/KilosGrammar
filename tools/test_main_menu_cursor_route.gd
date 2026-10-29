@@ -14,7 +14,7 @@ func _check(value: bool, message: String) -> void:
 
 
 func _run() -> void:
-	var menu := (load("res://main_menu.tscn") as PackedScene).instantiate() as Control
+	var menu := (load("res://ui/main_menu/main_menu.tscn") as PackedScene).instantiate() as Control
 	root.add_child(menu)
 	await process_frame
 	_check(menu.get_node_or_null("CursorCritter") == null, "No custom cursor art should be instantiated")

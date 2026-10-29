@@ -8,17 +8,17 @@ extends SceneTree
 # checks both authored and runtime state without hiding any nodes in the test.
 # On older builds that expose feedback_text, a long feedback message is tested.
 
-const SCENE := "res://ui/minigames/catch_word.tscn"
+const SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
 const OUTPUT_DIR := "res://showcase/catch_word_hud/clean_objective"
 const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(875, 500)]
 const LOGICAL_HUD_SIZE := Vector2(1280, 720)
 const CASES := [
-	{"map": "City", "mode": "Seconds", "topic": "Noun", "character": "Boy"},
-	{"map": "City", "mode": "Lives", "topic": "Pronoun", "character": "Girl"},
-	{"map": "Forest", "mode": "Seconds", "topic": "Verb", "character": "Grandma"},
-	{"map": "Forest", "mode": "Lives", "topic": "Adjective", "character": "Grandpa"},
-	{"map": "Mountain", "mode": "Seconds", "topic": "Adverb", "character": "Girl"},
-	{"map": "Mountain", "mode": "Lives", "topic": "Noun", "character": "Boy"}
+	{"map": "City", "mode": "Seconds", "topic": "Noun", "character": "Bear"},
+	{"map": "City", "mode": "Lives", "topic": "Pronoun", "character": "Cat"},
+	{"map": "Forest", "mode": "Seconds", "topic": "Verb", "character": "Dog"},
+	{"map": "Forest", "mode": "Lives", "topic": "Adjective", "character": "Lion"},
+	{"map": "Mountain", "mode": "Seconds", "topic": "Adverb", "character": "Cat"},
+	{"map": "Mountain", "mode": "Lives", "topic": "Noun", "character": "Bear"}
 ]
 const FORBIDDEN_PATHS := [
 	"HUDLayer/HUD/ObjectivePlaque",

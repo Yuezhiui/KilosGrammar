@@ -1,5 +1,10 @@
 # Tutorial spotlight — editable Godot scene layout
 
+> **Archived layout instructions:** User-directed deletion on 29 October
+> removed the shared Spotlight scene and the embedded per-game node. These
+> instructions document the earlier design and are not applicable to the
+> current scene tree. The direct calibration → countdown route remains.
+
 The screenshots' cream instruction card, violet/blue/red/green buttons,
 transparent highlight openings, red arrows and body-position practice card
 are controlled by `ui/tutorial/spotlight_overlay.tscn`.

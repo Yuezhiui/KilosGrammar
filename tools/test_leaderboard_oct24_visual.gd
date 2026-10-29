@@ -2,7 +2,7 @@
 
 # Pixel/geometry and native-interaction checks for the user's 24 Oct asset set.
 # No camera, PostgreSQL connection, import, file-dialog writing or student data.
-const BOARD := preload("res://ui/secondary/leaderboard.tscn")
+const BOARD := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const ASSETS := "res://Components/Leaderboard/"
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 var failures: Array[String] = []
@@ -16,7 +16,7 @@ func _run() -> void:
             "ALL STYLES.png", "ALL MODES.png", "ALL DIFFICULTIES.png",
             "IMPORT.png", "EXPORT.png", "DELETE.png"]:
         _check(_find_asset(ASSETS, filename), "source art survives relocation in Components/Leaderboard: " + filename)
-    var authored_scene := FileAccess.get_file_as_string("res://ui/secondary/leaderboard.tscn")
+    var authored_scene := FileAccess.get_file_as_string("res://ui/secondary/leaderboard/leaderboard.tscn")
     _check(not authored_scene.contains("FILTERS.png"), "deleted FILTERS sprite is not referenced by active leaderboard scene")
     for viewport in SIZES:
         root.size = viewport

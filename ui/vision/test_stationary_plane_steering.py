@@ -104,26 +104,33 @@ class StationarySteeringTests(unittest.TestCase):
             now += 1 / 15
             last_x = x
 
-    def test_student_lock_rejects_bystander_and_recovery_requires_fresh_pair(self):
+    def test_student_lock_pauses_for_any_two_people_then_resumes_solo(self):
         student = StudentLock()
         tracker = PlaneSteeringTracker()
         for frame in range(22):
             chosen, _, _ = student.update([person(17, 0.5)], frame / 15)
-        self.assertEqual(student.locked_id, 17)
+        self.assertEqual(student.tracking_epoch, 1)
         self.assertIsNotNone(chosen)
         for frame in range(1000):
             now = 2.0 + frame / 15
             x = 0.5 + ((frame % 20) - 10) * 0.002
             candidates = [person(17, x), person(99, 0.52)]
             chosen, state, _ = student.update(candidates, now)
-            self.assertEqual(state, "locked")
-            self.assertEqual(chosen["track_id"], 17)
-            pose = joints(x)
-            pose[9 if frame % 2 else 10][2] = 0.0
-            raw = stationary_plane_steering(pose)
-            result = tracker.update(chosen["track_id"], raw, now)
-            if frame > 1:
-                self.assertAlmostEqual(result, x)
+            self.assertEqual(state, "ambiguous")
+            self.assertIsNone(chosen)
+            self.assertIsNone(tracker.update(None, None, now))
+        # Fresh single-person hold allows real body motion again while the
+        # camera never registers a permanent ID.
+        for index in range(9):
+            now = 69.0 + index / 15
+            chosen, state, _ = student.update([person(-1, 0.5)], now)
+        self.assertEqual(state, "enrolling")  # 0.53 seconds is below .65
+        for index in range(9, 16):
+            now = 69.0 + index / 15
+            chosen, state, _ = student.update([person(-1, 0.5)], now)
+        self.assertEqual(state, "locked")
+        self.assertIsNotNone(chosen)
+        self.assertEqual(student.tracking_epoch, 1)
         self.assertIsNone(tracker.update(None, None, 80.0))
         self.assertIsNone(tracker.update(99, 0.76, 80.067))
         self.assertAlmostEqual(tracker.update(99, 0.76, 80.134), 0.76)

@@ -1,7 +1,7 @@
 # Catch the Word: verified UI-only pruning
 
 The following scene-authored nodes were permanently invisible or redundant
-and are removed from `ui/minigames/catch_word.tscn`:
+and are removed from `ui/minigames/catch_the_word/catch_word.tscn`:
 
 - `HUDLayer/HUD/TitleLabel`, `TitleTheLabel`, `TitleWordLabel` — all static
   lettering is already baked into the active `TitlePlaque` PNG.

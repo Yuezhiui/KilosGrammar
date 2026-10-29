@@ -13,7 +13,7 @@ config_version=5
 config/name="KilosGrammar"
 config/version="0.2.0-beta.1"
 run/main_scene="uid://t84rkfytcor7"
-config/features=PackedStringArray("4.7", "Forward Plus")
+config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
@@ -37,4 +37,5 @@ window/stretch/aspect="expand"
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

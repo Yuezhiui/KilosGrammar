@@ -8,16 +8,16 @@ extends SceneTree
 # HUD) across three display sizes. No manual apple creation/repositioning.
 # The helper steps the actual game process and saves its real rendered output.
 
-const SCENE := "res://ui/minigames/catch_word.tscn"
+const SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
 const OUTPUT_DIR := "res://showcase/catch_word_hud/waves"
 const SIZES := [Vector2i(1280, 720), Vector2i(875, 500), Vector2i(1920, 1080)]
 const CASES := [
-	{"map": "City", "mode": "Seconds", "topic": "Noun", "character": "Boy"},
-	{"map": "City", "mode": "Lives", "topic": "Pronoun", "character": "Girl"},
-	{"map": "Forest", "mode": "Seconds", "topic": "Verb", "character": "Grandma"},
-	{"map": "Forest", "mode": "Lives", "topic": "Adjective", "character": "Grandpa"},
-	{"map": "Mountain", "mode": "Seconds", "topic": "Adverb", "character": "Girl"},
-	{"map": "Mountain", "mode": "Lives", "topic": "Noun", "character": "Boy"}
+	{"map": "City", "mode": "Seconds", "topic": "Noun", "character": "Bear"},
+	{"map": "City", "mode": "Lives", "topic": "Pronoun", "character": "Cat"},
+	{"map": "Forest", "mode": "Seconds", "topic": "Verb", "character": "Dog"},
+	{"map": "Forest", "mode": "Lives", "topic": "Adjective", "character": "Lion"},
+	{"map": "Mountain", "mode": "Seconds", "topic": "Adverb", "character": "Cat"},
+	{"map": "Mountain", "mode": "Lives", "topic": "Noun", "character": "Bear"}
 ]
 const REMOVED_OVERLAYS := ["ObjectivePlaque", "FeedbackLabel", "TopicIcon"]
 const VISIBLE_PLATES := ["TitlePlaque", "PausePlaque", "ScorePlaque"]

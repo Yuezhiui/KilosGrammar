@@ -1,6 +1,6 @@
 ﻿extends SceneTree
-const SETTINGS := preload("res://ui/secondary/settings.tscn")
-const PREFS := preload("res://ui/secondary/settings.gd")
+const SETTINGS := preload("res://ui/secondary/settings/settings.tscn")
+const PREFS := preload("res://ui/secondary/settings/settings.gd")
 const OUT := "user://_qa_settings_audio_only"
 var failures: Array[String] = []
 func _initialize() -> void:
@@ -25,7 +25,7 @@ func _run() -> void:
     for bus in original_buses:
         var idx := AudioServer.get_bus_index(bus)
         _check(absf(db_to_linear(AudioServer.get_bus_volume_db(idx)) - 0.37) < 0.005, bus + " persisted volume")
-    _check(AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "persisted mute")
+    _check(not AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "obsolete saved mute must be ignored when Master > 0%")
     if DisplayServer.get_name() != "headless":
         DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
         for resolution in [Vector2i(875,500), Vector2i(1280,720), Vector2i(1920,1080)]:

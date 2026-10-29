@@ -3,7 +3,7 @@ extends SceneTree
 # Graphical capture and focused functional QA of the redesigned Student Setup.
 # Run from the Godot project root without --headless:
 # Godot --path . --rendering-method gl_compatibility --script res://ui/redesign/capture_student_setup.gd
-const SCENE := "res://ui/student/student_setup.tscn"
+const SCENE := "res://ui/student/setup/student_setup.tscn"
 const OUTPUT := "res://showcase/ui_redesign_m1"
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 var failures: Array[String] = []

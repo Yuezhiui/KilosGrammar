@@ -2,8 +2,8 @@ extends SceneTree
 
 # Gameplay must preserve each editor-authored Body/Basket transform and use
 # those SAME nodes for rendering and the dynamically positioned basket hitbox.
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const MAPS := ["City", "Forest", "Mountain"]
 const DELTA_BODY := Vector2(8.0, -9.0)
 const DELTA_BASKET := Vector2(11.0, -7.0)

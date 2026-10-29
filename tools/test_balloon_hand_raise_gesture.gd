@@ -3,7 +3,7 @@ extends SceneTree
 # Deterministic hand-raise firing regression. Run:
 # Godot --headless --path . --script res://tools/test_balloon_hand_raise_gesture.gd
 
-const GAME_SCENE := preload("res://ui/minigames/balloon_popping.tscn")
+const GAME_SCENE := preload("res://ui/minigames/balloon_popping/balloon_popping.tscn")
 
 var checks := 0
 var failures: Array[String] = []
@@ -24,7 +24,7 @@ func _run() -> void:
 	game.set_process(false)
 	game.set_physics_process(false)
 	_check(game.round_active and game.timer_running, "Game is active")
-	_check(game.HAND_RAISE_RELOAD_MS == 1500, "Reload is precisely 1500ms")
+	_check(game.HAND_RAISE_RELOAD_MS == 500, "Reload is precisely 500ms")
 	_check(game.projectiles.is_empty(), "No projectile fires automatically on setup")
 	_check(not game._launch_projectile(0), "Direct firing outside the gesture API is blocked")
 
@@ -40,19 +40,19 @@ func _run() -> void:
 	_sample(game, true, 500, true, "Either raised hand fires one shot")
 	_check(game.projectiles.size() == 1 and game.hand_raise_last_shot_ms == 500,
 		"Exactly one projectile spawned and time recorded")
-	_sample(game, true, 700, false, "Holding raised blocks a duplicate shot")
+	_sample(game, true, 600, false, "Holding raised blocks a duplicate shot")
 
 	# Brief incorrect lowered readings from YOLO must not rearm an unchanged
 	# high hand. A real 180ms lowering re-arms, but the rise during cooldown
 	# consumes its edge and never queues a delayed shot.
-	_sample(game, false, 1100, false, "Short false low begins")
-	_sample(game, true, 1150, false, "50ms low jitter cannot trigger firing")
-	_sample(game, true, 1230, false, "Post-jitter high remains latched")
+	_sample(game, false, 620, false, "Short false low begins")
+	_sample(game, true, 670, false, "50ms low jitter cannot trigger firing")
+	_sample(game, true, 690, false, "Post-jitter high remains latched")
 	_check(game.projectiles.size() == 1, "Flickering false-to-true cannot double-fire")
-	_lower(game, 1300, "Confirmed low before early reload attempt")
-	_sample(game, true, 1919, false, "Early rise begins")
-	_sample(game, true, 1999, false, "1499ms from last shot is still reloading")
-	_sample(game, true, 2001, false, "Reload completion cannot auto-fire a held hand")
+	_lower(game, 700, "Confirmed low before early reload attempt")
+	_sample(game, true, 919, false, "Early rise begins")
+	_sample(game, true, 999, false, "499ms from last shot is still reloading")
+	_sample(game, true, 1001, false, "Reload completion cannot auto-fire a held hand")
 	_sample(game, true, 2500, false, "Early held raise never queues a late shot")
 	_check(not game._launch_projectile(2600), "Direct duplicate bypass fails after cooldown")
 	_check(game.projectiles.size() == 1, "Only the initial shot exists through cooldown")
@@ -64,11 +64,11 @@ func _run() -> void:
 	_check(game.hand_raise_last_shot_ms == 4380, "Second shot records monotonic clock")
 	game._clear_projectiles()
 
-	# Exactly at the 1.5s deadline, a lower-then-raise edge succeeds.
-	_lower(game, 5400, "Low before exact reload boundary")
-	_sample(game, true, 5800, false, "Boundary rise begins")
-	_sample(game, true, 5880, true, "1500ms reload boundary permits the next shot")
-	_check(game.hand_raise_last_shot_ms == 5880, "Boundary shot time is exact")
+	# Exactly at the 0.5s deadline, a lower-then-raise edge succeeds.
+	_lower(game, 4410, "Low before exact reload boundary")
+	_sample(game, true, 4800, false, "Boundary rise begins")
+	_sample(game, true, 4880, true, "500ms reload boundary permits the next shot")
+	_check(game.hand_raise_last_shot_ms == 4880, "Boundary shot time is exact")
 	game._clear_projectiles()
 
 	# Lost tracking must never masquerade as a lowered hand. The returning
@@ -76,8 +76,8 @@ func _run() -> void:
 	_sample(game, false, 5900, false, "Tracking invalidates state", false)
 	_check(not game.hand_raise_tracking_valid and not game.hand_raise_armed,
 		"Tracking loss disarms while preserving cooldown")
-	_check(game.hand_raise_last_shot_ms == 5880,
-		"Tracking loss does not reset the 1.5s reload")
+	_check(game.hand_raise_last_shot_ms == 4880,
+		"Tracking loss does not reset the 0.5s reload")
 	_sample(game, true, 7450, false, "Reacquired high pose remains disarmed")
 	_sample(game, true, 7530, false, "Confirmed high on reacquisition never shoots")
 	_lower(game, 7600, "Recovered player genuinely lowers hand")

@@ -39,12 +39,21 @@ BODY_KEYPOINT_INDICES = range(5, 17)
 PREVIEW_SIZE = (640, 480)
 PREVIEW_JPEG_MAX_BYTES = 55000  # Local single-UDP-datagram safety margin.
 PREVIEW_JPEG_QUALITIES = (78, 68, 58, 48, 38)
-MIN_VISIBLE_KEYPOINT_CONFIDENCE = 0.45
+# Visual-only hint can show a real, moderately confident YOLO joint while the
+# separate 0.45+ torso/gesture checks continue to decide gameplay authority.
+# A child should not see a blank or gray guide simply because a wrist/hip
+# briefly falls below the strict control threshold.
+MIN_VISIBLE_KEYPOINT_CONFIDENCE = 0.35
+# Raw-camera fallback keeps the webcam responsive when YOLO genuinely stalls.
+# Do not erase fresh real skeleton artwork after only 0.6 s: slower classroom
+# inference can otherwise alternate green-bones / empty-frame / green-bones.
+# Stay below Godot PoseService's 1.4 s stale-preview limit: no ghost skeletons.
+RAW_PREVIEW_FALLBACK_DELAY_SECONDS = 1.15
 # A backend can report opened while never producing a frame (often MSMF on
 # Windows). Probe reads on a separate capture thread, then fall back safely.
 CAMERA_FIRST_FRAME_WAIT_SECONDS = 2.3
 # Never let a queued/slowly inferred old picture enroll or move the student.
-MAX_CAMERA_SAMPLE_AGE_SECONDS = 0.85
+MAX_CAMERA_SAMPLE_AGE_SECONDS = 0.65
 
 
 def draw_skeleton_preview(cv2: object, frame: object, visible_people: list[dict],
@@ -63,6 +72,22 @@ def draw_skeleton_preview(cv2: object, frame: object, visible_people: list[dict]
     height = max(1, round(source_height * scale))
     canvas = cv2.resize(frame, (width, height))
     for person in visible_people:
+        # Preserve the visual-only role on each *currently detected* skeleton.
+        # Passive people can be seen while the selected student is occluded,
+        # but their bodies can NEVER be passed to the movement/gesture APIs.
+        role = person.get("preview_role", "active")
+        passive = role != "active"
+        # A real SOLO detected person is green immediately, even during the
+        # initial physical-lock hold or a low-confidence torso observation.
+        # The brighter/thicker stroke still identifies an authenticated SOLO
+        # controller; multi-person candidates remain muted. These are ONLY
+        # display pixels, never calibration or gameplay control data.
+        bone_color = ((65, 255, 80) if role == "active" else
+                      (75, 230, 105) if role == "solo_pending" else
+                      (145, 125, 85))
+        joint_color = ((30, 255, 120) if role == "active" else
+                       (65, 235, 130) if role == "solo_pending" else
+                       (185, 155, 95))
         points = person.get("keypoints", [])
         visible: dict[int, tuple[int, int]] = {}
         for index in BODY_KEYPOINT_INDICES:
@@ -84,10 +109,30 @@ def draw_skeleton_preview(cv2: object, frame: object, visible_people: list[dict]
             visible[index] = (round(x * (width - 1)), round(y * (height - 1)))
         for first, second in SKELETON_EDGES:
             if first in visible and second in visible:
-                cv2.line(canvas, visible[first], visible[second], (80, 240, 120), 2)
+                cv2.line(canvas, visible[first], visible[second], bone_color,
+                         3 if role == "active" else 2 if role == "solo_pending" else 1)
         for point in visible.values():
-            cv2.circle(canvas, point, 3, (20, 235, 235), -1)
+            cv2.circle(canvas, point, 4 if role == "active" else
+                       3 if role == "solo_pending" else 2, joint_color, -1)
     return canvas
+
+
+def preview_people(people: list[dict], selected: dict | None,
+                   highlight_solo_candidate: bool = False) -> list[dict]:
+    """Real visible candidates for preview, with exactly one active controller.
+
+    Return new lightweight dictionaries: do not mutate the StudentLock's
+    people, preserve actual keypoints and never draw a remembered skeleton.
+    An explicitly verified raw-solo body still enrolling may use a softer
+    green visual role; it is NEVER an active gameplay/controller role.
+    """
+    selected_id = selected.get("track_id") if selected is not None else None
+    return [{**person, "preview_role": (
+                "active" if selected_id is not None and
+                person["track_id"] == selected_id else
+                "solo_pending" if selected is None and highlight_solo_candidate
+                and len(people) == 1 else "candidate")}
+            for person in people]
 
 
 def encode_preview_jpeg(cv2: object, canvas: object) -> bytes | None:
@@ -135,7 +180,10 @@ def resilient_body_position(keypoints: list[list[float]], minimum: float = 0.45)
         return full
     if len(keypoints) < 13:
         return None
-    for a, b in ((5, 6), (11, 12)):
+    # Turning, stepping sideways or raising an arm can temporarily obscure a
+    # shoulder or hip on the far side. A same-side shoulder+hip is still TWO
+    # actual fresh torso landmarks, unlike estimating a pose from a box alone.
+    for a, b in ((5, 6), (11, 12), (5, 11), (6, 12)):
         left, right = keypoints[a], keypoints[b]
         if all(len(point) >= 3 and point[2] >= minimum for point in (left, right)):
             return (left[0] + right[0]) * 0.5
@@ -253,6 +301,83 @@ class PlaneSteeringTracker:
         return x
 
 
+def plane_arm_bank(keypoints: list[list[float]], minimum: float = 0.45) -> tuple[bool, bool, float]:
+    """Measure live, *mirrored screen-space* T-pose and continuous wing banking.
+
+    Returns (t_pose, bank_valid, signed_bank), where -1 is screen LEFT and
+    +1 is screen RIGHT. The camera has already been cv2.flip(..., 1)'d.
+    Requires both real shoulders, elbows and wrists on the CURRENT inference.
+    Missing/weak joints cannot inherit a previous bank or fabricate control.
+    """
+    if len(keypoints) < 11:
+        return False, False, 0.0
+
+    def get_joint(index: int) -> tuple[float, float] | None:
+        joint = keypoints[index]
+        if len(joint) < 3:
+            return None
+        try:
+            x, y, conf = (float(item) for item in joint[:3])
+        except (ValueError, TypeError, OverflowError):
+            return None
+        if not all(math.isfinite(v) for v in (x, y, conf)) or conf < minimum:
+            return None
+        if not (0.0 <= x <= 1.0 and 0.0 <= y <= 1.0):
+            return None
+        return x, y
+
+    shoulders = (get_joint(5), get_joint(6))
+    elbows = (get_joint(7), get_joint(8))
+    wrists = (get_joint(9), get_joint(10))
+    if any(joint is None for joint in (*shoulders, *elbows, *wrists)):
+        return False, False, 0.0
+    width = abs(shoulders[1][0] - shoulders[0][0])
+    if width < 0.065:
+        return False, False, 0.0
+    # COCO indices refer to ANATOMICAL left/right; mirrored camera controls
+    # must sort by screen X or their directions invert whenever camera flips.
+    screen_left = 0 if shoulders[0][0] < shoulders[1][0] else 1
+    screen_right = 1 - screen_left
+    angles = []
+    t_arm_level = []
+    for side in (screen_left, screen_right):
+        shoulder, elbow, wrist = shoulders[side], elbows[side], wrists[side]
+        direction = -1.0 if side == screen_left else 1.0
+        elbow_out = direction * (elbow[0] - shoulder[0]) / width
+        wrist_out = direction * (wrist[0] - shoulder[0]) / width
+        wrist_after_elbow = direction * (wrist[0] - elbow[0]) / width
+        # A hanging or folded arm is not a wing. Strong horizontal extension
+        # must still be visible even during a 45-degree tilted flight pose.
+        if elbow_out < 0.14 or wrist_out < 0.58 or wrist_after_elbow < 0.13:
+            return False, False, 0.0
+        angle = math.atan2(wrist[1] - shoulder[1], abs(wrist[0] - shoulder[0]))
+        elbow_angle = math.atan2(elbow[1] - shoulder[1], abs(elbow[0] - shoulder[0]))
+        if abs(angle) > math.radians(62) or abs(elbow_angle) > math.radians(68):
+            return False, False, 0.0
+        angles.append(angle)
+        # Classroom cameras see small children from different heights; even a
+        # genuine arms-wide T-pose often tilts slightly. 12/18 degrees caused
+        # the full three-second intro calibration to restart on a single
+        # ordinary inference wobble. Permit modest 20/25-degree tilt while
+        # still requiring two confidently observed OUTWARD shoulder/elbow/
+        # wrist chains above, and never accept hanging/folded arms.
+        t_arm_level.append(abs(angle) <= math.radians(20)
+                           and abs(elbow_angle) <= math.radians(25))
+
+    # Both down-tilted arms mean 'lowered arms', NOT permission to keep flying.
+    if all(angle > math.radians(28) for angle in angles):
+        return False, False, 0.0
+
+    t_pose = all(t_arm_level)
+    # Relative ANGLES, not torso X or shoulder position: level arms => zero,
+    # right wing below left => positive screen-right motion, and vice versa.
+    relative = angles[1] - angles[0]
+    deadzone = math.radians(6)
+    intensity = max(0.0, abs(relative) - deadzone) / math.radians(72)
+    bank = math.copysign(min(1.0, intensity), relative) if intensity > 0 else 0.0
+    return t_pose, True, bank
+
+
 def arms_raised(keypoints: list[list[float]], minimum: float = 0.45) -> bool:
     """Raw gesture observation only; game action requires a separate edge/cooldown."""
     if len(keypoints) < 11:
@@ -270,6 +395,8 @@ def send_status(sock: socket.socket, destination: tuple[str, int], token: str, *
                "left_hand_up": False, "right_hand_up": False,
                "hand_observation_valid": False,
                "wing_roll": 0.0, "plane_steering": 0.0,
+               "plane_t_pose_valid": False, "plane_bank_valid": False,
+               "plane_bank": 0.0,
                "plane_steering_valid": False, "plane_neutral_valid": False,
                **fields}
     sock.sendto(json.dumps(message, separators=(",", ":")).encode("utf-8"), destination)
@@ -441,9 +568,13 @@ class LatestCamera:
             except Exception:
                 ok, frame = False, None
             if not ok:
-                self.read_failures += 1
-                if self.read_failures >= 25:
-                    return
+                # A Windows webcam can briefly return a burst of unsuccessful
+                # reads during autofocus, reconnection or USB contention. The
+                # old 25-attempt limit permanently killed the ONLY frame
+                # reader after ~0.6 s; no later returning student could make
+                # it restart. The supervising run loop owns the wall-clock
+                # timeout/recoverable process restart instead.
+                self.read_failures = min(self.read_failures + 1, 100000)
                 time.sleep(0.025)
                 continue
             self.read_failures = 0
@@ -497,29 +628,44 @@ class LatestCamera:
 
 
 def prepare_pose_model(model_path: str, status_callback=None):
-    """Load once and warm the exact inference/tracker path used by gameplay.
+    """Load once and warm the exact raw pose inference path used by gameplay.
 
-    An empty camera-sized image primes CUDA, preprocessing and ByteTrack with
-    no synthetic person/track. This makes the first real tracked frame cheap.
+    An empty camera-sized image primes CUDA and raw pose preprocessing without
+    creating a persistent ByteTrack tracker or its candidate association state.
+    The game controls exactly one visually detected person, not a track ID.
     If a machine advertises CUDA but fails to initialize it, retry on CPU.
     Bad/corrupt weights and other model errors still surface to the caller.
     """
     from ultralytics import YOLO
     import numpy as np
-    import torch
 
+    # Construct the YOLO wrapper as soon as Ultralytics is available. On
+    # Windows, a separate lazy "import torch" can take several seconds even
+    # after Ultralytics imported successfully; delaying model construction
+    # until *after* that second import leaves the user seeing a bare camera
+    # preview with no actionable startup result. YOLO itself brings in the
+    # torch backend when it needs it; ask torch for CUDA only afterward.
     model = YOLO(model_path)
+    import torch
     gpu = bool(torch.cuda.is_available())
     device = 0 if gpu else "cpu"
+    if not gpu and hasattr(torch, "set_num_threads"):
+        # CPU-only school PCs should leave cores available for Godot's game,
+        # webcam capture, and JPEG delivery once the countdown completes.
+        # Previously this cap ran only on a FAILED CUDA-to-CPU fallback.
+        torch.set_num_threads(min(4, max(1, os.cpu_count() or 1)))
     sample = np.zeros((480, 640, 3), dtype=np.uint8)
 
     def warmup(active_model, chosen_device):
         if status_callback is not None:
-            status_callback(f"Preparing {'CUDA' if chosen_device == 0 else 'CPU'} pose tracker...")
-        # Use track() rather than predict(): initial ByteTrack registration and
-        # its predictor are now primed before the student's first live frame.
-        active_model.track(
-            sample, persist=True, tracker="bytetrack.yaml", imgsz=320,
+            status_callback(f"Preparing {'CUDA' if chosen_device == 0 else 'CPU'} raw pose detector...")
+        # Ultralytics track() installs postprocess callbacks that replace
+        # raw detected people/keypoints with only ByteTrack-accepted tracks.
+        # A camera restarted while a student never steps out of view can then
+        # show no green bones until ByteTrack reacquires. Raw predict() does
+        # not depend on track IDs or person motion at first Retry frame.
+        active_model.predict(
+            sample, imgsz=320,
             conf=0.25, device=chosen_device, classes=[0],
             verbose=False, max_det=12,
         )
@@ -537,7 +683,7 @@ def prepare_pose_model(model_path: str, status_callback=None):
         if status_callback is not None:
             status_callback("GPU pose initialization unavailable; trying CPU tracking...")
         # A failed CUDA predictor can retain its backend/device. Recreate the
-        # lightweight wrapper to guarantee CPU model and tracker initialization.
+        # lightweight wrapper for a clean CPU raw-prediction backend.
         del model
         model = YOLO(model_path)
         device = "cpu"
@@ -548,6 +694,63 @@ def prepare_pose_model(model_path: str, status_callback=None):
             torch.set_num_threads(min(4, max(1, os.cpu_count() or 1)))
         warmup(model, device)
     return model, device, gpu
+
+
+def observed_pose_people(prediction: object, width: int, height: int) -> tuple[list[dict], list[dict]]:
+    """Real YOLO people and independently measured, single-person eligible poses.
+
+    ByteTrack IDs are DIAGNOSTIC only. Even when ByteTrack has no ID, a real
+    box with confident joint geometry is a fully eligible solo controller.
+    No missing landmarks are invented or carried forward across source frames.
+    """
+    detected, preview = [], []
+    boxes_object = getattr(prediction, "boxes", None)
+    if boxes_object is None or width <= 0 or height <= 0:
+        return detected, preview
+    boxes = boxes_object.xyxy.cpu().tolist()
+    ids = getattr(boxes_object, "id", None)
+    tracks = ids.int().cpu().tolist() if ids is not None else []
+    keypoint_object = getattr(prediction, "keypoints", None)
+    landmarks = (keypoint_object.data.cpu().tolist()
+                 if keypoint_object is not None else [])
+    for index, raw_box in enumerate(boxes):
+        if len(raw_box) < 4:
+            continue
+        try:
+            box = [float(v) for v in raw_box[:4]]
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if not all(math.isfinite(v) for v in box):
+            continue
+        box_x = (box[0] + box[2]) / (2.0 * width)
+        box_height = (box[3] - box[1]) / height
+        if not (math.isfinite(box_x) and math.isfinite(box_height)
+                and 0 <= box_x <= 1 and box_height > 0):
+            continue
+        real_id = tracks[index] if index < len(tracks) else None
+        has_id = isinstance(real_id, int) and real_id >= 0
+        sighting_id = real_id if has_id else -1
+        keypoints = []
+        if index < len(landmarks):
+            try:
+                keypoints = [
+                    [float(k[0]) / width, float(k[1]) / height,
+                     float(k[2]) if len(k) > 2 else 1.0]
+                    for k in landmarks[index]
+                ]
+            except (TypeError, ValueError, IndexError, OverflowError):
+                keypoints = []
+        if keypoints:
+            preview.append({"track_id": real_id if has_id else -1,
+                            "keypoints": keypoints})
+        x = resilient_body_position(keypoints)
+        eligible = x is not None and math.isfinite(x) and 0 <= x <= 1
+        detected.append({
+            "track_id": sighting_id, "x": float(x) if eligible else box_x,
+            "height": box_height, "box": box, "eligible": eligible,
+            "keypoints": keypoints if eligible else [],
+        })
+    return detected, preview
 
 
 class LatestPreview:
@@ -568,6 +771,9 @@ class LatestPreview:
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
         self.latest = None
+        self.last_sent_at = 0.0
+        self.failure_count = 0
+        self.total_failures = 0
         self.thread = threading.Thread(target=self._send, name="KilosPosePreview", daemon=True)
 
     def start(self) -> None:
@@ -595,12 +801,18 @@ class LatestPreview:
                 jpeg = encode_preview_jpeg(self.cv2, canvas)
                 if jpeg is not None:
                     self.sock.sendto(b"\x01" + jpeg, self.destination)
+                    self.last_sent_at = time.monotonic()
+                    self.failure_count = 0
                 # Even noisy, over-limit JPEGs must be rate-limited. Encoding
                 # every rejected frame would steal CPU from pose inference.
                 next_sent = time.monotonic() + 1.0 / 24.0
-            except (OSError, ValueError, RuntimeError):
-                # Pose/status processing stays alive if the preview fails.
-                return
+            except Exception:
+                # A transient OpenCV encode/network error used to terminate
+                # this ONLY preview thread forever, hiding all new bones while
+                # gameplay packets continued. Recover from the next fresh pose.
+                self.total_failures += 1
+                self.failure_count += 1
+                next_sent = time.monotonic() + min(0.5, self.failure_count * 0.05)
 
     def close(self) -> None:
         self.stop_event.set()
@@ -613,13 +825,16 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
         recovery: bool = False,
         bones_offset: tuple[float, float] = (0.0, 0.0),
         bones_scale: tuple[float, float] = (1.0, 1.0),
-        prepared_model: tuple | None = None) -> int:
+        prepared_model: tuple | None = None,
+        prepared_model_loader=None) -> int:
     target = ("127.0.0.1", port)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     cap = None
     camera_reader = None
     startup_preview_stop = threading.Event()
     startup_preview_thread = None
+    fallback_preview_stop = threading.Event()
+    fallback_preview_thread = None
     live_preview = None
     boot_started = time.monotonic()
     camera_timings: dict[str, object] = {}
@@ -725,7 +940,12 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
             startup_preview_thread.start()
 
         try:
-            if prepared_model is None:
+            if prepared_model is None and prepared_model_loader is not None:
+                # The teacher entered calibration while background prewarm was
+                # still importing torch/CUDA. Open the camera and publish real
+                # preview FIRST, then wait for that SAME model to finish.
+                model, device, gpu = prepared_model_loader()
+            elif prepared_model is None:
                 # Full preview is already live during cold Ultralytics import.
                 # Use the cached/bundled .pt provided by pose_service.gd.
                 model, device, gpu = prepare_pose_model(
@@ -750,6 +970,36 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
         if preview:
             live_preview = LatestPreview(cv2, sock, target, bones_offset, bones_scale)
             live_preview.start()
+
+            def fresh_camera_fallback() -> None:
+                """Real live image with NO cached skeleton if inference stalls."""
+                previous_fallback_sequence = -1
+                last_fallback_at = 0.0
+                while not fallback_preview_stop.wait(0.045):
+                    if time.monotonic() - live_preview.last_sent_at < RAW_PREVIEW_FALLBACK_DELAY_SECONDS:
+                        continue
+                    if time.monotonic() - last_fallback_at < 0.15:
+                        continue
+                    newest_frame, seq, captured = camera_reader.newest_with_timestamp(
+                        previous_fallback_sequence)
+                    if newest_frame is None:
+                        continue
+                    previous_fallback_sequence = seq
+                    if captured is None or time.monotonic() - captured > MAX_CAMERA_SAMPLE_AGE_SECONDS:
+                        continue
+                    try:
+                        canvas = draw_skeleton_preview(cv2, cv2.flip(newest_frame, 1), [])
+                        jpeg = encode_preview_jpeg(cv2, canvas)
+                        if jpeg is not None:
+                            sock.sendto(b"\x01" + jpeg, target)
+                            last_fallback_at = time.monotonic()
+                    except Exception:
+                        # No stale bones or fatal preview worker failure.
+                        last_fallback_at = time.monotonic()
+
+            fallback_preview_thread = threading.Thread(
+                target=fresh_camera_fallback, name="KilosLiveRawFallback", daemon=True)
+            fallback_preview_thread.start()
         inferred_count = 0
         ready_at = time.monotonic()
         inferred_start = ready_at
@@ -769,11 +1019,16 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                 # continuously raised arm cannot register a second shot.
                 if time.monotonic() - camera_reader.last_frame_time >= 0.3:
                     gesture_detector.update(None, time.monotonic())
-                if camera_reader.read_failures >= 25:
-                    send_status(sock, target, token, state="error", pose=False,
-                                recoverable=True, detail="Camera stopped returning frames. Reconnecting is safe.")
-                    return 5
                 missing_for = time.monotonic() - camera_reader.last_frame_time
+                # Keep retrying through short 25+-read failures (<2.2 sec),
+                # but don't leave a genuinely disconnected camera running
+                # indefinitely: return a recoverable status for Godot to
+                # restart a single worker after the real wall-clock stall.
+                if camera_reader.read_failures >= 25 and missing_for >= 2.2:
+                    send_status(sock, target, token, state="error", pose=False,
+                                recoverable=True,
+                                detail="Camera stream stopped for over two seconds. Restarting safely.")
+                    return 5
                 if missing_for >= 6.0:
                     send_status(sock, target, token, state="error", pose=False,
                                 recoverable=True, detail="Camera frames have stopped. Trying a safe camera restart.")
@@ -794,11 +1049,14 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
             frame = cv2.flip(frame, 1)  # Looking left moves the avatar left.
             height, width = frame.shape[:2]
             try:
-                # Stable ByteTrack IDs let us reject BYSTANDERS after one
-                # student holds CENTER. Detection only is not sufficient for
-                # a crowded classroom because prediction order can change.
-                prediction = model.track(
-                    frame, persist=True, tracker="bytetrack.yaml",
+                # This game no longer uses ByteTrack identity. Ultralytics
+                # track(persist=True) can filter visible YOLO poses until a
+                # persistent tracker accepts a track; after Retry the student
+                # would have to leave and return for green bones to appear.
+                # Predict raw boxes + keypoints for EVERY genuinely fresh
+                # frame, including a stationary student at camera startup.
+                prediction = model.predict(
+                    frame,
                     imgsz=320, conf=0.25, device=device, classes=[0],
                     verbose=False, max_det=12
                 )[0]
@@ -823,44 +1081,30 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
             valid = False
             torso_x = -1.0
             gesture = False
-            people = []
-            if prediction.boxes is not None and prediction.keypoints is not None and prediction.boxes.id is not None:
-                tracks = prediction.boxes.id.int().cpu().tolist()
-                boxes = prediction.boxes.xyxy.cpu().tolist()
-                landmarks = prediction.keypoints.data.cpu().tolist()
-                for track_id, box, point_array in zip(tracks, boxes, landmarks):
-                    keypoints = [
-                        [float(k[0]) / width, float(k[1]) / height,
-                         float(k[2]) if len(k) > 2 else 1.0]
-                        for k in point_array
-                    ]
-                    value = resilient_body_position(keypoints)
-                    if value is None:
-                        continue
-                    people.append({
-                        "track_id": int(track_id),
-                        "x": max(0.0, min(value, 1.0)),
-                        "height": max(0.0, (float(box[3]) - float(box[1])) / height),
-                        "box": box,
-                        "keypoints": keypoints,
-                    })
+            people, visible_people = observed_pose_people(prediction, width, height)
             now = time.monotonic()
-            selected, lock_state, reason = student.update(people, now)
+            # Trust ONLY actual YOLO box occupancy, including id-less boxes.
+            # >=2 occupants or zero occupants immediately revoke ALL game
+            # control, even if one person remains recognized by ByteTrack.
+            selected, lock_state, reason = student.update(
+                people, now, detected_count=number)
             gesture_flags = gesture_detector.update(
                 selected["keypoints"] if selected is not None else None,
                 now,
-                track_id=selected["track_id"] if selected is not None else None,
+                track_id=0 if selected is not None else None,
             )
             if selected is not None:
                 torso_x = selected["x"]
                 gesture = arms_raised(selected["keypoints"])
                 valid = True
-            locked_id = student.locked_id if student.locked_id is not None else -1
+            # Camera NO LONGER registers a person ID. Old Godot fields remain
+            # for diagnostics only; -1 means no per-person binding.
+            locked_id = -1
             measured_plane_x = (stationary_plane_steering(selected["keypoints"])
                                 if valid and lock_state == "locked" and selected is not None
                                 else None)
             plane_steering = plane_tracker.update(
-                locked_id if valid and lock_state == "locked" else None,
+                0 if valid and lock_state == "locked" else None,
                 measured_plane_x, now)
             plane_neutral_valid = (
                 plane_steering is not None and selected is not None
@@ -869,6 +1113,14 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                         and float(selected["keypoints"][i][2]) >= 0.45
                         for i in (5, 6, 9, 10))
             )
+            plane_t_pose_valid = False
+            plane_bank_valid = False
+            plane_bank = 0.0
+            # A real fresh SOLO body can bank without requiring that BOTH
+            # wrists stay level. No ByteTrack identifier is registered here.
+            if valid and lock_state == "locked" and number == 1 and selected is not None:
+                plane_t_pose_valid, plane_bank_valid, plane_bank = plane_arm_bank(
+                    selected["keypoints"])
 
             inferred_count += 1
             if now - inferred_start >= 1.0:
@@ -884,9 +1136,24 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                         plane_steering=round(plane_steering, 5) if plane_steering is not None else 0.0,
                         plane_steering_valid=plane_steering is not None,
                         plane_neutral_valid=plane_neutral_valid,
+                        plane_t_pose_valid=plane_t_pose_valid,
+                        plane_bank_valid=plane_bank_valid,
+                        plane_bank=round(plane_bank, 5),
                         left_hand_up=gesture_flags.left_hand_up,
                         right_hand_up=gesture_flags.right_hand_up,
+                        both_hands_up=gesture_flags.both_hands_up,
+                        both_hands_down=gesture_flags.both_hands_down,
                         lock_state=lock_state, locked_id=locked_id,
+                        physical_track_id=student.physical_track_id,
+                        occupancy_verified=valid and number == 1,
+                        occupancy_mode="single_person",
+                        # Session/calibration retains one epoch regardless of
+                        # ByteTrack churn or 5/15/60-second player absences.
+                        tracking_epoch=student.tracking_epoch,
+                        lock_reacquired=student.lock_reacquired,
+                        needs_recalibration=student.needs_recalibration,
+                        previous_locked_id=(student.previous_locked_id
+                                            if student.previous_locked_id is not None else -1),
                         fps=round(pose_fps, 1), camera_fps=round(camera_reader.camera_fps, 1),
                         device="CUDA" if gpu else "CPU", detail=reason,
                         startup_ms=round((ready_at - boot_started) * 1000),
@@ -895,21 +1162,27 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                         camera_first_preview_ms=preview_first_sent_ms,
                         **camera_timings)
 
-            # Encode JPEG off the inference thread; the one-frame slot drops
-            # obsolete previews when inference is faster than compression.
+            # Render ALL real current YOLO skeletons; only the locked child
+            # may steer. Others are subdued passive candidates and never
+            # receive game control, including during ambiguous crossings.
             if live_preview is not None:
-                # Enrollment and player-position guidance are separate Godot
-                # controls; drawing either as an image overlay would put a
-                # visible box over the student's camera picture.
-                # Never overlay a bystander, an unstable enrollment candidate,
-                # or a transient misidentified pose on the student's picture.
-                # Only the continuously verified camera-local player is shown.
-                shown = [selected] if valid and selected is not None else []
-                live_preview.submit(frame, shown)
+                live_preview.submit(frame, preview_people(
+                    visible_people,
+                    selected if valid and lock_state == "locked" else None,
+                    # A visible fresh ONE-person YOLO skeleton should be
+                    # green during calibration even if strict torso geometry
+                    # is not yet valid for the actual 3-second hold. No
+                    # missing joints are fabricated; crowds remain muted.
+                    # This visual flag NEVER grants gameplay control.
+                    highlight_solo_candidate=(number == 1 and len(people) == 1
+                                              and len(visible_people) == 1)))
     finally:
         startup_preview_stop.set()
+        fallback_preview_stop.set()
         if startup_preview_thread is not None and startup_preview_thread.is_alive():
             startup_preview_thread.join(timeout=0.6)
+        if fallback_preview_thread is not None and fallback_preview_thread.is_alive():
+            fallback_preview_thread.join(timeout=0.6)
         if live_preview is not None:
             live_preview.close()
         if camera_reader is not None:
@@ -923,18 +1196,22 @@ def prewarm_worker(port: int, token: str, camera_index: int, model_path: str,
                    preview: bool, recovery: bool,
                    bones_offset: tuple[float, float],
                    bones_scale: tuple[float, float]) -> int:
-    """Prepare YOLO ahead of calibration without ever opening a camera.
+    """Prepare YOLO ahead of calibration without opening a camera prematurely.
 
     The worker accepts precisely one authenticated, loopback-only UDP
-    start_camera command. Sender uses the same session token as the pose
-    status packets. A 0.7-second heartbeat keeps Godot's watchdog alive while
-    cold torch/CUDA initialization blocks the preparation thread.
+    start_camera command, including DURING model loading. The same model
+    prewarm thread is reused for gameplay; live camera preview can begin
+    immediately after permission without waiting for YOLO/CUDA import.
     """
     target = ("127.0.0.1", port)
     outbound = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     control = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     heartbeat_stop = threading.Event()
     heartbeat_thread = None
+    camera_started = threading.Event()
+    status_lock = threading.Lock()
+    model_ready = threading.Event()
+    model_result: dict[str, object] = {}
     phase = {"state": "prewarming", "detail": "Preparing the offline YOLO26 pose model..."}
     try:
         try:
@@ -946,39 +1223,63 @@ def prewarm_worker(port: int, token: str, camera_index: int, model_path: str,
             return 3
         control_port = control.getsockname()[1]
 
-        def status_update(state: str, detail: str, camera: bool = False) -> None:
-            phase["state"] = state
-            phase["detail"] = detail
-            phase["camera"] = camera
-            send_status(outbound, target, token, state=state, pose=False,
-                        control_port=control_port, model_ready=state == "ready",
-                        camera=camera, detail=detail)
+        def status_update(state: str, detail: str, camera: bool = False,
+                          camera_phase: str = "") -> None:
+            with status_lock:
+                # A slow import's final progress callback must never overtake
+                # the camera-start ACK and revoke a live pose in Godot.
+                if camera_started.is_set() and not camera:
+                    return
+                phase["state"] = state
+                phase["detail"] = detail
+                phase["camera"] = camera
+                send_status(outbound, target, token, state=state, pose=False,
+                            control_port=control_port, model_ready=state == "ready",
+                            camera=camera, camera_phase=camera_phase, detail=detail)
 
         def heartbeat() -> None:
             while not heartbeat_stop.wait(0.7):
-                send_status(outbound, target, token, state=phase["state"],
-                            pose=False, control_port=control_port,
-                            model_ready=phase["state"] == "ready",
-                            camera=phase.get("camera", False),
-                            detail=phase["detail"])
+                with status_lock:
+                    if camera_started.is_set():
+                        return
+                    send_status(outbound, target, token, state=phase["state"],
+                                pose=False, control_port=control_port,
+                                model_ready=phase["state"] == "ready",
+                                camera=False, detail=phase["detail"])
 
         status_update("prewarming", "Preparing the offline YOLO26 pose model...")
         heartbeat_thread = threading.Thread(
             target=heartbeat, name="KilosPosePrewarmHeartbeat", daemon=True)
         heartbeat_thread.start()
 
-        try:
-            prepared = prepare_pose_model(
-                model_path, lambda detail: status_update("prewarming", detail))
-        except ImportError as exc:
-            status_update("error", f"Missing Python package: {exc}. Install requirements-pose.txt.")
-            return 2
-        except Exception as exc:
-            status_update("error", f"Cannot load pose model: {str(exc)[:200]}")
-            return 4
+        def prepare_in_background() -> None:
+            try:
+                model_result["prepared"] = prepare_pose_model(
+                    model_path, lambda detail: status_update("prewarming", detail))
+            except ImportError as exc:
+                model_result["error"] = exc
+                model_result["exit_code"] = 2
+            except Exception as exc:
+                model_result["error"] = exc
+                model_result["exit_code"] = 4
+            finally:
+                model_ready.set()
 
-        status_update("ready", "Pose model is ready. Waiting for camera calibration...")
+        model_thread = threading.Thread(
+            target=prepare_in_background, name="KilosPoseModelPrewarm", daemon=True)
+        model_thread.start()
+        announced_ready = False
         while True:
+            if model_ready.is_set() and not announced_ready:
+                if "error" in model_result:
+                    exc = model_result["error"]
+                    if isinstance(exc, ImportError):
+                        status_update("error", f"Missing Python package: {exc}. Install requirements-pose.txt.")
+                    else:
+                        status_update("error", f"Cannot load pose model: {str(exc)[:200]}")
+                    return int(model_result["exit_code"])
+                status_update("ready", "Pose model is ready. Waiting for camera calibration...")
+                announced_ready = True
             try:
                 packet, address = control.recvfrom(512)
             except socket.timeout:
@@ -998,15 +1299,35 @@ def prewarm_worker(port: int, token: str, camera_index: int, model_path: str,
                     or not hmac.compare_digest(supplied_token, token)
                     or command.get("command") != "start_camera"):
                 continue
-            # Never let a stale `ready` heartbeat overtake the authorized
-            # camera-start acknowledgement in Godot's newest-packet drain.
+            # Authenticate first; only now is the webcam permitted to open.
+            # Camera preview must not wait for torch/CUDA initialization.
+            # Godot's calibration scene may supply a NEW editor-authored
+            # SkeletonPlacement after the model was prewarmed. Apply the
+            # latest authenticated VISUAL transform to JPEG bones only;
+            # measured YOLO joints and 3s holds keep raw source coordinates.
+            try:
+                raw_offset = command.get("bones_offset", bones_offset)
+                raw_scale = command.get("bones_scale", bones_scale)
+                if len(raw_offset) == 2 and len(raw_scale) == 2:
+                    updated_offset = tuple(float(v) for v in raw_offset)
+                    updated_scale = tuple(float(v) for v in raw_scale)
+                    if (all(math.isfinite(v) and abs(v) <= 2.0 for v in updated_offset)
+                            and all(math.isfinite(v) and 0.1 <= v <= 3.0
+                                    for v in updated_scale)):
+                        bones_offset = updated_offset
+                        bones_scale = updated_scale
+            except (TypeError, ValueError, OverflowError):
+                pass
+            with status_lock:
+                camera_started.set()
+                send_status(outbound, target, token, state="loading", pose=False,
+                            camera=True, camera_phase="start_ack",
+                            control_port=control_port,
+                            model_ready=model_ready.is_set() and "error" not in model_result,
+                            detail="Starting your webcam for calibration...")
             heartbeat_stop.set()
             if heartbeat_thread is not None:
                 heartbeat_thread.join(timeout=0.8)
-            # Bridge handshake acknowledgement: Godot stops resending the
-            # authenticated command immediately, even if camera.open takes
-            # several more seconds to complete on this Windows driver.
-            status_update("loading", "Starting your webcam for calibration...", camera=True)
             break
     finally:
         heartbeat_stop.set()
@@ -1015,9 +1336,19 @@ def prewarm_worker(port: int, token: str, camera_index: int, model_path: str,
         control.close()
         outbound.close()
 
+    def wait_for_prepared_model():
+        model_ready.wait()
+        if "error" in model_result:
+            raise model_result["error"]
+        return model_result["prepared"]
+
+    if model_ready.is_set() and "error" not in model_result:
+        return run(port, token, camera_index, model_path, preview,
+                   recovery=recovery, bones_offset=bones_offset,
+                   bones_scale=bones_scale, prepared_model=model_result["prepared"])
     return run(port, token, camera_index, model_path, preview,
                recovery=recovery, bones_offset=bones_offset,
-               bones_scale=bones_scale, prepared_model=prepared)
+               bones_scale=bones_scale, prepared_model_loader=wait_for_prepared_model)
 
 
 def main() -> int:

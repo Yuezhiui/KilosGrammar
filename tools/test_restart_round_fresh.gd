@@ -2,7 +2,7 @@ extends SceneTree
 
 ## True app/router integration. No camera, PostgreSQL, or on-disk student data.
 ## Verifies Restart Round (not Resume) creates a fresh game for ALL modes.
-const MAIN_PATH := "res://main_menu.tscn"
+const MAIN_PATH := "res://ui/main_menu/main_menu.tscn"
 var failures: Array[String] = []
 var checks := 0
 
@@ -43,6 +43,20 @@ func _run() -> void:
 
 func _case(app: Control, activity: String, mode: String) -> void:
 	var label := "%s / %s" % [activity, mode]
+	var pose := root.get_node("PoseService")
+	# Restart of a Human Plane round can bypass a new calibration only when
+	# the ORIGINAL live student lock is still verified. Test that safe fast
+	# path using a synthetic current sample, never a physical webcam.
+	pose.set_process(false)
+	if activity == "Human Plane":
+		pose.set("active", true)
+		pose.set("player_x", 0.5)
+		pose.set("last_pose_ms", Time.get_ticks_msec())
+		pose.set("current_status", {"state": "tracking", "pose": true,
+			"camera": true, "lock_state": "locked", "locked_id": 37,
+			"plane_steering": 0.5, "plane_steering_valid": true})
+		_check(bool(pose.call("set_stationary_plane_calibration", 0.5, 37, 0.5, 0.0)),
+			label + " uses a verified synthetic original-player neutral lock")
 	var setup := {"student_id": "QA-RESTART", "student_name": "QA Student",
 		"grade_section": "Test Grade", "activity": activity, "topic": "Noun",
 		"game_style": "Noun", "game_mode": mode, "difficulty": "Normal",

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b00toria1home"]
 
 [ext_resource type="Script" uid="uid://craeflyi3pcg" path="res://ui/tutorial/tutorial_home.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://qaqbhp7hlw4a" path="res://Components/Tutorial/Redesign/bg_classroom.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://dx1fsocdnlfsq" path="res://Components/Credits/Redesign/background1.png" id="2_bg"]
 [ext_resource type="Texture2D" uid="uid://47ow82lo8f3j" path="res://Components/Tutorial/Home/0e12567d-88f7-49e6-9bce-06cc27a6d16b.png" id="3_board"]
 [ext_resource type="Texture2D" uid="uid://cbo2svdetld00" path="res://Components/Tutorial/Redesign/title_whole_body.png" id="4_title"]
 [ext_resource type="Texture2D" uid="uid://ccw7y6pr8pury" path="res://Components/Tutorial/Home/Cat.png" id="5_cat"]
@@ -32,12 +32,12 @@ shadow_size = 5
 shadow_offset = Vector2(2, 4)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_check"]
-bg_color = Color(1, 0.82, 0.23, 1)
+bg_color = Color(1, 0, 0.23137255, 1)
 border_width_left = 4
 border_width_top = 4
 border_width_right = 4
 border_width_bottom = 4
-border_color = Color(0.91, 0.51, 0.11, 1)
+border_color = Color(1, 0.19215687, 0.19215687, 1)
 corner_radius_top_left = 26
 corner_radius_top_right = 26
 corner_radius_bottom_right = 26
@@ -47,7 +47,7 @@ shadow_size = 5
 shadow_offset = Vector2(2, 4)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_play"]
-bg_color = Color(0.28, 0.73, 0.98, 1)
+bg_color = Color(0.08087637, 0.5900774, 0.8305122, 1)
 border_width_left = 4
 border_width_top = 4
 border_width_right = 4
@@ -62,12 +62,12 @@ shadow_size = 5
 shadow_offset = Vector2(2, 4)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_notice"]
-bg_color = Color(0.71, 0.89, 1, 1)
+bg_color = Color(0, 0, 0, 1)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
 border_width_bottom = 3
-border_color = Color(0.15, 0.59, 0.94, 1)
+border_color = Color(1, 1, 1, 1)
 corner_radius_top_left = 22
 corner_radius_top_right = 22
 corner_radius_bottom_right = 22
@@ -116,20 +116,20 @@ mouse_filter = 2
 
 [node name="Background" type="TextureRect" parent="TutorialStage" unique_id=1607791105]
 layout_mode = 0
-offset_left = 130.0
-offset_top = 136.0
-offset_right = 1156.0
-offset_bottom = 687.7062
+offset_left = 89.0
+offset_top = 95.0
+offset_right = 1208.0
+offset_bottom = 672.0
 mouse_filter = 2
 texture = ExtResource("3_board")
 expand_mode = 1
 
 [node name="CAT" type="TextureRect" parent="TutorialStage" unique_id=426051580]
 layout_mode = 0
-offset_left = 214.0
-offset_top = 63.0
-offset_right = 404.06702
-offset_bottom = 192.9715
+offset_left = 195.99998
+offset_top = 25.000002
+offset_right = 386.06702
+offset_bottom = 154.9715
 rotation = -0.0196288
 mouse_filter = 2
 texture = ExtResource("5_cat")
@@ -137,10 +137,10 @@ expand_mode = 1
 
 [node name="TitleArtwork" type="TextureRect" parent="TutorialStage" unique_id=2029139944]
 layout_mode = 0
-offset_left = 267.0
-offset_top = 62.7062
-offset_right = 1025.0
-offset_bottom = 222.7062
+offset_left = 270.0
+offset_top = 40.0
+offset_right = 1028.0
+offset_bottom = 200.0
 mouse_filter = 2
 texture = ExtResource("4_title")
 expand_mode = 1
@@ -158,10 +158,10 @@ expand_mode = 1
 
 [node name="Book" type="TextureRect" parent="TutorialStage" unique_id=1599409123]
 layout_mode = 0
-offset_left = 981.00006
-offset_top = 118.00001
-offset_right = 1112.3865
-offset_bottom = 212.0
+offset_left = 1003.00006
+offset_top = 76.0
+offset_right = 1134.3865
+offset_bottom = 169.99998
 rotation = 0.111336
 mouse_filter = 2
 texture = ExtResource("7_books")
@@ -169,10 +169,10 @@ expand_mode = 1
 
 [node name="GradHat" type="TextureRect" parent="TutorialStage" unique_id=983401109]
 layout_mode = 0
-offset_left = 831.0
-offset_top = 35.7062
-offset_right = 957.0
-offset_bottom = 125.7062
+offset_left = 834.0
+offset_top = 13.0
+offset_right = 960.0
+offset_bottom = 103.0
 rotation = 0.191548
 scale = Vector2(1.08472, 1.01747)
 mouse_filter = 2
@@ -181,10 +181,10 @@ expand_mode = 1
 
 [node name="ChooseGameCard" type="Panel" parent="TutorialStage" unique_id=2005535250]
 layout_mode = 0
-offset_left = 267.0
-offset_top = 224.0
+offset_left = 153.0
+offset_top = 198.0
 offset_right = 514.0
-offset_bottom = 437.0
+offset_bottom = 433.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_choose")
 
@@ -202,10 +202,10 @@ horizontal_alignment = 1
 
 [node name="Icon" type="TextureRect" parent="TutorialStage/ChooseGameCard" unique_id=53047581]
 layout_mode = 0
-offset_left = 78.0
-offset_top = 5.0
-offset_right = 168.0
-offset_bottom = 100.0
+offset_left = 117.0
+offset_top = 10.0
+offset_right = 230.0
+offset_bottom = 105.0
 mouse_filter = 2
 texture = ExtResource("9_controller")
 expand_mode = 1
@@ -213,9 +213,9 @@ stretch_mode = 5
 
 [node name="Title" type="Label" parent="TutorialStage/ChooseGameCard" unique_id=465330984]
 layout_mode = 0
-offset_left = 14.0
+offset_left = 56.0
 offset_top = 100.0
-offset_right = 233.0
+offset_right = 275.0
 offset_bottom = 139.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("15_font")
@@ -226,9 +226,9 @@ vertical_alignment = 1
 
 [node name="Description" type="Label" parent="TutorialStage/ChooseGameCard" unique_id=1537791508]
 layout_mode = 0
-offset_left = 19.0
+offset_left = 78.0
 offset_top = 143.0
-offset_right = 227.0
+offset_right = 286.0
 offset_bottom = 201.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("15_font")
@@ -241,9 +241,9 @@ autowrap_mode = 3
 [node name="CameraCalibrateCard" type="Panel" parent="TutorialStage" unique_id=2033307692]
 layout_mode = 0
 offset_left = 541.0
-offset_top = 224.0
+offset_top = 198.0
 offset_right = 788.0
-offset_bottom = 437.0
+offset_bottom = 433.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_check")
 
@@ -276,7 +276,7 @@ offset_left = 12.0
 offset_top = 98.0
 offset_right = 235.0
 offset_bottom = 143.0
-theme_override_colors/font_color = Color(0.4, 0.17, 0.045, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 18
 text = "CAMERA & CALIBRATE"
@@ -290,7 +290,7 @@ offset_left = 19.0
 offset_top = 143.0
 offset_right = 227.0
 offset_bottom = 201.0
-theme_override_colors/font_color = Color(0.4, 0.17, 0.045, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 15
 text = "Stand in view for a quick camera position check."
@@ -301,9 +301,9 @@ autowrap_mode = 3
 [node name="LearnPlayingCard" type="Panel" parent="TutorialStage" unique_id=635594314]
 layout_mode = 0
 offset_left = 815.0
-offset_top = 224.0
-offset_right = 1062.0
-offset_bottom = 437.0
+offset_top = 198.0
+offset_right = 1146.0
+offset_bottom = 433.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_play")
 
@@ -321,10 +321,10 @@ horizontal_alignment = 1
 
 [node name="Icon" type="TextureRect" parent="TutorialStage/LearnPlayingCard" unique_id=87085542]
 layout_mode = 0
-offset_left = 78.0
-offset_top = 5.0
-offset_right = 168.0
-offset_bottom = 100.0
+offset_left = 135.0
+offset_top = 10.0
+offset_right = 225.0
+offset_bottom = 105.0
 mouse_filter = 2
 texture = ExtResource("11_play")
 expand_mode = 1
@@ -332,11 +332,11 @@ stretch_mode = 5
 
 [node name="Title" type="Label" parent="TutorialStage/LearnPlayingCard" unique_id=622158788]
 layout_mode = 0
-offset_left = 12.0
-offset_top = 98.0
-offset_right = 235.0
-offset_bottom = 143.0
-theme_override_colors/font_color = Color(0.03, 0.21, 0.52, 1)
+offset_left = 56.0
+offset_top = 100.0
+offset_right = 279.0
+offset_bottom = 145.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 19
 text = "LEARN WHILE PLAYING"
@@ -346,14 +346,14 @@ autowrap_mode = 3
 
 [node name="Description" type="Label" parent="TutorialStage/LearnPlayingCard" unique_id=705485329]
 layout_mode = 0
-offset_left = 19.0
-offset_top = 143.0
-offset_right = 227.0
-offset_bottom = 201.0
-theme_override_colors/font_color = Color(0.03, 0.21, 0.52, 1)
+offset_left = 73.0
+offset_top = 145.0
+offset_right = 281.0
+offset_bottom = 203.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 15
-text = "Follow the spotlight tips, then play!"
+text = "Calibrate, count down, then play!"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
@@ -361,10 +361,10 @@ autowrap_mode = 3
 [node name="FirstArrow" type="Label" parent="TutorialStage" unique_id=2016954451]
 layout_mode = 0
 offset_left = 510.0
-offset_top = 305.0
+offset_top = 279.0
 offset_right = 546.0
-offset_bottom = 347.0
-theme_override_colors/font_color = Color(0.94, 0.48, 0.05, 1)
+offset_bottom = 321.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 28
 text = "→"
@@ -374,9 +374,9 @@ vertical_alignment = 1
 [node name="SecondArrow" type="Label" parent="TutorialStage" unique_id=513296427]
 layout_mode = 0
 offset_left = 784.0
-offset_top = 305.0
+offset_top = 279.0
 offset_right = 820.0
-offset_bottom = 347.0
+offset_bottom = 321.0
 theme_override_colors/font_color = Color(0.94, 0.48, 0.05, 1)
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 28
@@ -386,33 +386,34 @@ vertical_alignment = 1
 
 [node name="GuideNotice" type="Panel" parent="TutorialStage" unique_id=2017420836]
 layout_mode = 0
-offset_left = 267.0
-offset_top = 445.0
-offset_right = 1066.0
-offset_bottom = 502.0
+offset_left = 137.0
+offset_top = 448.0
+offset_right = 1172.0
+offset_bottom = 518.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_notice")
 
 [node name="NoticeText" type="Label" parent="TutorialStage/GuideNotice" unique_id=171395766]
 layout_mode = 0
-offset_left = 24.0
-offset_top = 4.0
-offset_right = 775.0
-offset_bottom = 53.0
-theme_override_colors/font_color = Color(0.03, 0.18, 0.48, 1)
+offset_left = 2.0
+offset_top = -1.0
+offset_right = 1035.0
+offset_bottom = 70.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0)
 theme_override_fonts/font = ExtResource("15_font")
-theme_override_font_sizes/font_size = 16
-text = "Choose a game, check your camera, and follow the spotlight guide before the timer starts!"
+theme_override_font_sizes/font_size = 20
+text = "Choose a game, calibrate your camera, then get ready for the 3-2-1 countdown!"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 
 [node name="StartButton" type="Button" parent="TutorialStage" unique_id=1888156776]
 layout_mode = 0
-offset_left = 456.0
-offset_top = 513.0
-offset_right = 836.0
-offset_bottom = 582.0
+offset_left = 137.0
+offset_top = 535.0
+offset_right = 482.0
+offset_bottom = 605.0
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0, 0, 0, 0)
 theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
@@ -423,7 +424,7 @@ theme_override_colors/font_disabled_color = Color(0, 0, 0, 0)
 theme_override_styles/normal = SubResource("StyleBoxEmpty_button")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_button")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_button")
-theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_button")
 text = "START GUIDED TUTORIAL"
 
 [node name="Artwork" type="TextureRect" parent="TutorialStage/StartButton" unique_id=1824091277]
@@ -440,10 +441,10 @@ stretch_mode = 5
 
 [node name="GrammarButton" type="Button" parent="TutorialStage" unique_id=948984821]
 layout_mode = 0
-offset_left = 338.0
-offset_top = 590.0
-offset_right = 638.0
-offset_bottom = 655.0
+offset_left = 482.0
+offset_top = 535.0
+offset_right = 827.0
+offset_bottom = 605.0
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0, 0, 0, 0)
 theme_override_colors/font_focus_color = Color(0, 0, 0, 0)
@@ -471,10 +472,10 @@ stretch_mode = 5
 
 [node name="BackButton" type="Button" parent="TutorialStage" unique_id=1612087920]
 layout_mode = 0
-offset_left = 694.0
-offset_top = 590.0
-offset_right = 994.0
-offset_bottom = 655.0
+offset_left = 827.0
+offset_top = 535.0
+offset_right = 1172.0
+offset_bottom = 605.0
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0, 0, 0, 0)
 theme_override_colors/font_focus_color = Color(0, 0, 0, 0)

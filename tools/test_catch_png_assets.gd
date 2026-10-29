@@ -1,12 +1,12 @@
 extends SceneTree
 
-# STRICT PNG asset gate for the reverted original characters and generated HUD.
+# STRICT PNG asset gate for the original animal characters and generated HUD.
 # Godot --headless --path . --script res://tools/test_catch_png_assets.gd
-# Original WordCatcher body/basket + caught Apple.png MUST remain selected;
-# the generated word_apple.png is ONLY for falling apples. Static state PNGs
-# replace the three legacy dynamic red/black heart TextureRects.
+# Original body/basket and actual APPLE HALF.png collected fruit stay selected;
+# generated word_apple.png with grammar label remains for FALLING apples.
+# Static state PNGs replace three legacy dynamic heart TextureRects.
 
-const SCENE_PATH := "res://ui/minigames/catch_word.tscn"
+const SCENE_PATH := "res://ui/minigames/catch_the_word/catch_word.tscn"
 const DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const PLAQUES := {
 	"TitlePlaque": "title_board.png",
@@ -16,14 +16,14 @@ const PLAQUES := {
 	"ScorePlaque": "score_board.png",
 }
 const FALLING_APPLE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
-const CAUGHT_APPLE := "res://Components/Gameplay/Catch the Word/Items/Apple.png"
+const CAUGHT_APPLE := "res://Components/Gameplay/Catch the Word/Items/APPLE HALF.png"
 const ORIGINAL_CHAR_DIR := "res://Components/Gameplay/Catch the Word/Characters/"
 const HEART_STATES := {
 	1: DIR + "replacement/lives_state_1.png",
 	2: DIR + "replacement/lives_state_2.png",
 	3: DIR + "replacement/lives_state_3.png",
 }
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const MODES := ["Seconds", "Lives"]
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
@@ -87,6 +87,13 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 	root.size = viewport_size
 	await process_frame
 	await process_frame
+	# Catch's KidsVoice helper installs a persistent root-owned music service on
+	# first mount. Establish that expected service before counting temporary
+	# scene children so a true leaked game node still fails this assertion.
+	var music_script := load("res://ui/shared/game_audio.gd") as Script
+	var music_manager := music_script.call("ensure", self) as Node
+	_check(music_manager != null and music_manager.get_parent() == root,
+		"shared root game music manager is ready before PNG HUD cases")
 	var initial_children := root.get_child_count()
 	var host := Control.new()
 	host.size = Vector2(viewport_size)
@@ -123,14 +130,18 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 			_check(plaque.texture != null and plaque.texture.get_width() >= 100,
 				"%s: %s has decoded raster texture" % [viewport_size, plaque_name])
 
-		var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+		var score_layer := game.get_node_or_null("ScoreDrawLayer") as Control
+		var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
 		var visible_score_titles := 0
-		var score_container := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer")
-		if score_container != null:
-			for child in score_container.get_children():
+		if score_layer != null:
+			for child in score_layer.get_children():
 				if child is Label and (child as Label).text.strip_edges().to_upper() == "SCORE":
 					if (child as Label).is_visible_in_tree():
 						visible_score_titles += 1
+		_check(numeric != null and numeric.get_parent() == score_layer
+			and not game.has_node("ScoreDrawLayer/ScoreBottomContainer")
+			and not hud.has_node("ScoreNumber"),
+			"%s: editor's single numeric score moves directly to ScoreDrawLayer" % viewport_size)
 		for baked_name in ["TitleLabel", "TitleTheLabel", "TitleWordLabel", "ScoreLabel"]:
 			var baked := hud.get_node_or_null(baked_name) as Label
 			_check(baked == null or not baked.is_visible_in_tree(),
@@ -149,7 +160,7 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 					"topic": topic,
 					"game_mode": mode,
 					"difficulty": "Normal",
-					"catch_character": "Girl",
+					"catch_character": "Cat",
 					"catch_map": "Forest",
 					"score": 94,
 					"lives": 2,
@@ -171,8 +182,10 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 						context + ": removed " + absent_name + " stays absent after context switch")
 				if topic_label != null:
 					_check_prompt_legibility(topic_label, hud.get_node_or_null("TitlePlaque") as Control, context)
-				_check(numeric != null and numeric.text == "94",
-					context + ": dynamic numeric score is updated")
+				# This is a NEW game, not an authenticated pause/resume. Supplied
+				# context score=94 must NOT inject unearned points into a fresh round.
+				_check(int(game.get("score")) == 0 and numeric != null and numeric.text == "0",
+					context + ": fresh round starts at visible 0, ignoring stray incoming score=94")
 				_check(clock != null and clock.is_visible_in_tree() == (mode == "Seconds"),
 					context + ": timer visibility matches game mode")
 				_check(hearts == null or not hearts.is_visible_in_tree(),
@@ -225,8 +238,11 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 		_check(spawned != null, ctx + ": falling word tile can be created")
 		if spawned != null:
 			var falling_sprite := spawned.get_node_or_null("AppleSprite") as TextureRect
+			var falling_label := spawned.get_node_or_null("WordLabel") as Label
 			_check(falling_sprite != null and falling_sprite.texture == apple_texture,
 				ctx + ": falling word AppleSprite uses glossy PNG")
+			_check(falling_label != null and falling_label.text == "TEST" and falling_label.visible,
+				ctx + ": falling word apple retains its readable grammar label")
 			spawned.queue_free()
 		if body != null and basket != null and collected != null:
 			var sprite_group := body.get_parent()
@@ -235,13 +251,14 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 				ctx + ": active body/basket are editor-authored children of selected root sibling")
 			_check(body.is_visible_in_tree() and basket.is_visible_in_tree(),
 				ctx + ": selected character body and basket are visible")
-			_check(body.z_index + group.z_index < collected.z_index and collected.z_index < basket.z_index + group.z_index,
-				ctx + ": body < collected apples < basket/hands draw order")
+			_check(body.z_index + group.z_index == 0 and basket.z_index + group.z_index == 1 and collected.z_index == 2,
+				ctx + ": exact approved Body 0 / Basket 1 / Collected Half Apples 2 order")
 			var screen := Rect2(Vector2.ZERO, Vector2(viewport_size))
 			for sprite in [body, basket]:
 				var visual_rect := _sprite_visual_rect(sprite)
-				_check(visual_rect.has_area() and screen.encloses(visual_rect.grow(-0.5)),
-					"%s: active %s is fully inside %s (actual %s)" %
+				var framed := _avatar_framed(screen, visual_rect) if sprite == body else screen.encloses(visual_rect.grow(-0.5))
+				_check(visual_rect.has_area() and framed,
+					"%s: active %s retains intended face/torso and full basket framing at %s (actual %s)" %
 					[ctx, sprite.name, viewport_size, visual_rect])
 			# The original cropped body/basket art must retain comparable
 			# displayed widths, even though their source crop sizes differ.
@@ -258,9 +275,9 @@ func _verify_viewport(packed: PackedScene, viewport_size: Vector2i) -> void:
 				if child is TextureRect:
 					var caught := child as TextureRect
 					_check(caught.texture != null and caught.texture.resource_path == CAUGHT_APPLE,
-						ctx + ": collected apple retains original Components/Gameplay/Catch the Word/Items/Apple.png")
-					_check(caught.get_child_count() > 0 and caught.get_child(0) is Label,
-						ctx + ": caught apple has editable word label")
+						ctx + ": collected fruit uses actual user-supplied APPLE HALF.png")
+					_check(caught.get_child_count() == 0 and caught.material == null,
+						ctx + ": half-apple has no old word label or clipping shader")
 
 	host.queue_free()
 	await process_frame
@@ -284,6 +301,16 @@ func _sprite_visual_rect(sprite: Sprite2D) -> Rect2:
 		min_corner = min_corner.min(point)
 		max_corner = max_corner.max(point)
 	return Rect2(min_corner, max_corner - min_corner)
+
+
+func _avatar_framed(frame: Rect2, rect: Rect2) -> bool:
+	if not rect.has_area():
+		return false
+	var visible_ratio := (minf(rect.end.y, frame.end.y) - maxf(rect.position.y, frame.position.y)) / rect.size.y
+	return rect.position.x >= frame.position.x - 1.5 and rect.end.x <= frame.end.x + 1.5 \
+		and rect.position.y >= frame.position.y - 1.5 and rect.position.y <= frame.size.y * 0.64 \
+		and rect.end.y >= frame.end.y - 1.5 and rect.end.y <= frame.end.y + frame.size.y * 0.18 \
+		and visible_ratio >= 0.75
 
 
 func _check_prompt_legibility(label: Label, title_board: Control, context: String) -> void:
@@ -348,7 +375,7 @@ func _fail(message: String) -> void:
 func _finish(previous_size: Vector2i) -> void:
 	root.size = previous_size
 	if failures.is_empty():
-		print("PASS  Catch reverted PNG HUD: %d checks, original 4 characters, 3 static lives states, 30 topic/mode/viewport states" % checked)
+		print("PASS Catch animal PNG HUD: %d checks, 5 animals and 3 static lives states" % checked)
 		quit(0)
 	else:
 		for message in failures:

@@ -6,7 +6,7 @@ extends SceneTree
 const ROUTES := [
 	"tutorial_home", "grammar_guide",
 	"student_setup", "play_activity", "play_topic", "play_difficulty",
-	"camera_check", "calibration", "gameplay", "pause",
+		"calibration", "gameplay", "pause",
 	"results", "leaderboard", "settings"
 ]
 var failures: Array[String] = []
@@ -18,7 +18,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var packed := load("res://main_menu.tscn") as PackedScene
+	var packed := load("res://ui/main_menu/main_menu.tscn") as PackedScene
 	if packed == null:
 		push_error("Cannot load main menu")
 		quit(1)

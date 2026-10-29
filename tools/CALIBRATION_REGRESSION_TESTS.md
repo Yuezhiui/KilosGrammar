@@ -33,19 +33,18 @@ directly instead of cloning calibration behavior inside a test-only fake.
    The scene uses **Gochi Hand** for the calibration title, stage heading,
    large intro and instructional text. Layout fits 875×500, 1280×720 and
    1920×1080. The navigation button reads **Back to Main**.
-3. During the **2.5-second full-screen introduction**, the only visible
-   calibration content above the 70%-dimmed PLAY background is the large
-   **CALIBRATION** title and **BACK TO MAIN** button. The script hides every
-   sibling of `IntroOverlay` in `TutorialStage`, rather than relying on a dark
-   cover over still-clickable controls. An extra intro tint must not darken
-   the 70% overlay further. The intro Back button can receive keyboard focus
-   and directly requests the Main route; hidden camera, Skip and Reset
-   buttons cannot take user input. IntroDescription and IntroCountdown remain
-   hidden. No part of the intro measures a pose or credits hold time.
-4. Once the intro reaches 2.5 seconds, normal stage headers, bilingual
-   instructions, **one CENTER standing guide**, camera window and footer
-   buttons (Back, Start/Stop Camera, Reset Player, Skip) return to their
-   scene-authored visible states. Keyboard focus moves to Start Camera.
+3. During the **3-second full-screen introduction**, the only visible
+   calibration content over the approximately 69%-darkened classroom is the
+   large styled **CALIBRATION** title. `IntroOverlay/IntroBackButton` remains
+   editor-authored but hidden, disabled and unfocusable. The script also hides
+   every sibling of `IntroOverlay` in `TutorialStage`; guide, arrow, header,
+   countdown art, preview and other stage visuals must not leak underneath.
+   IntroDescription and IntroCountdown remain hidden. Intro time never credits
+   a physical pose hold.
+4. Once the intro reaches 3 seconds, normal stage headers, bilingual
+   instructions, **one CENTER standing guide**, camera window and the
+   scene-authored **Back to Choose Activity** button return. Keyboard focus
+   moves to that normal Back button; no Back is clickable during the intro.
    The editor-hidden extras, legacy cursor and **Continue** remain hidden;
    Continue remains locked without three measurements. A live camera frame
    received during intro stays hidden and is restored immediately afterward;
@@ -76,8 +75,8 @@ directly instead of cloning calibration behavior inside a test-only fake.
 
 | Script | Regression coverage |
 | --- | --- |
-| `test_calibration_fullscreen_editor_layout.gd` | Exact PLAY PNG (and byte equality when source is available), 70%-black overlay, Gochi Hand labels, camera slot without fake image, all non-intro stage siblings hidden for the introduction, only CALIBRATION + Back visible, no double tint, restored footer, Continue kept hidden, three editable guides inside preview, one visible CENTER guide after intro, all three resolutions |
-| `test_calibration_three_second_sequence.gd` | Intro duration, intro Back click and keyboard focus, no footer interaction during intro, focus transferred to Start Camera after intro, cached live frame hidden until intro ends then restored, stage-specific single visible guide and bilingual instructions, CENTER→RIGHT→LEFT 3-second holds, fresh packet validation, loss and motion reset, no-camera fallback and route payload |
+| `test_calibration_fullscreen_editor_layout.gd` | Editor-authored calibration screen, intro-only styled CALIBRATION title, Intro Back hidden and disabled, normal Back restored afterward, authored guides, camera framing and multiple resolutions |
+| `test_calibration_three_second_sequence.gd` | 3-second title-only intro with no Back control, focus transferred to normal Back afterward, camera preview hidden until intro ends, all three minigames in Play and Tutorial, bilingual instructions, CENTER→RIGHT→LEFT holds, fresh pose packets, camera loss/recovery and route payload |
 | `test_calibration_mode_countdown.gd` | No-camera Skip → actual gameplay wrapper, Seconds/Lives across normal and guided paths, Spotlight gate, 3→2→1 labels, frozen gameplay until finish, same live game resumed |
 
 These checks specifically test **normalized horizontal camera positions**.

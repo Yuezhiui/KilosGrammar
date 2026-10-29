@@ -32,7 +32,7 @@ func _button_by_text(node: Node, fragment: String) -> Button:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var app := (load("res://main_menu.tscn") as PackedScene).instantiate() as Control
+	var app := (load("res://ui/main_menu/main_menu.tscn") as PackedScene).instantiate() as Control
 	root.add_child(app)
 	await create_timer(1.35).timeout
 	await _press(app.get_node("MainLayer/CenterMenu/Play") as Button, "Main Play")
@@ -69,8 +69,9 @@ func _run() -> void:
 	var calibration := app.get("active_panel") as Control
 	if calibration.get_node_or_null("TutorialStage/SkipButton") != null or _button_by_text(calibration, "SKIP") != null:
 		failures.append("Calibration still has a SKIP shortcut")
-	await _press(calibration.get_node_or_null("TutorialStage/IntroOverlay/IntroBackButton") as Button, "Calibration Back to Main")
-	_check(app, "main", "Calibration Back")
+		calibration.call("_process", 3.01) # Intro is title-only; Back becomes available afterward.
+		await _press(calibration.get_node_or_null("TutorialStage/BackButton") as Button, "Calibration Back to Choose Activity")
+		_check(app, "play_activity", "Calibration Back")
 	# Later pause/results tests use an explicit router injection. It is NOT a
 	# calibration completion, synthetic success signal, or keyboard bypass.
 	calibration_state["start_countdown"] = false

@@ -1,10 +1,10 @@
 extends SceneTree
 
 # Run: godot --headless --path . --script res://tools/test_catch_spawn_hud_safety.gd
-const SCENE := preload("res://ui/minigames/catch_word.tscn")
+const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const MODES := ["Seconds", "Lives"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const HUD_NAMES := ["TitlePlaque", "TimerPlaque", "LivesPlaque", "PausePlaque"]
 const MARGIN := 12.0
 const WAVE_SIZE := 3
@@ -20,12 +20,13 @@ func _run() -> void:
 		for difficulty in DIFFICULTIES:
 			for character in CHARACTERS:
 				await _case(mode, difficulty, character)
-	if checked != 24:
-		failures.append("Only %d of 24 gameplay configurations executed" % checked)
+	var expected := MODES.size() * DIFFICULTIES.size() * CHARACTERS.size()
+	if checked != expected:
+		failures.append("Only %d of %d gameplay configurations executed" % [checked, expected])
 	# Let the audio mixer retire queued MP3 playbacks after fixture teardown.
 	await create_timer(0.5).timeout
 	if failures.is_empty():
-		print("PASS: top-edge immediate-fall three-apple waves, HUD/score safety, collisions, pause, and restart in all 24 mode/difficulty/character configurations")
+		print("PASS: top-edge immediate-fall waves, HUD, collisions, pause, and restart in all %d configurations" % expected)
 		quit(0)
 	else:
 		for failure in failures:

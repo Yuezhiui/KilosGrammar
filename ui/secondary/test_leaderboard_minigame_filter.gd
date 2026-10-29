@@ -2,7 +2,7 @@ extends SceneTree
 
 # Isolated scene-authoring and filtering regression. No database or HTTP calls.
 # Graphical capture: set CAPTURE_LEADERBOARD_MINIGAME=1 and run without --headless.
-const LEADERBOARD := preload("res://ui/secondary/leaderboard.tscn")
+const LEADERBOARD := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const CANONICAL8 := "student_id,student_name,grade_section,minigame,game_style,game_mode,difficulty,score\r\n"
 const LEGACY7 := "student_id,student_name,grade_section,game_style,game_mode,difficulty,score\r\n"
 

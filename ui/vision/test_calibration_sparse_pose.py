@@ -1,4 +1,4 @@
-"""Offline timing/identity regressions for real camera calibration packets.
+"""Offline timing/occupancy regressions for real camera calibration packets.
 
 Run from repo root:
   C:/Espressif/tools/python/python.exe -B -m unittest discover -s ui/vision -p test_calibration_sparse_pose.py -v
@@ -38,10 +38,11 @@ class CalibrationSparseEnrollmentTest(unittest.TestCase):
                 self.assertGreaterEqual(first_valid + 1e-6, lock.ENROLL_SECONDS)
                 self.assertGreaterEqual(first_valid + 1e-6,
                                         (lock.ENROLL_FRAMES - 1) / fps)
-                # At 2.0fps, teacher may see a live preview for >3.5s before
-                # StudentLock emits its very first valid tracked student packet.
+                # New occupancy gate takes a modest hold; old ByteTrack
+                # registration imposed an unnecessary 3.5+ second delay.
                 if fps == 2.0:
-                    self.assertGreaterEqual(first_valid, 3.5)
+                    self.assertGreaterEqual(first_valid, lock.ENROLL_SECONDS)
+                    self.assertLessEqual(first_valid, 2.5)
 
     def test_3_second_hold_also_needs_8_distinct_real_student_frames(self):
         # Model StudentLock + calibration's independent 3 seconds and 8
@@ -73,51 +74,48 @@ class CalibrationSparseEnrollmentTest(unittest.TestCase):
 
 
 class CalibrationCrowdAndRecoveryTest(unittest.TestCase):
-    def test_sparse_bystander_never_steals_existing_student_in_right_or_left(self):
+    def test_two_people_pause_even_when_one_moves_right_or_left(self):
         lock = StudentLock()
         for index in range(12):
             lock.update([person(17, 0.50)], index * 0.4)
-        self.assertEqual(lock.locked_id, 17)
-        # Student 17 is walking RIGHT then LEFT. Bystander 99 may cross the
-        # CENTER enrollment region; the old locked_id remains authoritative.
+        self.assertEqual(lock.tracking_epoch, 1)
+        # Both people are real occupants, even if the camera detects one more
+        # confidently than the other. No one's pose can control gameplay.
         for index, x in enumerate([0.57, 0.64, 0.72, 0.80, 0.73, 0.61, 0.48,
                                    0.37, 0.29, 0.20]):
             selected, state, _ = lock.update(
                 [person(17, x), person(99, 0.5, 0.74)],
                 5.0 + index * 0.4)
-            self.assertIsNotNone(selected)
-            self.assertEqual(state, "locked")
-            self.assertEqual(selected["track_id"], 17)
-            self.assertEqual(lock.locked_id, 17)
+            self.assertIsNone(selected)
+            self.assertEqual(state, "ambiguous")
+        self.assertEqual(lock.tracking_epoch, 1)
 
-    def test_bystander_only_frames_force_reenrollment_not_ghost_movement(self):
+    def test_one_new_id_can_resume_after_hold_with_no_recalibration(self):
         lock = StudentLock()
         for index in range(10):
             lock.update([person(17)], index * 0.4)
-        self.assertEqual(lock.locked_id, 17)
-        for index in range(12):
-            selected, state, _ = lock.update(
-                [person(99, 0.48, 0.75)], 4.1 + index * 0.4)
-            self.assertIsNone(selected, "Bystander never gets the prior player's pose")
-            self.assertIn(state, ("lost", "occluded"))
-        self.assertEqual(lock.locked_id, 17)
+        self.assertEqual(lock.tracking_epoch, 1)
+        lock.update([], 4.0)
         self.assertTrue(lock.needs_reenrollment)
+        active = None
+        for index in range(12):
+            active, state, _ = lock.update(
+                [person(99, 0.48, 0.75)], 4.1 + index * 0.4)
+        self.assertIsNotNone(active, "Single person resumes after brief stable hold")
+        self.assertEqual(state, "locked")
+        self.assertEqual(lock.tracking_epoch, 1)
+        self.assertFalse(lock.needs_recalibration)
 
-    def test_empty_view_and_unambiguous_center_needed_for_new_lock(self):
+    def test_no_empty_view_ritual_required_after_worker_reconnect(self):
         lock = StudentLock()
         for index in range(10):
             lock.update([person(17)], index * 0.4)
         lock.require_clear_reenrollment()
-        # Reconnection cannot happen with even a stationary single bystander
-        # until the whole view was clearly empty for >=0.35s.
-        for index in range(12):
-            selected, _, _ = lock.update([person(99, 0.50)], 4.1 + index * 0.4)
-            self.assertIsNone(selected)
-        lock.update([], 10.0)
-        lock.update([], 10.4)
+        # A single stable visible person suffices. No ByteTrack ID registration
+        # and no prescribed empty-camera dance before controls return.
         seen_recovered = False
         for index in range(12):
-            chosen, state, _ = lock.update([person(99, 0.50)], 11.0 + index * 0.4)
+            chosen, state, _ = lock.update([person(99, 0.50)], 4.1 + index * 0.4)
             if chosen is not None:
                 self.assertEqual(state, "locked")
                 self.assertEqual(chosen["track_id"], 99)

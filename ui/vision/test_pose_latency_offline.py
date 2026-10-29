@@ -87,47 +87,45 @@ class PersonEnrollmentTimingTests(unittest.TestCase):
                 self.assertIsNotNone(first_lock_at)
                 self.assertGreaterEqual(first_lock_at + 1e-6, lock.ENROLL_SECONDS)
                 self.assertGreaterEqual(index + 1, lock.ENROLL_FRAMES)
-                # At 4 Hz eight packets require 1.75 seconds even when the
-                # nominal enrollment delay is only 1.2 seconds.
+                # New occupancy gate requires 4 actual source frames and a
+                # modest steady hold, never 8 ByteTrack registration packets.
                 if fps == 4:
-                    self.assertGreaterEqual(first_lock_at, 1.75)
+                    self.assertGreaterEqual(first_lock_at, 0.75)
                 if fps == 1:
-                    self.assertGreaterEqual(first_lock_at, 7.0,
-                                            "8 enrollment samples at 1 FPS impose 7s delay")
+                    self.assertGreaterEqual(first_lock_at, 3.0,
+                                            "4 unique poses at 1 FPS impose 3s lower bound")
                 if fps == 2:
-                    self.assertGreaterEqual(first_lock_at, 3.5,
-                                            "8 enrollment samples at 2 FPS impose 3.5s delay")
+                    self.assertGreaterEqual(first_lock_at, 1.5,
+                                            "4 unique poses at 2 FPS impose 1.5s lower bound")
 
-    def test_bystander_does_not_steal_selected_student(self):
+    def test_bystander_presence_pauses_all_control_immediately(self):
         lock = StudentLock()
         for index in range(14):
             lock.update([person(17)], index * 0.12)
-        self.assertEqual(lock.locked_id, 17)
+        self.assertEqual(lock.tracking_epoch, 1)
         for index in range(10):
-            chosen, state, _ = lock.update([person(99, 0.52, 0.7)], 2.0 + index * 0.1)
-            self.assertIsNone(chosen, state)
-            self.assertEqual(lock.locked_id, 17)
+            chosen, state, _ = lock.update(
+                [person(17, 0.48), person(99, 0.52, 0.7)], 2.0 + index * 0.1)
+            self.assertIsNone(chosen)
+            self.assertEqual(state, "ambiguous")
+        self.assertFalse(lock.needs_recalibration)
 
-    def test_recovery_requires_empty_view_then_solo_enrollment(self):
+    def test_recovery_requires_only_fresh_solo_hold_after_restart(self):
         lock = StudentLock()
         for index in range(14):
             lock.update([person(17)], index * 0.12)
-        self.assertEqual(lock.locked_id, 17)
+        self.assertEqual(lock.tracking_epoch, 1)
         lock.require_clear_reenrollment()
-        for index in range(14):
-            selected, _, _ = lock.update([person(21)], 2.0 + index * 0.12)
-            self.assertIsNone(selected)
-        lock.update([], 4.0)
-        lock.update([], 4.4)
         selected = None
         for index in range(32):
-            selected, _, _ = lock.update([person(21)], 4.6 + index * 0.12)
+            selected, _, _ = lock.update([person(21)], 2.0 + index * 0.12)
             if selected is not None:
                 self.assertGreaterEqual(index + 1, lock.RECOVER_FRAMES)
                 self.assertGreaterEqual(index * 0.12 + 1e-6, lock.RECOVER_SECONDS)
                 break
         self.assertIsNotNone(selected)
-        self.assertEqual(lock.locked_id, 21)
+        self.assertEqual(lock.tracking_epoch, 1)
+        self.assertFalse(lock.needs_recalibration)
 
 
 if __name__ == "__main__":

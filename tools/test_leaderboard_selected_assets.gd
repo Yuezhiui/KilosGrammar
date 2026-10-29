@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Focused October 25 regression for fully image-skinned native filter selections.
 ## No database server or destructive operations are called.
-const BOARD := preload("res://ui/secondary/leaderboard.tscn")
+const BOARD := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const ASSETS := "res://Components/Leaderboard/"
 const CAPTURE_PATH := "res://ui/secondary/_review_selected_leaderboard.png"
 

@@ -1,12 +1,12 @@
 extends SceneTree
 
 # Godot 4.7: --headless --path . --script res://tools/test_catch_character_editor_rig.gd
-# Focused contract: all FOUR Catch the Word body/basket pairs are independently
+# Focused contract: all FIVE Catch the Word body/basket pairs are independently
 # editable in the Godot scene, and collision follows the actual chosen basket.
 # No game/editor files are modified; perturbations affect scene instances only.
 
-const SCENE_PATH := "res://ui/minigames/catch_word.tscn"
-const CHARACTERS := ["Boy", "Girl", "Grandma", "Grandpa"]
+const SCENE_PATH := "res://ui/minigames/catch_the_word/catch_word.tscn"
+const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const EDIT_BODY_DELTA := Vector2(7.0, -8.0)
 const EDIT_BASKET_DELTA := Vector2(13.0, -6.0)
@@ -85,8 +85,8 @@ func _check_character(scene: PackedScene, viewport_size: Vector2i, selected: Str
 			basket.scale *= Vector2(1.03, 1.03)
 		editor_snapshots[name] = {"body": _snapshot(body), "basket": _snapshot(basket)}
 
-	_check(pair_sprites.size() == 4, tag + ": all four editor-authored character variants exist")
-	if pair_sprites.size() != 4:
+	_check(pair_sprites.size() == CHARACTERS.size(), tag + ": all five editor-authored character variants exist")
+	if pair_sprites.size() != CHARACTERS.size():
 		game.free()
 		return
 	var authored_rig_scale := rig.scale
@@ -114,7 +114,7 @@ func _check_character(scene: PackedScene, viewport_size: Vector2i, selected: Str
 	_check(rig.scale.is_equal_approx(authored_rig_scale * responsive_factor),
 		tag + ": selected root sibling scales responsively from EDITOR scale; individual sprites remain untouched")
 	_check(_pair_visibility(pair_sprites, rig, selected),
-		tag + ": only chosen Boy/Girl/Grandma/Grandpa is visible")
+		tag + ": only chosen Bear/Cat/Dog/Lion/Panda is visible")
 	_check_local_snapshots(pair_sprites, editor_snapshots, tag + ": after set_context")
 
 	var active_body: Sprite2D = pair_sprites[selected]["body"]
@@ -209,8 +209,12 @@ func _check_collected_apples(game: Control, rig: Node2D, layer: Node2D,
 			tag + ": collected apple overlaps the selected Basket, not legacy Boy")
 		_check(viewport.grow(2.0).encloses(rect),
 			tag + ": collected apple remains inside viewport after editor moves")
-		_check(item.get_child_count() > 0 and item.get_child(0) is Label,
-			tag + ": collected apple keeps its labeled grammar answer")
+		# Collected APPLE HALF inventory is decorative and deliberately unlabelled.
+		# Falling grammar apples (a separate layer) still carry vocabulary text.
+		_check(item.texture != null and item.texture.resource_path ==
+			"res://Components/Gameplay/Catch the Word/Items/APPLE HALF.png"
+			and item.get_child_count() == 0,
+			tag + ": collected apple uses unlabelled original APPLE HALF art")
 	_check(count == 3, tag + ": exactly three caught apples render, none duplicated")
 
 

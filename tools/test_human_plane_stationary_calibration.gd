@@ -1,12 +1,14 @@
 extends SceneTree
 
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_stationary_calibration.gd
-# Offline packets for one locked student's CENTER calibration and left/right
-# torso travel. Both wrists required only in calibration, one during flight.
-# No webcam, DB or YOLO process.
-const SCENE_PATH := "res://ui/vision/calibration.tscn"
-const STUDENT_ID := 21
-const CENTER_X := 0.50
+# Offline verified-source PROTOCOL fixture. Simulates fresh, per-frame YOLO
+# packets with correct camera/token/solo/T-pose fields. Never opens a webcam,
+# starts the model, alters production, or treats synthetic data as real footage.
+const SCENE_PATH := "res://ui/vision/calibration/calibration.tscn"
+const PERSON := 21
+const CENTER := 0.50
+const HOLD_DT := 0.45 # Eight real source frames span 7 * 0.45 = 3.15 seconds.
+const SUCCESS_DT := 0.10
 
 var failures: Array[String] = []
 var checks := 0
@@ -14,6 +16,7 @@ var pose: Node
 var scene: PackedScene
 var source_clock := 100.0
 var finished := false
+var reset_number := 0
 
 
 func _initialize() -> void:
@@ -24,271 +27,278 @@ func _initialize() -> void:
 func _watchdog() -> void:
 	await create_timer(18.0).timeout
 	if not finished:
-		_check(false, "headless calibration timed out; expected exit within 18 seconds")
+		_check(false, "headless suite exceeded 18 seconds")
 		_finish()
 
 
 func _run() -> void:
 	pose = root.get_node_or_null("PoseService")
-	_check(pose != null, "PoseService autoload is ready")
+	_check(pose != null, "actual PoseService singleton exists")
 	if pose == null:
 		_finish()
 		return
-	pose.stop_camera()
-	pose.set_process(false)
-	_reset_camera()
 	scene = load(SCENE_PATH) as PackedScene
+	_check(scene != null, "real calibration PackedScene loads")
 	if scene == null:
-		_check(false, "calibration scene loads")
 		_finish()
+		return
+	await _check_plane_center_hold_and_handoff()
+	await _check_other_games_still_require_physical_holds()
+	_finish()
+
+
+func _check_plane_center_hold_and_handoff() -> void:
+	if not _reset_camera():
 		return
 	var screen := _screen("Human Plane")
 	if screen == null:
-		_finish()
 		return
 	var stage := screen.get_node_or_null("TutorialStage") as Control
+	_check(stage != null, "editor-authored TutorialStage is present")
 	if stage == null:
-		_check(false, "required TutorialStage exists")
-		_finish()
+		await _dispose(screen)
 		return
 	var routes: Array[Dictionary] = []
-	screen.requested.connect(func(to: String, payload: Dictionary) -> void:
-		routes.append({"to": to, "payload": payload}))
-	_check(screen.call("_capture_order") == ["CENTER"], "one neutral hand pose only")
-	_check(bool(screen.get("intro_running")), "intro still plays before hand calibration")
-	screen.call("_process", 2.51)
-	var title := stage.get_node_or_null("PlaneSteeringTitle") as Label
-	var badge := stage.get_node_or_null("PlaneStepBadge") as Control
-	var badge_label := stage.get_node_or_null("PlaneStepBadge/CenterOnlyLabel") as Label
-	_check(title != null and title.visible and title.text.contains("HANDS"),
-		"native scene instruction shows single BOTH-HANDS hold")
-	_check(badge != null and badge.visible and badge_label != null
-		and badge_label.text == "ONE POSE", "native badge shows ONE POSE")
-	_check(not _node_visible(stage, "ArtStep1")
-		and not _node_visible(stage, "ArtTitleRight")
-		and not _node_visible(stage, "ArtTitleLeft"),
-		"old three-stage floor art absent or hidden in Human Plane")
-	_check(_node_visible(stage, "ArtGuideCenter")
-		and not _node_visible(stage, "ArtGuideRight")
-		and not _node_visible(stage, "ArtGuideLeft")
-		and not _node_visible(stage, "CenterCalibrationLane"),
-		"student stands in one yellow PARAMETERS.png center guide without duplicate green panel")
-	screen.call("_continue_flow", false)
-	_check(routes.is_empty(), "cannot skip neutral hold")
+	screen.requested.connect(func(route: String, payload: Dictionary) -> void:
+		routes.append({"route": route, "payload": payload.duplicate(true)}))
+	var constants := screen.get_script().get_script_constant_map() as Dictionary
+	_check(float(constants.get("PLANE_HOLD_SECONDS", -1)) == 3.0
+		and int(constants.get("REQUIRED_SAMPLES", 0)) >= 8,
+		"single CENTER T-pose requires 3.0 seconds and >=8 distinct detections")
+	_check(screen.call("_capture_order") == ["CENTER"], "Plane calibrates only CENTER")
+	_check(bool(screen.intro_running), "three-second intro begins before physical hold")
+	screen._process(3.01)
+	var intro := stage.get_node_or_null("IntroOverlay") as ColorRect
+	var guide := stage.get_node_or_null("PoseGuides/PoseGuidePlaneCenter") as TextureRect
+	_check(intro != null and intro.get_node_or_null("ArtIntroTitle") is Label,
+		"authored IntroOverlay owns the CALIBRATION heading")
+	_check(guide != null and guide.owner == screen and guide.texture != null
+		and guide.texture.resource_path.contains("PLANE T POSE"),
+		"source T-pose guide is authored and draggable at PoseGuides/PoseGuidePlaneCenter")
+	_check(guide != null and guide.visible
+		and stage.get_node_or_null("PoseGuides/PoseGuidePlaneLeft") == null
+		and stage.get_node_or_null("PoseGuides/PoseGuidePlaneRight") == null,
+		"only center T-pose PNG is authored for stationary one-stage hold; unused directional duplicates pruned")
+	var plane_text := constants.get("PLANE_STAGE_TEXT", {}) as Dictionary
+	var center_text := plane_text.get("CENTER", []) as Array
+	_check(not center_text.is_empty() and String(center_text[0]).contains("T-POSE"),
+		"center instruction explicitly requests an extended-arms T-pose")
+	screen._continue_flow(false)
+	_check(routes.is_empty(), "Continue cannot skip the verified hold")
 
-	# Eight REAL frames are compulsory even if their elapsed duration is long.
-	for i in range(7):
-		_packet(screen, CENTER_X, STUDENT_ID, 0.45)
-	_check(int(screen.get("live_step")) == 0 and routes.is_empty(),
-		"7 source observations over 2.5 seconds are insufficient")
+	# A cached displayed pose does not count. Seven fresh source packets do not
+	# satisfy the eight-frame minimum even when 3.0 seconds have elapsed.
+	for index in range(7):
+		_packet(screen, CENTER, 1, true, HOLD_DT)
+	_check(int(screen.live_step) == 0 and not pose.plane_calibration.get("valid", false),
+		"7 source frames spanning 3.0s never complete >=8-frame calibration")
+	var before_duplicate := int(pose.latest_pose_sample_id)
+	var duplicate := _source(CENTER, 1, true)
+	pose._record_fresh_calibration_pose(duplicate, source_clock)
+	_check(int(pose.latest_pose_sample_id) == before_duplicate
+		and (screen.live_samples as Array).size() == 7,
+		"duplicate inference timestamp does not earn an eighth frame")
 
-	# Duplicate source timestamp cannot create an eighth unique observation.
-	var previous_id := int(pose.get("latest_pose_sample_id"))
-	var last_packet: Dictionary = _state(CENTER_X, STUDENT_ID)
-	pose.call("_record_fresh_calibration_pose", last_packet, source_clock)
-	_check(int(pose.get("latest_pose_sample_id")) == previous_id,
-		"duplicate source timestamp rejected")
-
-	# A bystander can't supply a missing eighth packet.
-	_packet(screen, CENTER_X, -1, 0.45)
-	_check(int(screen.get("live_step")) == 0 and routes.is_empty(),
-		"ambiguous pose cannot complete the one-hold calibration")
-	# With the SAME locked ID, one visible wrist must never complete the
-	# initial center hold (but will be sufficient after calibration).
-	_packet(screen, CENTER_X, STUDENT_ID, 0.38, false)
-	_check(int(screen.get("live_step")) == 0
-		and (screen.get("live_samples") as Array).is_empty(),
-		"single wrist denied during the neutral enrollment hold")
-
-	# Recovery requires a new uninterrupted neutral hold.
-	for i in range(8):
-		_packet(screen, CENTER_X + (float(i % 3) - 1.0) * 0.005,
-			STUDENT_ID, 0.38)
-	var measured: Dictionary = pose.get("plane_calibration") as Dictionary
-	_check(int(screen.get("live_step")) == 1 and bool(measured.get("valid", false)),
-		"one short valid hand hold calibrates without LEFT/RIGHT poses")
+	# Losing SOLO or arm evidence resets only the ongoing hold. Neither a
+	# two-person bystander frame nor a one-wrist T-pose can finish calibration.
+	_packet(screen, CENTER, 2, false, HOLD_DT)
+	_check(int(screen.live_step) == 0 and (screen.live_samples as Array).is_empty(),
+		"two-person occupancy revokes the unfinished T-pose hold")
+	_packet(screen, CENTER, 1, false, HOLD_DT)
+	_check(int(screen.live_step) == 0 and (screen.live_samples as Array).is_empty(),
+		"one confidently tracked student without full T-pose cannot progress")
+	for index in range(8):
+		_packet(screen, CENTER + 0.002 * float(index % 3 - 1), 1, true, HOLD_DT)
+	var measured := pose.plane_calibration as Dictionary
+	_check(int(screen.live_step) == 1 and bool(measured.get("valid", false)),
+		"8 live T-pose frames spanning >=3s complete CENTER exactly once")
 	if not bool(measured.get("valid", false)):
-		# Never access absent center/sensitivity keys after a failed hold.
-		_finish()
+		await _dispose(screen)
 		return
-	_check(bool((pose.get("calibration") as Dictionary).get("valid", false)),
-		"existing gameplay route calibration.valid stays compatible")
-	_check(String(measured.get("mode", "")) == "plane_stationary"
-		and bool(measured.get("neutral_only", false)), "neutral-only steering metadata explicit")
-	_check(not measured.has("left") and not measured.has("right"),
-		"no invented LEFT/RIGHT calibration data")
-	_check(is_equal_approx(float(measured.get("center", -1.0)), CENTER_X)
-		and absf(float(measured.get("camera_center_x", -1.0)) - CENTER_X) < 0.01
-		and absf(float(measured.get("neutral_noise", -1.0))) <= 0.01,
-		"robust center and jitter measured from real torso observations")
-	_check(String(measured.get("steering_mode", "")) == "centered_torso_x_one_wrist",
-		"center-anchored torso mode stored in PoseService")
-	_check(float(measured.get("sensitivity", 1.0)) >= 0.18
-		and float(measured.get("sensitivity", 1.0)) <= 0.30,
-		"symmetric sensitivity adapts to measured neutral jitter")
-	_check(not _node_visible(stage, "PlaneStepBadge"),
-		"single-pose badge clears immediately on completion")
-	_check(bool(pose.call("has_stationary_plane_pose")), "verified center torso is eligible for flight")
+	_check(bool(screen.success_running) and is_zero_approx(float(screen.success_elapsed))
+		and routes.is_empty(), "physical hold enters separate 3-second SUCCESS overlay")
+	_check((stage.get_node_or_null("SuccessOverlay") as Control).visible,
+		"success artwork is the actual editor-authored SuccessOverlay")
+	_check(bool(pose.calibration.get("valid", false))
+		and String(measured.get("mode", "")) == "plane_stationary"
+		and String(measured.get("steering_mode", "")) == "continuous_arm_bank"
+		and bool(measured.get("neutral_only", false))
+		and not measured.has("left") and not measured.has("right"),
+		"plane saves only measured CENTER; no invented LEFT/RIGHT endpoints or legacy torso mode")
+	_check(absf(float(measured.get("center", -1)) - CENTER) < 0.01
+		and absf(float(measured.get("camera_center_x", -1)) - CENTER) < 0.01
+		and absf(float(measured.get("neutral_noise", -1))) < 0.01,
+		"actual solo torso center and T-pose bank jitter are measured independently")
+	_check(bool(pose.has_stationary_plane_pose())
+		and is_zero_approx(float(pose.normalized_plane_steering())),
+		"fresh, locked SOLO neutral T-pose produces zero bank velocity")
 
-	var center := float(measured.get("center", CENTER_X))
-	var threshold := float(measured.get("sensitivity", 0.2))
-	var deadzone := float(measured.get("deadzone", 0.025))
-	_live_pose(center, STUDENT_ID, true)
-	_check(is_zero_approx(float(pose.call("normalized_plane_steering"))),
-		"measured center is neutral regardless of wrist banking")
-	_live_pose(center + threshold, STUDENT_ID, true, false)
-	_check(is_equal_approx(float(pose.call("normalized_plane_steering")), 1.0),
-		"RIGHT torso translation with one wrist gives full right flight")
-	_live_pose(center - threshold, STUDENT_ID, true, false)
-	_check(is_equal_approx(float(pose.call("normalized_plane_steering")), -1.0),
-		"LEFT torso translation with one wrist gives full left flight")
-	_live_pose(center + deadzone * 0.6, STUDENT_ID, true, false)
-	_check(is_zero_approx(float(pose.call("normalized_plane_steering"))),
-		"center jitter dead zone prevents accidental plane drift")
-	_live_pose(center + threshold * 0.7, STUDENT_ID, true, false)
-	var right_partial := float(pose.call("normalized_plane_steering"))
-	_live_pose(center - threshold * 0.7, STUDENT_ID, true, false)
-	var left_partial := float(pose.call("normalized_plane_steering"))
-	_check(right_partial > 0.4 and is_equal_approx(right_partial, -left_partial),
-		"fast symmetric torso steering around measured center")
-	_check(bool(pose.call("has_stationary_plane_pose"))
-		and left_partial < -0.4,
-		"one-wrist torso fallback works only after two-wrist calibration")
-	_live_pose(center + threshold, STUDENT_ID, true)
-	_check(is_equal_approx(float(pose.call("normalized_plane_steering")), 1.0),
-		"switching one/two visible wrists does not jump at the right lane")
-	_live_pose(center, STUDENT_ID, true, false)
-	_check(is_zero_approx(float(pose.call("normalized_plane_steering"))),
-		"returning to center restores neutral with only one wrist visible")
-	_live_pose(center + threshold, STUDENT_ID + 1, true, false)
-	_check(not bool(pose.call("has_stationary_plane_pose")),
-		"re-enrolled bystander cannot fly")
-	_live_pose(center + threshold, STUDENT_ID, false, false)
-	_check(not bool(pose.call("has_stationary_plane_pose")),
-		"no trustworthy wrist/torso freezes flight permission")
-	_live_pose(center, STUDENT_ID, true, false)
-	pose.set("last_pose_ms", Time.get_ticks_msec() - 700)
-	_check(not bool(pose.call("has_stationary_plane_pose")),
-		"source older than 650ms freezes flight")
-	pose.set("last_pose_ms", Time.get_ticks_msec())
-	# Preserve 2-second real handoff delay and verify automation rather than
-	# manually calling _continue_flow(). Simulate a living locked student by
-	# refreshing its current packet age while the navigation timer runs.
-	for i in range(10):
-		await create_timer(0.25).timeout
-		pose.set("last_pose_ms", Time.get_ticks_msec())
-	_check(routes.size() == 1 and routes[0]["to"] == "gameplay",
-		"one verified hold automatically routes after the existing 2s handoff")
+	# Post-calibration banking is signed arm tilt at fixed torso X, not a
+	# fabricated left/right body position. Confidence must be source fresh.
+	for bank in [-0.8, 0.0, 0.75]:
+		var bank_packet := _source(CENTER, 1, false, PERSON, bank, true)
+		pose._apply_pose_packet(bank_packet, Time.get_ticks_msec())
+		_check(bool(pose.has_stationary_plane_pose())
+			and absf(float(pose.normalized_plane_steering()) - bank) < 0.001,
+			"fresh SOLO bank %.2f produces matching signed plane velocity" % bank)
+	var incomplete := _source(CENTER, 1, false, PERSON, 0.75, false)
+	pose._apply_pose_packet(incomplete, Time.get_ticks_msec())
+	_check(not pose.has_stationary_plane_pose()
+		and is_zero_approx(float(pose.normalized_plane_steering())),
+		"missing both-elbow/wrist bank evidence instantly freezes steering")
+	pose._apply_pose_packet(_source(CENTER, 1, false, 77, -0.4, true),
+		Time.get_ticks_msec())
+	_check(pose.has_stationary_plane_pose()
+		and absf(float(pose.normalized_plane_steering()) + 0.4) < 0.001,
+		"new ByteTrack ID alone cannot erase authentic same-session SOLO calibration")
+
+	var completed_measurements: Dictionary = (screen.measured_points as Dictionary).duplicate(true)
+	for population in [2, 0]:
+		_packet(screen, CENTER, population, false, SUCCESS_DT)
+		_check(screen.success_running and routes.is_empty()
+			and screen.measured_points == completed_measurements
+			and is_zero_approx(float(screen.success_elapsed)),
+			"%d-person YOLO occupancy freezes success without a new calibration" % population)
+	# A current-session, raw SOLO frame resumes SUCCESS even without a keypoint
+	# T-pose. It must remain pending until the full 3.0-second overlay elapses.
+	for tick in range(29):
+		_packet(screen, CENTER, 1, false, SUCCESS_DT, false)
+	_check(routes.is_empty() and screen.success_running
+		and float(screen.success_elapsed) < 3.0,
+		"fresh SOLO occupancy cannot bypass the three-second success overlay")
+	for tick in range(3):
+		_packet(screen, CENTER, 1, false, SUCCESS_DT, false)
+	_check(routes.size() == 1 and String(routes[0].get("route", "")) == "gameplay",
+		"completed authenticated source sequence routes exactly once")
 	if routes.size() == 1:
-		var payload := routes[0]["payload"] as Dictionary
-		_check(bool(payload.get("calibration_stationary", false))
+		var payload := routes[0].get("payload", {}) as Dictionary
+		_check(payload.get("plane_steering_mode", "") == "continuous_arm_bank"
+			and bool(payload.get("calibration_stationary", false))
 			and bool(payload.get("calibration_neutral_only", false))
-			and payload.get("plane_steering_mode", "") == "centered_torso_x_one_wrist",
-			"route identifies centered torso movement with one wrist during flight")
-		_check(not payload.has("calibration_left") and not payload.has("calibration_right"),
-			"route contains no fabricated physical side measurements")
-		_check(absf(float(payload.get("calibration_steering_sensitivity", -1)) - threshold) < 0.001,
-			"route carries actual adaptive gain")
-	screen.queue_free()
-	await process_frame
+			and bool(payload.get("start_countdown", false))
+			and not payload.has("calibration_left") and not payload.has("calibration_right"),
+			"gameplay receives real one-center T-pose/arm-bank metadata and GO countdown")
+	for tick in range(5):
+		_packet(screen, CENTER, 1, false, SUCCESS_DT, false)
+	_check(routes.size() == 1, "continued camera packets cannot emit duplicate gameplay")
+	await _dispose(screen)
 
-	# Change identity *during* the hold: restart instead of swapping students.
-	pose.stop_camera()
-	_reset_camera()
-	var switched := _screen("Human Plane")
-	switched.call("_process", 2.51)
-	for i in range(3):
-		_packet(switched, CENTER_X, STUDENT_ID, 0.35)
-	_packet(switched, CENTER_X, 44, 0.40)
-	_check(int(switched.get("live_step")) == 0
-		and (switched.get("measured_points") as Dictionary).is_empty()
-		and int(switched.get("plane_locked_id")) == -1,
-		"identity switch discards unfinished neutral measurements")
-	switched.queue_free()
-	await process_frame
 
-	# Catch Word and Balloon Popping still walk CENTER > RIGHT > LEFT.
+func _check_other_games_still_require_physical_holds() -> void:
+	# Preserve cross-game regression coverage from the legacy test: Catch still
+	# measures three positions; Balloon does six physical bilateral holds.
 	for activity in ["Catch the Word", "Balloon Popping"]:
-		pose.stop_camera()
-		_reset_camera()
-		var other := _screen(activity)
-		other.call("_process", 2.51)
-		_check(other.call("_capture_order") == ["CENTER", "RIGHT", "LEFT"],
-			activity + ": retains the original three floor positions")
-		for physical_x in [0.5, 0.8, 0.2]:
-			for i in range(33):
-				pose.set("player_x", physical_x)
-				pose.set("last_pose_ms", Time.get_ticks_msec())
-				pose.set("current_status", {"state": "tracking", "pose": true,
-					"lock_state": "locked"})
-				pose.set("packet_sequence", int(pose.get("packet_sequence")) + 1)
-				other.call("_process", 0.1)
-		_check(int(other.get("live_step")) == 3
-			and bool((pose.get("calibration") as Dictionary).get("valid", false))
-			and not (pose.get("calibration") as Dictionary).has("mode"),
-			activity + ": retains three real physical measurements")
-		_check((pose.get("plane_calibration") as Dictionary).is_empty(),
-			activity + ": old calibration stays independent of flight steering")
-		other.queue_free()
-		await process_frame
+		if not _reset_camera():
+			return
+		var screen := _screen(activity)
+		if screen == null:
+			return
+		screen._process(3.01)
+		var order := screen.call("_capture_order") as Array
+		var expected: Array = (["LEFT", "CENTER", "RIGHT"]
+			if activity == "Balloon Popping" else ["CENTER", "RIGHT", "LEFT"])
+		_check(order == expected, activity + ": correct three-stage floor order")
+		for zone in expected:
+			var x := 0.5 if zone == "CENTER" else 0.80 if zone == "RIGHT" else 0.20
+			for index in range(8):
+				_packet(screen, x, 1, false, HOLD_DT, true, PERSON, false, true, true)
+			if activity == "Balloon Popping":
+				_check(int(screen.balloon_pose_phase) == 1,
+					"Balloon " + zone + ": 3s bilateral DOWN advances only to UP phase")
+				for index in range(8):
+					_packet(screen, x, 1, false, HOLD_DT, true, PERSON, true, false, true)
+		_check(int(screen.live_step) == 3 and bool(pose.calibration.get("valid", false))
+			and pose.plane_calibration.is_empty(),
+			activity + ": source-verified physical positions complete without plane calibration")
+		await _dispose(screen)
+
+
+func _reset_camera() -> bool:
+	if pose.worker_pid == OS.get_process_id():
+		pose.worker_pid = -1 # Never let stop_camera() kill this headless Godot.
 	pose.stop_camera()
-	pose.set_process(true)
-	_finish()
+	pose.set_process(false)
+	pose.peer = PacketPeerUDP.new()
+	var bound: bool = pose.peer.bind(0, "127.0.0.1") == OK
+	_check(bound, "offline authenticated pose listener binds loopback")
+	if not bound:
+		return false
+	pose.worker_pid = OS.get_process_id() # Live-process stand-in, disarmed at cleanup.
+	reset_number += 1
+	pose.session_token = "plane-T-pose-test-session-" + str(reset_number)
+	pose.active = true
+	pose.player_x = -1.0
+	return true
 
 
 func _screen(activity: String) -> Control:
 	var screen := scene.instantiate() as Control
-	if screen == null or screen.get_script() == null or not screen.has_method("set_context"):
-		_check(false, "calibration.gd compiles and exposes set_context")
+	_check(screen != null and screen.has_method("set_context"),
+		activity + ": actual authored calibration script loads")
+	if screen == null or not screen.has_method("set_context"):
+		if screen != null:
+			screen.free()
 		return null
 	root.add_child(screen)
 	screen.set_context({"activity": activity, "camera_requested": true,
-		"student_name": "TEST STUDENT"})
+		"student_name": "OFFLINE TEST", "game_mode": "Seconds", "topic": "Noun"})
 	screen.set_process(false)
 	return screen
 
 
-func _reset_camera() -> void:
-	pose.set("active", true)
-	pose.set("player_x", 0.5)
-	pose.set("last_pose_ms", Time.get_ticks_msec())
-	pose.set("current_status", _state(CENTER_X, STUDENT_ID))
+func _source(x: float, population: int, t_pose: bool,
+		track_id: int = PERSON, bank: float = 0.0, bank_valid: bool = true,
+		hands_up: bool = false, hands_down: bool = false,
+		hand_observation: bool = true) -> Dictionary:
+	var solo := population == 1
+	return {"kind": "pose", "token": pose.session_token,
+		"camera": true, "camera_phase": "tracking", "state": "tracking",
+		"camera_frame_age_ms": 20, "people": population, "fps": 8.0,
+		"pose": solo and hand_observation, "lock_state": "locked" if solo and hand_observation else "occluded",
+		"locked_id": track_id, "x": x if solo and hand_observation else -1.0,
+		"plane_t_pose_valid": t_pose and solo and hand_observation,
+		"plane_bank_valid": bank_valid and solo and hand_observation,
+		"plane_bank": bank,
+		"hand_observation_valid": hand_observation and solo,
+		"both_hands_up": hands_up and solo,
+		"both_hands_down": hands_down and solo,
+		"hand_up": hands_up and solo}
 
 
-func _packet(screen: Control, x: float, track_id: int, dt: float,
-		both_wrists: bool = true) -> void:
-	source_clock += dt
-	var packet: Dictionary = _state(x, track_id, track_id >= 0, both_wrists)
-	pose.call("_record_fresh_calibration_pose", packet, source_clock)
-	_live_pose(x, track_id, track_id >= 0, both_wrists)
-	screen.call("_process", dt)
+func _packet(screen: Control, x: float, population: int, t_pose: bool,
+		delta: float, count_source: bool = true, track_id: int = PERSON,
+		hands_up: bool = false, hands_down: bool = false,
+		hand_observation: bool = true) -> void:
+	var data := _source(x, population, t_pose, track_id, 0.0, true,
+		hands_up, hands_down, hand_observation)
+	# The local camera packet carries the current authenticated session token,
+	# source age, raw YOLO occupancy, lock and per-packet pose evidence.
+	pose._apply_pose_packet(data, Time.get_ticks_msec())
+	if count_source and population == 1 and hand_observation:
+		source_clock += delta
+		pose._record_fresh_calibration_pose(data, source_clock)
+	# PoseService normally smooths rendering; tests assert the underlying
+	# source-selected physical lane during each independent floor hold.
+	if population == 1 and hand_observation:
+		pose.player_x = x
+	screen._process(delta)
 
 
-func _state(x: float, track_id: int, valid: bool = true,
-		both_wrists: bool = true) -> Dictionary:
-	return {"state": "tracking", "pose": valid, "x": x,
-		"lock_state": "locked" if valid and track_id >= 0 else "ambiguous",
-		"locked_id": track_id, "plane_steering": x,
-		"plane_steering_valid": valid and track_id >= 0,
-		"plane_neutral_valid": valid and track_id >= 0 and both_wrists}
+func _dispose(screen: Control) -> void:
+	# calibration.gd _exit_tree deliberately stops its camera. Its production
+	# cleanup must never kill this headless process used as a live-PID stand-in.
+	if pose.worker_pid == OS.get_process_id():
+		pose.worker_pid = -1
+	screen.queue_free()
+	await process_frame
+	await process_frame
 
 
-func _live_pose(x: float, track_id: int, valid: bool = true,
-		both_wrists: bool = true) -> void:
-	pose.set("player_x", x if valid else -1.0)
-	pose.set("last_pose_ms", Time.get_ticks_msec())
-	pose.set("current_status", _state(x, track_id, valid, both_wrists))
-
-
-func _node_visible(parent: Node, path: String) -> bool:
-	var node := parent.get_node_or_null(path) as CanvasItem
-	return node != null and node.visible
-
-
-func _check(ok: bool, reason: String) -> void:
+func _check(condition: bool, reason: String) -> void:
 	checks += 1
-	if not ok:
+	if not condition:
 		failures.append(reason)
+		printerr("PLANE SOURCE CALIBRATION FAIL: ", reason)
 
 
 func _finish() -> void:
@@ -296,10 +306,10 @@ func _finish() -> void:
 		return
 	finished = true
 	if is_instance_valid(pose):
+		if pose.worker_pid == OS.get_process_id():
+			pose.worker_pid = -1
 		pose.stop_camera()
 		pose.set_process(true)
-	for reason in failures:
-		printerr("FAIL single-hold plane calibration: ", reason)
-	print("%s single-hold plane calibration: %d checks, %d failures" %
-		["PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
+	print("HUMAN PLANE VERIFIED T-POSE CALIBRATION: %s checks=%d failures=%d" % [
+		"PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
 	quit(0 if failures.is_empty() else 1)

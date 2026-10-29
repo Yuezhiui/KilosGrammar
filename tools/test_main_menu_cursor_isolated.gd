@@ -6,7 +6,7 @@ func _initialize() -> void:
 
 
 func _verify() -> void:
-	var resource := load("res://main_menu.tscn") as PackedScene
+	var resource := load("res://ui/main_menu/main_menu.tscn") as PackedScene
 	if resource == null:
 		printerr("Cannot open Main Menu")
 		quit(1)

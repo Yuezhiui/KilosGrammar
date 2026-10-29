@@ -6,14 +6,14 @@ extends SceneTree
 # Owns no gameplay nodes or production assets.
 
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
-const CHARACTER_NAMES := ["Boy", "Girl", "Grandma", "Grandpa"]
+const CHARACTER_NAMES := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const GAME_SCENES := {
-	"Catch the Word": "res://ui/minigames/catch_word.tscn",
-	"Balloon Popping": "res://ui/minigames/balloon_popping.tscn",
-	"Human Plane": "res://ui/minigames/human_plane.tscn",
+	"Catch the Word": "res://ui/minigames/catch_the_word/catch_word.tscn",
+	"Balloon Popping": "res://ui/minigames/balloon_popping/balloon_popping.tscn",
+	"Human Plane": "res://ui/minigames/human_plane/human_plane.tscn",
 }
-const SETUP_SCENE := "res://ui/student/student_setup.tscn"
-const CALIBRATION_SCENE := "res://ui/vision/calibration.tscn"
+const SETUP_SCENE := "res://ui/student/setup/student_setup.tscn"
+const CALIBRATION_SCENE := "res://ui/vision/calibration/calibration.tscn"
 
 var checks := 0
 var failures: Array[String] = []
@@ -57,7 +57,7 @@ func _mount(path: String, viewport_size: Vector2i) -> Dictionary:
 		_check(false, "%s instantiates as Control" % path)
 		host.queue_free()
 		return {}
-	# Isolate the precisely timed 2.5-second intro while other scenes and
+		# Isolate the precisely timed 3-second intro while other scenes and
 	# imported artwork load in the same test process. We advance it explicitly.
 	if path == CALIBRATION_SCENE:
 		scene.process_mode = Node.PROCESS_MODE_DISABLED
@@ -83,7 +83,7 @@ func _check_game(game_name: String, path: String, viewport_size: Vector2i) -> vo
 	if game.has_method("set_context"):
 		game.call("set_context", {
 			"activity": game_name, "topic": "Noun", "difficulty": "Easy",
-			"game_mode": "Seconds", "catch_character": "Grandma",
+			"game_mode": "Seconds", "catch_character": "Dog",
 			"catch_map": "City",
 		})
 	await process_frame
@@ -107,7 +107,8 @@ func _check_catch(game: Control, viewport_size: Vector2i) -> void:
 	var prompt := game.get_node_or_null("HUDLayer/HUD/PromptLabel") as Label
 	var timer := game.get_node_or_null("HUDLayer/HUD/TimeLabel") as Label
 	var pause := game.get_node_or_null("HUDLayer/HUD/PauseButton") as Button
-	var score := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+	# Catch now draws its authored HUD/ScoreNumber directly in ScoreDrawLayer.
+	var score := game.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
 	var title := game.get_node_or_null("HUDLayer/HUD/TitlePlaque") as TextureRect
 	var score_plaque := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect
 	for item in [prompt, timer, pause, score, title, score_plaque]:
@@ -130,8 +131,8 @@ func _check_catch(game: Control, viewport_size: Vector2i) -> void:
 			var apple_z := _effective_z(apple_art, game)
 			var body_z := _effective_z(active_body, game)
 			var basket_z := _effective_z(active_basket, game)
-			_check(apple_z > body_z and apple_z > basket_z,
-				"Catch %s: falling apple paints IN FRONT of both body and basket (z=%d, %d, %d)" %
+			_check(apple_z > body_z and apple_z >= basket_z,
+				"Catch %s: falling word apple stays at gameplay level, above Body and not below Basket (z=%d, %d, %d)" %
 				[viewport_size, apple_z, body_z, basket_z])
 		if apple != null:
 			apple.queue_free()
@@ -143,16 +144,16 @@ func _check_catch(game: Control, viewport_size: Vector2i) -> void:
 		game.set_process(false)
 		await process_frame
 		for sprite in [game.body_sprite as Sprite2D, game.basket_sprite as Sprite2D]:
-			_check(sprite != null and sprite.is_visible_in_tree()
-				and _within_viewport(_sprite_rect(sprite), viewport_size),
-				"Catch %s %s: active %s fully inside screen (%s)" %
-				[viewport_size, character_name, sprite.name if sprite != null else "missing",
-				_sprite_rect(sprite) if sprite != null else Rect2()])
+			var visible_rect := _sprite_rect(sprite)
+			var framed := _avatar_framed(visible_rect, viewport_size) if sprite == game.body_sprite else _within_viewport(visible_rect, viewport_size)
+			_check(sprite != null and sprite.is_visible_in_tree() and framed,
+				"Catch %s %s: active %s keeps visible face/torso and complete basket (%s)" %
+				[viewport_size, character_name, sprite.name if sprite != null else "missing", visible_rect])
 
 
 func _check_balloon(game: Control, viewport_size: Vector2i) -> void:
 	for node_path in [
-		"HudLayer/ObjectivePanel", "HudLayer/PromptLabel",
+			"HudLayer/ObjectivePanel", "HudLayer/BannerTagline",
 		"HudLayer/CarnivalScore", "HudLayer/ScoreBottomContainer/ScoreNumber",
 		"HudLayer/TimerPlaque", "HudLayer/TimeLabel", "HudLayer/PauseButton"
 	]:
@@ -161,6 +162,9 @@ func _check_balloon(game: Control, viewport_size: Vector2i) -> void:
 			and _within_viewport(control.get_global_rect(), viewport_size),
 			"Balloon %s: visible and unclipped %s (%s)" %
 			[viewport_size, node_path, control.get_global_rect() if control != null else Rect2()])
+		_check(game.get_node_or_null("HudLayer/PromptLabel") == null and
+			game.get_node_or_null("HudLayer/PromptPanel") == null,
+			"Balloon %s: no obsolete prompt label or duplicate cream panel" % viewport_size)
 	# The score, prompt and timer must stay independently legible.
 	var objective := game.get_node_or_null("HudLayer/ObjectivePanel") as Control
 	var score := game.get_node_or_null("HudLayer/CarnivalScore") as Control
@@ -268,26 +272,28 @@ func _check_calibration(viewport_size: Vector2i) -> void:
 	await process_frame
 	scene.set_process(false)
 	var stage := scene.get_node_or_null("TutorialStage") as Control
-	var title := scene.get_node_or_null("TutorialStage/IntroOverlay/IntroHeading") as Label
-	var back := scene.get_node_or_null("TutorialStage/IntroOverlay/IntroBackButton") as Button
+	var title := scene.get_node_or_null("TutorialStage/IntroOverlay/ArtIntroTitle") as Label
+	var intro := scene.get_node_or_null("TutorialStage/IntroOverlay") as ColorRect
+	var success := scene.get_node_or_null("TutorialStage/SuccessOverlay") as ColorRect
 	var dimmer := scene.get_node_or_null("ClassroomDimmer") as ColorRect
 	_check(stage != null and stage.owner == scene and title != null and title.is_visible_in_tree()
-		and back != null and back.is_visible_in_tree(),
-		"Calibration %s: intro has editable title and only Back to Main" % viewport_size)
-	# The current CALIB scene intentionally keeps the illustrated classroom
-	# bright. Other calibration design suites require a subtle <=15% dimmer.
-	# A legacy 70% assertion would incorrectly darken user-authored artwork.
+		and intro != null and intro.get_node_or_null("IntroBackButton") == null
+		and success != null and not success.is_visible_in_tree(),
+		"Calibration %s: intro shows only styled CALIBRATION title" % viewport_size)
+	# Intro and success use the editor-authored 66%% black treatment combined
+	# with the existing classroom dimmer, not the retired bright intro.
 	_check(dimmer != null and is_zero_approx(dimmer.color.r)
 		and is_zero_approx(dimmer.color.g) and is_zero_approx(dimmer.color.b)
-		and dimmer.color.a >= 0.0 and dimmer.color.a <= 0.15,
-		"Calibration %s: illustrated classroom keeps its subtle black dimmer" % viewport_size)
+		and intro != null and (1.0 - (1.0 - dimmer.color.a) * (1.0 - intro.color.a)) >= 0.60
+		and (1.0 - (1.0 - dimmer.color.a) * (1.0 - intro.color.a)) <= 0.70,
+		"Calibration %s: introduction darkens classroom by 60-70%%" % viewport_size)
 	if stage != null:
 		for child in stage.get_children():
 			if child is Control and child.name != "IntroOverlay":
 				_check(not (child as Control).is_visible_in_tree(),
 					"Calibration %s: intro contains no camera/guide/status ghosts (%s)" % [viewport_size, child.name])
 	# Simulate the real intro transition without opening the student's camera.
-	scene.call("_process", 2.6)
+	scene.call("_process", 3.01)
 	scene.set_process(false)
 	for name in ["SkipButton", "RetryButton", "StopCameraButton", "KeyboardButton"]:
 		var control := stage.get_node_or_null(name) as Control if stage != null else null
@@ -297,7 +303,7 @@ func _check_calibration(viewport_size: Vector2i) -> void:
 	_check(camera_button == null or not camera_button.text.to_upper().contains("STOP CAMERA"),
 		"Calibration %s: no Stop Camera action remains" % viewport_size)
 	if stage != null:
-		var zone_names := ["ArtGuideCenter", "ArtGuideRight", "ArtGuideLeft"]
+		var zone_names := ["PoseGuides/PoseGuideDefault", "PoseGuides/PoseGuideRight", "PoseGuides/PoseGuideLeft"]
 		for index in range(3):
 			scene.set("live_step", index)
 			scene.call("_update_target_guide")
@@ -305,18 +311,19 @@ func _check_calibration(viewport_size: Vector2i) -> void:
 			var zones := 0
 			for node_name in zone_names:
 				var guide := stage.get_node_or_null(node_name) as Control
-				_check(guide != null and guide.owner == scene,
-					"Calibration %s: %s yellow PNG guide is editor-authored" % [viewport_size, node_name])
+				_check(guide is TextureRect and guide.owner == scene and (guide as TextureRect).texture != null,
+					"Calibration %s: %s real-pose PNG guide is editor-authored" % [viewport_size, node_name])
 				if guide != null and guide.is_visible_in_tree():
 					zones += 1
 					_check(node_name == zone_names[index],
 						"Calibration %s: step %d highlights correct position, not %s" %
 						[viewport_size, index + 1, node_name])
 			_check(zones == 1,
-				"Calibration %s: step %d shows exactly one PARAMETERS.png guide" % [viewport_size, index + 1])
-			var step_badge := stage.get_node_or_null("StepBadge") as Label
-			_check(step_badge != null and step_badge.text.contains("%d / 3" % (index + 1)),
-				"Calibration %s: step %d indicator is synchronized" % [viewport_size, index + 1])
+				"Calibration %s: step %d shows one correct physical pose PNG" % [viewport_size, index + 1])
+			var step_art := stage.get_node_or_null("Directions/ArtStep%d" % (index + 1)) as TextureRect
+			_check(step_art != null and step_art.is_visible_in_tree()
+				and stage.get_node_or_null("StepBadge") == null,
+				"Calibration %s: authored step %d PNG replaces retired dynamic StepBadge" % [viewport_size, index + 1])
 	await _unmount(mounted["host"] as Control)
 
 
@@ -351,6 +358,19 @@ func _sprite_rect(sprite: Sprite2D) -> Rect2:
 
 func _within_viewport(rect: Rect2, viewport_size: Vector2i) -> bool:
 	return rect.has_area() and Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(rect.grow(-0.5))
+
+
+func _avatar_framed(rect: Rect2, viewport_size: Vector2i) -> bool:
+	# The original saved animal BODY extends below the viewport, while its
+	# face/torso and full separate Basket remain in frame (native PNG verified).
+	if not rect.has_area():
+		return false
+	var frame := Rect2(Vector2.ZERO, Vector2(viewport_size))
+	var visible_ratio := (minf(rect.end.y, frame.end.y) - maxf(rect.position.y, frame.position.y)) / rect.size.y
+	return rect.position.x >= -1.5 and rect.end.x <= frame.end.x + 1.5 \
+		and rect.position.y >= -1.5 and rect.position.y <= frame.size.y * 0.64 \
+		and rect.end.y >= frame.end.y - 1.5 and rect.end.y <= frame.end.y + frame.size.y * 0.18 \
+		and visible_ratio >= 0.75
 
 
 func _check(success: bool, description: String) -> void:

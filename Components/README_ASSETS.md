@@ -6,7 +6,7 @@ All current gameplay and screen artwork (PNG/JPEG/WebP/SVG) is organized under *
 
 | Folder | Artwork files | Active use |
 | --- | ---: | --- |
-| `Gameplay/` | 85 | Catch the Word, Balloon Popping, Human Plane (original NATURE grass/mountain textures and 3D sky textures), calibration, HUD and dynamically chosen images |
+| `Gameplay/` | historical 85 | Catch the Word, Balloon Popping, Human Plane (now original 2D background/plane/arc artwork), calibration, HUD and dynamically chosen images |
 | `Leaderboard/` | 32 | Live Leaderboard, filters, both teacher-only delete-confirmation stages and the wooden success notice with separate illustrated header |
 | `Game Chooser/` | 13 | Illustrated game-selection panels and buttons, three selection previews, and disabled/enabled Next states |
 | `Main Panel/` | 14 | Main Menu and native button states (unused Credits art removed) |
@@ -19,9 +19,7 @@ All current gameplay and screen artwork (PNG/JPEG/WebP/SVG) is organized under *
 
 `res://icon.svg` is the Godot project icon outside `Components/`. Ignored `showcase/` screenshots are not runtime sprites. Empty or obsolete prototype artwork, copied originals, historic extraction manifests and unused `.import` sidecars were pruned only after checking serialized scene dependencies, test fixtures and dynamically constructed paths. The dated Leaderboard images, eight current `NotifLeader` button/panel parts, Main Menu original images still used by its scene, Settings dynamic tab states and uncertain original user art were retained.
 
-**Human Plane 3D (26 October):** `Components/Gameplay/Human Plane/3D/` additionally stores four active FBX scenery models, the glTF airplane scene with binary mesh and PBR textures, and panoramic sky image. These are local imported 3D assets (not counted as PNG-only sprites above, except their four texture images). See that folder's README for rights/attribution; verify NATURE scenery licenses before public redistribution.
-
-**Human Plane optimization (26 October):** A separately imported 2048×1024 sky derivative replaces runtime loading of the large 6K panorama; the original is preserved for editing. Four recycled forest segments retain 120 additional trees and now use **1,360 real NATURE Grass_green.fbx patches** in four GPU MultiMeshes. The original unmodified `NATURE/mountain/scene.gltf` is instanced as a distant mountain valley, preserving the editor-authored transforms. The rings use blue, green and orange with interpolated progress. See `docs/human-plane-3d/nature-model-integration.md` and `performance.md` for GPU and licensing caveats. **The mountain pack is CC BY-NC-ND 4.0 (noncommercial; adapted copies not distributable), and grass-green's bundled source contains no license; do not publish the game with these assets until the necessary rights are confirmed.**
+**Human Plane 2D restoration (28 October):** The retired 3D FBX/glTF/scenery materials and `human_plane_3d_*` gameplay scripts/scene have been removed. The game now uses `Components/Gameplay/Human Plane/BACKGROUND.png`, `PLANE.png`, and the original purple/green/blue **arc-gate PNGs** referenced by `ui/minigames/human_plane.tscn`. The pseudo-depth projection and score hitbox share the same scene-authored geometry; no 3D mountain, foliage, ring or cloud source is needed. The older inventory totals above are historical snapshots and should not be treated as a freshly counted current inventory.
 
 **Game Chooser redesign (26 October):** The 13 supplied `Gamemode chooser` PNGs were copied unchanged to `Components/Game Chooser/`. The current game-selection screen uses only local `res://` artwork, a default preview and a truly disabled Next button until a game is selected; selecting one of three games changes the preview and Next state. Its README lists exact PNG provenance and tests.
 

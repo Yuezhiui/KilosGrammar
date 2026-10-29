@@ -4,19 +4,29 @@ extends SceneTree
 ## Run: Godot --headless --path . --script res://tools/test_postgres_service_recovery.gd
 ## Never starts PostgreSQL, PowerShell, the Python API, or any actual HTTP port.
 const RECOVERY_MENU := "res://tools/test_postgres_recovery_menu.gd"
+const RECOVERY := preload("res://ui/database/recovery_journal.gd")
 var _app: Control
 var _mock: Node
 var _failures: Array[String] = []
 var _checks := 0
+var _test_recovery_dir := ""
 
 
 func _initialize() -> void:
+	# Do not mount MainMenu until every outbox call is redirected to this run.
+	_test_recovery_dir = "user://test_recovery_service_%d_%d" % [
+		OS.get_process_id(), Time.get_ticks_usec()]
+	ProjectSettings.set_setting("kilos/recovery_test_directory", _test_recovery_dir)
 	call_deferred("_run")
 
 
 func _run() -> void:
+	_check(RECOVERY._directory() == _test_recovery_dir
+		and _test_recovery_dir.begins_with("user://test_recovery_"),
+		"Mock service recovery uses an isolated per-run user:// outbox")
+	_check(RECOVERY.pending().is_empty(), "Isolated service test outbox begins empty")
 	root.size = Vector2i(1280, 720)
-	var packed := load("res://main_menu.tscn") as PackedScene
+	var packed := load("res://ui/main_menu/main_menu.tscn") as PackedScene
 	_check(packed != null, "Main Menu real scene loads")
 	if packed == null:
 		quit(1)
@@ -58,132 +68,139 @@ func _test_first_use_setup_and_secret_safety() -> void:
 	_check(_route() == "student_setup", "Play button opens editor-authored student form")
 	var form := _app.get("active_panel") as Control
 	if form == null:
+		_check(false, "Student Setup panel mounted for first-use security test")
 		return
-	var status := form.get("_database_status") as Label
 	_check(int(_mock.get("ensure_calls")) >= 2,
 		"Entering the form automatically assures the local service")
+	_check(form.find_child("DatabasePanel", true, false) == null
+		and form.find_child("LookupButton", true, false) == null
+		and form.find_child("DatabaseRecoveryButton", true, false) == null,
+		"Retired database status/lookup/recovery buttons are not visible")
 	_mock.call("probe", false)
 	_check(not bool(_app.get("database_online")), "Internal unsuccessful health probe cannot declare connected")
 	_mock.call("heartbeat")
 	_check(not bool(_app.get("database_online")),
 		"Repeated fake server-down heartbeats keep database unconfirmed")
-	_check(not status.text.contains("OFFLINE"),
-		"Retries do not prematurely show final offline state")
 	var secret := "DO_NOT_RENDER_TEST_SECRET_947321"
 	_mock.call("finish_offline", "setup_required", {
 		"password": secret, "connection_uri": "postgresql://" + secret,
 		"raw_error": "auth token " + secret,
 	})
-	var recovery_button := form.get("_database_recovery_button") as Button
-	_check(status.text.contains("OFFLINE") and status.text.contains("SET UP LOCAL DATABASE"),
-		"Offline first use shows actionable secure local teacher setup instructions")
-	_check(recovery_button != null and recovery_button.visible
-		and recovery_button.text.contains("SET UP LOCAL DATABASE"),
-		"Offline first use exposes a visible native button to configure PostgreSQL")
-	_check(status.text.contains("will not save"), "Offline first use explicitly warns about unsaved scores")
-	_check(not status.text.contains(secret), "Sensitive details never appear in native student form")
+	_check(bool(_app.get("database_setup_required")),
+		"First-use schema setup still recorded internally without student-facing warning")
 	_check(not str(_app.get("session_state")).contains(secret),
-		"Service-provided sensitive details are never copied into session state")
+		"Service-provided secrets are never copied into session data")
+	_check(not str(form.get("context")).contains(secret)
+		and form.find_child("DatabaseStatus", true, false) == null,
+		"Sensitive diagnostic text cannot render in the student form")
 	_mock.call("ensure_local_service", {"purpose": "retry_no_secret"})
 	_mock.call("heartbeat")
-	_check(status.text.contains("CONNECTING") and not status.text.contains(secret),
-		"New attempt replaces stale error with safe connecting message")
-	_mock.call("finish_offline", "database_auth_or_schema", {
-		"password": secret,
-	})
-	_check(status.text.contains("SET UP LOCAL DATABASE") and not status.text.contains(secret),
-		"Authentication/schema failure offers secure setup without rendering credentials")
-	_check(recovery_button.visible and recovery_button.text.contains("SET UP LOCAL DATABASE"),
-		"Auth/schema configuration problem retains the setup action")
-	recovery_button.pressed.emit()
-	_check(status.text.contains("Available on the Windows computer running Godot"),
-		"Teacher Setup action is handled safely in headless test without launching PowerShell")
-	_check(int(_mock.get("launch_attempts")) == 0,
-		"Headless secure setup does not spawn a subprocess")
+	_check(not bool(_app.get("database_online")), "Service retry remains pending until healthy")
+	_mock.call("finish_offline", "database_auth_or_schema", {"password": secret})
+	_check(bool(_app.get("database_setup_required")),
+		"Authentication/schema problem remains available to the internal recovery controller")
+	_check(not str(form.get("context")).contains(secret),
+		"Repeated auth failure does not leak diagnostic credentials")
 	_mock.call("finish_offline", "server_unreachable")
-	_check(recovery_button.visible and recovery_button.text.contains("RETRY LOCAL CONNECTION"),
-		"Temporary outage exposes explicit native Retry Connection button")
+	_check(not bool(_app.get("database_setup_required")),
+		"Transient outage does not pose as a permanent schema problem")
 	var ensures_before: int = _mock.get("ensure_calls")
-	recovery_button.pressed.emit()
+	_app.call("_ensure_database_service")
 	_check(int(_mock.get("ensure_calls")) == ensures_before + 1,
-		"Retry Connection button forwards a fresh local-service ensure request")
-
+		"Internal nonblocking watchdog retries without a visible setup button")
+	_check(int(_mock.get("launch_attempts")) == 0,
+		"Headless mock never launches Python/PostgreSQL/PowerShell subprocesses")
 
 func _test_restore_and_queued_lookup() -> void:
 	var form := _app.get("active_panel") as Control
 	var field := form.get("_student_id_edit") as LineEdit
+	# Emulate a previously completed OFFLINE registration persisted locally.
+	# Only exact-ID matches may fill from local recovery: the name roster is
+	# incomplete until the real PostgreSQL connection returns.
+	var durable: Dictionary = RECOVERY.enqueue_profile("R-001", "Recovered Student", "Grade 4")
+	_check(bool(durable.get("ok", false)), "Offline profile is durably stored in isolated user:// outbox")
 	field.text = "R-001"
 	field.text_changed.emit(field.text)
-	form.call("_update_validation")
-	(form.get("_lookup_button") as Button).pressed.emit()
-	_check(String(_app.get("database_pending_lookup_id")) == "R-001",
-		"Offline profile lookup is queued using the exact student ID")
+	form.call("_autofill_if_unchanged")
 	_check(_mock.call("count", "find_student") == 0,
-		"No student query is issued while fake service is unavailable")
-	_check(bool(_mock.get("watch_active")), "Offline lookup starts a logical watchdog attempt")
+		"Offline exact-ID recovery uses durable local record without network")
+	_check((form.get("_name_edit") as LineEdit).text == "Recovered Student"
+		and (form.get("_grade_edit") as LineEdit).text == "Grade 4",
+		"Exact ID from local outbox fills identity in offline mode")
+	_check(bool(form.get("context").get("student_lookup_connected", false)),
+		"Exact offline profile is marked resolved by local recovery")
 	_mock.call("heartbeat")
-	_check(String(_app.get("database_pending_lookup_id")) == "R-001"
-		and not bool(_app.get("database_online")),
-		"Retry heartbeat does not consume queued student ID or declare connected")
+	_check(not bool(_app.get("database_online")), "Retry heartbeat cannot claim early reconnection")
 	_mock.call("restore_service")
 	_mock.call("probe", true)
 	_check(not bool(_app.get("database_online")),
 		"Healthy internal probe alone cannot prematurely finalize reconnect")
 	_mock.call("heartbeat")
 	_check(bool(_app.get("database_online")),
-		"Fake server restoration flips Main Menu to online at the lifecycle event")
-	_check(String(_app.get("database_pending_lookup_id")).is_empty(),
-		"Queued student lookup is consumed exactly once upon recovery")
+		"Fake server restoration flips Main Menu to online at lifecycle event")
+	await process_frame
+	_check(not (_mock.call("find_pending", "register_student", "recovery_replay") as Dictionary).is_empty(),
+		"Recovered service begins replaying durable offline student registration")
+	_check(_mock.call("reply", "register_student", {
+		"ok": true, "status": 201,
+		"data": {"student": {"student_id": "R-001", "student_name": "Recovered Student"}},
+	}, "recovery_replay"), "PostgreSQL accepts and acknowledges exact queued student profile")
+	_check(RECOVERY.pending().is_empty(), "Acknowledged recovery profile removed from isolated outbox")
+	field.text = "R-002"
+	field.text_changed.emit(field.text)
+	form.call("_autofill_if_unchanged")
 	_check(_mock.call("count", "find_student") == 1,
-		"Automatic recovery issues exactly one real profile lookup request")
+		"Online automatic ID lookup issues one HTTP request after idle")
+	var pending: Dictionary = _mock.call("find_pending", "find_student", "autofill")
+	_check(pending.get("args", {}).get("student_id", "") == "R-002",
+		"Online autofill submits exact new ID")
 	_check(_mock.call("reply", "find_student", {
 		"ok": true, "status": 200,
-		"data": {"student": {"student_id": "R-001",
-			"student_name": "Recovered Student", "grade_section": "Grade 4"}},
-	}, "student_lookup"), "Recovered profile reply reaches current native form")
-	_check((form.get("_name_edit") as LineEdit).text == "Recovered Student",
-		"Verified student fields fill after fake server restoration")
-	_check((form.get("_database_status") as Label).text.contains("STUDENT FOUND"),
-		"Recovered profile shows accurate lookup success")
-
+		"data": {"student": {"student_id": "R-002",
+			"student_name": "Another Student", "grade_section": "Grade 5"}},
+	}, "autofill"), "Recovered online student lookup callback arrives")
+	_check((form.get("_name_edit") as LineEdit).text == "Another Student"
+		and (form.get("_grade_edit") as LineEdit).text == "Grade 5",
+		"Server-verified student fields fill after recovery")
 
 func _test_stale_async_lookup_response() -> void:
 	var form := _app.get("active_panel") as Control
 	var field := form.get("_student_id_edit") as LineEdit
 	field.text = "R-OLD"
 	field.text_changed.emit(field.text)
-	form.call("_update_validation")
-	(form.get("_lookup_button") as Button).pressed.emit()
+	form.call("_autofill_if_unchanged")
 	_check(_mock.call("count", "find_student") == 2,
-		"Online lookup is issued for original student ID")
+		"Online automatic lookup is issued for original student ID")
 	field.text = "R-NEW"
 	field.text_changed.emit(field.text)
 	_check(_mock.call("reply", "find_student", {
 		"ok": true, "status": 200,
 		"data": {"student": {"student_id": "R-OLD",
 			"student_name": "Must Not Leak", "grade_section": "Wrong Student"}},
-	}, "student_lookup"), "Late successful lookup for abandoned ID can arrive")
+	}, "autofill"), "Late successful autofill for abandoned ID can arrive")
 	_check((form.get("_name_edit") as LineEdit).text.is_empty()
 		and (form.get("_grade_edit") as LineEdit).text.is_empty(),
-		"Delayed response never overwrites newly edited student identity")
-	_check((form.get("_database_status") as Label).text.contains("REJECTED"),
-		"Stale lookup is explicitly rejected in teacher UI")
+		"Stale response never overwrites newly edited student identity")
+	_check((form.get("_student_id_edit") as LineEdit).text == "R-NEW",
+		"Abandoned response cannot rewrite latest ID")
 	_mock.call("lose_service")
 	_check(not bool(_app.get("database_online")), "Terminal connection loss marks UI offline")
-	(form.get("_lookup_button") as Button).pressed.emit()
-	_check(String(_app.get("database_pending_lookup_id")) == "R-NEW",
-		"Second offline lookup queues latest student ID")
+	form.call("_autofill_if_unchanged")
+	_check(_mock.call("count", "find_student") == 2,
+		"Offline lookup does not issue a live student query")
 	field.text = "R-FINAL"
 	field.text_changed.emit(field.text)
 	_mock.call("restore_service")
+	_mock.call("ensure_local_service", {"purpose": "reconnect_for_autofill"})
 	_mock.call("heartbeat")
 	_check(_mock.call("count", "find_student") == 2,
-		"Recovered connection refuses stale queued lookup after field edit")
-	_check(String(_app.get("database_pending_lookup_id")).is_empty(),
-		"Stale queued request cleared on recovery")
-	_check((form.get("_student_id_edit") as LineEdit).text == "R-FINAL",
-		"Latest identity remains intact")
-
+		"Recovery cannot implicitly replay stale, obsolete ID searches")
+	field.text_changed.emit(field.text)
+	form.call("_autofill_if_unchanged")
+	_check(_mock.call("count", "find_student") == 3
+		and (_mock.call("find_pending", "find_student", "autofill") as Dictionary)
+			.get("args", {}).get("student_id", "") == "R-FINAL",
+		"Fresh current ID can be searched after reconnection")
 
 func _test_leaderboard_recovery_and_inflight_race() -> void:
 	_app.call("_return_to_main")
@@ -276,38 +293,65 @@ func _test_results_save_truth() -> void:
 	var round := {"student_id": "R-001", "student_name": "Recovered Student",
 		"grade_section": "Grade 4", "game_style": "Noun",
 		"game_mode": "Seconds", "difficulty": "Easy",
-		"activity": "Balloon Popping", "round_completed": true, "score": 19}
+		"activity": "Balloon Popping", "round_completed": true, "score": 19,
+		"entry_source": "play", "student_lookup_connected": true}
+	_check(RECOVERY.pending().is_empty(), "No recovery event left from registration or leaderboard tests")
 	_app.set("current_route", "gameplay")
 	_app.call("_on_panel_requested", "results", round)
 	await process_frame
 	_check(_route() == "results", "Completed round opens the real Results scene")
 	var results := _app.get("active_panel") as Control
-	var label := results.get_node("%SaveStatus") as Label
 	_check(_mock.call("count", "complete_round") == initial_saves,
-		"Completed offline result never attempts database save")
-	_check(label.text.contains("SCORE NOT SAVED") and not label.text.contains("SCORE SAVED TO"),
-		"Offline Results truthfully says the score was not saved")
-	_app.call("_return_to_main")
-	await process_frame
+		"Offline completion creates no network call while service is disconnected")
+	var queued: Array[Dictionary] = RECOVERY.pending()
+	_check(queued.size() == 1 and queued[0].get("kind", "") == "score"
+		and (queued[0].get("data", {}) as Dictionary).get("score", -1) == 19,
+		"Offline completed score is durably stored in test-only recovery journal")
+	_check(bool((_app.get("session_state") as Dictionary).get("recovery_pending", false)),
+		"Offline completed score is marked as pending durable recovery")
+	_check(not bool((_app.get("session_state") as Dictionary).get("score_saved", true))
+		and results.get_node_or_null("%SaveStatus") == null,
+		"Offline Results keeps unsaved state without redundant save-status UI")
+	_check(not bool((_app.get("session_state") as Dictionary).get("database_saving", true)),
+		"Offline journal handoff cannot leave legacy HTTP saving indicator active")
 	_mock.call("restore_service")
 	_mock.call("ensure_local_service", {"purpose": "watchdog_recover"})
 	_mock.call("heartbeat")
 	_check(bool(_app.get("database_online")), "Restored fake server returns online before new completion")
-	_app.set("current_route", "gameplay")
-	_app.call("_on_panel_requested", "results", round)
 	await process_frame
-	_check(_mock.call("count", "complete_round") == initial_saves + 1,
-		"Completed online round sends exactly one save request")
+	var oldest: Dictionary = _mock.call("find_pending", "complete_round", "recovery_replay")
+	_check(oldest.get("args", {}).get("score", -1) == 19
+		and oldest.get("args", {}).get("student_id", "") == "R-001",
+		"Connection recovery replays exact oldest offline score in order")
+	_check(_mock.call("reply", "complete_round", {
+		"ok": true, "status": 201, "data": {"score": {"score": 19}, "recovery_pending": false},
+	}, "recovery_replay"), "Successful PostgreSQL replay acknowledges original offline result")
+	_check(RECOVERY.pending().is_empty(), "Acknowledged offline score removed from isolated journal")
+	_check(bool((_app.get("session_state") as Dictionary).get("score_saved", false))
+		and not bool((_app.get("session_state") as Dictionary).get("database_saving", true)),
+		"Replay acknowledgement marks score saved and clears pending status")
+	_app.call("_return_to_main")
+	await process_frame
+	var next_round := round.duplicate(true)
+	next_round["score"] = 20
+	_app.set("current_route", "gameplay")
+	_app.call("_on_panel_requested", "results", next_round)
+	await process_frame
+	_check(_mock.call("count", "complete_round") == initial_saves + 2,
+		"Completed online round adds exactly one new replay request after first acknowledgement")
 	results = _app.get("active_panel") as Control
-	label = results.get_node("%SaveStatus") as Label
-	_check(label.text.contains("SAVING COMPLETED SCORE"),
-		"While completion awaits DB response, Results displays saving state")
+	_check(RECOVERY.pending().size() == 1
+		and (RECOVERY.pending()[0].get("data", {}) as Dictionary).get("score", -1) == 20,
+		"Even online completion is first durably journaled, not sent without a local copy")
 	_check(_mock.call("reply", "complete_round", {
 		"ok": false, "status": 503, "error": "database_unavailable", "data": null,
-	}, "completed_round"), "Failed in-flight save can arrive after service recovery")
-	_check(label.text.contains("SCORE NOT SAVED")
-		and not bool((_app.get("session_state") as Dictionary).get("score_saved", true)),
-		"Failed save never reports invented persisted points")
+	}, "recovery_replay"), "Failed replay can arrive after service recovery")
+	_check(not bool((_app.get("session_state") as Dictionary).get("score_saved", true))
+		and not bool((_app.get("session_state") as Dictionary).get("database_saving", true)),
+		"Failed replay never reports invented persisted points or stale saving flag")
+	_check(RECOVERY.pending().size() == 1
+		and (RECOVERY.pending()[0].get("data", {}) as Dictionary).get("score", -1) == 20,
+		"Failed replay keeps score durably queued for future retry")
 	_app.call("_return_to_main")
 	await process_frame
 	var aborted := round.duplicate(true)
@@ -318,10 +362,11 @@ func _test_results_save_truth() -> void:
 	_app.call("_on_panel_requested", "results", aborted)
 	await process_frame
 	results = _app.get("active_panel") as Control
-	label = results.get_node("%SaveStatus") as Label
-	_check(label.text.contains("ROUND NOT COMPLETED")
+	_check(not bool((_app.get("session_state") as Dictionary).get("round_completed", false))
 		and _mock.call("count", "complete_round") == initial_saves,
 		"Aborted round never saves scores even after recovery")
+	_check(RECOVERY.pending().size() == 1,
+		"Aborted round cannot add a new durable journal event")
 	_check(int(_mock.get("launch_attempts")) == 0 and _mock.get_child_count() == 0,
 		"All recovery tests finished without any child process or HTTP socket")
 

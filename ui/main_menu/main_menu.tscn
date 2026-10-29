@@ -1,0 +1,334 @@
+[gd_scene format=3 uid="uid://t84rkfytcor7"]
+
+[ext_resource type="Script" uid="uid://ckrgapgprd8xk" path="res://ui/main_menu/main_menu.gd" id="1_menu"]
+[ext_resource type="Texture2D" uid="uid://dx1fsocdnlfsq" path="res://Components/Credits/Redesign/background1.png" id="2_oiatc"]
+[ext_resource type="Texture2D" uid="uid://c4bryfob62w4n" path="res://Components/Main Panel/Original/KILOS GRAMMAR.png" id="4_kilos_curved"]
+[ext_resource type="Script" uid="uid://fl5qixkal657" path="res://ui/main_menu/main_menu_tile_fx.gd" id="5_tile_fx"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="6_title_font"]
+[ext_resource type="Texture2D" uid="uid://cdknwc1ea87eq" path="res://Components/Main Panel/Original/credits.png" id="new_credits"]
+[ext_resource type="Texture2D" uid="uid://4jegvjejp23g" path="res://Components/Main Panel/Original/A.png" id="new_grammara1"]
+[ext_resource type="Texture2D" uid="uid://cfp6ndvk7suxq" path="res://Components/Main Panel/Original/A-.png" id="new_grammara2"]
+[ext_resource type="Texture2D" uid="uid://csihb6yytkdd6" path="res://Components/Main Panel/Original/G.png" id="new_grammarg"]
+[ext_resource type="Texture2D" uid="uid://og2b2ynpxd8k" path="res://Components/Main Panel/Original/M-.png" id="new_grammarm1"]
+[ext_resource type="Texture2D" uid="uid://bmy7kbbc8w6ya" path="res://Components/Main Panel/Original/M.png" id="new_grammarm2"]
+[ext_resource type="Texture2D" uid="uid://c3vcr3bnaicgl" path="res://Components/Main Panel/Original/R.png" id="new_grammarr1"]
+[ext_resource type="Texture2D" uid="uid://bbbk3gubmifbt" path="res://Components/Main Panel/Original/R-.png" id="new_grammarr2"]
+[ext_resource type="Texture2D" uid="uid://bhdojkiicq44l" path="res://Components/Main Panel/Original/leaderboard.png" id="new_leaderboard"]
+[ext_resource type="Texture2D" uid="uid://gvucfrfpyfhw" path="res://Components/Main Panel/Original/green-play.png" id="new_play"]
+[ext_resource type="Texture2D" uid="uid://bsunmyu7vtaor" path="res://Components/Main Panel/Original/red-quit.png" id="new_quit"]
+[ext_resource type="Texture2D" uid="uid://bj7fg7vjousnv" path="res://Components/Main Panel/Original/setting-large.png" id="new_settings"]
+[ext_resource type="Texture2D" uid="uid://crkyuq1isvgyw" path="res://Components/Main Panel/Original/purple-tutorial.png" id="new_tutorial"]
+
+[sub_resource type="StyleBoxFlat" id="FallingTile"]
+bg_color = Color(0.411765, 0.745098, 0.603922, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.913725, 0.741176, 0.55)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+shadow_color = Color(0.278431, 0.239216, 0.345098, 0.48)
+shadow_size = 4
+shadow_offset = Vector2(5, 7)
+
+[sub_resource type="StyleBoxTexture" id="NewLeaderboardSkin"]
+texture = ExtResource("new_leaderboard")
+
+[sub_resource type="StyleBoxFlat" id="ButtonFocus"]
+bg_color = Color(0, 0, 0, 0)
+border_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxTexture" id="NewSettingsSkin"]
+texture = ExtResource("new_settings")
+
+[sub_resource type="StyleBoxTexture" id="NewCreditsSkin"]
+texture = ExtResource("new_credits")
+
+[sub_resource type="StyleBoxTexture" id="NewTutorialSkin"]
+texture = ExtResource("new_tutorial")
+
+[sub_resource type="StyleBoxTexture" id="NewPlaySkin"]
+texture = ExtResource("new_play")
+
+[sub_resource type="StyleBoxTexture" id="NewQuitSkin"]
+texture = ExtResource("new_quit")
+
+[node name="MainMenu" type="Control" unique_id=1178804453]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="BackgroundFill" type="ColorRect" parent="." unique_id=427787136]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.120969854, 0.5510978, 0.79400885, 1)
+
+[node name="Background" type="TextureRect" parent="." unique_id=314484285]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_oiatc")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="FallingLayer" type="Control" parent="." unique_id=843971288]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FallingTemplate" type="PanelContainer" parent="FallingLayer" unique_id=1211647408]
+visible = false
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 56.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("FallingTile")
+
+[node name="FX" type="Control" parent="FallingLayer/FallingTemplate" unique_id=873830840]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("5_tile_fx")
+
+[node name="Letter" type="Label" parent="FallingLayer/FallingTemplate" unique_id=1565013979]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.968627, 0.890196, 0.741176, 1)
+theme_override_colors/font_outline_color = Color(0.286275, 0.266667, 0.388235, 0.18)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("6_title_font")
+theme_override_font_sizes/font_size = 24
+text = "NOUN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FallTimer" type="Timer" parent="." unique_id=1102163553]
+wait_time = 0.58
+
+[node name="MainLayer" type="Control" parent="." unique_id=1751503129]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LogoGroup" type="Control" parent="MainLayer" unique_id=1772862414]
+anchors_preset = 0
+offset_left = 164.0
+offset_top = 29.0
+offset_right = 1144.0
+offset_bottom = 431.0
+
+[node name="Kilos" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=824369719]
+layout_mode = 0
+offset_left = 153.0
+offset_top = -18.0
+offset_right = 783.0
+offset_bottom = 193.0
+mouse_default_cursor_shape = 2
+texture = ExtResource("4_kilos_curved")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="GrammarG" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=1995916991]
+layout_mode = 0
+offset_left = 46.0
+offset_top = 150.00002
+offset_right = 166.0
+offset_bottom = 270.0
+rotation = -0.0698132
+pivot_offset = Vector2(71, 75)
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GrammarR1" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=933265998]
+layout_mode = 0
+offset_left = 170.0
+offset_top = 150.00002
+offset_right = 290.0
+offset_bottom = 270.0
+rotation = 0.0872665
+pivot_offset = Vector2(71, 75)
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarr1")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GrammarA1" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=112494732]
+layout_mode = 0
+offset_left = 295.00003
+offset_top = 150.0
+offset_right = 415.00003
+offset_bottom = 270.0
+rotation = -0.0698132
+pivot_offset = Vector2(71, 75)
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammara1")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GrammarM1" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=1511730324]
+layout_mode = 0
+offset_left = 415.0
+offset_top = 150.0
+offset_right = 535.0
+offset_bottom = 270.0
+rotation = 0.0523599
+pivot_offset = Vector2(71, 75)
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarm1")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GrammarM2" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=1958823084]
+layout_mode = 0
+offset_left = 540.99994
+offset_top = 150.00002
+offset_right = 660.99994
+offset_bottom = 270.0
+rotation = -0.0523599
+pivot_offset = Vector2(71, 75)
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarm2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GrammarA2" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=462738204]
+layout_mode = 0
+offset_left = 663.99994
+offset_top = 150.0
+offset_right = 783.99994
+offset_bottom = 270.0
+rotation = 0.0698132
+pivot_offset = Vector2(71, 75)
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammara2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GrammarR2" type="TextureRect" parent="MainLayer/LogoGroup" unique_id=1680663106]
+layout_mode = 0
+offset_left = 787.0
+offset_top = 149.99997
+offset_right = 907.0
+offset_bottom = 270.0
+rotation = -0.0523599
+pivot_offset = Vector2(71, 75)
+mouse_default_cursor_shape = 2
+texture = ExtResource("new_grammarr2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LeftMenu" type="Control" parent="MainLayer" unique_id=670607935]
+anchors_preset = 0
+offset_left = 44.0
+offset_top = 474.0
+offset_right = 269.0
+offset_bottom = 678.0
+
+[node name="Leaderboard" type="Button" parent="MainLayer/LeftMenu" unique_id=893965103]
+layout_mode = 0
+offset_top = -12.0
+offset_right = 225.0
+offset_bottom = 55.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewLeaderboardSkin")
+theme_override_styles/pressed = SubResource("NewLeaderboardSkin")
+theme_override_styles/hover = SubResource("NewLeaderboardSkin")
+theme_override_styles/disabled = SubResource("NewLeaderboardSkin")
+theme_override_styles/focus = SubResource("ButtonFocus")
+
+[node name="Settings" type="Button" parent="MainLayer/LeftMenu" unique_id=1888547398]
+layout_mode = 0
+offset_top = 55.0
+offset_right = 225.0
+offset_bottom = 122.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewSettingsSkin")
+theme_override_styles/pressed = SubResource("NewSettingsSkin")
+theme_override_styles/hover = SubResource("NewSettingsSkin")
+theme_override_styles/disabled = SubResource("NewSettingsSkin")
+theme_override_styles/focus = SubResource("ButtonFocus")
+
+[node name="Credits" type="Button" parent="MainLayer/LeftMenu" unique_id=119666556]
+layout_mode = 0
+offset_top = 122.0
+offset_right = 225.0
+offset_bottom = 189.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewCreditsSkin")
+theme_override_styles/pressed = SubResource("NewCreditsSkin")
+theme_override_styles/hover = SubResource("NewCreditsSkin")
+theme_override_styles/disabled = SubResource("NewCreditsSkin")
+theme_override_styles/focus = SubResource("ButtonFocus")
+
+[node name="CenterMenu" type="Control" parent="MainLayer" unique_id=1750835866]
+anchors_preset = 0
+offset_left = 470.0
+offset_top = 435.0
+offset_right = 810.0
+offset_bottom = 681.0
+
+[node name="Tutorial" type="Button" parent="MainLayer/CenterMenu" unique_id=1106129653]
+layout_mode = 0
+offset_left = 59.0
+offset_top = -3.0
+offset_right = 332.0
+offset_bottom = 80.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewTutorialSkin")
+theme_override_styles/pressed = SubResource("NewTutorialSkin")
+theme_override_styles/hover = SubResource("NewTutorialSkin")
+theme_override_styles/disabled = SubResource("NewTutorialSkin")
+theme_override_styles/focus = SubResource("ButtonFocus")
+
+[node name="Play" type="Button" parent="MainLayer/CenterMenu" unique_id=1153098940]
+layout_mode = 0
+offset_left = 59.0
+offset_top = 79.0
+offset_right = 332.0
+offset_bottom = 162.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewPlaySkin")
+theme_override_styles/pressed = SubResource("NewPlaySkin")
+theme_override_styles/hover = SubResource("NewPlaySkin")
+theme_override_styles/disabled = SubResource("NewPlaySkin")
+theme_override_styles/focus = SubResource("ButtonFocus")
+
+[node name="Quit" type="Button" parent="MainLayer/CenterMenu" unique_id=638833762]
+layout_mode = 0
+offset_left = 59.0
+offset_top = 163.0
+offset_right = 332.0
+offset_bottom = 246.0
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("NewQuitSkin")
+theme_override_styles/pressed = SubResource("NewQuitSkin")
+theme_override_styles/hover = SubResource("NewQuitSkin")
+theme_override_styles/disabled = SubResource("NewQuitSkin")
+theme_override_styles/focus = SubResource("ButtonFocus")

@@ -1,6 +1,13 @@
 # KilosGrammar — ElevenLabs Guided Tutorial Recording Sheet
 
-The interactive Spotlight scene (`res://ui/tutorial/spotlight_overlay.tscn`)
+> **Historical recording reference:** The user removed the Spotlight UI
+> on 29 October 2026. The shared scene described below no longer exists.
+> The 18 English WAV recordings remain archived in
+> `res://assets/audio/tutorial_spotlight/`, but they are **not currently
+> played by the Guided Tutorial**. This text documents the old narration
+> workflow and should not be treated as current Godot editor instructions.
+
+The interactive Spotlight scene (`res://ui/tutorial/spotlight/spotlight_overlay.tscn`)
 works **without** recordings: the visible instructions and controls remain
 functional. Record **one sentence group per audio file** so the guide can
 replay/skip narration without jumping through a long combined track.

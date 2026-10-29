@@ -3,12 +3,12 @@ extends SceneTree
 # Godot --headless --path . --script res://tools/test_human_plane_editor_layout.gd
 # Assertions inspect PackedScene instances BEFORE _ready; runtime-made controls
 # cannot pass as Godot-editor-authored, draggable components.
-const SCENE := preload("res://ui/minigames/human_plane.tscn")
-const CATCH := preload("res://ui/minigames/catch_word.tscn")
+const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
+const CATCH := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const SIZES := [Vector2i(1280, 720), Vector2i(1920, 1080)]
 const NAMES := ["Left", "Center", "Right"]
 const REQUIRED := {
-	"SceneBackground/SkyBackdrop": "TextureRect",
+	"FlightBackground": "TextureRect",
 	"PlaneRig": "Control",
 	"PlaneRig/Hitbox": "Panel",
 	"HUDLayer/HUD": "Control",
@@ -48,8 +48,16 @@ func _exercise_scene(viewport: Vector2i) -> void:
 	_collect_authored(game, game, authored_ids)
 	var catch := CATCH.instantiate() as Control
 	_check(catch != null and catch.get_node_or_null("HUDLayer/HUD") != null, "original Catch HUD reference is available")
+	# Catch places ScoreNumber directly inside HUD. Human Plane keeps that
+	# score in its own editor-authored ScoreBottomContainer; this independent
+	# container is a meaningful layout difference, not a missing Catch asset.
+	var catch_score := catch.get_node_or_null("HUDLayer/HUD/ScoreNumber") as Label
+	_check(catch_score != null and catch.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer") == null,
+		"Catch authors ScoreNumber directly under HUD, without Human Plane's score container")
+	_check(game.get_node_or_null("HUDLayer/HUD/ScoreNumber") == null,
+		"Human Plane scores solely through its authored ScoreBottomContainer")
 	_check(game.get_node_or_null("HUDLayer") is CanvasLayer, "authored HUDLayer CanvasLayer is preserved")
-	if game.get_node_or_null("HUDLayer") is CanvasLayer:
+	if catch != null and game.get_node_or_null("HUDLayer") is CanvasLayer:
 		_check((game.get_node("HUDLayer") as CanvasLayer).layer == (catch.get_node("HUDLayer") as CanvasLayer).layer,
 			"HUD CanvasLayer draw layer exactly matches Catch")
 	for path in REQUIRED:
@@ -57,15 +65,26 @@ func _exercise_scene(viewport: Vector2i) -> void:
 		_check(item != null and item.get_class() == String(REQUIRED[path]), "%s %s serialized type" % [viewport, path])
 		if item != null:
 			_check(item.owner == game and authored_ids.has(item.get_instance_id()), "%s %s directly editable in scene" % [viewport, path])
-			if path.begins_with("HUDLayer/HUD/"):
-				var original := catch.get_node_or_null(path) as Control
-				_check(original != null, "Catch originally authors HUD part " + path)
-				if original != null and item is Control:
-					var control := item as Control
-					_check(_layout_signature(control) == _layout_signature(original),
-						"%s %s exact Catch editable original placement" % [viewport, path])
-					if control is TextureRect and original is TextureRect:
-						_check((control as TextureRect).texture.resource_path == (original as TextureRect).texture.resource_path,
+			if path.begins_with("HUDLayer/HUD/") and item is Control:
+				var control := item as Control
+				# Every Human Plane HUD element must have finite editor transforms,
+				# including the unique score container which Catch does not have.
+				_check(_layout_finite(control),
+					"%s %s has safe independent editor layout" % [viewport, path])
+				if path == "HUDLayer/HUD/ScoreBottomContainer":
+					_check(item is VBoxContainer and item.get_child_count() == 1
+						and item.get_child(0) == game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber"),
+						"Human Plane's unique score container owns exactly its authored ScoreNumber")
+				else:
+					var original_path: String = ("HUDLayer/HUD/ScoreNumber"
+						if path == "HUDLayer/HUD/ScoreBottomContainer/ScoreNumber" else path)
+					var original := catch.get_node_or_null(original_path) as Control
+					_check(original != null and original.get_class() == control.get_class(),
+						"Catch authors corresponding HUD component " + original_path)
+					if original is TextureRect and control is TextureRect:
+						_check((control as TextureRect).texture != null
+							and (original as TextureRect).texture != null
+							and (control as TextureRect).texture.resource_path == (original as TextureRect).texture.resource_path,
 							"original Catch HUD texture reused: " + path)
 	catch.free()
 	for old_hud in ["HUD", "PauseButton", "HUD/ScoreArtwork", "HUD/StatsBar",
@@ -204,3 +223,13 @@ func _layout_signature(control: Control) -> Array:
 	return [control.anchor_left, control.anchor_top, control.anchor_right, control.anchor_bottom,
 		control.offset_left, control.offset_top, control.offset_right, control.offset_bottom,
 		control.custom_minimum_size]
+
+
+func _layout_finite(control: Control) -> bool:
+	for coordinate in [control.anchor_left, control.anchor_top, control.anchor_right,
+		control.anchor_bottom, control.offset_left, control.offset_top,
+		control.offset_right, control.offset_bottom,
+		control.custom_minimum_size.x, control.custom_minimum_size.y]:
+		if not is_finite(float(coordinate)):
+			return false
+	return true

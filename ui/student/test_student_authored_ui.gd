@@ -2,7 +2,7 @@ extends SceneTree
 
 # Verify the Student Setup screen is visibly editable in Godot's scene tree.
 # Use CAPTURE_STUDENT_SETUP=1 with a graphical renderer to save a temporary PNG.
-const SCENE := preload("res://ui/student/student_setup.tscn")
+const SCENE := preload("res://ui/student/setup/student_setup.tscn")
 const SIZES := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
 var checks := 0
 var problems: Array[String] = []

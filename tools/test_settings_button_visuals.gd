@@ -4,7 +4,7 @@ extends SceneTree
 #   Godot --headless --path . --script res://tools/test_settings_button_visuals.gd
 # Checks real routed Settings controls at each supported QA viewport.
 # Restores mixer values, window mode, and the original user settings file.
-const MENU := "res://main_menu.tscn"
+const MENU := "res://ui/main_menu/main_menu.tscn"
 const HOVER_SOUND := preload("res://assets/audio/lexispell_intro/button_hover.wav")
 const CLICK_SOUND := preload("res://assets/audio/lexispell_intro/button_click.wav")
 const SETTINGS_FILE := "user://kilos_settings.cfg"
@@ -83,7 +83,9 @@ func _run() -> void:
 
 			panel.call("_show_audio_display")
 			await process_frame
-			for node_name in ["MuteCheck", "FullscreenCheck"]:
+			_check(panel.find_child("MuteCheck", true, false) == null, "%s obsolete mute switch still exists" % resolution)
+			_check(panel.find_child("ToggleMuteallaudioRow", true, false) == null, "%s obsolete mute row still exists" % resolution)
+			for node_name in ["FullscreenCheck"]:
 				var toggle := panel.find_child(node_name, true, false) as CheckButton
 				_check_button(toggle, viewport_rect, "%s %s" % [resolution, node_name], router, false)
 				if toggle != null:
@@ -93,7 +95,7 @@ func _run() -> void:
 					_check(_fully_inside(toggle.get_global_rect(), viewport_rect, 2.0), "%s %s clipped by viewport: %s" % [resolution, node_name, toggle.get_global_rect()])
 					print("TOGGLE ", resolution, " ", node_name, " ", toggle.get_global_rect(), " scroll_y=", scroll.scroll_vertical)
 			if resolution == SIZES[0]:
-				_check_state_feedback(panel)
+				await _check_state_feedback(panel)
 				await _check_sound_routes(panel, router)
 				_check_live_mixer(panel)
 		var home_to_main := panel.find_child("BackButton", true, false) as Button
@@ -159,18 +161,59 @@ func _check_button(button: BaseButton, viewport_rect: Rect2, title: String, rout
 
 
 func _check_state_feedback(panel: Control) -> void:
-	# Compare the resources Godot actually draws, including texture and tint.
-	# If hover/pressed share identical art with normal, pointer states are invisible.
-	for node_name in ["BackButton", "MuteCheck", "FullscreenCheck"]:
+	# Settings HOME deliberately uses the exact Credits HOME.png TextureRect.
+	# All HOME StyleBoxes are transparent (including focus); hover and pressed
+	# feedback are animated changes to the actual Button transform, not separate
+	# textures or native focus outlines. Test the real animation over time.
+	for node_name in ["BackButton", "FullscreenCheck"]:
 		var button := panel.find_child(node_name, true, false) as BaseButton
 		if button == null:
 			continue
-		var normal := button.get_theme_stylebox("normal")
-		var hover := button.get_theme_stylebox("hover")
-		var pressed := button.get_theme_stylebox("pressed")
-		_check(not _identical_style(normal, hover), node_name + " has no distinct hover artwork/color")
-		_check(not _identical_style(normal, pressed), node_name + " has no distinct pressed artwork/color")
-		_check(button.has_theme_stylebox_override("focus"), node_name + " lacks visible focus style override")
+		if node_name == "BackButton":
+			var art := button.get_node_or_null("Artwork") as TextureRect
+			_check(art != null and art.texture != null
+				and art.texture.resource_path == "res://Components/Credits/Redesign/HOME.png",
+				"HOME must display the exact Credits editor-editable TextureRect artwork")
+			for state in ["normal", "hover", "pressed", "focus"]:
+				_check(_clear_style(button.get_theme_stylebox(state)),
+					"HOME " + state + " draws a native button frame or focus stroke over Credits PNG")
+		else:
+			var normal := button.get_theme_stylebox("normal")
+			var hover := button.get_theme_stylebox("hover")
+			var pressed := button.get_theme_stylebox("pressed")
+			_check(not _identical_style(normal, hover), node_name + " has no distinct hover artwork/color")
+			_check(not _identical_style(normal, pressed), node_name + " has no distinct pressed artwork/color")
+			_check(button.has_theme_stylebox_override("focus"), node_name + " lacks focus style override")
+		var rest_scale := button.scale
+		button.mouse_entered.emit()
+		await create_timer(0.33).timeout
+		_check(button.scale.x >= rest_scale.x + 0.025 and button.scale.y >= rest_scale.y + 0.025,
+			node_name + " hover feedback did not visibly enlarge button")
+		button.mouse_exited.emit()
+		await create_timer(0.33).timeout
+		_check(button.scale.distance_to(Vector2.ONE) <= 0.02,
+			node_name + " hover exit did not restore authored transform")
+		button.button_down.emit()
+		await create_timer(0.085).timeout
+		_check(button.scale.x <= 0.97 and button.scale.y <= 0.93,
+			node_name + " press did not visibly shrink button")
+		button.button_up.emit()
+		button.mouse_exited.emit()
+		await create_timer(0.33).timeout
+		_check(button.scale.distance_to(Vector2.ONE) <= 0.02,
+			node_name + " button release did not restore authored transform")
+
+
+func _clear_style(value: StyleBox) -> bool:
+	# Credits and Settings use transparent StyleBoxEmpty, not StyleBoxFlat.
+	if value is StyleBoxEmpty:
+		return true
+	if not value is StyleBoxFlat:
+		return false
+	var flat := value as StyleBoxFlat
+	return flat.bg_color.a <= 0.001 and flat.border_width_left == 0 \
+		and flat.border_width_top == 0 and flat.border_width_right == 0 \
+		and flat.border_width_bottom == 0
 
 
 func _collect_labels(node: Node, labels: Array[Label]) -> void:
@@ -201,7 +244,7 @@ func _check_sound_routes(panel: Control, router: Node) -> void:
 		return
 	# Exercise actual dynamically constructed Settings controls with the
 	# same stream player that the shared menu sound router uses.
-	for node_name in ["BackButton", "MuteCheck", "FullscreenCheck"]:
+	for node_name in ["BackButton", "FullscreenCheck"]:
 		var button := panel.find_child(node_name, true, false) as BaseButton
 		if button == null:
 			continue
@@ -240,12 +283,12 @@ func _check_live_mixer(panel: Control) -> void:
 		slider.value = entry[3]
 		_check(absf(db_to_linear(AudioServer.get_bus_volume_db(idx)) - float(entry[3]) / 100.0) < 0.01, "%s slider did not alter actual bus" % entry[2])
 		_check(label.text == "%d%%" % entry[3], "%s value pill stale: %s" % [entry[2], label.text])
-	var mute := panel.find_child("MuteCheck", true, false) as CheckButton
-	if mute != null:
-		mute.button_pressed = true
-		_check(AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Mute CheckButton failed to mute Master")
-		mute.button_pressed = false
-		_check(not AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Mute CheckButton failed to unmute Master")
+	var master_slider := panel.find_child("VolumeSlider", true, false) as HSlider
+	if master_slider != null:
+		master_slider.value = 0.0
+		_check(AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Master slider 0% must silence Master")
+		master_slider.value = 37.0
+		_check(not AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Master slider above 0% must restore sound")
 	var display := panel.find_child("FullscreenCheck", true, false) as CheckButton
 	if display != null:
 		_check(display.tooltip_text.is_empty(), "Fullscreen CheckButton must not show native dark popup")
@@ -253,7 +296,7 @@ func _check_live_mixer(panel: Control) -> void:
 		var slider := panel.find_child(entry[0], true, false) as HSlider
 		if slider != null:
 			slider.value = 100.0
-	print("MIXER verified Master=37%, KilosMusic=64%, KilosSFX=22%, mute toggles on/off")
+	print("MIXER verified Master=37%, KilosMusic=64%, KilosSFX=22%, Master 0% silence")
 
 
 func _clean_audio(node: Node) -> void:

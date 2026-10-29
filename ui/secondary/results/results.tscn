@@ -1,0 +1,406 @@
+[gd_scene format=3 uid="uid://bcan335gaf2ir"]
+
+[ext_resource type="Script" uid="uid://dqd7qnqtwifrg" path="res://ui/secondary/results/results.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dx1fsocdnlfsq" path="res://Components/Credits/Redesign/background1.png" id="2_background"]
+[ext_resource type="Texture2D" uid="uid://cwk8i51t055ps" path="res://Components/Results/Redesign/Assets/game_over_catch_the_word.png" id="3_catch"]
+[ext_resource type="Texture2D" uid="uid://sj6esohihftb" path="res://Components/Results/Redesign/Assets/game_over_balloon_popping.png" id="4_balloon"]
+[ext_resource type="Texture2D" uid="uid://cgb5pp72mtbej" path="res://Components/Results/Redesign/Assets/game_over_human_plane.png" id="5_plane"]
+[ext_resource type="Texture2D" uid="uid://ct08836mlweho" path="res://Components/Results/Redesign/Assets/panel_final_score.png" id="6_score"]
+[ext_resource type="Texture2D" uid="uid://ughqahq0fwjc" path="res://Components/Results/Redesign/Assets/panel_student_tall.png" id="7_student"]
+[ext_resource type="Texture2D" uid="uid://clbo8m62le41a" path="res://Components/Results/Redesign/Assets/button_retry.png" id="8_retry"]
+[ext_resource type="Texture2D" uid="uid://b1fvl46pb5xl" path="res://Components/Results/Redesign/Assets/button_main_menu.png" id="9_main"]
+[ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="10_font"]
+[ext_resource type="Texture2D" uid="uid://dffavkiddbjge" path="res://Components/Results/Redesign/Assets/panel_round.png" id="11_round"]
+
+[sub_resource type="StyleBoxEmpty" id="InvisibleButton"]
+
+[node name="Results" type="Control" unique_id=1000382500]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="ResultsStage" type="Control" parent="." unique_id=123141556]
+editor_description = "1280 x 720 editor-authored score screen. Drag or resize every card, banner, label and button here. The root scales the entire stage at 1280x720, 1600x900 and 1920x1080."
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+
+[node name="ClassroomBackground" type="TextureRect" parent="ResultsStage" unique_id=1338455652]
+editor_description = "Classroom background from Components/Credits/Redesign/background1.png."
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+texture = ExtResource("2_background")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="GameOverBannerCatch" type="TextureRect" parent="ResultsStage" unique_id=993321039]
+unique_name_in_owner = true
+editor_description = "CATCH THE WORD game-over artwork. Move and resize independently in 2D. Runtime chooses exactly one game banner."
+layout_mode = 0
+offset_left = 370.0
+offset_top = 16.0
+offset_right = 910.0
+offset_bottom = 196.0
+mouse_filter = 2
+texture = ExtResource("3_catch")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GameOverBannerBalloon" type="TextureRect" parent="ResultsStage" unique_id=450181158]
+unique_name_in_owner = true
+editor_description = "BALLOON POPPING game-over artwork."
+visible = false
+layout_mode = 0
+offset_left = 370.0
+offset_top = 16.0
+offset_right = 910.0
+offset_bottom = 196.0
+mouse_filter = 2
+texture = ExtResource("4_balloon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GameOverBannerPlane" type="TextureRect" parent="ResultsStage" unique_id=604981320]
+unique_name_in_owner = true
+editor_description = "HUMAN PLANE game-over artwork."
+visible = false
+layout_mode = 0
+offset_left = 370.0
+offset_top = 16.0
+offset_right = 910.0
+offset_bottom = 196.0
+mouse_filter = 2
+texture = ExtResource("5_plane")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ScoreCard" type="TextureRect" parent="ResultsStage" unique_id=434917348]
+unique_name_in_owner = true
+editor_description = "Editable FINAL SCORE plaque from SCORE art. Its title and score remain separate dynamic Label nodes."
+layout_mode = 0
+offset_left = 400.0
+offset_top = 159.0
+offset_right = 886.0
+offset_bottom = 344.0
+mouse_filter = 2
+texture = ExtResource("6_score")
+expand_mode = 1
+
+[node name="ScoreLabel" type="Label" parent="ResultsStage/ScoreCard" unique_id=119879523]
+layout_mode = 0
+offset_left = 115.0
+offset_top = 38.0
+offset_right = 371.0
+offset_bottom = 73.0
+theme_override_colors/font_color = Color(0.36, 0.17, 0.1, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 25
+text = "FINAL SCORE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScoreValue" type="Label" parent="ResultsStage/ScoreCard" unique_id=1991765273]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 135.0
+offset_top = 62.0
+offset_right = 351.0
+offset_bottom = 139.0
+theme_override_colors/font_color = Color(0.13, 0.42, 0.24, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 57
+text = "280"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="StudentCard" type="TextureRect" parent="ResultsStage" unique_id=429877457]
+unique_name_in_owner = true
+editor_description = "Illustrated STUDENT panel from SCORE. Student ID, name, and grade remain live editable text on top of the three printed rows."
+layout_mode = 0
+offset_left = 172.0
+offset_top = 295.0
+offset_right = 648.0
+offset_bottom = 593.0
+mouse_filter = 2
+texture = ExtResource("7_student")
+expand_mode = 1
+
+[node name="StudentIdRow" type="Control" parent="ResultsStage/StudentCard" unique_id=580602657]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 42.0
+offset_top = 103.0
+offset_right = 434.0
+offset_bottom = 144.0
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="ResultsStage/StudentCard/StudentIdRow" unique_id=1887937596]
+layout_mode = 0
+offset_top = 1.0
+offset_right = 127.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.45, 0.28, 0.15, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "STUDENT ID"
+vertical_alignment = 1
+
+[node name="StudentIdValue" type="Label" parent="ResultsStage/StudentCard/StudentIdRow" unique_id=710631600]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 167.0
+offset_top = 1.0
+offset_right = 394.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.21, 0.2, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 15
+text = "STD-001"
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="StudentNameRow" type="Control" parent="ResultsStage/StudentCard" unique_id=899543572]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 42.0
+offset_top = 154.0
+offset_right = 434.0
+offset_bottom = 195.0
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="ResultsStage/StudentCard/StudentNameRow" unique_id=1215624718]
+layout_mode = 0
+offset_top = 1.0
+offset_right = 127.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.45, 0.28, 0.15, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "NAME"
+vertical_alignment = 1
+
+[node name="StudentNameValue" type="Label" parent="ResultsStage/StudentCard/StudentNameRow" unique_id=792701774]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 167.0
+offset_top = 1.0
+offset_right = 394.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.21, 0.2, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 15
+text = "Alex Smith"
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="GradeRow" type="Control" parent="ResultsStage/StudentCard" unique_id=1413900792]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 42.0
+offset_top = 207.0
+offset_right = 434.0
+offset_bottom = 248.0
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="ResultsStage/StudentCard/GradeRow" unique_id=678995718]
+layout_mode = 0
+offset_top = -1.0
+offset_right = 127.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(0.45, 0.28, 0.15, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "GRADE"
+vertical_alignment = 1
+
+[node name="GradeValue" type="Label" parent="ResultsStage/StudentCard/GradeRow" unique_id=1033249351]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 167.0
+offset_right = 394.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(0.21, 0.2, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 15
+text = "Grade 4 - Orion"
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="GameCard" type="TextureRect" parent="ResultsStage" unique_id=1415133514]
+unique_name_in_owner = true
+editor_description = "Exact supplied ROUND artwork. Drag or resize this image directly in the Godot editor. Three independent, editable text rows overlay its baked cream row backgrounds."
+layout_mode = 0
+offset_left = 648.0
+offset_top = 295.0
+offset_right = 1124.0
+offset_bottom = 593.0
+mouse_filter = 2
+texture = ExtResource("11_round")
+expand_mode = 1
+
+[node name="GameStyleRow" type="Control" parent="ResultsStage/GameCard" unique_id=1095917643]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 48.0
+offset_top = 103.0
+offset_right = 428.0
+offset_bottom = 144.0
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="ResultsStage/GameCard/GameStyleRow" unique_id=1269475054]
+layout_mode = 0
+offset_right = 127.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(0.45, 0.28, 0.15, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "GAME STYLE"
+vertical_alignment = 1
+
+[node name="GameStyleValue" type="Label" parent="ResultsStage/GameCard/GameStyleRow" unique_id=1297848401]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 146.0
+offset_right = 373.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(0.21, 0.2, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 15
+text = "Noun"
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="GameModeRow" type="Control" parent="ResultsStage/GameCard" unique_id=255220709]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 48.0
+offset_top = 153.0
+offset_right = 428.0
+offset_bottom = 194.0
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="ResultsStage/GameCard/GameModeRow" unique_id=780132264]
+layout_mode = 0
+offset_right = 127.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(0.45, 0.28, 0.15, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "GAME MODE"
+vertical_alignment = 1
+
+[node name="GameModeValue" type="Label" parent="ResultsStage/GameCard/GameModeRow" unique_id=2067440970]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 146.0
+offset_right = 373.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(0.21, 0.2, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 15
+text = "Seconds"
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="DifficultyRow" type="Control" parent="ResultsStage/GameCard" unique_id=1505593753]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 48.0
+offset_top = 203.0
+offset_right = 428.0
+offset_bottom = 244.0
+mouse_filter = 2
+
+[node name="Key" type="Label" parent="ResultsStage/GameCard/DifficultyRow" unique_id=289142794]
+layout_mode = 0
+offset_right = 127.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(0.45, 0.28, 0.15, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "DIFFICULTY"
+vertical_alignment = 1
+
+[node name="DifficultyValue" type="Label" parent="ResultsStage/GameCard/DifficultyRow" unique_id=551146779]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 146.0
+offset_right = 373.0
+offset_bottom = 41.0
+theme_override_colors/font_color = Color(0.21, 0.2, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 15
+text = "Normal"
+horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="RetryButton" type="Button" parent="ResultsStage" unique_id=403911095]
+unique_name_in_owner = true
+editor_description = "Clickable RETRY art. Drag/resize this button as one component in 2D."
+layout_mode = 0
+offset_left = 319.0
+offset_top = 590.0
+offset_right = 597.0
+offset_bottom = 670.0
+mouse_default_cursor_shape = 2
+accessibility_name = "Retry game"
+theme_override_styles/normal = SubResource("InvisibleButton")
+theme_override_styles/pressed = SubResource("InvisibleButton")
+theme_override_styles/hover = SubResource("InvisibleButton")
+theme_override_styles/disabled = SubResource("InvisibleButton")
+theme_override_styles/focus = SubResource("InvisibleButton")
+
+[node name="RetryArtwork" type="TextureRect" parent="ResultsStage/RetryButton" unique_id=1557544259]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -9.0
+offset_bottom = -9.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("8_retry")
+expand_mode = 1
+
+[node name="MainButton" type="Button" parent="ResultsStage" unique_id=886348232]
+unique_name_in_owner = true
+editor_description = "Clickable MAIN MENU art. Drag/resize this button as one component in 2D."
+layout_mode = 0
+offset_left = 683.0
+offset_top = 590.0
+offset_right = 961.0
+offset_bottom = 670.0
+mouse_default_cursor_shape = 2
+accessibility_name = "Main Menu"
+theme_override_styles/normal = SubResource("InvisibleButton")
+theme_override_styles/pressed = SubResource("InvisibleButton")
+theme_override_styles/hover = SubResource("InvisibleButton")
+theme_override_styles/disabled = SubResource("InvisibleButton")
+theme_override_styles/focus = SubResource("InvisibleButton")
+
+[node name="MainArtwork" type="TextureRect" parent="ResultsStage/MainButton" unique_id=1081412000]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -9.0
+offset_bottom = -9.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("9_main")
+expand_mode = 1

@@ -7,12 +7,12 @@ extends SceneTree
 # Metrics are CPU wall-clock; --headless cannot measure GPU upload/render latency.
 
 const GAME_PATHS := {
-	"catch": "res://ui/minigames/catch_word.tscn",
-	"balloon": "res://ui/minigames/balloon_popping.tscn"
+	"catch": "res://ui/minigames/catch_the_word/catch_word.tscn",
+	"balloon": "res://ui/minigames/balloon_popping/balloon_popping.tscn"
 }
 const ACTIVITY := {"catch": "Catch the Word", "balloon": "Balloon Popping"}
-const WRAPPER_PATH := "res://ui/play/gameplay.tscn"
-const MENU_PATH := "res://main_menu.tscn"
+const WRAPPER_PATH := "res://ui/play/gameplay/gameplay.tscn"
+const MENU_PATH := "res://ui/main_menu/main_menu.tscn"
 const CATCH_PROBE := {
 	"hud": [
 		"res://Components/Gameplay/Catch the Word/HUD/generated/title_board.png",
@@ -29,14 +29,16 @@ const CATCH_PROBE := {
 		"res://Components/Gameplay/Catch the Word/Maps/CityMap.png",
 		"res://Components/Gameplay/Catch the Word/Maps/ForestMap.png",
 		"res://Components/Gameplay/Catch the Word/Maps/MountainMap.png",
-		"res://Components/Gameplay/Catch the Word/Characters/BOY BODY.png",
-		"res://Components/Gameplay/Catch the Word/Characters/BOY BASKET.png",
-		"res://Components/Gameplay/Catch the Word/Characters/GIRL BODY.png",
-		"res://Components/Gameplay/Catch the Word/Characters/GIRL BASKET.png",
-		"res://Components/Gameplay/Catch the Word/Characters/GRANDMA BODY.png",
-		"res://Components/Gameplay/Catch the Word/Characters/GRANDMA BASKET.png",
-		"res://Components/Gameplay/Catch the Word/Characters/GRANDPA BODY.png",
-		"res://Components/Gameplay/Catch the Word/Characters/GRANDPA BASKET.png"
+			"res://Components/Gameplay/Catch the Word/Characters/BEAR BODY.png",
+			"res://Components/Gameplay/Catch the Word/Characters/BEAR BASKET.png",
+			"res://Components/Gameplay/Catch the Word/Characters/CAT BODY.png",
+			"res://Components/Gameplay/Catch the Word/Characters/CAT BASKET.png",
+			"res://Components/Gameplay/Catch the Word/Characters/DOG BODY.png",
+			"res://Components/Gameplay/Catch the Word/Characters/DOG BASKET.png",
+			"res://Components/Gameplay/Catch the Word/Characters/LION BODY.png",
+			"res://Components/Gameplay/Catch the Word/Characters/LION BASKET.png",
+			"res://Components/Gameplay/Catch the Word/Characters/PANDA BODY.png",
+			"res://Components/Gameplay/Catch the Word/Characters/PANDA BASKET.png"
 	],
 	"voice": [
 		"GoodJob.mp3", "niceee.mp3", "Awesome.mp3", "Perfect.mp3",
@@ -82,8 +84,8 @@ func _profile() -> void:
 	print("STARTUP|environment|0|rendering_method|", ProjectSettings.get_setting("rendering/renderer/rendering_method", "default"))
 	print("STARTUP|environment|0|driver|", DisplayServer.get_name())
 	print("STARTUP|environment|0|hold-scenes|", hold_scene_resources)
-	if "--profile-ready" in args:
-		await _profile_ready_route()
+	if "--profile-gameplay" in args:
+		await _profile_gameplay_route()
 		print("STARTUP|done|0|status|complete")
 		quit(0)
 		return
@@ -99,27 +101,28 @@ func _profile() -> void:
 	quit(0)
 
 
-func _profile_ready_route() -> void:
+func _profile_gameplay_route() -> void:
 	var t := Time.get_ticks_usec()
 	var menu_scene := load(MENU_PATH) as PackedScene
-	_report("ready", 0, "menu_scene_load_ms", _ms(t))
+	_report("gameplay", 0, "menu_scene_load_ms", _ms(t))
 	var menu := menu_scene.instantiate() as Control
 	root.add_child(menu)
 	var context := BOOT_CONTEXT.duplicate(true)
 	context["activity"] = "Catch the Word"
-	# Make the test deterministic. Normal Ready flow picks random originals
-	# when these values are absent and forwards that choice to gameplay.
-	context["catch_character"] = "Grandpa"
+	# Deterministic asset choices. Normal game selection picks random originals
+	# when these values are absent and forwards the choice to gameplay.
+	context["catch_character"] = "Lion"
 	context["catch_map"] = "Forest"
 	t = Time.get_ticks_usec()
-	menu.call("_on_panel_requested", "ready", context)
-	_report("ready", 0, "enter_ready_and_queue_ms", _ms(t))
+	menu.set("session_state", context.duplicate(true))
+	menu.call("_prepare_catch_assets_for_gameplay")
+	_report("gameplay", 0, "queue_asset_preload_ms", _ms(t))
 	var preloader := menu.get("catch_asset_preloader") as Node
 	if preloader == null:
-		print("READY_CHECK|ERROR|no preloader")
+		print("GAMEPLAY_CHECK|ERROR|no preloader")
 		menu.queue_free()
 		return
-	print("READY_CHECK|initial|", preloader.call("get_preload_stats"))
+	print("GAMEPLAY_CHECK|initial|", preloader.call("get_preload_stats"))
 	var preload_start := Time.get_ticks_usec()
 	var stats: Dictionary = preloader.call("get_preload_stats")
 	for frame in range(180):
@@ -127,15 +130,15 @@ func _profile_ready_route() -> void:
 			break
 		await process_frame
 		stats = preloader.call("get_preload_stats")
-	_report("ready", 0, "all_selected_assets_warm_ms", _ms(preload_start))
-	print("READY_CHECK|after_warm|", stats)
+	_report("gameplay", 0, "all_selected_assets_warm_ms", _ms(preload_start))
+	print("GAMEPLAY_CHECK|after_warm|", stats)
 	var selected_context: Dictionary = (menu.get("session_state") as Dictionary).duplicate(true)
 	t = Time.get_ticks_usec()
 	menu.call("_on_panel_requested", "gameplay", selected_context)
-	_report("ready", 0, "gameplay_mount_after_ready_ms", _ms(t))
+	_report("gameplay", 0, "gameplay_mount_after_preload_ms", _ms(t))
 	var wrapper := menu.get("active_panel") as Control
 	var game := wrapper.get_node_or_null("ActiveMiniGame") as Control if wrapper != null else null
-	print("READY_CHECK|game|", {
+	print("GAMEPLAY_CHECK|game|", {
 		"is_active": game != null,
 		"selected_character": game.get("selected_character") if game != null else "",
 		"selected_map": game.get("selected_map") if game != null else "",

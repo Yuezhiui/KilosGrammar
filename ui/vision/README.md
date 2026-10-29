@@ -1,5 +1,13 @@
 # KilosGrammar — live webcam / YOLO26 calibration test
 
+> **Current calibration behavior was updated October 28, 2026.** The numbered
+> setup notes below describe an older prototype and include obsolete ByteTrack
+> ID, neon-guide, 1.5-second cooldown, and torso-steered Human Plane details.
+> For the actual five-PNG calibration, 3-second T-pose, 18-second Balloon six
+> holds, 500 ms shoot edge, ID-free one-person occupancy and continuous arm
+> banking, consult the dated override at the top of
+> `docs/cloud-flight/calibration.md` and the focused five-PNG calibration QA.
+
 This is a **local Windows prototype** using Python, Ultralytics YOLO26n-Pose
 and Godot 4.7.2. Camera-play selection automatically starts the webcam;
 keyboard-only Play never does. Webcam frames are not saved, and scores are
@@ -21,8 +29,8 @@ still unsaved until local PostgreSQL integration.
 2. Open `project.godot` in **Godot 4.7.2** and run the main scene.
 3. Select **Play → Student Setup → Activity → NEXT: AUTO CALIBRATION**.
    The screen automatically starts camera 0; no **Check Camera** or
-   **Capture** button is needed. **Tutorial → Camera Check** is still a
-   separate diagnostic with START/STOP controls.
+   **Capture** button is needed. The old separate **Camera Check** diagnostic
+   has been deleted; Play and Guided Tutorial use Calibration directly.
 4. The first run may need internet **once** to download
    `yolo26n-pose.pt` weights into Godot `user://pose_models/`.
 5. Stand fully visible in the **CENTER** box. YOLO and ByteTrack will

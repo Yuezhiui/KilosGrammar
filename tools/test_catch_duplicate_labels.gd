@@ -1,4 +1,5 @@
 extends SceneTree
+const GameAudio = preload("res://ui/shared/game_audio.gd")
 
 # Headless verification of the actual generated title/score art, dynamic
 # overlay visibility, and compact/editor-sized HUD geometry.
@@ -8,7 +9,7 @@ extends SceneTree
 # not be painted again by runtime Label nodes. Keep only the question,
 # game-mode value, and live numeric score labels visible.
 
-const GAME_SCENE := "res://ui/minigames/catch_word.tscn"
+const GAME_SCENE := "res://ui/minigames/catch_the_word/catch_word.tscn"
 const PNG_DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/"
 const FONT_PATH := "res://assets/fonts/TitanOne-Regular.ttf"
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
@@ -77,6 +78,8 @@ func _run_size(packed: PackedScene, screen_size: Vector2i) -> void:
 	root.size = screen_size
 	await process_frame
 	await process_frame
+	var qa_music_manager := GameAudio.ensure(self) as Node
+	_check(qa_music_manager != null and qa_music_manager.get_parent() == root, "Root owns one persistent gameplay soundtrack service")
 	var existing := root.get_child_count()
 	var host := Control.new()
 	host.name = "CatchEditorRectTestHost"
@@ -102,7 +105,12 @@ func _run_size(packed: PackedScene, screen_size: Vector2i) -> void:
 		return
 	var title := hud.get_node_or_null("TitlePlaque") as TextureRect
 	var scoreboard := game.get_node_or_null("ScoreDrawLayer/ScorePlaque") as TextureRect
-	var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreBottomContainer/ScoreNumber") as Label
+	var numeric := game.get_node_or_null("ScoreDrawLayer/ScoreNumber") as Label
+	_check(numeric != null and numeric.get_parent() == game.get_node_or_null("ScoreDrawLayer")
+		and not hud.has_node("ScoreBottomContainer")
+		and not hud.has_node("ScoreNumber")
+		and not game.has_node("ScoreDrawLayer/ScoreBottomContainer"),
+		"%s: editor-authored number is the sole direct runtime score-layer child" % screen_size)
 	var prompt := hud.get_node_or_null("PromptLabel") as Label
 	var title_panel := title as Control
 	var time_label := hud.get_node_or_null("TimeLabel") as Label
@@ -131,7 +139,7 @@ func _run_size(packed: PackedScene, screen_size: Vector2i) -> void:
 					"topic": topic,
 					"game_mode": mode,
 					"difficulty": "Normal",
-					"catch_character": "Boy",
+					"catch_character": "Bear",
 					"catch_map": "Forest",
 					"score": 108,
 					"lives": 2,
@@ -309,9 +317,9 @@ func _assert_offscreen(hud: Control, screen_size: Vector2i, context: String) -> 
 	_check(_physical_bounds_ok(hud.get_global_rect(), projection, physical_screen),
 		"%s: scaled HUD not offscreen in physical %s" % [context, screen_size])
 	for name in ["TitlePlaque", "ScorePlaque", "PausePlaque",
-			"PauseButton", "PromptLabel", "ScoreBottomContainer",
+			"PauseButton", "PromptLabel", "ScoreNumber",
 			"TimerPlaque", "LivesPlaque", "TimeLabel", "HeartsBox"]:
-		var control := hud.get_parent().get_parent().get_node_or_null("ScoreDrawLayer/" + name) as Control if name in ["ScorePlaque", "ScoreBottomContainer"] else hud.get_node_or_null(name) as Control
+		var control := hud.get_parent().get_parent().get_node_or_null("ScoreDrawLayer/" + name) as Control if name in ["ScorePlaque", "ScoreNumber"] else hud.get_node_or_null(name) as Control
 		if control == null:
 			_fail(context + ": missing HUD control " + name)
 			continue

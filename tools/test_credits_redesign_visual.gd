@@ -2,7 +2,7 @@ extends SceneTree
 
 # Real GPU captures for the scene-authored Credits design. No live webcam,
 # database or Main Menu launch. Screenshots go to Godot user:// outside repo.
-const CREDITS_SCENE := "res://ui/secondary/credits.tscn"
+const CREDITS_SCENE := "res://ui/secondary/credits/credits.tscn"
 const VIEWPORT_SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 var checks := 0
 var failures: Array[String] = []

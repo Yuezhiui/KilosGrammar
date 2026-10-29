@@ -2,7 +2,7 @@ extends SceneTree
 
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_assets_pose.gd
 # The four currently referenced plane/gate PNGs are checked byte-for-byte via SHA256.
-const SCENE := preload("res://ui/minigames/human_plane.tscn")
+const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const ASSETS := {
 	"PLANE.png": ["81826ebd6e13131793ff6bf8dafe4f03499b94661a1953ec24b2351189944b0e", Vector2i(1254, 1254)],
 	"human_plane_gate_purple_LEFT.png": ["3e476898a6d996484bd6e8ff99297a35554a2d45848ceeea8aa21efc34c4f146", Vector2i(724, 724)],

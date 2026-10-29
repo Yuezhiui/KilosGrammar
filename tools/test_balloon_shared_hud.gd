@@ -4,7 +4,7 @@ extends SceneTree
 # timer and complete 3/2/1-heart state images without changing its gameplay.
 # Godot --headless --path . --script res://tools/test_balloon_shared_hud.gd
 
-const SCENE := preload("res://ui/minigames/balloon_popping.tscn")
+const SCENE := preload("res://ui/minigames/balloon_popping/balloon_popping.tscn")
 const TIMER := "res://Components/Gameplay/Catch the Word/HUD/generated/timer_badge.png"
 const LIVES := "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_%d.png"
 const RESOLUTIONS := [Vector2i(875, 500), Vector2i(1280, 720), Vector2i(1920, 1080)]
@@ -86,12 +86,15 @@ func _test_resolution_mode(resolution: Vector2i, mode: String) -> void:
     var hearts_box := game.get_node_or_null("HudLayer/HeartsBox") as HBoxContainer
     var score := game.get_node_or_null("HudLayer/ScoreBottomContainer") as Control
     var title := game.get_node_or_null("HudLayer/TitleLabel") as Label
-    var prompt := game.get_node_or_null("HudLayer/PromptLabel") as Label
+    var prompt := game.get_node_or_null("HudLayer/BannerTagline") as Label
     var pause := game.get_node_or_null("HudLayer/PauseButton") as Button
     _check(hud != null and timer != null and lives != null and
         time_label != null and hearts_box != null and score != null and
         title != null and prompt != null and pause != null,
         "%s/%s: essential HUD nodes exist" % [resolution, mode])
+    _check(game.get_node_or_null("HudLayer/PromptLabel") == null and
+        game.get_node_or_null("HudLayer/PromptPanel") == null,
+        "%s/%s: obsolete separate Balloon prompt label/panel were removed" % [resolution, mode])
     if hud == null or timer == null or lives == null or time_label == null or hearts_box == null or score == null or title == null or prompt == null or pause == null:
         host.queue_free()
         await process_frame
@@ -127,7 +130,8 @@ func _test_resolution_mode(resolution: Vector2i, mode: String) -> void:
                 lives.get_instance_id() == shared_lives_id and
                 _count_named(hud, "TimerPlaque") == 1 and _count_named(hud, "LivesPlaque") == 1,
                 label + ": repeated contexts reuse exactly two original plaque nodes")
-            _verify_plaque_state(game, timer, lives, time_label, hearts_box, mode, 3, label)
+            var mode_hearts := 3 if mode == "Lives" else 0
+            _verify_plaque_state(game, timer, lives, time_label, hearts_box, mode, mode_hearts, label)
             _verify_positions(game, resolution, timer, lives, time_label, score, title, prompt, pause, label)
             # The low-level game data must be unchanged by visibility/texture updates.
             var attempts_before: int = game.attempts
@@ -135,10 +139,10 @@ func _test_resolution_mode(resolution: Vector2i, mode: String) -> void:
             var correct_before: int = game.correct_count
             game._refresh_hud()
             _check(game.attempts == attempts_before and game.score == score_before
-                and game.correct_count == correct_before and game.hearts == 3,
+                and game.correct_count == correct_before and game.hearts == mode_hearts,
                 label + ": refresh touches presentation, not gameplay statistics")
-            _check(game.get_context().get("hearts") == 3 and game.get_context().get("lives") == 3,
-                label + ": public context preserves both heart/lives compatibility keys")
+            _check(game.get_context().get("hearts") == mode_hearts and game.get_context().get("lives") == mode_hearts,
+                label + ": public context preserves mode-correct heart/lives compatibility keys")
 
     # On each of the six actual mounted games exercise gameplay damage,
     # timer progression, pause freeze, restart state and terminal loss.
@@ -148,7 +152,8 @@ func _test_resolution_mode(resolution: Vector2i, mode: String) -> void:
     await process_frame
     game.set_process(false)
     game.set_physics_process(false)
-    _verify_plaque_state(game, timer, lives, time_label, hearts_box, mode, 3, base_label + " initial")
+    var mode_hearts := 3 if mode == "Lives" else 0
+    _verify_plaque_state(game, timer, lives, time_label, hearts_box, mode, mode_hearts, base_label + " initial")
     if mode == "Lives":
         await _test_lives_damage(game, timer, lives, time_label, hearts_box, base_label)
     else:
@@ -158,9 +163,9 @@ func _test_resolution_mode(resolution: Vector2i, mode: String) -> void:
     await process_frame
     game.set_process(false)
     game.set_physics_process(false)
-    _check(game.hearts == 3 and game.score == 0 and game.attempts == 0 and game.correct_count == 0,
+    _check(game.hearts == mode_hearts and game.score == 0 and game.attempts == 0 and game.correct_count == 0,
         base_label + ": restart resets hearts, score, attempts and correct tally")
-    _verify_plaque_state(game, timer, lives, time_label, hearts_box, mode, 3, base_label + " restart")
+    _verify_plaque_state(game, timer, lives, time_label, hearts_box, mode, mode_hearts, base_label + " restart")
     _check(timer.get_instance_id() == shared_timer_id and lives.get_instance_id() == shared_lives_id,
         base_label + ": restart reuses existing artwork panels")
     host.queue_free()
@@ -263,7 +268,7 @@ func _test_seconds_timer(game: Control, timer: TextureRect, lives: TextureRect,
     _check(game.round_time_remaining < question_when_visible and
         not game.balloon_motion_tween.is_running(),
         label + ": question countdown begins only after all balloons finish revealing")
-    _verify_plaque_state(game, timer, lives, time_label, hearts_box, "Seconds", 3,
+    _verify_plaque_state(game, timer, lives, time_label, hearts_box, "Seconds", 0,
         label + " ticking")
     game._pause()
     var frozen_time: float = game.time_remaining
@@ -294,7 +299,7 @@ func _test_seconds_timer(game: Control, timer: TextureRect, lives: TextureRect,
                 and game.score == before_score,
                 label + ": wrong shot in Seconds costs zero hearts/points but one attempt")
     game._refresh_hud()
-    _verify_plaque_state(game, timer, lives, time_label, hearts_box, "Seconds", 3,
+    _verify_plaque_state(game, timer, lives, time_label, hearts_box, "Seconds", 0,
         label + " after wrong")
     # Global expiration must finish the Seconds run and export time zero.
     game.time_remaining = 0.05
@@ -356,11 +361,12 @@ func _verify_positions(game: Control, resolution: Vector2i,
     for other in [pause, title, prompt]:
         _check(not score_rect.intersects(_screen_rect(other).grow(-1.0)),
             label + ": score avoids " + other.name)
-    # Dynamic title/prompt controls have a 3-logical-pixel slot intersection.
+    # Dynamic legacy title and replacement banner tagline each retain their
+    # own authored layout; the old oversized prompt card no longer exists.
     # At 1920 physical this becomes 4.5 screen pixels; it is padding, not
     # actual glyph collision. Keep the strict score/other-panel checks.
     _check(not _screen_rect(title).grow(-3.0).intersects(_screen_rect(prompt).grow(-3.0)),
-        label + ": title and question remain separate readable lines")
+        label + ": legacy title and compact banner tagline remain separate readable lines")
     if game.is_seconds_mode:
         var label_rect := _screen_rect(time_label)
         _check(_encloses(_fitted_image_rect(timer), label_rect, 1.0),

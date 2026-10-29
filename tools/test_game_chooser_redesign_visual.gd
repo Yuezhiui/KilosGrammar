@@ -2,7 +2,7 @@ extends SceneTree
 
 # Godot 4.7.2 --path . --rendering-method gl_compatibility --script res://tools/test_game_chooser_redesign_visual.gd
 # Captures 16:9 states without invoking any camera or database code.
-const SCENE := preload("res://ui/play/play_activity.tscn")
+const SCENE := preload("res://ui/play/activity/play_activity.tscn")
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const SELECTED_NAME := ["Catch the Word", "Human Plane", "Balloon Popping"]
 const OUTPUT_PREFIX := "user://_qa_chooser_"

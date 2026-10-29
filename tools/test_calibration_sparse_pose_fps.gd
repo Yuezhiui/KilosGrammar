@@ -7,7 +7,7 @@ extends SceneTree
 ## Covers sparse 2.5 Hz actual pose packets, 3-second hold, >=8 unique packets,
 ## startup without pose, zone limits, and a packet burst across one UI tick.
 
-const SCENE := "res://ui/vision/calibration.tscn"
+const SCENE := "res://ui/vision/calibration/calibration.tscn"
 const TOKEN := "synthetic-calibration-safety-qa"
 const ZONES := ["CENTER", "RIGHT", "LEFT"]
 const POSITIONS := [0.50, 0.82, 0.18]
@@ -15,6 +15,7 @@ const FPS_DT := 1.0 / 60.0
 var checks := 0
 var failures: Array[String] = []
 var pose: Node
+var synthetic_source_when := 0.0
 
 
 func _initialize() -> void:
@@ -37,6 +38,7 @@ func _run() -> void:
 
 func _prepare_pose() -> void:
     pose.stop_camera()
+    synthetic_source_when = 0.0
     pose.set_process(false)
     pose.set("active", true)
     pose.set("player_x", -1.0)
@@ -120,6 +122,12 @@ func _check_sparse_holds() -> void:
         "Measured travel remains strictly ordered and is never synthesized")
     # The same measurements feed Human Plane movement, including neutral
     # CENTER and genuine signed LEFT/RIGHT steering.
+    if not saved.has("center") or not saved.has("right") or not saved.has("left"):
+        _check(false, "Incomplete calibration cannot be used for steering QA")
+        screen.queue_free()
+        await process_frame
+        pose.stop_camera()
+        return
     _real_pose(float(saved["center"]))
     _check(absf(float(pose.call("normalized_body_x"))) < 0.02,
         "Measured CENTER is neutral in gameplay body steering")
@@ -281,8 +289,10 @@ func _check_udp_burst_distinct_packets() -> void:
     for index in range(8):
         var payload := {"kind": "pose", "token": TOKEN,
             "when": 100.0 + float(index) * 0.1,
-            "state": "tracking", "pose": true, "x": 0.50,
-            "lock_state": "locked", "locked_id": 17}
+            "state": "tracking", "camera": true, "people": 1,
+            "camera_frame_age_ms": 30, "pose": true, "x": 0.50,
+            "lock_state": "locked", "locked_id": 17,
+            "hand_observation_valid": true, "hand_up": false}
         _check(sender.put_packet(JSON.stringify(payload).to_utf8_buffer()) == OK,
             "Distinct # %d valid source pose packet delivered" % index)
     await process_frame
@@ -314,8 +324,10 @@ func _check_udp_burst_distinct_packets() -> void:
         "Latest student position remains authoritative despite burst processing")
     # Invalid and previously-seen timestamps must NOT inflate that count.
     var bad := [{"kind":"pose", "token":TOKEN, "when":100.7, "state":"tracking",
+        "camera":true, "people":1, "camera_frame_age_ms":30,
         "pose":true, "x":0.8, "lock_state":"locked", "locked_id":17},
         {"kind":"pose", "token":"old-token", "when":200.0, "state":"tracking",
+        "camera":true, "people":1, "camera_frame_age_ms":30,
         "pose":true, "x":0.1, "lock_state":"locked", "locked_id":99}]
     for packet in bad:
         sender.put_packet(JSON.stringify(packet).to_utf8_buffer())
@@ -335,7 +347,9 @@ func _check_udp_burst_distinct_packets() -> void:
     for index in range(8):
         var moving := {"kind":"pose", "token":TOKEN,
             "when":100.8 + float(index) * 0.1, "state":"tracking", "pose":true,
-            "x":0.5 if index < 4 else 0.83, "lock_state":"locked", "locked_id":17}
+            "camera":true, "people":1, "camera_frame_age_ms":30,
+            "x":0.5 if index < 4 else 0.83, "lock_state":"locked", "locked_id":17,
+            "hand_observation_valid": true, "hand_up": false}
         sender.put_packet(JSON.stringify(moving).to_utf8_buffer())
     await process_frame
     pose.call("_process", FPS_DT)
@@ -349,6 +363,7 @@ func _check_udp_burst_distinct_packets() -> void:
     # new source frame or passes a hold as the original tracked student.
     var bystander := {"kind": "pose", "token": TOKEN, "when": 101.6,
         "state": "ambiguous", "pose": false, "x": 0.1,
+        "camera": true, "people": 2, "camera_frame_age_ms": 30,
         "lock_state": "ambiguous", "locked_id": 99}
     sender.put_packet(JSON.stringify(bystander).to_utf8_buffer())
     await process_frame
@@ -372,9 +387,18 @@ func _real_pose(x: float) -> void:
     pose.set("active", true)
     pose.set("player_x", x)
     pose.set("last_pose_ms", Time.get_ticks_msec())
-    pose.set("current_status", {"kind":"pose", "state":"tracking", "pose":true,
-        "lock_state":"locked", "locked_id":17, "x":x})
+    var status := {"kind":"pose", "state":"tracking", "pose":true,
+        "camera":true, "people":1, "camera_frame_age_ms":30,
+        "lock_state":"locked", "locked_id":17, "x":x,
+        # Catch DEFAULT guide requires an actually observed hands-down gesture;
+        # older fixtures omitted this and therefore could never finish a hold.
+        "hand_observation_valid":true, "hand_up":false}
+    pose.set("current_status", status)
     pose.set("packet_sequence", int(pose.get("packet_sequence")) + 1)
+    # The live calibration now consumes bounded ACTUAL source samples, not
+    # duplicate UI redraws nor manually incremented display packet counters.
+    synthetic_source_when += 0.4
+    pose.call("_record_fresh_calibration_pose", status, synthetic_source_when)
 
 
 func _check_bounded_pose_source_history() -> void:
@@ -389,7 +413,9 @@ func _check_bounded_pose_source_history() -> void:
     var records := limit + 24
     for i in range(records):
         pose.call("_record_fresh_calibration_pose",
-            {"state":"tracking", "pose":true, "x":0.5}, 300.0 + 0.04 * i)
+            {"state":"tracking", "pose":true, "camera":true, "people":1,
+                "camera_frame_age_ms":30, "lock_state":"locked", "x":0.5},
+            300.0 + 0.04 * i)
     var retained: Array = pose.call("get_pose_samples_after", 0)
     _check(retained.size() == limit,
         "Only newest %d real source samples remain after %d tracked frames" % [limit, records])

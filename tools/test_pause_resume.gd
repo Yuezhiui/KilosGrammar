@@ -1,6 +1,8 @@
 extends SceneTree
 
-# Integration regression for the live gameplay pause overlay.
+# Integration regression for real teacher HUD Pause with frozen live game
+# state, editable Pause screen, safe Restart -> new calibration and unsaved
+# aborted Results. Uses test-only MainMenu subclass: no DB, no real webcam.
 # Run:
 # Godot --headless --path . --script res://tools/test_pause_resume.gd
 
@@ -9,25 +11,41 @@ const ACTIVITIES: Array[String] = [
 	"Balloon Popping",
 	"Human Plane",
 ]
+const QA_MENU_SCRIPT := "res://tools/test_pause_ready_escape_menu_20261029.gd"
+const RECOVERY := preload("res://ui/database/recovery_journal.gd")
 
 var failures: Array[String] = []
 var checks := 0
 
 
 func _initialize() -> void:
+	ProjectSettings.set_setting("kilos/recovery_test_directory",
+		"user://test_recovery_pause_resume_%d_%d" % [
+			OS.get_process_id(), Time.get_ticks_usec()])
 	call_deferred("_run")
 
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var packed := load("res://main_menu.tscn") as PackedScene
+	var packed := load("res://ui/main_menu/main_menu.tscn") as PackedScene
 	if packed == null:
 		_fail("Could not load main_menu.tscn")
 		_finish()
 		return
 	var app := packed.instantiate() as Control
+	var mock_script := load(QA_MENU_SCRIPT) as Script
+	_assert(mock_script != null and mock_script.can_instantiate(),
+		"QA-only MainMenu subclass resolves without DB/webcam launcher")
+	if mock_script == null or not mock_script.can_instantiate():
+		app.free()
+		_finish()
+		return
+	app.set_script(mock_script)
 	root.add_child(app)
 	await create_timer(1.35).timeout
+	_assert(RECOVERY._directory().begins_with("user://test_recovery_pause_resume_")
+		and RECOVERY.pending().is_empty(),
+		"No prior scores in unique per-run recovery journal")
 
 	for activity in ACTIVITIES:
 		await _test_live_pause_resume(app, activity, "Seconds")
@@ -50,15 +68,21 @@ func _run() -> void:
 
 
 func _test_live_pause_resume(app: Control, activity: String, mode: String) -> void:
+	# A genuine fresh Main Play clears the previous minigame's score/time;
+	# routing directly from the last game's results can inherit a zero timer.
+	await _enter_fresh_play_setup(app)
 	app.call("_on_panel_requested", "gameplay", _game_context(activity, mode))
 	await process_frame
 	await process_frame
-	_assert(String(app.get("current_route")) == "gameplay", "%s entered gameplay" % activity)
+	_assert(String(app.get("current_route")) == "gameplay",
+		"%s entered gameplay (route=%s, panel=%s)" % [
+			activity, str(app.get("current_route")),
+			str((app.get("active_panel") as Control).name if app.get("active_panel") is Control else "null")])
 
 	var wrapper := app.get("active_panel") as Control
 	var game := wrapper.get_node_or_null("ActiveMiniGame") as Control if wrapper else null
 	if wrapper == null or game == null:
-		_fail("%s did not mount ActiveMiniGame" % activity)
+		_fail("%s did not mount ActiveMiniGame; route=%s" % [activity, str(app.get("current_route"))])
 		return
 
 	# Make Balloon Popping exercise preservation of an actual live projectile.
@@ -72,11 +96,20 @@ func _test_live_pause_resume(app: Control, activity: String, mode: String) -> vo
 	var before_context := _context_of(wrapper)
 	var before_transient := _snapshot_transient(game, activity)
 
-	# ESC from gameplay must go through the minigame pause hook, then park the
-	# exact wrapper under the pause overlay.
+	# The globally disabled Esc key MUST leave the running minigame unchanged.
+	app.call("_input", _escape_event())
 	app.call("_unhandled_input", _escape_event())
+	_assert(String(app.get("current_route")) == "gameplay",
+		"%s Escape cannot pause or navigate" % activity)
+	# Teacher explicitly clicks the original authored upper-right HUD button.
+	_assert(_press_authored_pause(game, activity),
+		"%s original HUD Pause button receives teacher press" % activity)
 	await process_frame
-	_assert(String(app.get("current_route")) == "pause", "%s ESC opens Pause" % activity)
+	_assert(String(app.get("current_route")) == "pause", "%s HUD button opens Pause" % activity)
+	app.call("_input", _escape_event())
+	app.call("_unhandled_input", _escape_event())
+	_assert(String(app.get("current_route")) == "pause",
+		"%s Escape cannot dismiss the teacher Pause overlay" % activity)
 	var pause_panel := app.get("active_panel") as Control
 	var parked := app.get("paused_game_panel") as Control
 	_assert(pause_panel != null and pause_panel.name == "Pause", "%s shows pause overlay" % activity)
@@ -97,10 +130,11 @@ func _test_live_pause_resume(app: Control, activity: String, mode: String) -> vo
 
 	# Use the real Pause RESUME action. It must restore the parked instance,
 	# not build another gameplay scene/minigame.
-	if pause_panel == null or not pause_panel.has_method("_resume"):
-		_fail("%s pause overlay has no _resume action" % activity)
+	var native_resume := pause_panel.get_node_or_null("PauseStage/PauseCard/ResumeButton") as Button if pause_panel else null
+	if native_resume == null:
+		_fail("%s pause overlay has no native Resume button" % activity)
 		return
-	pause_panel.call("_resume")
+	native_resume.pressed.emit()
 	_assert(String(app.get("current_route")) == "gameplay", "%s Resume returns to gameplay" % activity)
 	var resumed_wrapper := app.get("active_panel") as Control
 	var resumed_game := resumed_wrapper.get_node_or_null("ActiveMiniGame") as Control if resumed_wrapper else null
@@ -167,10 +201,9 @@ func _test_live_pause_resume(app: Control, activity: String, mode: String) -> vo
 
 
 func _test_catch_restart_clears_round(app: Control, mode: String) -> void:
-	# Starting from Play in the main menu clears the previous session, as it does
-	# when a teacher begins a new game through the actual setup flow.
-	app.call("_on_panel_requested", "student_setup", {})
-	await process_frame
+	# Restart goes through a NEW REAL calibration in production. This QA
+	# intercepts only the final calibration mounting to prevent webcam startup.
+	await _enter_fresh_play_setup(app)
 	app.call("_on_panel_requested", "gameplay", _game_context("Catch the Word", mode))
 	await process_frame
 	await process_frame
@@ -188,41 +221,54 @@ func _test_catch_restart_clears_round(app: Control, mode: String) -> void:
 	_assert(int(prior_context.get("score", 0)) > 0, "Catch %s pre-restart score is nonzero" % mode)
 	_assert((prior_context.get("catch_collected_words", []) as Array).size() == 1, "Catch %s pre-restart basket holds an apple" % mode)
 
+	app.call("_input", _escape_event())
 	app.call("_unhandled_input", _escape_event())
+	_assert(String(app.get("current_route")) == "gameplay",
+		"Catch restart %s Esc does not pause the current round" % mode)
+	_assert(_press_authored_pause(old_game, "Catch the Word"),
+		"Catch restart %s HUD Pause works" % mode)
 	await process_frame
 	var pause_panel := app.get("active_panel") as Control
 	if pause_panel == null or String(app.get("current_route")) != "pause":
 		_fail("Catch restart %s could not open pause menu" % mode)
 		return
-	pause_panel.call("_restart")
-	await process_frame
-	_assert(String(app.get("current_route")) == "gameplay", "Catch %s Restart creates new gameplay wrapper with countdown" % mode)
-	var new_wrapper := app.get("active_panel") as Control
-	_assert(String(new_wrapper.get("guided_stage")) == "countdown", "Catch %s restart begins fresh countdown" % mode)
-	var new_game := new_wrapper.get_node_or_null("ActiveMiniGame") as Control if new_wrapper else null
-	if new_game == null:
-		_fail("Catch restart %s did not create a new minigame" % mode)
+	var native_restart := pause_panel.get_node_or_null("PauseStage/PauseCard/RestartButton") as Button
+	if native_restart == null:
+		_fail("Catch restart %s is missing native Restart button" % mode)
 		return
-	_assert(new_game != old_game, "Catch %s restart uses a fresh minigame" % mode)
+	var calibration_before := int(app.get("intercepted_calibration_routes"))
+	native_restart.pressed.emit()
+	await process_frame
+	_assert(String(app.get("current_route")) == "calibration"
+		and int(app.get("intercepted_calibration_routes")) == calibration_before + 1,
+		"Catch %s Restart REQUIRES fresh physical calibration before GO" % mode)
 	_assert(app.get("paused_game_panel") == null, "Catch %s restart clears old parked instance" % mode)
-	var new_context := _context_of(new_wrapper)
-	var apple_layer := new_game.get_node("CollectedWords") as Node2D
-	_assert((new_context.get("catch_collected_words", []) as Array).is_empty(), "Catch %s restart clears saved apple words" % mode)
-	_assert(apple_layer.get_child_count() == 0, "Catch %s restart has no visible basket apples" % mode)
-	_assert(int(new_context.get("score", -1)) == 0, "Catch %s restart resets score" % mode)
-	_assert(int(new_context.get("correct", -1)) == 0 and int(new_context.get("attempts", -1)) == 0, "Catch %s restart resets statistics" % mode)
-	_assert(int(new_context.get("streak", -1)) == 0 and int(new_context.get("best_streak", -1)) == 0, "Catch %s restart resets streaks" % mode)
-	_assert(int(new_context.get("lives", -1)) == 3, "Catch %s restart resets lives" % mode)
-	var expected_time := 60.0 if mode == "Seconds" else 999.0
-	_assert(absf(float(new_context.get("time_remaining", -1.0)) - expected_time) < 1.0, "Catch %s restart resets the timer" % mode)
+	await process_frame
+	_assert(not is_instance_valid(old_wrapper) and not is_instance_valid(old_game),
+		"Catch %s Restart permanently frees old scored game before calibration" % mode)
+	var new_context := app.get("session_state") as Dictionary
+	_assert(not new_context.has("catch_collected_words"),
+		"Catch %s Restart clears earned basket apples before new calibration" % mode)
+	_assert(not new_context.has("score") and not new_context.has("time_remaining"),
+		"Catch %s Restart clears the previous score and elapsed time" % mode)
+	_assert(not new_context.has("attempts") and not new_context.has("correct"),
+		"Catch %s Restart clears old grammar attempt statistics" % mode)
+	_assert(not new_context.has("streak") and not new_context.has("best_streak"),
+		"Catch %s Restart clears old score streaks" % mode)
+	_assert(not bool(new_context.get("calibration_measured", false))
+		and bool(new_context.get("start_countdown", false)),
+		"Catch %s Restart awaits fresh measured calibration then the existing 3-2-1" % mode)
+	app.call("_input", _escape_event())
+	app.call("_unhandled_input", _escape_event())
+	_assert(String(app.get("current_route")) == "calibration",
+		"Catch %s Escape cannot skip new calibration" % mode)
 	app.call("_return_to_main")
 	await process_frame
 	await process_frame
 
 
 func _test_catch_results_retry_clears_round(app: Control) -> void:
-	app.call("_on_panel_requested", "student_setup", {})
-	await process_frame
+	await _enter_fresh_play_setup(app)
 	app.call("_on_panel_requested", "gameplay", _game_context("Catch the Word", "Seconds"))
 	await process_frame
 	await process_frame
@@ -251,42 +297,58 @@ func _test_catch_results_retry_clears_round(app: Control) -> void:
 
 
 func _test_pause_results_discards(app: Control) -> void:
+	await _enter_fresh_play_setup(app)
 	app.call("_on_panel_requested", "gameplay", _game_context("Catch the Word"))
 	await process_frame
 	await process_frame
 	var wrapper := app.get("active_panel") as Control
 	var game := wrapper.get_node_or_null("ActiveMiniGame") as Control if wrapper else null
-	app.call("_unhandled_input", _escape_event())
+	_assert(_press_authored_pause(game, "Catch the Word"),
+		"Pause -> Results originated from native Catch HUD button")
 	await process_frame
 	var pause_panel := app.get("active_panel") as Control
 	if pause_panel == null:
 		_fail("Pause -> Results had no pause overlay")
 		return
-	pause_panel.call("_results")
+	var results_button := pause_panel.get_node_or_null("PauseStage/PauseCard/ResultsButton") as Button
+	if results_button == null:
+		_fail("Pause -> Results is missing native Results button")
+		return
+	results_button.pressed.emit()
 	await process_frame
 	await process_frame
 	_assert(String(app.get("current_route")) == "results", "Pause -> Results reaches Results")
 	_assert(app.get("paused_game_panel") == null, "Pause -> Results clears parked-game slot")
 	_assert(not is_instance_valid(wrapper), "Pause -> Results frees parked gameplay wrapper")
 	_assert(not is_instance_valid(game), "Pause -> Results frees parked minigame instance")
+	_assert(not bool((app.get("session_state") as Dictionary).get("score_saved", false))
+		and not bool((app.get("session_state") as Dictionary).get("round_completed", false))
+		and RECOVERY.pending().is_empty(),
+		"Pause -> Results never persists or fabricates an aborted score")
 	app.call("_return_to_main")
 	await process_frame
 	await process_frame
 
 
 func _test_pause_main_discards(app: Control) -> void:
+	await _enter_fresh_play_setup(app)
 	app.call("_on_panel_requested", "gameplay", _game_context("Human Plane"))
 	await process_frame
 	await process_frame
 	var wrapper := app.get("active_panel") as Control
 	var game := wrapper.get_node_or_null("ActiveMiniGame") as Control if wrapper else null
-	app.call("_unhandled_input", _escape_event())
+	_assert(_press_authored_pause(game, "Human Plane"),
+		"Pause -> Main originated from native Human Plane HUD button")
 	await process_frame
 	var pause_panel := app.get("active_panel") as Control
 	if pause_panel == null:
 		_fail("Pause -> Main had no pause overlay")
 		return
-	pause_panel.call("_main_menu")
+	var main_button := pause_panel.get_node_or_null("PauseStage/PauseCard/MainMenuButton") as Button
+	if main_button == null:
+		_fail("Pause -> Main is missing native Main Menu button")
+		return
+	main_button.pressed.emit()
 	await process_frame
 	await process_frame
 	_assert(String(app.get("current_route")) == "main", "Pause -> Main reaches Main")
@@ -336,7 +398,9 @@ func _snapshot_transient(game: Control, activity: String) -> Dictionary:
 				"round_time_remaining": float(game.get("round_time_remaining")),
 				"valid_lanes": (game.get("valid_lanes") as Array).duplicate(),
 				"pending_valid_lanes": (game.get("pending_valid_lanes") as Array).duplicate(),
-				"prompt": String((game.get("prompt_label") as Label).text),
+					# Old prompt_label was removed in the finished Balloon scene.
+					# Keep checking the currently authored feedback text instead.
+					"feedback": String((game.get("feedback_label") as Label).text),
 				"balloon_ids": balloon_ids,
 				"projectile_ids": projectile_ids,
 				"projectile_positions": projectile_positions,
@@ -391,6 +455,14 @@ func _context_of(wrapper: Control) -> Dictionary:
 	return {}
 
 
+func _enter_fresh_play_setup(app: Control) -> void:
+	app.call("_return_to_main")
+	app.call("_on_panel_requested", "student_setup", {})
+	await process_frame
+	_assert(String(app.get("current_route")) == "student_setup",
+		"Fresh Main Play creates a clean form before starting next synthetic round")
+
+
 func _game_context(activity: String, mode: String = "Lives") -> Dictionary:
 	return {
 		"activity": activity,
@@ -403,6 +475,17 @@ func _game_context(activity: String, mode: String = "Lives") -> Dictionary:
 		"database_connected": false,
 		"camera_live": false,
 	}
+
+
+func _press_authored_pause(game: Control, activity: String) -> bool:
+	if game == null:
+		return false
+	var path := "HudLayer/PauseButton" if activity == "Balloon Popping" else "HUDLayer/HUD/PauseButton"
+	var button := game.get_node_or_null(path) as Button
+	if button == null or button.disabled:
+		return false
+	button.pressed.emit()
+	return true
 
 
 func _escape_event() -> InputEventKey:

@@ -1,0 +1,135 @@
+{
+  "model": "k2-fsa/OmniVoice",
+  "steps": 24,
+  "speed": 1.0,
+  "voice_mode": "existing_local_clone",
+  "sample_rate": 24000,
+  "outputs": {
+    "catch_word_prompt": {
+      "duration_s": 6.71,
+      "peak_before": 0.551,
+      "peak_after": 0.88,
+      "sha256": "c6971bd465554820066018b28d41e0b268ddea16d86f583ae2ad75c10a93f2d7",
+      "generation_s": 3.1
+    },
+    "catch_word_movement": {
+      "duration_s": 7.0,
+      "peak_before": 0.7576,
+      "peak_after": 0.88,
+      "sha256": "3b892a0fe2777485d46e3262db0008156449436e13f89a4ee00e41212c64cd5f",
+      "generation_s": 2.6
+    },
+    "catch_word_seconds": {
+      "duration_s": 6.75,
+      "peak_before": 0.6566,
+      "peak_after": 0.88,
+      "sha256": "6ae6cd61af9d25c8c3db1f4ec96ccdfbb5b8ceb3a1fa3375bb57044a01813e88",
+      "generation_s": 2.5
+    },
+    "catch_word_lives": {
+      "duration_s": 7.28,
+      "peak_before": 0.5424,
+      "peak_after": 0.88,
+      "sha256": "666765ed9a417cb1ff8399379a96de43b4265e0d4e118e9c3c8bed70efa6955b",
+      "generation_s": 2.7
+    },
+    "catch_word_score": {
+      "duration_s": 7.64,
+      "peak_before": 0.5956,
+      "peak_after": 0.88,
+      "sha256": "8c18cce9979ae9e0af6a9dafc912db043ab49fb5b30e32065bf0ed37c87a5eba",
+      "generation_s": 2.7
+    },
+    "catch_word_pause": {
+      "duration_s": 5.91,
+      "peak_before": 0.6591,
+      "peak_after": 0.88,
+      "sha256": "f6255564f2c05f90765538b5141ae261ad1074d66556084053598ab15fda9f57",
+      "generation_s": 2.5
+    },
+    "balloon_popping_prompt": {
+      "duration_s": 7.46,
+      "peak_before": 0.4868,
+      "peak_after": 0.88,
+      "sha256": "0beb589f231d65ddf5de896ad7e0609e26006ef916a3120b3dadde500a7ba6b6",
+      "generation_s": 2.7
+    },
+    "balloon_popping_movement": {
+      "duration_s": 7.28,
+      "peak_before": 0.5028,
+      "peak_after": 0.88,
+      "sha256": "b1d923ad73075f2d20a689129bfb4927d97494a2dae930ec0445dd01329cc7fb",
+      "generation_s": 2.6
+    },
+    "balloon_popping_seconds": {
+      "duration_s": 7.08,
+      "peak_before": 0.5488,
+      "peak_after": 0.88,
+      "sha256": "56229ee14587525b77480fca36a73e2551ffabdfe924cd0f93ffad59475e5adf",
+      "generation_s": 2.6
+    },
+    "balloon_popping_lives": {
+      "duration_s": 7.12,
+      "peak_before": 0.5446,
+      "peak_after": 0.88,
+      "sha256": "d62eb4233c9872c5779cf00c55e22c487f6c85539c950fbe02b4a682c37b2c9d",
+      "generation_s": 2.7
+    },
+    "balloon_popping_score": {
+      "duration_s": 7.47,
+      "peak_before": 0.5527,
+      "peak_after": 0.88,
+      "sha256": "5fb5de33a24de6fafad97c966d3722406557da15937d6e5d80b5a3da2c5a8575",
+      "generation_s": 2.7
+    },
+    "balloon_popping_pause": {
+      "duration_s": 6.12,
+      "peak_before": 0.6157,
+      "peak_after": 0.88,
+      "sha256": "bf90d5de3dd01815f58f7c55c4d3e4744156e7a99bc689fb11d8a68e9d9fb15f",
+      "generation_s": 2.2
+    },
+    "human_plane_prompt": {
+      "duration_s": 8.64,
+      "peak_before": 0.5678,
+      "peak_after": 0.88,
+      "sha256": "656d6895df525ecb32f7560f17a886f8463954b7221278dc2a6832259a6a6e14",
+      "generation_s": 3.0
+    },
+    "human_plane_movement": {
+      "duration_s": 9.61,
+      "peak_before": 0.6444,
+      "peak_after": 0.88,
+      "sha256": "67b7996c0eda8d3ae239c0d6629932419075f8adfd92aa7f8a0c9574b1313e68",
+      "generation_s": 3.1
+    },
+    "human_plane_seconds": {
+      "duration_s": 7.07,
+      "peak_before": 0.5412,
+      "peak_after": 0.88,
+      "sha256": "ce05785fca4f73ea4178502d54809f4f59fa841a3e77fbf88b00bf260cb7fe74",
+      "generation_s": 2.8
+    },
+    "human_plane_lives": {
+      "duration_s": 7.52,
+      "peak_before": 0.5671,
+      "peak_after": 0.88,
+      "sha256": "fe13e6fe78064480fc9dd8757f1c6296df67e166be4f8d13d0aa20cdf59adc41",
+      "generation_s": 2.7
+    },
+    "human_plane_score": {
+      "duration_s": 8.48,
+      "peak_before": 0.6491,
+      "peak_after": 0.88,
+      "sha256": "5247fb8be2665b8fe19280aa3f26af207f1121322609532cd7a858dc12c23a99",
+      "generation_s": 3.6
+    },
+    "human_plane_pause": {
+      "duration_s": 5.94,
+      "peak_before": 0.6315,
+      "peak_after": 0.88,
+      "sha256": "cccda12a27de4f9b4664ad0872a1deb500dafc48bf8e70c22eea9ea8b47a0abc",
+      "generation_s": 4.0
+    }
+  }
+}

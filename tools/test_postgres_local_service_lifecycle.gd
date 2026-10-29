@@ -15,7 +15,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
-	var packed := load("res://main_menu.tscn") as PackedScene
+	var packed := load("res://ui/main_menu/main_menu.tscn") as PackedScene
 	_check(packed != null, "Real Main Menu scene loads")
 	if packed == null:
 		quit(1)

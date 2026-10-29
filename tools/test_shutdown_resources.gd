@@ -4,14 +4,13 @@ extends SceneTree
 # (and its PostgreSQL startup) and NEVER opens a real camera.
 #
 # Godot 4.7 --headless --path . --script res://tools/test_shutdown_resources.gd -- bare
-# Replace bare with: countdown, ready, wrapper, guided, cycle,
+# Replace bare with: countdown, wrapper, guided, cycle,
 # audio_unstopped (negative control), audio_clean (cache, stop + mixer grace),
 # audio_cached_nowait, audio_nocache_unstopped, audio_nocache_nowait, audio_nocache_wait,
 # audio_direct_nowait, audio_direct_wait, audio_muted_nowait, audio_muted_wait.
 # Compare with project main-scene exit: godot --headless --path . --quit --verbose
-const COUNTDOWN := "res://ui/play/guided_countdown.tscn"
-const READY := "res://ui/play/ready.tscn"
-const GAMEPLAY := "res://ui/play/gameplay.tscn"
+const COUNTDOWN := "res://ui/play/gameplay/guided_countdown.tscn"
+const GAMEPLAY := "res://ui/play/gameplay/gameplay.tscn"
 const TITLE_MP3 := "res://assets/audio/user_provided/wii_fit_user_settings.mp3"
 const LOGO_WAV := "res://assets/audio/lexispell_intro/logo_bloop.wav"
 
@@ -43,8 +42,6 @@ func _run() -> void:
 			await _idle_frames()
 		"countdown":
 			await _plain_countdown()
-		"ready":
-			await _ready_screen()
 		"wrapper":
 			await _wrapper(false)
 		"guided":
@@ -74,6 +71,17 @@ func _run() -> void:
 			await _audio_fixture(true, "cache", 0.55, true)
 		_:
 			errors.append("Unknown QA mode: " + mode)
+	# The wrapper now creates one SceneTree-root soundtrack manager shared
+	# across calibration/countdown/gameplay. Explicit application shutdown
+	# must stop and dispose it; otherwise the fixture, not gameplay, leaks.
+	var game_audio := root.get_node_or_null("KilosGameAudio") as Node
+	if is_instance_valid(game_audio):
+		game_audio.call("stop_gameplay")
+		var stream_player := game_audio.get_node_or_null("GameplayTrack") as AudioStreamPlayer
+		if is_instance_valid(stream_player):
+			stream_player.stream = null
+		game_audio.queue_free()
+		await _idle_frames()
 	_log_counts("before-final-drain")
 	await _idle_frames()
 	_log_counts("after-final-drain")
@@ -115,22 +123,6 @@ func _plain_countdown() -> void:
 	await _idle_frames()
 	_check(not is_instance_valid(panel) and not is_instance_valid(layer), "Countdown panel and CanvasLayer are destroyed")
 	_log_counts("countdown-released")
-
-
-func _ready_screen() -> void:
-	var packed := load(READY) as PackedScene
-	_check(packed != null, "Ready scene loads")
-	if packed == null:
-		return
-	var ready := packed.instantiate() as Control
-	root.add_child(ready)
-	ready.call("set_context", {"guided_tutorial": false, "camera_live": false})
-	await _idle_frames()
-	_log_counts("ready-mounted")
-	ready.queue_free()
-	await _idle_frames()
-	_check(not is_instance_valid(ready), "Ready scene destroyed")
-	_log_counts("ready-released")
 
 
 func _audio_fixture(cleanup: bool, source: String = "cache", grace_seconds: float = 0.55, mute: bool = false) -> void:
@@ -201,20 +193,17 @@ func _wrapper(guided: bool) -> void:
 	wrapper.call("set_context", {
 		"activity": "Catch the Word", "topic": "Noun",
 		"game_mode": "Seconds", "difficulty": "Easy",
-		"catch_character": "Boy", "catch_map": "City",
+		"catch_character": "Bear", "catch_map": "City",
 		"keyboard_mode": true, "camera_live": false,
 		"guided_tutorial": guided, "start_countdown": true
 	})
 	await _idle_frames()
 	var game := wrapper.get("active_game") as Control
 	_check(game != null, "Gameplay minigame is mounted")
-	if guided:
-		var spotlight := wrapper.get("spotlight_overlay") as CanvasLayer
-		_check(spotlight != null, "Guided spotlight created")
-		if spotlight != null:
-			spotlight.call("skip")
-	else:
-		_check(String(wrapper.get("guided_stage")) == "countdown", "Normal countdown active")
+	_check(String(wrapper.get("guided_stage")) == "countdown",
+		"Guided and Play mount the same direct 3-2-1 countdown")
+	_check(game != null and game.process_mode == Node.PROCESS_MODE_DISABLED,
+		"Countdown freezes the mounted game's resources until GO")
 	await _idle_frames()
 	var panel := wrapper.get("countdown_panel") as Control
 	_check(panel != null, "Countdown panel created in gameplay wrapper")

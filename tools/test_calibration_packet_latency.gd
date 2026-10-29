@@ -112,7 +112,11 @@ func _run() -> void:
 
 func _send(sender: PacketPeerUDP, token: String, when: float, x: float) -> void:
 	var payload := {"kind": "pose", "token": token, "when": when,
-		"state": "tracking", "pose": true, "x": x, "lock_state": "locked"}
+		# The current safety protocol requires a real raw SOLO observation and
+		# a camera-authenticated source frame, not just a retained pose/X value.
+		"state": "tracking", "pose": true, "x": x, "lock_state": "locked",
+		"camera": true, "camera_phase": "tracking", "people": 1,
+		"camera_frame_age_ms": 20, "fps": 20.0}
 	sender.put_packet(JSON.stringify(payload).to_utf8_buffer())
 
 

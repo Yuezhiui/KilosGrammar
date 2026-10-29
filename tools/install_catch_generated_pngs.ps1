@@ -16,7 +16,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$relativeFolder = 'ui/minigames/catch_hud/generated/'
+$relativeFolder = 'ui/minigames/catch_the_word/catch_hud/generated/'
 $images = @(
     'title_board.png', 'objective_banner.png', 'lives_badge.png',
     'timer_badge.png', 'pause_badge.png', 'score_board.png',
