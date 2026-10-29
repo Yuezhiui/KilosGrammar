@@ -200,13 +200,28 @@ class SkeletonPreviewTest(unittest.TestCase):
     def test_unconfident_or_invalid_joints_never_draw_fake_bones(self):
         person = sample_person()
         for point in person["keypoints"]:
-            point[2] = 0.3
+            point[2] = 0.29
         person["keypoints"][5] = [float("nan"), 0.3, 0.99]
         person["keypoints"][6] = [1.4, 0.3, 0.99]
         drawing = SkeletonOnlyCV2()
         output = draw_skeleton_preview(drawing, self.camera_image, [person])
         self.assertTrue(np.array_equal(output, self.plain_preview))
         self.assertEqual((drawing.lines, drawing.joints), (0, 0))
+
+    def test_visual_confidence_dip_draws_only_actual_current_joints(self):
+        person = sample_person()
+        # A mildly low-confidence detected wrist must not repeatedly vanish
+        # even though the 0.45 gameplay / calibration gate is still strict.
+        person["keypoints"][9][2] = 0.31
+        drawing = SkeletonOnlyCV2()
+        draw_skeleton_preview(drawing, self.camera_image, [person])
+        point = person["keypoints"][9]
+        self.assertIn((round(point[0] * 639), round(point[1] * 479)), drawing.positions)
+        # Missing/invalid joints are NEVER synthesized from the prior image.
+        person["keypoints"][9][2] = 0.01
+        drawing = SkeletonOnlyCV2()
+        draw_skeleton_preview(drawing, self.camera_image, [person])
+        self.assertNotIn((round(point[0] * 639), round(point[1] * 479)), drawing.positions)
 
 
 if __name__ == "__main__":

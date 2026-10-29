@@ -6,7 +6,7 @@ extends SceneTree
 
 const SCENE := "res://ui/vision/calibration/calibration.tscn"
 const DT := 0.15
-const BALLOON_ORDER := ["LEFT", "CENTER", "RIGHT"]
+const BALLOON_ORDER := ["CENTER", "RIGHT", "LEFT"]
 const ZONE_X := {"LEFT": 0.2, "CENTER": 0.5, "RIGHT": 0.8}
 
 var pose: Node
@@ -60,18 +60,17 @@ func _balloon_six_holds() -> void:
 	var routes: Array[Dictionary] = []
 	screen.requested.connect(func(target: String, payload: Dictionary) -> void:
 		routes.append({"target": target, "payload": payload}))
-	_assert(screen.call("_capture_order") == BALLOON_ORDER, "Balloon uses LEFT -> CENTER -> RIGHT")
+	_assert(screen.call("_capture_order") == BALLOON_ORDER, "Balloon uses CENTER -> RIGHT -> LEFT")
 	_assert(screen.call("_hold_seconds") == 3.0, "Balloon phases each require 3 seconds")
 	var stage := screen.get_node("TutorialStage") as Control
 	var art_before: Dictionary = {}
 	for name in ["PoseGuideLeft", "PoseGuideDefault", "PoseGuideRight",
 		"PoseGuideBalloonRaiseLeft", "PoseGuideBalloonRaise", "PoseGuideBalloonRaiseRight",
-		"PoseGuidePlaneCenter"]:
+			"PoseGuidePlaneCenter", "PoseGuidePlaneLeft", "PoseGuidePlaneRight"]:
 		var control := stage.get_node("PoseGuides/" + name) as Control
 		art_before[name] = control.get_rect()
-	var hands_label := stage.get_node_or_null("PoseGuides/BalloonHandsInstruction") as Label
-	_assert(hands_label != null and hands_label.owner == screen,
-		"Editable bilateral guidance label authored in calibration scene")
+	_assert(stage.get_node_or_null("PoseGuides/BalloonHandsInstruction") == null,
+		"Retired overlapping BalloonHandsInstruction label absent")
 	var back := stage.get_node_or_null("Navigation/BackButton") as Button
 	_assert(back != null and back.visible and not back.disabled and back.owner == screen,
 		"Current editor-authored teacher Back to Choose Activity remains available")
@@ -92,9 +91,10 @@ func _balloon_six_holds() -> void:
 				"Right" if zone == "RIGHT" else ""))
 			_assert((stage.get_node("PoseGuides/" + wanted_png) as Control).visible,
 				tag + " uses matching independently authored PNG guide")
-			_assert(hands_label.visible and hands_label.text.contains("BOTH HANDS")
-				and hands_label.text.contains("UP" if phase == 1 else "DOWN"),
-				tag + " visibly explains physical TWO-wrist posture")
+			screen.call("_set_stage_instruction")
+			_assert(String(screen.latest_instruction_text).contains(
+					"RAISE BOTH HANDS" if phase == 1 else "KEEP BOTH HANDS DOWN"),
+				tag + " still specifies physical TWO-wrist posture")
 			if phase == 1 and narrator != null:
 				var prompt_player := narrator.get_node("PromptPlayer") as AudioStreamPlayer
 				_assert(narrator.get("_played_stages").has("Balloon Popping:%s:raised" % zone),
@@ -130,6 +130,26 @@ func _balloon_six_holds() -> void:
 				screen.call("_process", DT)
 			_assert(int(screen.live_step) * 2 + int(screen.balloon_pose_phase) == steps,
 				tag + " rejects static display frames without fresh YOLO packets")
+			if steps == 0:
+				# Two genuine missing-wrist packets pause the active hold. They do not
+				# blink/reset its progress and cannot count as part of the 3 seconds.
+				for i in range(8):
+					_observation(x, 1, true, false, true, true)
+				var before_count: int = screen.live_samples.size()
+				var before_timer: float = screen.live_timer
+				for i in range(2):
+					_observation(x, 1, false, false, false, true)
+				_assert(screen.live_samples.size() == before_count
+					and is_equal_approx(screen.live_timer, before_timer),
+					"Short fresh wrist occlusion retains previous 8 poses without credit")
+				_observation(x, 1, true, false, true, true)
+				_assert(screen.live_samples.size() == before_count + 1
+					and screen.live_timer <= before_timer + DT + 0.001,
+					"Reacquired both wrists resume same hold without counting hidden time")
+				for i in range(3):
+					_observation(x, 1, false, false, false, true)
+				_assert(screen.live_samples.is_empty() and is_zero_approx(screen.live_timer),
+					"Wrist occlusion beyond tolerance resets unsafe active hold")
 			# Real fresh continuous bilateral observations: 2.85 seconds is
 			# insufficient; after 3.0 seconds and >=8 packets advance once.
 			for i in range(19):
@@ -185,6 +205,11 @@ func _plane_t_pose_without_torso_steering() -> void:
 	_assert(screen.call("_capture_order") == ["CENTER"], "Plane retains center-only neutral T-pose")
 	_assert((stage.get_node("PoseGuides/PoseGuidePlaneCenter") as Control).visible,
 		"Plane editor-authored T-pose guide is visible")
+	for side in ["Left", "Right"]:
+		var guide := stage.get_node_or_null("PoseGuides/PoseGuidePlane" + side) as TextureRect
+		_assert(guide != null and guide.position == Vector2(262, 66)
+			and guide.size == Vector2(767, 484) and not guide.visible,
+			"Plane " + side + " guide is independent and shares center's exact geometry")
 	for i in range(23):
 		_observation(0.5, 1, true, false, false, true, false, false)
 	_assert(int(screen.live_step) == 0, "Plane does not advance with arms not in T-pose")
@@ -198,6 +223,22 @@ func _plane_t_pose_without_torso_steering() -> void:
 		"Plane T-pose completes using real source arm bank even when torso steering unavailable")
 	_assert(is_equal_approx(float(pose.plane_calibration.get("camera_center_x", -1.0)), 0.5),
 		"Plane calibrates real centered torso X without fabricating lateral positions")
+	_assert(screen.plane_demo_running and (stage.get_node("PoseGuides/PoseGuidePlaneLeft") as Control).visible,
+		"After CENTER physical hold, LEFT guide starts visual-only demonstration")
+	# Visual side illustrations remain up long enough to finish their 1.97s
+	# cloned audio prompts. Read the real source constant, not the old 1s mock.
+	var demo_duration := float(screen.get_script().get_script_constant_map().get(
+		"PLANE_DEMO_SECONDS_PER_SIDE", 2.2))
+	var demo_side_frames := ceili(demo_duration / DT)
+	for i in range(demo_side_frames):
+		_observation(0.5, 1, true, false, false, true, false)
+	_assert((stage.get_node("PoseGuides/PoseGuidePlaneRight") as Control).visible
+		and int(screen.live_step) == 1 and screen.measured_points.has("center"),
+		"RIGHT guide follows LEFT; no extra physical plane hold requested")
+	for i in range(demo_side_frames + 1):
+		_observation(0.5, 1, true, false, false, true, false)
+	_assert(bool(screen.success_running) and not bool(screen.plane_demo_running),
+		"Visual side demonstration ends on existing verified SUCCESS latch")
 	pose.worker_pid = -1
 	(stage.get_node("Navigation/BackButton") as Button).pressed.emit()
 	_assert(back_routes == ["play_activity"],

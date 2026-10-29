@@ -17,10 +17,6 @@ $manifestSource = Join-Path $PSScriptRoot 'offline\manifest.json'
 if ([string]::IsNullOrWhiteSpace($GodotExe)) {
     $found = Get-Command 'godot.exe','Godot_v4.7.2-stable_win64_console.exe' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($null -ne $found) { $GodotExe = $found.Source }
-    $developmentGodot = 'C:\Users\Yue\Documents\GODOT\GDSCRIPT\Godot_v4.7.2-stable_win64_console.exe'
-    if (-not $GodotExe -and (Test-Path -LiteralPath $developmentGodot -PathType Leaf)) {
-        $GodotExe = $developmentGodot
-    }
 }
 if (-not (Test-Path -LiteralPath $GodotExe -PathType Leaf)) {
     throw 'Godot 4.7.2 console executable missing. Supply -GodotExe with the actual path to the installed editor/console build.'
@@ -50,7 +46,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot 'export_presets.cfg') -P
 & (Join-Path $PSScriptRoot 'Test-OfflinePayload.ps1') -PayloadRoot $PSScriptRoot
 & (Join-Path $PSScriptRoot 'Test-OfflineWheels.ps1') -PythonExe $PythonExe
 $required = @(
-    'database\server.py', 'database\start_auto.ps1', 'database\setup_from_game.ps1',
+    'database\server.py', 'database\recovery_store.py', 'database\start_auto.ps1', 'database\setup_from_game.ps1',
     'database\configure_local.ps1', 'database\migrations\001_initial.sql',
     'ui\vision\pose_worker.py', 'ui\vision\student_lock.py', 'ui\vision\gesture_detector.py',
     'assets\fonts\TitanOne-Regular.ttf', 'assets\fonts\Comic Lemon.otf'
@@ -94,18 +90,19 @@ function Copy-One([string]$relative) {
 }
 # Only the backend and worker files needed by exported process launches.
 foreach ($relative in @(
-    'database\__init__.py', 'database\config.py', 'database\storage.py',
+    'database\__init__.py', 'database\config.py', 'database\storage.py', 'database\recovery_store.py',
     'database\server.py', 'database\migrate.py', 'database\requirements.txt',
     'database\configure_local.ps1', 'database\setup_from_game.ps1',
     'database\setup_local.ps1', 'database\run_local.ps1',
     'database\start_auto.ps1', 'database\README.md',
-    'database\migrations\001_initial.sql',
+    'database\migrations\001_initial.sql', 'database\migrations\002_add_minigame.sql',
     'ui\vision\pose_worker.py', 'ui\vision\student_lock.py', 'ui\vision\gesture_detector.py',
     'ui\vision\requirements-pose.txt'
 )) { Copy-One $relative }
 
 foreach ($name in @(
     'Test-OfflinePayload.ps1','Test-ReleasePackage.ps1','Install-OnSchoolPC.ps1','Launch-Game.ps1',
+    'Test-LaunchPreflight.ps1','Install-Portable.ps1','Uninstall-Portable.ps1',
     'requirements-offline.txt','Play KilosGrammar.cmd','Setup Offline.cmd'
 )) {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stage $name)

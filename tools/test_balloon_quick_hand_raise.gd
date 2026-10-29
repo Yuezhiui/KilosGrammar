@@ -22,56 +22,43 @@ func _run() -> void:
 	game.set_process(false)
 	game.set_physics_process(false)
 	_check(game.round_active and game.timer_running, "real Balloon round starts live")
-	_check(game.HAND_RAISE_RELOAD_MS == 1500, "real shot reload remains exactly 1500ms")
-	_check(game.HAND_RAISE_LOWER_CONFIRM_MS >= 100, "lower confirmation still filters YOLO flicker")
-	_check(game.HAND_RAISE_UP_CONFIRM_MS > 0, "up confirmation still rejects single bad frame")
+	_check(game.HAND_RAISE_RELOAD_MS == 1000, "held-high reload is exactly 1000ms")
+	_check(game.HAND_RAISE_LOWER_CONFIRM_MS >= 100, "lower confirmation filters wrist flicker")
+	_check(game.HAND_RAISE_UP_CONFIRM_MS > 0, "up confirmation ignores one bad frame")
 	_check(game.projectiles.is_empty(), "setup does not auto-shoot")
-	_check(not game._launch_projectile(100), "direct projectile call cannot bypass gesture API")
+	_check(not game._launch_projectile(100), "direct projectile call cannot bypass gesture")
 
-	# A hand held UP when calibration ends must first return DOWN; no startup
-	# trigger and no repeated auto-shots even long after the reload has elapsed.
+	# Already-high hand at startup cannot launch until a real LOW-to-HIGH arm.
 	_sample(game, true, 0, false, "Already-raised hand at gameplay entry")
-	_sample(game, true, 80, false, "Initial raised hand after confirmation")
-	_sample(game, true, 150, false, "Initial raised hand held")
+	_sample(game, true, 80, false, "Initial raised hand confirmed but disarmed")
+	_sample(game, true, 150, false, "Initial held UP cannot shoot")
 	_lower(game, 200, "First deliberate lower")
-	_wrist_sample(game, true, false, 410, false, "LEFT hand begins a fresh rise")
-	_wrist_sample(game, true, false, 490, true, "LEFT hand fires exactly once")
-	_check(game.hand_raise_last_shot_ms == 490, "shot timestamp recorded")
-	_sample(game, true, 530, false, "Repeated UP frame cannot fire")
-	_check(game.projectiles.size() == 1, "exactly one live projectile from first rise")
+	_wrist_sample(game, true, false, 410, false, "LEFT hand begins fresh rise")
+	_wrist_sample(game, true, false, 490, true, "LEFT hand fires first stone")
+	_check(game.hand_raise_last_shot_ms == 490, "first shot timestamp recorded")
+	_sample(game, true, 530, false, "Repeated UP cannot fire before one second")
+	_check(game.projectiles.size() == 1, "only one live projectile before reload")
+
+	# Brief jitter and changing which hand is raised never create a duplicate.
+	_sample(game, false, 540, false, "50ms invalid-looking low starts")
+	_sample(game, true, 590, false, "brief low flicker recovers")
+	_wrist_sample(game, false, true, 600, false, "RIGHT hand takes over while raised")
+	_check(game.hand_raise_armed, "fresh gesture retains authorization under valid tracking")
+
+	# Exact 999/1000ms boundary and the two-projectile cap.
+	_wrist_sample(game, false, true, 1489, false, "999ms held-right high cannot shoot")
+	_wrist_sample(game, false, true, 1490, true, "1000ms held-right high shoots")
+	_check(game.projectiles.size() == 2 and game.hand_raise_last_shot_ms == 1490,
+		"repeated high gesture creates exactly two live stones")
+	_sample(game, true, 2490, false, "capacity prevents third held-high stone")
+	_check(game.projectiles.size() == 2 and game.hand_raise_last_shot_ms == 1490,
+		"blocked capacity cannot change timestamp or create a stone")
 	game._clear_projectiles()
-
-	# A one-frame false low is not a real release. Even changing WHICH hand is
-	# high while the combined state stays UP cannot produce another edge.
-	_sample(game, false, 540, false, "50ms low jitter begins")
-	_sample(game, true, 590, false, "False low recovers before lower debounce")
-	_wrist_sample(game, false, true, 600, false, "Changing LEFT UP to RIGHT UP keeps same edge")
-	_check(not game.hand_raise_armed, "short low jitter did not rearm")
-
-	# A genuine lower and rise at 1499ms is blocked. The high gesture is
-	# consumed: crossing 1500ms while still high cannot queue a later shot.
-	_lower(game, 610, "Release before 1499ms reload boundary")
-	_wrist_sample(game, false, true, 1909, false, "Early RIGHT-hand rise begins")
-	_wrist_sample(game, false, true, 1989, false, "1499ms from last shot is too early")
-	_check(not game.hand_raise_armed, "early attempted shot consumes its rise")
-	_sample(game, true, 1990, false, "1500ms deadline never auto-fires held UP")
-	_sample(game, true, 2110, false, "Held UP remains silent beyond deadline")
-	_check(game.projectiles.is_empty(), "reload never creates a delayed projectile")
-
-	# Releasing and raising again after the deadline is responsive. Verify a
-	# real projectile and exact cooldown boundary on the NEXT confirmed rise.
-	_lower(game, 2140, "Lower right hand to rearm")
-	_wrist_sample(game, false, true, 2390, false, "Raise RIGHT hand after cooldown begins")
-	_wrist_sample(game, false, true, 2470, true, "Fresh RIGHT-hand rise fires again")
-	_check(game.hand_raise_last_shot_ms == 2470, "second shot uses new monotonic time")
+	_sample(game, true, 2491, true, "held high fires once capacity reopens")
+	_sample(game, true, 3490, false, "999ms again is still reloading")
+	_sample(game, true, 3491, true, "1000ms again fires without lowering")
+	_check(game.hand_raise_last_shot_ms == 3491, "held-high repeated deadline is precise")
 	game._clear_projectiles()
-	_lower(game, 2510, "Lower between successive shots")
-	_wrist_sample(game, true, false, 3890, false, "Third LEFT-hand raise starts")
-	_wrist_sample(game, true, false, 3970, true, "LEFT hand fires exactly 1500ms after previous shot")
-	_check(game.hand_raise_last_shot_ms == 3970, "1500ms boundary accepted precisely")
-	_sample(game, true, 4130, false, "Held high after third shot cannot repeat")
-	game._clear_projectiles()
-
 	# Invisible/occluded wrists must be UNKNOWN, never a DOWN observation.
 	_sample(game, false, 4210, false, "Occluded wrist reports invalid observation", false)
 	_check(not game.hand_raise_tracking_valid and not game.hand_raise_armed,

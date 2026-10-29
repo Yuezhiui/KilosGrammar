@@ -68,6 +68,12 @@ var _latest_worker_packet_time := -1.0
 var first_camera_preview_ms := -1
 var first_valid_pose_ms := -1
 var _last_preview_ms := 0
+# Source times are from Python's single monotonic clock. Compare ONLY source
+# frames against one another; never against Godot's different clock origin.
+var _last_preview_source_time := -1.0
+var _preview_invalidated_source_time := -1.0
+var _preview_source_age_ms := 0.0
+var _preview_contains_solo_skeleton := false
 var _model_prestarting := false
 var _model_control_port := 0
 var _camera_start_requested := false
@@ -207,6 +213,8 @@ func _launch_worker(recovering: bool = false, prewarm_only: bool = false) -> boo
 	last_pose_ms = 0
 	_last_occupancy_packet_ms = 0
 	_latest_worker_packet_time = -1.0
+	_last_preview_source_time = -1.0
+	_preview_invalidated_source_time = -1.0
 	first_camera_preview_ms = -1
 	first_valid_pose_ms = -1
 	_last_packet_ms = now
@@ -253,16 +261,50 @@ func _clear_live_preview() -> void:
 	## reference previously left an obsolete skeleton inside their TextureRect
 	## forever if the camera stopped sending frames.
 	_last_preview_ms = 0
+	_preview_source_age_ms = 0.0
+	_preview_contains_solo_skeleton = false
 	if preview_texture != null:
 		preview_texture = null
 		preview_updated.emit(null)
+
+
+func _decode_preview_packet(bytes: PackedByteArray) -> Dictionary:
+	## Legacy local/test JPEGs have no frame metadata. The current Python
+	## worker uses 0x02 and a short source timestamp / inference / people / age header.
+	if bytes.is_empty():
+		return {}
+	if bytes[0] == 1 and bytes.size() <= 60000:
+		return {"jpg": bytes.slice(1), "source": -1.0,
+			"inferred": false, "people": -1, "source_age_ms": 0.0}
+	if bytes[0] != 2 or bytes.size() > 60064:
+		return {}
+	var end := bytes.find(59, 1) # ASCII semicolon before JPEG binary bytes
+	if end < 2 or end > 64:
+		return {}
+	var fields := bytes.slice(1, end).get_string_from_ascii().split(",")
+	if fields.size() != 4 or not fields[0].is_valid_float() \
+			or not fields[1].is_valid_int() or not fields[2].is_valid_int() \
+			or not fields[3].is_valid_int():
+		return {}
+	var source := fields[0].to_float()
+	var inferred := fields[1].to_int()
+	var people := fields[2].to_int()
+	var source_age_ms := fields[3].to_int()
+	if not is_finite(source) or source < 0.0 \
+			or inferred < 0 or inferred > 1 or people < -1 or people > 12 \
+			or source_age_ms < 0 or source_age_ms > 650 \
+			or (inferred == 1 and people < 0):
+		return {}
+	return {"jpg": bytes.slice(end + 1), "source": source,
+		"inferred": inferred == 1, "people": people,
+		"source_age_ms": float(source_age_ms)}
 
 
 func _expire_preview(now: int) -> void:
 	## A stalled camera provides no replacement JPEG. The last bones are never
 	## evidence of the student's *current* position after a long video gap.
 	if preview_texture != null and _last_preview_ms > 0 \
-			and now - _last_preview_ms > PREVIEW_STALE_MS:
+			and float(now - _last_preview_ms) + _preview_source_age_ms > float(PREVIEW_STALE_MS):
 		_clear_live_preview()
 
 
@@ -272,11 +314,11 @@ func refresh_calibration_preview() -> bool:
 	## Re-emit ONLY the current live frame; never redisplay a stale skeleton
 	## from a finished round, disconnected worker or previous camera session.
 	var now := Time.get_ticks_msec()
-	var age := now - _last_preview_ms
+	var age := float(now - _last_preview_ms) + _preview_source_age_ms
 	if active and not _restart_pending and peer != null \
 			and worker_pid > 0 and OS.is_process_running(worker_pid) \
 			and preview_texture != null and _last_preview_ms > 0 \
-			and age >= 0 and age <= PREVIEW_STALE_MS:
+			and age >= 0.0 and age <= float(PREVIEW_STALE_MS):
 		preview_updated.emit(preview_texture)
 		return true
 	var had_preview := preview_texture != null
@@ -350,6 +392,8 @@ func stop_camera() -> void:
 	last_pose_ms = 0
 	_last_occupancy_packet_ms = 0
 	_latest_worker_packet_time = -1.0
+	_last_preview_source_time = -1.0
+	_preview_invalidated_source_time = -1.0
 	first_camera_preview_ms = -1
 	first_valid_pose_ms = -1
 	set_process(false)
@@ -374,7 +418,8 @@ func _process(_delta: float) -> void:
 	# Drain the available local UDP batch, retaining just the newest preview
 	# and freshest valid pose/status packet. Pose freshness is still enforced
 	# by the worker timestamp and the normal lost-pose checks below.
-	var newest_preview := PackedByteArray()
+	var newest_preview: Dictionary = {}
+	var newest_preview_source := _last_preview_source_time
 	var latest_pose := {}
 	var newest_worker_time := _latest_worker_packet_time
 	var previous_source_sample_id := latest_pose_sample_id
@@ -383,9 +428,20 @@ func _process(_delta: float) -> void:
 		var bytes := peer.get_packet()
 		if bytes.is_empty():
 			continue
-		if bytes[0] == 1:
-			if bytes.size() <= 60000:
-				newest_preview = bytes.slice(1)
+		if bytes[0] == 1 or bytes[0] == 2:
+			var candidate := _decode_preview_packet(bytes)
+			if candidate.is_empty():
+				continue
+			var source := float(candidate["source"])
+			if source >= 0.0:
+				if source <= newest_preview_source:
+					continue
+				newest_preview_source = source
+			elif newest_preview_source >= 0.0:
+				# A late startup JPEG without source metadata must not erase a
+				# newer, source-ordered live YOLO preview during warmup handoff.
+				continue
+			newest_preview = candidate
 			continue
 		if bytes.size() > MAX_STATUS_PACKET:
 			continue
@@ -447,16 +503,31 @@ func _process(_delta: float) -> void:
 	if _model_prestarting and _camera_start_requested:
 		_request_warm_camera_start()
 	if not newest_preview.is_empty():
-		var picture := Image.new()
-		if picture.load_jpg_from_buffer(newest_preview) == OK:
-			if first_camera_preview_ms < 0:
-				first_camera_preview_ms = now - _launch_ms
-			if preview_texture == null or Vector2i(preview_texture.get_size()) != picture.get_size():
-				preview_texture = ImageTexture.create_from_image(picture)
-			else:
-				preview_texture.update(picture)
-			_last_preview_ms = now
-			preview_updated.emit(preview_texture)
+		var source := float(newest_preview["source"])
+		# The current worker tags its JPEGs. Reject an old SOLO skeleton
+		# arriving after a newer detected crowd, empty frame or camera stall.
+		# Raw camera JPEGs and actual newer YOLO detections can still restore
+		# the view; no old pose or student count is inferred from pixels.
+		var safe_preview := source < 0.0 or (source > _last_preview_source_time
+			and (not bool(newest_preview["inferred"])
+			or int(newest_preview["people"]) != 1
+			or source > _preview_invalidated_source_time))
+		if safe_preview:
+			var picture := Image.new()
+			if picture.load_jpg_from_buffer(newest_preview["jpg"]) == OK:
+				if first_camera_preview_ms < 0:
+					first_camera_preview_ms = now - _launch_ms
+				if preview_texture == null or Vector2i(preview_texture.get_size()) != picture.get_size():
+					preview_texture = ImageTexture.create_from_image(picture)
+				else:
+					preview_texture.update(picture)
+				_last_preview_ms = now
+				_preview_source_age_ms = float(newest_preview["source_age_ms"])
+				_preview_contains_solo_skeleton = bool(newest_preview["inferred"]) \
+					and int(newest_preview["people"]) == 1
+				if source >= 0.0:
+					_last_preview_source_time = source
+				preview_updated.emit(preview_texture)
 	_expire_preview(now)
 	# Never let the last measured location masquerade as a live student.
 	if player_x >= 0.0 and _live_capture_total_age_ms(now) > float(LOST_AFTER_MS):
@@ -556,6 +627,19 @@ func _record_fresh_calibration_pose(data: Dictionary, packet_when: float) -> voi
 	# aggregate (either-hand) gameplay trigger or a cached preview skeleton.
 	pose_sample["both_hands_up"] = bool(data.get("both_hands_up", false))
 	pose_sample["both_hands_down"] = bool(data.get("both_hands_down", false))
+	# The Python worker additionally provides SAME-frame raw bilateral evidence
+	# specifically for calibration. The gameplay `both_hands_*` flags remain
+	# release-latched to prevent ghost shots after an occluded wrist. Forward
+	# the independent readings without changing shooting behavior; only legacy
+	# mock packets that omit all three keys use the old calibration fallback.
+	if data.has("calibration_hand_observation_valid") \
+			or data.has("calibration_both_hands_up") or data.has("calibration_both_hands_down"):
+		pose_sample["calibration_hand_observation_valid"] = bool(data.get(
+			"calibration_hand_observation_valid", false))
+		pose_sample["calibration_both_hands_up"] = bool(data.get(
+			"calibration_both_hands_up", false))
+		pose_sample["calibration_both_hands_down"] = bool(data.get(
+			"calibration_both_hands_down", false))
 	pose_sample["plane_t_pose_valid"] = bool(data.get("plane_t_pose_valid", false))
 	if bool(data.get("plane_bank_valid", false)):
 		var raw_bank: Variant = data.get("plane_bank", null)
@@ -597,6 +681,21 @@ func _apply_pose_packet(data: Dictionary, now: int) -> void:
 	# token and monotonic source timestamp. Other status packets revoke this
 	# authority immediately, rather than borrowing a previous person count.
 	_last_occupancy_packet_ms = now if _is_raw_camera_occupancy_packet(data) else 0
+	# A newer real observation of zero/two+ people, or an explicit camera
+	# interruption, invalidates all older skeleton artwork immediately. The
+	# pending fresh JPEG can repopulate the TextureRect on its own merits.
+	var count := _raw_camera_population(data)
+	var unsafe_occupancy := String(data.get("state", "")) == "tracking" \
+		and bool(data.get("camera", false)) and count >= 0 and count != 1
+	var interrupted := String(data.get("state", "")) in ["recovering", "stale", "error", "off"]
+	if unsafe_occupancy or interrupted:
+		var invalid_source: Variant = data.get("camera_source_timestamp", null)
+		if not (invalid_source is float or invalid_source is int) or not is_finite(float(invalid_source)):
+			invalid_source = data.get("when", -1.0)
+		if (invalid_source is float or invalid_source is int) and is_finite(float(invalid_source)):
+			_preview_invalidated_source_time = maxf(_preview_invalidated_source_time, float(invalid_source))
+		if interrupted or _preview_contains_solo_skeleton:
+			_clear_live_preview()
 	if bool(data.get("camera", false)) and String(data.get("camera_phase", "")) in [
 			"streaming", "preview", "tracking"]:
 		_worker_was_streaming = true

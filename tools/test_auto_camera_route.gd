@@ -34,14 +34,16 @@ func _run() -> void:
 	_expect(route == "calibration", "Camera Play enters calibration without a separate Camera Check screen")
 	_expect(bool((app.get("session_state") as Dictionary).get("camera_requested", false)), "Camera request is explicit in Play payload")
 	var calibration := app.get("active_panel") as Control
-	# Three mode-specific editor PNGs are current; the old extra plane guide
-	# sides were intentionally removed from the authored calibration mockup.
+	# Mode-specific illustrations are independently authored; Plane side
+	# guides are demonstration visuals after its single physical center hold.
 	for guide in ["PoseGuides/PoseGuideDefault", "PoseGuides/PoseGuideBalloonRaise", "PoseGuides/PoseGuidePlaneCenter"]:
 		_expect(calibration.get_node_or_null("TutorialStage/" + guide) is TextureRect,
 			"Editor-authored calibration retains " + guide)
-	for retired_guide in ["PoseGuides/PoseGuidePlaneLeft", "PoseGuides/PoseGuidePlaneRight"]:
-		_expect(calibration.get_node_or_null("TutorialStage/" + retired_guide) == null,
-			"Removed redundant plane guide absent: " + retired_guide)
+	for demo_guide in ["PoseGuides/PoseGuidePlaneLeft", "PoseGuides/PoseGuidePlaneRight"]:
+		var guide_node := calibration.get_node_or_null("TutorialStage/" + demo_guide) as TextureRect
+		_expect(guide_node != null and guide_node.size == Vector2(767, 484)
+			and guide_node.position == Vector2(262, 66),
+			"Plane side illustration shares T-pose guide geometry: " + demo_guide)
 	for obsolete in ["CenterCalibrationLane", "LeftCalibrationLane", "RightCalibrationLane",
 			"ArtGuideCenter", "ArtGuideLeft", "ArtGuideRight"]:
 		_expect(calibration.get_node_or_null("TutorialStage/" + obsolete) == null,

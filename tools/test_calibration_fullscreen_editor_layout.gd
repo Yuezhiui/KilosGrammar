@@ -105,8 +105,8 @@ func _run() -> void:
 					"live video TextureRect aligns with camera's black inset")
 				var skeleton := stage.get_node_or_null("CameraArea/SkeletonPlacement") as ReferenceRect
 				_expect(skeleton != null and skeleton.position == camera_view.position
-					and skeleton.size.is_equal_approx(Vector2(1047, 446)),
-					"independent inspector skeleton box retains authored 1047x446 dimensions")
+					and skeleton.size.is_equal_approx(Vector2(1007, 446)),
+					"independent inspector skeleton box aligns to authored 1007x446 camera")
 			for pose_name in ["PoseGuideDefault", "PoseGuideRight", "PoseGuideLeft",
 					"PoseGuideBalloonRaise", "PoseGuideBalloonRaiseRight", "PoseGuideBalloonRaiseLeft",
 					"PoseGuidePlaneCenter", "PoseGuidePlaneLeft", "PoseGuidePlaneRight"]:

@@ -9,7 +9,7 @@ const ART := preload("res://ui/tutorial/tutorial_theme.gd")
 const CalibrationVoice = preload("res://ui/vision/calibration/calibration_voice.gd")
 const DESIGN_SIZE := Vector2(1280.0, 720.0)
 const CAPTURE_ORDER := ["CENTER", "RIGHT", "LEFT"]
-const BALLOON_CAPTURE_ORDER := ["LEFT", "CENTER", "RIGHT"]
+const BALLOON_CAPTURE_ORDER := ["CENTER", "RIGHT", "LEFT"]
 const INTRO_SECONDS := 3.0
 const SUCCESS_SECONDS := 3.0
 const HOLD_SECONDS := 3.0
@@ -21,6 +21,7 @@ const MAX_PACKET_GAP_SECONDS := 0.7
 # packet. Briefly PAUSE the hold without erasing previously measured fresh
 	# samples; never count the invalid time as part of the 3-second hold.
 const SOLO_POSE_HOLD_DROPOUT_SECONDS := 0.35
+const PLANE_DEMO_SECONDS_PER_SIDE := 2.2
 const ZONE_CENTER_RADIUS := 0.18
 const ZONE_RIGHT_START := 0.64
 const ZONE_LEFT_END := 0.36
@@ -50,6 +51,9 @@ var intro_stage_visibility: Dictionary = {}
 var success_stage_visibility: Dictionary = {}
 var success_running := false
 var success_elapsed := 0.0
+var plane_demo_elapsed := 0.0
+var plane_demo_running := false
+var plane_demo_last_announced_side := ""
 var calibration_voice: Node
 var camera_unavailable: Label
 var camera_inset: TextureRect
@@ -69,9 +73,10 @@ var pose_guide_balloon_raise: Control
 var pose_guide_balloon_raise_left: Control
 var pose_guide_balloon_raise_right: Control
 var pose_guide_plane_center: Control
+var pose_guide_plane_left: Control
+var pose_guide_plane_right: Control
 var pose_default_by_zone: Dictionary = {}
 var pose_raise_by_zone: Dictionary = {}
-var balloon_hands_instruction: Label
 
 var intro_elapsed := 0.0
 var intro_running := true
@@ -140,7 +145,8 @@ func _bind_scene_nodes(stage: Control) -> void:
 	pose_guide_balloon_raise_left = stage.get_node_or_null("PoseGuides/PoseGuideBalloonRaiseLeft") as Control
 	pose_guide_balloon_raise_right = stage.get_node_or_null("PoseGuides/PoseGuideBalloonRaiseRight") as Control
 	pose_guide_plane_center = stage.get_node_or_null("PoseGuides/PoseGuidePlaneCenter") as Control
-	balloon_hands_instruction = stage.get_node_or_null("PoseGuides/BalloonHandsInstruction") as Label
+	pose_guide_plane_left = stage.get_node_or_null("PoseGuides/PoseGuidePlaneLeft") as Control
+	pose_guide_plane_right = stage.get_node_or_null("PoseGuides/PoseGuidePlaneRight") as Control
 	# Explicit editor-authored per-zone guides, never runtime-translated.
 	# PoseGuideDefault remains the CENTER pose; Human Plane guides are separate.
 	pose_default_by_zone = {
@@ -314,20 +320,28 @@ func _sample_matches_pose_phase(sample: Dictionary) -> bool:
 	# Balloon must prove BOTH wrists on this SAME authenticated YOLO packet.
 	# hand_up is only an either-hand shooting gesture; hand_up=false alone
 	# cannot establish two lowered hands. Fail closed on partial occlusion.
-	if not bool(sample.get("hand_observation_valid", false)):
-		return false
+	# Calibration-only raw measurements bypass the *shooting* release latch:
+	# they still require genuinely observed shoulders/wrists in a fresh SOLO
+	# packet. The legacy fields remain for older isolated mock-only fixtures.
 	if _is_balloon_popping():
-		var both_up := bool(sample.get("both_hands_up", false))
-		var both_down := bool(sample.get("both_hands_down", false))
+		if not bool(sample.get("calibration_hand_observation_valid",
+				sample.get("hand_observation_valid", false))):
+			return false
+		var both_up := bool(sample.get("calibration_both_hands_up",
+				sample.get("both_hands_up", false)))
+		var both_down := bool(sample.get("calibration_both_hands_down",
+				sample.get("both_hands_down", false)))
 		if both_up == both_down:
 			return false
 		return both_up if balloon_pose_phase == 1 else both_down
-	return not bool(sample.get("hand_up", false))
+	# Catch keeps its existing observation contract; Balloon alone requires
+	# strict independent raw two-wrist calibration evidence.
+	return bool(sample.get("hand_observation_valid", false)) and not bool(sample.get("hand_up", false))
 
 
 func _capture_order() -> Array:
-	# Balloon uniquely starts LEFT. Catch retains CENTER→RIGHT→LEFT; Plane
-	# retains its single neutral T-pose reference.
+	# Balloon's six hand holds and Catch both visit CENTER→RIGHT→LEFT.
+	# Human Plane retains its single physical CENTER T-pose reference.
 	if _is_human_plane():
 		return ["CENTER"]
 	return BALLOON_CAPTURE_ORDER if _is_balloon_popping() else CAPTURE_ORDER
@@ -434,6 +448,9 @@ func _process(delta: float) -> void:
 		if success_elapsed >= SUCCESS_SECONDS:
 			_continue_flow()
 		return
+	if plane_demo_running:
+		_process_plane_demonstration(tracking_delta)
+		return
 	var capture_order := _capture_order()
 	if live_step >= capture_order.size():
 		# The last stage already finished its authentic capture. A missing
@@ -507,6 +524,9 @@ func _process(delta: float) -> void:
 					_set_live_instruction("ONE PERSON ONLY • Keep your position steady.\nIsang tao lamang • Panatilihin ang puwesto.")
 					return
 				if not _sample_matches_pose_phase(sample):
+					if _keep_hold_for_brief_wrist_dropout(tracking_delta, sample):
+						_set_live_instruction("KEEP YOUR POSITION • Hold paused while wrists are briefly hidden.\nPanatilihin ang puwesto • Sandaling naka-pause ang bilang.")
+						return
 					_reset_current_hold()
 					var prompt: Array = BALLOON_RAISE_TEXT if balloon_pose_phase == 1 else BALLOON_DEFAULT_TEXT
 					_set_live_instruction("%s • Hold for 3 seconds.\n%s." % prompt)
@@ -604,6 +624,10 @@ func _process_stationary_plane(delta: float) -> void:
 		var raw: Variant = sample.get("plane_bank", sample.get("plane_steering", null))
 		var camera_x := float(sample.get("x", -1.0))
 		var packet_when := float(sample.get("when", -1.0))
+		if not bool(sample.get("plane_t_pose_valid", false)) \
+				and _keep_hold_for_brief_wrist_dropout(delta, sample):
+			_set_live_instruction("HOLD YOUR CENTER POSITION • Wrist tracking paused briefly.\nManatili sa gitna • Sandaling naka-pause ang bilang.")
+			return
 		if int(sample.get("people", int(PoseService.current_status.get("people", -1)))) != 1 \
 					or not bool(sample.get("plane_t_pose_valid", false)) \
 				or not (raw is float or raw is int) \
@@ -673,11 +697,38 @@ func _process_stationary_plane(delta: float) -> void:
 		return
 	live_step = 1
 	_reset_current_hold()
+	plane_demo_running = true
+	plane_demo_elapsed = 0.0
+	plane_demo_last_announced_side = ""
 	_update_target_guide()
 	if is_instance_valid(progress_label):
-		progress_label.text = "SUCCESS • CENTER CALIBRATED"
-	_set_live_instruction("READY TO FLY • RAISE ONE ARM AND LOWER THE OTHER TO BANK!\nHanda nang lumipad • Itaas ang isang braso at ibaba ang kabila!")
-	_begin_success()
+		progress_label.text = "CENTER CALIBRATED • WATCH LEFT AND RIGHT TURN GUIDES"
+	_set_live_instruction("CENTER COMPLETE • Watch the LEFT and RIGHT arm movement guides.\nTapos na sa gitna • Panoorin ang galaw ng braso sa kaliwa at kanan.")
+	_announce_plane_demo_side("left")
+
+
+func _process_plane_demonstration(delta: float) -> void:
+	# The neutral CENTER T-pose is already saved. The two side images are a
+	# visual lesson only: no new physical zone, hold timer or calibration samples.
+	# Continue showing the current image if occupancy is momentarily uncertain.
+	if not _has_fresh_raw_solo_on_camera():
+		return
+	plane_demo_elapsed += maxf(delta, 0.0)
+	var side := "left" if plane_demo_elapsed < PLANE_DEMO_SECONDS_PER_SIDE else "right"
+	_announce_plane_demo_side(side)
+	_sync_reference_art()
+	if plane_demo_elapsed >= 2.0 * PLANE_DEMO_SECONDS_PER_SIDE and _has_fresh_solo_pose():
+		plane_demo_running = false
+		_begin_success()
+
+
+func _announce_plane_demo_side(side: String) -> void:
+	if plane_demo_last_announced_side == side:
+		return
+	plane_demo_last_announced_side = side
+	if is_instance_valid(calibration_voice):
+		calibration_voice.call("play_stage", "%s:demo:%s" % [_capture_voice_activity(), side],
+			"plane_" + side)
 
 
 func _plane_median(sorted_values: Array[float]) -> float:
@@ -733,6 +784,33 @@ func _keep_hold_for_brief_solo_dropout(delta: float) -> bool:
 	return true
 
 
+func _keep_hold_for_brief_wrist_dropout(delta: float, sample: Dictionary) -> bool:
+	# A fresh source frame still sees exactly one stationary child, but cannot
+	# classify BOTH wrists. Keep previous genuine samples for <=350ms. The bad
+	# frame earns neither a pose sample nor countdown time. A known wrong hand
+	# gesture, moved torso, missing person or crowded view always resets.
+	if not _has_fresh_solo_pose() or int(sample.get("people", -1)) != 1 \
+			or bool(sample.get("calibration_hand_observation_valid",
+				sample.get("hand_observation_valid", false))) \
+			or bool(sample.get("calibration_both_hands_up",
+				sample.get("both_hands_up", false))) \
+			or bool(sample.get("calibration_both_hands_down",
+				sample.get("both_hands_down", false))) \
+			or int(sample.get("id", -1)) <= last_fresh_sample_id:
+		return false
+	var x := float(sample.get("x", -1.0))
+	var target: String = String(_capture_order()[live_step])
+	if not _inside_zone(target, x) or anchor_x < 0.0 \
+			or absf(x - anchor_x) > MAX_SAMPLE_SPREAD:
+		return false
+	brief_solo_invalid_seconds += maxf(delta, 0.0)
+	if brief_solo_invalid_seconds > SOLO_POSE_HOLD_DROPOUT_SECONDS:
+		return false
+	last_fresh_sample_id = int(sample["id"])
+	packet_gap_seconds = 0.0 # A source packet arrived, with INVALID wrists.
+	return true
+
+
 func _set_stage_instruction() -> void:
 	var capture_order := _capture_order()
 	if live_step >= capture_order.size():
@@ -766,10 +844,12 @@ func _set_stage_instruction() -> void:
 			# VOICE1 clip. Do not substitute the one-hand shooting cue.
 			calibration_voice.call("play_stage", stage_id, "raise_both_hands")
 		else:
-			# Recordings are MOVE followed by STAY for each physical zone. The
-			# Balloon DOWN posture remains an editor-authored visual instruction;
-			# there is no recorded "hands down" WAV in the supplied VOICE1 folder.
-			calibration_voice.call("play_stage", stage_id, target.to_lower(), "stay_" + target.to_lower())
+				# Center starts with BOTH DOWN; side transitions announce the new
+				# location then the separate 'lower both hands' voice recording.
+				if target == "CENTER":
+					calibration_voice.call("play_stage", stage_id, "hands_down")
+				else:
+					calibration_voice.call("play_stage", stage_id, target.to_lower(), "hands_down")
 	else:
 		# Actual supplied pair: "Move to the [zone]" then "Stay to the [zone]".
 		# Follow-up starts only when MOVE finishes and cancels on stage changes.
@@ -827,12 +907,14 @@ func _sync_reference_art() -> void:
 		if is_instance_valid(raised_guide):
 			raised_guide.visible = showing_pose and not plane_mode \
 				and _is_balloon_popping() and balloon_pose_phase == 1 and zone == active_zone
-	if is_instance_valid(balloon_hands_instruction):
-		balloon_hands_instruction.visible = showing_pose and _is_balloon_popping()
-		balloon_hands_instruction.text = ("RAISE BOTH HANDS UP • HOLD FOR 3 SECONDS"
-			if balloon_pose_phase == 1 else "KEEP BOTH HANDS DOWN • HOLD FOR 3 SECONDS")
 	if is_instance_valid(pose_guide_plane_center):
-		pose_guide_plane_center.visible = showing_pose and plane_mode
+		pose_guide_plane_center.visible = showing_pose and plane_mode and not plane_demo_running
+	if is_instance_valid(pose_guide_plane_left):
+		pose_guide_plane_left.visible = plane_mode and plane_demo_running \
+			and plane_demo_elapsed < PLANE_DEMO_SECONDS_PER_SIDE
+	if is_instance_valid(pose_guide_plane_right):
+		pose_guide_plane_right.visible = plane_mode and plane_demo_running \
+			and plane_demo_elapsed >= PLANE_DEMO_SECONDS_PER_SIDE
 	for zone in art_title_nodes:
 		var title := art_title_nodes[zone] as Control
 		if is_instance_valid(title):
@@ -854,7 +936,8 @@ func _sync_reference_art() -> void:
 	var remaining := clampi(ceili(_hold_seconds() - live_timer), 1, 3)
 	for index in range(art_countdown_nodes.size()):
 		if is_instance_valid(art_countdown_nodes[index]):
-			art_countdown_nodes[index].visible = live_step < capture_order.size() and index == remaining - 1
+			art_countdown_nodes[index].visible = not plane_demo_running \
+				and live_step < capture_order.size() and index == remaining - 1
 func _reset_current_hold() -> void:
 	live_timer = 0.0
 	anchor_x = -1.0
@@ -878,6 +961,9 @@ func _reset_live_samples(clear_service_calibration: bool = true) -> void:
 	if success_running:
 		_hide_success_only()
 	transition_queued = false
+	plane_demo_running = false
+	plane_demo_elapsed = 0.0
+	plane_demo_last_announced_side = ""
 	live_step = 0
 	balloon_pose_phase = 0
 	measured_points.clear()

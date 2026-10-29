@@ -67,7 +67,9 @@ func _run() -> void:
 	root.add_child(screen)
 	screen.set_process(false)
 	# Set no context / camera_requested: deliberately do not start any webcam.
-	var inset := screen.get_node_or_null("TutorialStage/LiveCameraInset") as TextureRect
+	# Keep this fixture aligned with the authored camera group used by
+	# calibration.gd::_bind_scene_nodes; it never creates a surrogate preview.
+	var inset := screen.get_node_or_null("TutorialStage/CameraArea/LiveCameraInset") as TextureRect
 	_check(inset != null, "editor-authored preview available")
 	if inset == null:
 		screen.queue_free()

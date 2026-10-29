@@ -11,7 +11,7 @@ const INTRO := 3.0
 const DT := 0.15
 const ART_NAMES := ["PoseGuideDefault", "PoseGuideLeft", "PoseGuideRight",
 	"PoseGuideBalloonRaise", "PoseGuideBalloonRaiseLeft", "PoseGuideBalloonRaiseRight",
-	"PoseGuidePlaneCenter"]
+	"PoseGuidePlaneCenter", "PoseGuidePlaneLeft", "PoseGuidePlaneRight"]
 
 var pose: Node
 var packed: PackedScene
@@ -215,8 +215,7 @@ func _expected_holds(activity: String) -> Array[Dictionary]:
 		return [{"name":"CENTER T-POSE", "x":0.5, "raised":false,
 			"tpose":true, "art":"PoseGuidePlaneCenter"}]
 	var stages: Array[Dictionary] = []
-	for zone in (["LEFT", "CENTER", "RIGHT"] if activity == "Balloon Popping"
-			else ["CENTER", "RIGHT", "LEFT"]):
+	for zone in ["CENTER", "RIGHT", "LEFT"]:
 		var x: float = 0.5 if zone == "CENTER" else 0.8 if zone == "RIGHT" else 0.2
 		stages.append({"name":zone+" DEFAULT", "x":x,
 			"raised":false, "tpose":false,
@@ -306,8 +305,8 @@ func _verify_five_authored_pngs(activity: String) -> void:
 			activity + " " + name + " is a real editor-authored independently editable PNG TextureRect")
 		if not source.is_empty():
 			png_paths[source] = true
-	_check(png_paths.size() == 3,
-		activity + " seven editable guides reuse exactly three original PNG sources (%d/3)" % png_paths.size())
+	_check(png_paths.size() == 5,
+		activity + " nine editable guides reuse exactly five original PNG sources (%d/5)" % png_paths.size())
 
 
 func _active_art_matches(active: String) -> bool:

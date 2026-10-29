@@ -54,9 +54,11 @@ func _run() -> void:
 				var pose := stage.find_child(name, true, false) as TextureRect
 				_check(pose != null and pose.texture != null and pose.owner == view,
 						"Mode-appropriate PNG guide authored and shared by both modes: " + name)
-			for retired in ["PoseGuidePlaneLeft", "PoseGuidePlaneRight"]:
-				_check(stage.find_child(retired, true, false) == null,
-					"Retired unused directional T-pose duplicate absent: " + retired)
+			for demo in ["PoseGuidePlaneLeft", "PoseGuidePlaneRight"]:
+				var art := stage.find_child(demo, true, false) as TextureRect
+				_check(art != null and art.texture != null
+					and art.position == Vector2(262, 66) and art.size == Vector2(767, 484),
+					"Shared Plane visual turn guide retains center alignment: " + demo)
 			for name in ["ArtGuideCenter", "ArtGuideRight", "ArtGuideLeft", "CenterCalibrationLane", "RightCalibrationLane", "LeftCalibrationLane", "ArtCountdownBadge"]:
 				_check(stage.find_child(name, true, false) == null, "Retired calibration visual absent: " + name)
 		_check(view.get_script() != null and view.get_script().resource_path == "res://ui/vision/calibration/calibration.gd",

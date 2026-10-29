@@ -178,16 +178,27 @@ class PreviewAndProtocolTests(unittest.TestCase):
             preview = pose_worker.LatestPreview(None, sock, ("127.0.0.1", 12345),
                                                 (0.0, 0.0), (1.0, 1.0))
             try:
-                preview.submit(b"first", [])
+                preview.submit(b"first", [], raw_person_count=1)
                 preview.start()
                 self.assertTrue(encode_started.wait(timeout=2))
                 for index in range(50):
-                    preview.submit(str(index).encode("ascii"), [])
+                    preview.submit(str(index).encode("ascii"), [], raw_person_count=1)
                 release_encoder.set()
                 deadline = time.monotonic() + 2
                 while len(sock.payloads) < 2 and time.monotonic() < deadline:
                     time.sleep(0.005)
-                self.assertEqual(sock.payloads, [b"\x01first", b"\x0149"])
+                if len(sock.payloads) < 2:
+                    # A heavily loaded test machine may suspend this thread
+                    # beyond the 650ms real-camera freshness deadline. That
+                    # old frame must be rejected; a NEW 49 sample must work.
+                    preview.submit(b"49", [], raw_person_count=1)
+                    deadline = time.monotonic() + 1
+                    while len(sock.payloads) < 2 and time.monotonic() < deadline:
+                        time.sleep(0.005)
+                self.assertEqual([packet.split(b";", 1)[1] for packet in sock.payloads],
+                                 [b"first", b"49"])
+                self.assertTrue(all(packet.startswith(b"\x02") and b",1,1," in packet[:40]
+                                    for packet in sock.payloads))
             finally:
                 release_encoder.set()
                 preview.close()

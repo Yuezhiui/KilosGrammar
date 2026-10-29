@@ -43,13 +43,14 @@ func _run() -> void:
 	}
 	_check(CalibrationVoice.CUE_FILES == legacy_clips, "Legacy voice aliases remain backward-compatible")
 	_check(CalibrationVoice.SUPPLIED_CUE_FILES == supplied_clips, "All six extra VOICE1 aliases map to exact user recordings")
-	_check(not ResourceLoader.exists(CalibrationVoice.VOICE_DIR + "hands_down.wav")
-		and not ResourceLoader.exists(CalibrationVoice.VOICE_DIR + "raise_hand.wav"),
-		"Neither fake hands-down nor generic single-hand WAV exists")
+	_check(not ResourceLoader.exists(CalibrationVoice.VOICE_DIR + "raise_hand.wav"),
+		"No generic single-hand WAV has been fabricated")
 	var clip_count := 0
 	var available := legacy_clips.duplicate()
 	available.merge(supplied_clips)
 	for cue in available:
+		if cue == "hands_down":
+			continue # generated offline later; not one of eleven original VOICE1 recordings
 		var path: String = CalibrationVoice.VOICE_DIR + String(available[cue])
 		if ResourceLoader.exists(path):
 			clip_count += 1
@@ -66,7 +67,8 @@ func _run() -> void:
 	AudioServer.set_bus_volume_db(bus, -13.0)
 	var parent := Node.new()
 	root.add_child(parent)
-	var absent := CalibrationVoice.new()
+	var absent := StubVoice.new()
+	absent.missing_cues.append("hands_down")
 	parent.add_child(absent)
 	var empty_player := absent.get_node("PromptPlayer") as AudioStreamPlayer
 	_check(clip_count == 11, "All 11 original VOICE1 WAVs are present without synthesized stand-ins")

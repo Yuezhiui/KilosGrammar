@@ -35,7 +35,7 @@ const GROUP_CONTENTS := {
 # preserve them even when the node's immediate parent changes.
 const AUTHORED_RECT := {
 	"LiveCameraInset": [141.0, 147.0, 1007.0, 446.0],
-	"SkeletonPlacement": [141.0, 147.0, 1047.0, 446.0],
+	"SkeletonPlacement": [141.0, 147.0, 1007.0, 446.0],
 	"PoseGuideDefault": [262.0, 66.0, 767.0, 484.0],
 	"PoseGuideRight": [575.0, 66.0, 767.0, 484.0],
 	"PoseGuideLeft": [-50.0, 66.0, 767.0, 484.0],
@@ -256,6 +256,16 @@ func _check_round(packed: PackedScene, activity: String, entry: String) -> void:
 		_check(_stage_progress(screen, activity) == index + 1,
 			phase_label + ": 3s and 8+ authenticated fresh SOLO UDP frames advance only one stage (got %d)" %
 			int(_stage_progress(screen, activity)))
+	if activity == "Human Plane":
+		_check(bool(screen.plane_demo_running) and
+			(retained.get("PoseGuidePlaneLeft") as Control).visible,
+			label + ": after real CENTER T-pose a visual LEFT turn is demonstrated")
+		for index in range(8):
+			await _push_packet(screen, 0.5, false, false, 1)
+		_check((retained.get("PoseGuidePlaneRight") as Control).visible,
+			label + ": RIGHT visual illustration follows; there are no side body-position holds")
+		for index in range(7):
+			await _push_packet(screen, 0.5, false, false, 1)
 	_check(bool(pose.calibration.get("valid", false)) and bool(screen.transition_queued),
 		label + ": only completed source-gated holds yield calibrated result")
 	if activity == "Human Plane":
@@ -270,10 +280,12 @@ func _check_round(packed: PackedScene, activity: String, entry: String) -> void:
 		label + ": completed real holds show only editor-authored SUCCESS overlay")
 	_check(not stage.get_node("Navigation/BackButton").is_visible_in_tree(),
 		label + ": success overlay hides interactive navigation while counting down")
+	var elapsed_before_crowd: float = float(screen.success_elapsed)
 	for bad_people in [0, 2]:
 		await _push_packet(screen, 0.5, false, activity == "Human Plane", bad_people)
 		screen._process(0.9)
-		_check(bool(screen.success_running) and is_zero_approx(float(screen.success_elapsed))
+		_check(bool(screen.success_running)
+			and is_equal_approx(float(screen.success_elapsed), elapsed_before_crowd)
 			and responses.is_empty(),
 			label + ": post-success raw YOLO people=%d freezes success, without restarting CENTER or routing" % bad_people)
 	# A fresh unambiguous SOLO source packet can resume the three-second
@@ -382,7 +394,7 @@ func _expected_phases(activity: String) -> Array[Dictionary]:
 		return [{"zone":"CENTER", "x":0.5, "up":false,
 			"plane":true, "guide":"PoseGuidePlaneCenter"}]
 	var phases: Array[Dictionary] = []
-	var order := ["LEFT", "CENTER", "RIGHT"] if activity == "Balloon Popping" else ["CENTER", "RIGHT", "LEFT"]
+	var order := ["CENTER", "RIGHT", "LEFT"]
 	for zone in order:
 		var x := 0.5 if zone == "CENTER" else 0.8 if zone == "RIGHT" else 0.2
 		var suffix: String = "" if zone == "CENTER" else String(zone).capitalize()

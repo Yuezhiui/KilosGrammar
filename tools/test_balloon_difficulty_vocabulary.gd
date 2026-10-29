@@ -20,33 +20,36 @@ func _run() -> void:
 	var speeds: Dictionary = {}
 	for difficulty in DIFFICULTIES:
 		var game := await _create_game("Noun", difficulty)
-		speeds[difficulty] = [game.balloon_float_speed, game.balloon_reveal_seconds,
-			game.projectile_speed, game.float_start_delay]
+		speeds[difficulty] = [game.balloon_float_speed,
+			(game._balloon_hidden_y() - game.BALLOON_EXIT_Y) / game.balloon_float_speed,
+			game.projectile_speed, game.round_time_limit]
 		_check(game.default_duration == 60.0 and game.time_remaining == 60.0,
 			difficulty + " preserves 60-second mode")
 		_check(game.is_seconds_mode and game.round_active and not game.finishing,
 			difficulty + " starts active Seconds gameplay")
 		game.set_process(false)
 		game.set_physics_process(false)
-		if is_instance_valid(game.balloon_motion_tween):
-			game.balloon_motion_tween.kill()
-		game.balloon_floating = true
 		var target: Area2D = game.balloon_slots[0]
 		var original_y := target.position.y
 		game._process(0.25)
 		_check(is_equal_approx(original_y - target.position.y, game.balloon_float_speed * 0.25),
-			difficulty + " uses elapsed-time-scaled upward balloon motion")
+			difficulty + " uses constant elapsed-time-scaled ascent from below counter")
+		_check(not target.monitoring and not target.monitorable,
+			difficulty + " target cannot be shot while hidden below counter")
 		game.queue_free()
 		await process_frame
 
 	_check(speeds["Easy"][0] < speeds["Normal"][0] and speeds["Normal"][0] < speeds["Hard"][0],
-		"Normal and Hard progressively increase balloon float speed")
+			"Normal and Hard progressively increase continuous ascent speed")
 	_check(speeds["Easy"][1] > speeds["Normal"][1] and speeds["Normal"][1] > speeds["Hard"][1],
-		"Normal and Hard progressively shorten rising reveal")
+			"Normal and Hard reach top sooner with constant-speed ascent")
 	_check(speeds["Easy"][2] < speeds["Normal"][2] and speeds["Normal"][2] < speeds["Hard"][2],
 		"Normal and Hard progressively increase projectile speed")
 	_check(speeds["Easy"][3] > speeds["Normal"][3] and speeds["Normal"][3] > speeds["Hard"][3],
-		"Normal and Hard start floating sooner")
+			"slower difficulty tiers receive a longer whole-path question deadline")
+	_check(speeds["Easy"][1] < speeds["Easy"][3] and speeds["Normal"][1] < speeds["Normal"][3]
+		and speeds["Hard"][1] < speeds["Hard"][3],
+			"every tier reaches the upper exit before its own question deadline")
 
 	await _exercise_long_word_labels()
 	for topic in TOPICS:

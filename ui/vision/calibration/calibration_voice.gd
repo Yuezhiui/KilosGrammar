@@ -1,8 +1,8 @@
 extends Node
 
 ## Optional recorded instructions for Play and Tutorial calibration.
-## The WAV files are supplied by the user, not generated at runtime. A missing
-## file is intentionally silent; visual pose instructions still work normally.
+## WAV narration is loaded from disk, never synthesized during gameplay.
+## A missing file is intentionally silent; visual instructions still work.
 const VOICE_DIR := "res://assets/audio/calibration_voice/"
 const CUE_FILES := {
 	"center": "center.wav",
@@ -23,6 +23,13 @@ const SUPPLIED_CUE_FILES := {
 	"raise_left_hand": "raise_left_hand.wav",
 	"raise_right_hand": "raise_right_hand.wav",
 	"raise_both_hands": "raise_both_hands.wav"
+}
+# Generated offline with the user's local OmniVoice Clone.wav reference.
+# Kept separate from original VOICE1 recordings and their pinned digests.
+const CLONED_CUE_FILES := {
+	"hands_down": "hands_down.wav",
+	"plane_left": "plane_left.wav",
+	"plane_right": "plane_right.wav"
 }
 const EFFECTS_BUS := "KilosSFX"
 const GameAudio = preload("res://ui/shared/game_audio.gd")
@@ -129,13 +136,14 @@ func reset_for_new_attempt() -> void:
 
 
 func _has_cue(cue: String) -> bool:
-	return CUE_FILES.has(cue) or SUPPLIED_CUE_FILES.has(cue)
+	return CUE_FILES.has(cue) or SUPPLIED_CUE_FILES.has(cue) or CLONED_CUE_FILES.has(cue)
 
 
 func _load_cue(cue: String) -> AudioStream:
 	if _streams.has(cue):
 		return _streams[cue] as AudioStream
-	var filename := String(CUE_FILES.get(cue, SUPPLIED_CUE_FILES.get(cue, "")))
+	var filename := String(CLONED_CUE_FILES.get(cue,
+			CUE_FILES.get(cue, SUPPLIED_CUE_FILES.get(cue, ""))))
 	if filename.is_empty():
 		return null
 	var file_path: String = VOICE_DIR + filename

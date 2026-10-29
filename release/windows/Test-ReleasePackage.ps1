@@ -36,12 +36,13 @@ foreach ($entry in $entries) {
     }
 }
 $actual = @(Get-ChildItem -LiteralPath $root -File -Recurse | Where-Object {
-    $_.FullName -ne $manifestPath
+    $_.FullName -ne $manifestPath -and $_.FullName -ne (Join-Path $root '.kilos-install.json')
 })
 if ($actual.Count -ne $entries.Count) { throw 'The finished release contains missing or unexpected files not listed in manifest.json.' }
 $essential = @(
     'KilosGrammar.exe', 'KilosGrammar.pck', 'offline/manifest.json',
     'release-manifest.json', 'database/start_auto.ps1', 'database/setup_from_game.ps1',
+    'database/recovery_store.py', 'database/migrations/002_add_minigame.sql',
     'ui/vision/pose_worker.py', 'ui/vision/student_lock.py',
     'runtime/models/yolo26n-pose.pt', 'Play KilosGrammar.cmd', 'Setup Offline.cmd'
 )

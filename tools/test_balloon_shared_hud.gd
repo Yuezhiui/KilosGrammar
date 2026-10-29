@@ -255,19 +255,15 @@ func _test_seconds_timer(game: Control, timer: TextureRect, lives: TextureRect,
         label + ": Seconds global timer actually counts down from 60")
     _check(time_label.text == "%ds" % int(ceil(game.time_remaining)),
         label + ": blue timer overlay displays exact integer-rounded global remaining time")
-    _check(is_equal_approx(game.round_time_remaining, initial_question_time)
-        and is_instance_valid(game.balloon_motion_tween)
-        and game.balloon_motion_tween.is_running(),
-        label + ": question clock waits while the three balloons reveal, global timer keeps ticking")
-    # When their slow reveal finishes, the *question* countdown must begin.
-    # SceneTree tweens advance even while test disables automatic _process.
-    await create_timer(game.BALLOON_REVEAL_SECONDS + 0.12).timeout
+    _check(game.round_time_remaining < initial_question_time,
+        label + ": question clock counts down as the balloons climb from below the counter")
+    # Continuous flight starts immediately; no easing tween delays the timer.
     var question_when_visible: float = game.round_time_remaining
     game._process(0.25)
     game.set_process(false)
     _check(game.round_time_remaining < question_when_visible and
-        not game.balloon_motion_tween.is_running(),
-        label + ": question countdown begins only after all balloons finish revealing")
+        game.round_time_remaining < game.round_time_limit,
+        label + ": question countdown continues during the balloon ascent")
     _verify_plaque_state(game, timer, lives, time_label, hearts_box, "Seconds", 0,
         label + " ticking")
     game._pause()

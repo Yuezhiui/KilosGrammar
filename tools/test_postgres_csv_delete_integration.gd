@@ -6,12 +6,15 @@ extends SceneTree
 const MENU_PATH := "res://tools/test_postgres_csv_delete_menu_fixture.gd"
 const VALID_CSV := "student_id,student_name,grade_section,minigame,game_style,game_mode,difficulty,score\r\n\"ID-1\",\"Ada, \"\"Quoted\"\"\",\"Grade 5\",\"Catch the Word\",\"Noun\",\"Seconds\",\"Easy\",\"7\"\r\n"
 const LEGACY_CSV := "student_id,student_name,grade_section,game_style,game_mode,difficulty,score\r\n\"LEG-1\",\"Bea, \"\"Legacy\"\"\",\"Grade 5\",\"Noun\",\"Seconds\",\"Easy\",\"4\"\r\n"
-const IMPORT_PATH := "user://qa_postgres_csv_delete_import.csv"
-const LEGACY_IMPORT_PATH := "user://qa_postgres_csv_delete_legacy_import.csv"
-const EXPORT_PATH := "user://qa_postgres_csv_delete_export.csv"
-const FILTERED_PATH := "user://qa_postgres_csv_delete_filtered.csv"
-const STALE_EXPORT_PATH := "user://qa_postgres_csv_delete_stale_export.csv"
-const STALE_IMPORT_PATH := "user://qa_postgres_csv_delete_stale_import.csv"
+## Every QA CSV file and recovery event stays under a fresh test-only folder;
+## never overwrite a historical QA export or the live classroom outbox.
+var IMPORT_PATH := ""
+var LEGACY_IMPORT_PATH := ""
+var EXPORT_PATH := ""
+var FILTERED_PATH := ""
+var STALE_EXPORT_PATH := ""
+var STALE_IMPORT_PATH := ""
+var qa_storage := ""
 var failures: Array[String] = []
 var checks := 0
 var app: Control
@@ -20,6 +23,19 @@ var board: Control
 
 
 func _initialize() -> void:
+	qa_storage = "user://test_recovery_csv_integration_%d_%d" % [
+		OS.get_process_id(), Time.get_ticks_usec()]
+	ProjectSettings.set_setting("kilos/recovery_test_directory", qa_storage)
+	if DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(qa_storage)) != OK:
+		push_error("Could not create isolated QA CSV/recovery directory")
+		quit(1)
+		return
+	IMPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_import.csv")
+	LEGACY_IMPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_legacy_import.csv")
+	EXPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_export.csv")
+	FILTERED_PATH = qa_storage.path_join("qa_postgres_csv_delete_filtered.csv")
+	STALE_EXPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_stale_export.csv")
+	STALE_IMPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_stale_import.csv")
 	call_deferred("_run")
 
 
@@ -687,4 +703,5 @@ func _finish() -> void:
 		await process_frame
 	print("POSTGRES CSV DELETE QA: ", "PASS" if failures.is_empty() else "FAIL",
 		" (%d assertions, %d failures)" % [checks, failures.size()])
+	ProjectSettings.set_setting("kilos/recovery_test_directory", "")
 	quit(0 if failures.is_empty() else 1)

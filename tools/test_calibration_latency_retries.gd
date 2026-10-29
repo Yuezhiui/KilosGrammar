@@ -3,7 +3,7 @@ extends SceneTree
 # Godot --headless --path . --script res://tools/test_calibration_latency_retries.gd
 # Runs actual calibration Control and PoseService on source-shaped synthetic
 # frames. Human Plane uses a 3s center T-pose; Catch measures 3 floor zones.
-# Balloon measures LEFT -> CENTER -> RIGHT with 3s both-DOWN then both-UP
+# Balloon measures CENTER -> RIGHT -> LEFT with 3s both-DOWN then both-UP
 # in each zone. Fresh source SOLO packets, not cached screenshot/hand_up.
 # Never starts a camera, Python worker, or database connection.
 const CALIBRATION_PATH := "res://ui/vision/calibration/calibration.tscn"
@@ -159,8 +159,9 @@ func _check_human_plane_neutral_and_retries() -> void:
 	_frame(screen, 0.50, 0.65, true)
 	var plane: Dictionary = pose.get("plane_calibration")
 	var general: Dictionary = pose.get("calibration")
-	_check(int(screen.get("live_step")) == 1 and bool(screen.get("transition_queued")),
-		"Eighth fresh pose finishes Human Plane center and queues gameplay")
+	_check(int(screen.get("live_step")) == 1 and bool(screen.get("plane_demo_running"))
+		and not bool(screen.get("transition_queued")),
+		"Eighth fresh pose finishes only Plane CENTER and starts visual side demo")
 	_check(bool(plane.get("valid", false)) and
 		String(plane.get("mode", "")) == "plane_stationary" and
 		bool(plane.get("neutral_only", false)) and
@@ -254,63 +255,63 @@ func _check_balloon_bilateral_holds_and_retries() -> void:
 		_check(false, "Balloon retry scene instantiates")
 		return
 	var constants: Dictionary = screen.get_script().get_script_constant_map()
-	_check(screen.call("_capture_order") == ["LEFT", "CENTER", "RIGHT"]
+	_check(screen.call("_capture_order") == ["CENTER", "RIGHT", "LEFT"]
 		and is_equal_approx(float(constants.get("HOLD_SECONDS", -1.0)), 3.0)
 		and int(constants.get("REQUIRED_SAMPLES", 0)) >= 8,
-		"Balloon uses LEFT-CENTER-RIGHT, six 3s bilateral holds / 8 real frames each")
+		"Balloon uses CENTER-RIGHT-LEFT, six 3s bilateral holds / 8 real frames each")
 	var routes: Array[String] = []
 	screen.requested.connect(func(route: String, _payload: Dictionary) -> void:
 		routes.append(route))
-	# LEFT both DOWN: 8-Hz source frames with a natural 450ms inference pause
+	# CENTER both DOWN: 8-Hz source frames with a natural 450ms inference pause
 	# must retain earned samples, without granting time from just rendering.
 	for i in range(11):
-		_frame(screen, 0.20 + (0.014 if i % 2 == 0 else -0.014), 0.125)
+		_frame(screen, 0.50 + (0.014 if i % 2 == 0 else -0.014), 0.125)
 	var before_gap := float(screen.live_timer)
 	screen.call("_process", 0.45)
 	source_when += 0.45
 	_check(float(screen.live_timer) >= before_gap - 0.005
 		and int(screen.live_step) == 0 and int(screen.balloon_pose_phase) == 0,
-		"Balloon LEFT DOWN retains valid samples through 450ms inference gap")
+		"Balloon CENTER DOWN retains valid samples through 450ms inference gap")
 	for i in range(22):
-		_frame(screen, 0.20 + (0.014 if i % 2 == 0 else -0.014), 0.125)
+		_frame(screen, 0.50 + (0.014 if i % 2 == 0 else -0.014), 0.125)
 	_check(int(screen.live_step) == 0 and int(screen.balloon_pose_phase) == 1
-		and screen.measured_points.has("left"),
-		"Balloon LEFT 3s BOTH DOWN captures authentic first floor location")
-	# The second LEFT phase must NEVER accept a single hand. It also cannot
+		and screen.measured_points.has("center"),
+		"Balloon CENTER 3s BOTH DOWN captures authentic first floor location")
+	# The second CENTER phase must NEVER accept a single hand. It also cannot
 	# inherit the time/samples from the just-completed DOWN phase.
 	for i in range(24):
-		_frame(screen, 0.2, 0.15, false, true)
+		_frame(screen, 0.5, 0.15, false, true)
 	_check(int(screen.live_step) == 0 and int(screen.balloon_pose_phase) == 1
 		and is_zero_approx(float(screen.live_timer)),
 		"Balloon 3.6s aggregate one-hand UP never proves both wrists raised")
-	_complete_balloon_phase(screen, 0.2, 0, 1, "LEFT BOTH UP")
-	# CENTER both DOWN: an 850ms true inference gap cancels ONLY the
-	# current hold; LEFT's genuine floor measurement remains intact.
+	_complete_balloon_phase(screen, 0.5, 0, 1, "CENTER BOTH UP")
+	# RIGHT both DOWN: an 850ms true inference gap cancels ONLY the
+	# current hold; CENTER's genuine floor measurement remains intact.
 	for i in range(6):
-		_frame(screen, 0.5 + (0.012 if i % 2 == 0 else -0.012), 0.15)
+		_frame(screen, 0.8 + (0.012 if i % 2 == 0 else -0.012), 0.15)
 	screen.call("_process", 0.85)
 	source_when += 0.85
 	_check(int(screen.live_step) == 1 and int(screen.balloon_pose_phase) == 0
 		and is_zero_approx(float(screen.live_timer)),
-		"Balloon 850ms frame stall cancels incomplete CENTER DOWN hold")
-	_check(screen.measured_points.has("left")
-		and not screen.measured_points.has("center"),
-		"Balloon CENTER retry preserves completed LEFT only")
-	_complete_balloon_phase(screen, 0.5, 1, 0, "CENTER BOTH DOWN")
-	_complete_balloon_phase(screen, 0.5, 1, 1, "CENTER BOTH UP")
-	# RIGHT both DOWN: a genuinely missing pose/solo interruption cancels
+		"Balloon 850ms frame stall cancels incomplete RIGHT DOWN hold")
+	_check(screen.measured_points.has("center")
+		and not screen.measured_points.has("right"),
+		"Balloon RIGHT retry preserves completed CENTER only")
+	_complete_balloon_phase(screen, 0.8, 1, 0, "RIGHT BOTH DOWN")
+	_complete_balloon_phase(screen, 0.8, 1, 1, "RIGHT BOTH UP")
+	# LEFT both DOWN: a genuinely missing pose/solo interruption cancels
 	# the current hold, never the two previously verified positions.
 	for i in range(7):
-		_frame(screen, 0.8 + (0.012 if i % 2 == 0 else -0.012), 0.15)
-	_frame(screen, 0.8, 0.15, false, false, 0)
+		_frame(screen, 0.2 + (0.012 if i % 2 == 0 else -0.012), 0.15)
+	_frame(screen, 0.2, 0.15, false, false, 0)
 	_check(int(screen.live_step) == 2 and int(screen.balloon_pose_phase) == 0
 		and is_zero_approx(float(screen.live_timer)),
-		"Balloon raw zero-person source cancels incomplete RIGHT DOWN hold")
-	_check(screen.measured_points.has("left") and screen.measured_points.has("center")
-		and not screen.measured_points.has("right"),
-		"Balloon RIGHT pose loss preserves completed LEFT and CENTER")
-	_complete_balloon_phase(screen, 0.8, 2, 0, "RIGHT BOTH DOWN")
-	_complete_balloon_phase(screen, 0.8, 2, 1, "RIGHT BOTH UP")
+		"Balloon raw zero-person source cancels incomplete LEFT DOWN hold")
+	_check(screen.measured_points.has("center") and screen.measured_points.has("right")
+		and not screen.measured_points.has("left"),
+		"Balloon LEFT pose loss preserves completed CENTER and RIGHT")
+	_complete_balloon_phase(screen, 0.2, 2, 0, "LEFT BOTH DOWN")
+	_complete_balloon_phase(screen, 0.2, 2, 1, "LEFT BOTH UP")
 	_check(int(screen.live_step) == 3 and bool(screen.success_running)
 		and bool(screen.transition_queued) and routes.is_empty(),
 		"Balloon all six real holds reach separate SUCCESS, no early gameplay")

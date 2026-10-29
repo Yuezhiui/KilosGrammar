@@ -159,14 +159,14 @@ func _check_intro_game_variants() -> void:
 			var intro := stage.get_node_or_null("IntroOverlay") as Control
 			_expect(intro != null and not intro.visible, label + ": overlay ends after 3 seconds")
 			var guide_name := ("PoseGuidePlaneCenter" if activity == "Human Plane" else
-				"PoseGuideLeft" if activity == "Balloon Popping" else "PoseGuideDefault")
+				"PoseGuideDefault")
 			var guide := stage.get_node_or_null("PoseGuides/" + guide_name) as TextureRect
 			_expect(guide != null and guide.is_visible_in_tree() and guide.texture != null,
 				label + ": correct first-zone authored PNG appears after intro")
 			for old in LEGACY_NEON:
 				var neon := stage.get_node_or_null(old) as Control
 				_expect(neon == null, label + ": retired neon " + old + " is absent")
-			var title_name := "ArtTitleLeft" if activity == "Balloon Popping" else "ArtTitleCenter"
+			var title_name := "ArtTitleCenter"
 			var title := stage.get_node_or_null("Directions/" + title_name) as Control
 			var plane_heading := stage.get_node_or_null("PlaneSteeringTitle") as Control
 			var plane: bool = String(activity) == "Human Plane"
@@ -450,13 +450,13 @@ func _check_balloon_pose_phases() -> void:
 		"camera_requested":false, "game_mode":"Seconds"})
 	calibration.call("_process", 3.01)
 	var stage := calibration.get_node_or_null("TutorialStage") as Control
-	var default_art := stage.get_node_or_null("PoseGuides/PoseGuideLeft") as TextureRect
+	var default_art := stage.get_node_or_null("PoseGuides/PoseGuideDefault") as TextureRect
 	_expect(default_art != null and default_art.visible,
-		"Balloon first stage shows LEFT DEFAULT.png after 3-second intro")
+		"Balloon first stage shows CENTER DEFAULT.png after 3-second intro")
 	var completed_phases := 0
 	for z in range(3):
-		var location: float = [0.2, 0.5, 0.8][z]
-		var zone: String = ["LEFT", "CENTER", "RIGHT"][z]
+		var location: float = [0.5, 0.8, 0.2][z]
+		var zone: String = ["CENTER", "RIGHT", "LEFT"][z]
 		var default_name := "PoseGuideDefault" if zone == "CENTER" else "PoseGuide" + zone.capitalize()
 		var raised_name := "PoseGuideBalloonRaise" if zone == "CENTER" else "PoseGuideBalloonRaise" + zone.capitalize()
 		var zone_default := stage.get_node_or_null("PoseGuides/" + default_name) as TextureRect
@@ -497,7 +497,7 @@ func _check_balloon_pose_phases() -> void:
 			"Balloon %s BOTH UP 3s finishes second genuine physical hold" % zone)
 		completed_phases += 1
 	_expect(completed_phases == 6 and int(calibration.live_step) == 3,
-		"Balloon performs six fresh 3s holds (18s) in LEFT-CENTER-RIGHT order")
+		"Balloon performs six fresh 3s holds (18s) in CENTER-RIGHT-LEFT order")
 	_expect(bool((pose.calibration as Dictionary).get("valid", false)),
 		"Balloon marks calibrated only after all six bilateral 3-second holds")
 	await _dispose(calibration)

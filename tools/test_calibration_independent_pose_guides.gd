@@ -8,10 +8,9 @@ extends SceneTree
 const SCENE := "res://ui/vision/calibration/calibration.tscn"
 const DEFAULT := ["PoseGuideDefault", "PoseGuideRight", "PoseGuideLeft"]
 const RAISE := ["PoseGuideBalloonRaise", "PoseGuideBalloonRaiseRight", "PoseGuideBalloonRaiseLeft"]
-# Human Plane now uses only its approved stationary CENTER T-pose guide;
-# left/right airplane guides were retired with the old steering calibration.
-const PLANE := ["PoseGuidePlaneCenter"]
-const BALLOON_ZONES := ["LEFT", "CENTER", "RIGHT"]
+# Human Plane measures only CENTER, then visually demonstrates side turns.
+const PLANE := ["PoseGuidePlaneCenter", "PoseGuidePlaneLeft", "PoseGuidePlaneRight"]
+const BALLOON_ZONES := ["CENTER", "RIGHT", "LEFT"]
 const PHASE_SECONDS := 3.0
 const SOURCE_DT := 0.15
 
@@ -183,15 +182,14 @@ func _verify_source_authenticated_balloon(packed: PackedScene) -> void:
 		scene.queue_free()
 		await process_frame
 		return
-	var hands := guides.get_node_or_null("BalloonHandsInstruction") as Label
-	_check(hands != null and hands.owner == scene,
-		"both-hand phase words are independent, editable editor-authored label")
+	_check(guides.get_node_or_null("BalloonHandsInstruction") == null,
+		"obsolete Balloon bilateral overlay label has been removed")
 	var original_rects: Dictionary = {}
 	for name in DEFAULT + RAISE + PLANE:
 		original_rects[name] = (guides.get_node(name) as TextureRect).get_rect()
 	scene._process(3.01) # The three-second INTRO does not count as hand holds.
 	_check(scene._capture_order() == BALLOON_ZONES,
-		"real Balloon state machine performs LEFT -> CENTER -> RIGHT")
+		"real Balloon state machine performs CENTER -> RIGHT -> LEFT")
 	_check(scene._hold_seconds() == PHASE_SECONDS and not scene.intro_running,
 		"intro ended and six physical phases require three seconds EACH")
 	var completed := 0
@@ -203,9 +201,10 @@ func _verify_source_authenticated_balloon(packed: PackedScene) -> void:
 				and int(scene.balloon_pose_phase) == phase,
 				tag + " starts at the right sequential stage")
 			_check_sole_png(guides, _balloon_guide(zone, phase == 1), tag)
-			_check(hands != null and hands.visible and hands.text.contains("BOTH HANDS")
-				and hands.text.contains("DOWN" if phase == 0 else "UP"),
-				tag + " describes the bilateral physical posture")
+			scene._set_stage_instruction()
+			_check(String(scene.latest_instruction_text).contains(
+					"KEEP BOTH HANDS DOWN" if phase == 0 else "RAISE BOTH HANDS"),
+				tag + " describes the bilateral physical posture in mode instructions")
 			# Neither either-hand shooting signal nor missing wrist observations
 			# certify BOTH wrists on the SAME source packet.
 			for i in range(23):
@@ -241,7 +240,7 @@ func _verify_source_authenticated_balloon(packed: PackedScene) -> void:
 					tag + " next active guide")
 	_check(completed == 6 and scene.live_step == 3 and scene.balloon_pose_phase == 0
 		and bool(pose.calibration.get("valid", false)) and pose.plane_calibration.is_empty(),
-		"six real LEFT/CENTER/RIGHT bilateral DOWN->UP holds complete calibrated bounds")
+			"six real CENTER/RIGHT/LEFT bilateral DOWN->UP holds complete calibrated bounds")
 	_check(bool(scene.success_running),
 		"finishing six verified holds starts success overlay rather than replaying a stage")
 	_check_sole_png(guides, "", "completed Balloon calibration")

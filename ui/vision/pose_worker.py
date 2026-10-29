@@ -18,7 +18,7 @@ import threading
 import time
 
 from student_lock import StudentLock
-from gesture_detector import GestureDetector
+from gesture_detector import GestureDetector, GestureState
 
 
 # COCO 17-keypoint indices. The live *body* skeleton uses shoulders, elbows,
@@ -43,7 +43,7 @@ PREVIEW_JPEG_QUALITIES = (78, 68, 58, 48, 38)
 # separate 0.45+ torso/gesture checks continue to decide gameplay authority.
 # A child should not see a blank or gray guide simply because a wrist/hip
 # briefly falls below the strict control threshold.
-MIN_VISIBLE_KEYPOINT_CONFIDENCE = 0.35
+MIN_VISIBLE_KEYPOINT_CONFIDENCE = 0.30
 # Raw-camera fallback keeps the webcam responsive when YOLO genuinely stalls.
 # Do not erase fresh real skeleton artwork after only 0.6 s: slower classroom
 # inference can otherwise alternate green-bones / empty-frame / green-bones.
@@ -54,6 +54,59 @@ RAW_PREVIEW_FALLBACK_DELAY_SECONDS = 1.15
 CAMERA_FIRST_FRAME_WAIT_SECONDS = 2.3
 # Never let a queued/slowly inferred old picture enroll or move the student.
 MAX_CAMERA_SAMPLE_AGE_SECONDS = 0.65
+
+
+class PreviewPublisher:
+    """Order raw and inferred camera JPEGs by their actual capture timestamps.
+
+    Raw fallback is allowed after an inference stall, but never allowed to
+    reorder an older skeleton over a newer camera image. The short ASCII
+    header also lets Godot reject late SOLO artwork after a crowd/pose loss.
+    It is visual metadata only: it cannot create any gameplay pose sample.
+    """
+
+    def __init__(self, sock: socket.socket, destination: tuple[str, int]):
+        self.sock = sock
+        self.destination = destination
+        self.lock = threading.Lock()
+        self.last_source_at = -1.0
+        self.last_inferred_sent_at = time.monotonic()
+        self.last_raw_sent_at = 0.0
+
+    def raw_fallback_due(self, now: float) -> bool:
+        with self.lock:
+            return (now - self.last_inferred_sent_at >= RAW_PREVIEW_FALLBACK_DELAY_SECONDS
+                    and now - self.last_raw_sent_at >= 0.15)
+
+    def publish(self, jpeg: bytes | None, captured_at: float,
+                inferred: bool, people_count: int = -1) -> bool:
+        if jpeg is None or not math.isfinite(captured_at):
+            return False
+        # A JPEG encoder may finish after the camera/inference that supplied
+        # its pixels has expired. Never publish delayed bones as fresh.
+        with self.lock:
+            # Check INSIDE the send lock: waiting behind another JPEG sender
+            # must not grant an already-old source image fresh authority.
+            now = time.monotonic()
+            if captured_at > now or now - captured_at > MAX_CAMERA_SAMPLE_AGE_SECONDS:
+                return False
+            if captured_at <= self.last_source_at:
+                return False
+            # 0x02: capture time / inference flag / raw person count /
+            # capture-to-send age, then the JPEG. Including source age stops
+            # the recipient giving a late JPEG a second full stale lifetime.
+            # The marker and bounded textual header avoid platform byte order
+            # assumptions in Godot's PackedByteArray decoder.
+            source_age_ms = round((now - captured_at) * 1000)
+            heading = (f"{captured_at:.9f},{int(inferred)},{people_count},"
+                       f"{source_age_ms};").encode("ascii")
+            self.sock.sendto(b"\x02" + heading + jpeg, self.destination)
+            self.last_source_at = captured_at
+            if inferred:
+                self.last_inferred_sent_at = time.monotonic()
+            else:
+                self.last_raw_sent_at = time.monotonic()
+            return True
 
 
 def draw_skeleton_preview(cv2: object, frame: object, visible_people: list[dict],
@@ -387,6 +440,26 @@ def arms_raised(keypoints: list[list[float]], minimum: float = 0.45) -> bool:
     return keypoints[9][1] + 0.08 < keypoints[5][1] and keypoints[10][1] + 0.08 < keypoints[6][1]
 
 
+def calibration_bilateral_packet_fields(
+    observation: GestureState, selected: dict | None,
+    lock_state: str, detected_count: int,
+) -> dict[str, bool]:
+    """Expose current-frame bilateral evidence only for the locked SOLO body.
+
+    Called after the worker has rejected stale camera/inference frames, run
+    YOLO, and counted raw person boxes. Never use a remembered selected person,
+    a second detected person, or the shooting latch for calibration samples.
+    """
+    verified_solo = (selected is not None and lock_state == "locked"
+                     and detected_count == 1)
+    valid = verified_solo and observation.calibration_hand_observation_valid
+    return {
+        "calibration_hand_observation_valid": valid,
+        "calibration_both_hands_up": valid and observation.calibration_both_hands_up,
+        "calibration_both_hands_down": valid and observation.calibration_both_hands_down,
+    }
+
+
 def send_status(sock: socket.socket, destination: tuple[str, int], token: str, **fields: object) -> None:
     # A loading, recovering, error or missing-player packet must never leave
     # the last gesture latched in the Godot camera/gameplay bridge.
@@ -394,6 +467,9 @@ def send_status(sock: socket.socket, destination: tuple[str, int], token: str, *
                "hand_up": False, "airplane_pose": False,
                "left_hand_up": False, "right_hand_up": False,
                "hand_observation_valid": False,
+               "calibration_hand_observation_valid": False,
+               "calibration_both_hands_up": False,
+               "calibration_both_hands_down": False,
                "wing_roll": 0.0, "plane_steering": 0.0,
                "plane_t_pose_valid": False, "plane_bank_valid": False,
                "plane_bank": 0.0,
@@ -762,10 +838,12 @@ class LatestPreview:
     """
 
     def __init__(self, cv2: object, sock: socket.socket, destination: tuple[str, int],
-                 bones_offset: tuple[float, float], bones_scale: tuple[float, float]):
+                 bones_offset: tuple[float, float], bones_scale: tuple[float, float],
+                 publisher: PreviewPublisher | None = None):
         self.cv2 = cv2
         self.sock = sock
         self.destination = destination
+        self.publisher = publisher or PreviewPublisher(sock, destination)
         self.bones_offset = bones_offset
         self.bones_scale = bones_scale
         self.lock = threading.Lock()
@@ -779,9 +857,12 @@ class LatestPreview:
     def start(self) -> None:
         self.thread.start()
 
-    def submit(self, frame: object, people: list[dict]) -> None:
+    def submit(self, frame: object, people: list[dict],
+               captured_at: float | None = None, raw_person_count: int = -1) -> None:
+        if captured_at is None:
+            captured_at = time.monotonic()
         with self.lock:
-            self.latest = (frame, people)
+            self.latest = (frame, people, captured_at, raw_person_count)
 
     def _send(self) -> None:
         next_sent = 0.0
@@ -794,13 +875,12 @@ class LatestPreview:
                 self.latest = None
             if item is None:
                 continue
-            frame, people = item
+            frame, people, captured_at, raw_person_count = item
             try:
                 canvas = draw_skeleton_preview(
                     self.cv2, frame, people, self.bones_offset, self.bones_scale)
                 jpeg = encode_preview_jpeg(self.cv2, canvas)
-                if jpeg is not None:
-                    self.sock.sendto(b"\x01" + jpeg, self.destination)
+                if self.publisher.publish(jpeg, captured_at, True, raw_person_count):
                     self.last_sent_at = time.monotonic()
                     self.failure_count = 0
                 # Even noisy, over-limit JPEGs must be rate-limited. Encoding
@@ -968,17 +1048,19 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                 startup_preview_thread.join(timeout=0.6)
 
         if preview:
-            live_preview = LatestPreview(cv2, sock, target, bones_offset, bones_scale)
+            # Both JPEG-producing threads share one capture-order gate. A raw
+            # fallback can never overtake an older inference JPEG (or vice
+            # versa), even if image encoding completes in a different order.
+            preview_publisher = PreviewPublisher(sock, target)
+            live_preview = LatestPreview(
+                cv2, sock, target, bones_offset, bones_scale, preview_publisher)
             live_preview.start()
 
             def fresh_camera_fallback() -> None:
                 """Real live image with NO cached skeleton if inference stalls."""
                 previous_fallback_sequence = -1
-                last_fallback_at = 0.0
                 while not fallback_preview_stop.wait(0.045):
-                    if time.monotonic() - live_preview.last_sent_at < RAW_PREVIEW_FALLBACK_DELAY_SECONDS:
-                        continue
-                    if time.monotonic() - last_fallback_at < 0.15:
+                    if not preview_publisher.raw_fallback_due(time.monotonic()):
                         continue
                     newest_frame, seq, captured = camera_reader.newest_with_timestamp(
                         previous_fallback_sequence)
@@ -990,12 +1072,10 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                     try:
                         canvas = draw_skeleton_preview(cv2, cv2.flip(newest_frame, 1), [])
                         jpeg = encode_preview_jpeg(cv2, canvas)
-                        if jpeg is not None:
-                            sock.sendto(b"\x01" + jpeg, target)
-                            last_fallback_at = time.monotonic()
+                        preview_publisher.publish(jpeg, captured, False)
                     except Exception:
                         # No stale bones or fatal preview worker failure.
-                        last_fallback_at = time.monotonic()
+                        pass
 
             fallback_preview_thread = threading.Thread(
                 target=fresh_camera_fallback, name="KilosLiveRawFallback", daemon=True)
@@ -1093,6 +1173,8 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                 now,
                 track_id=0 if selected is not None else None,
             )
+            calibration_bilateral = calibration_bilateral_packet_fields(
+                gesture_flags, selected, lock_state, number)
             if selected is not None:
                 torso_x = selected["x"]
                 gesture = arms_raised(selected["keypoints"])
@@ -1143,6 +1225,7 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                         right_hand_up=gesture_flags.right_hand_up,
                         both_hands_up=gesture_flags.both_hands_up,
                         both_hands_down=gesture_flags.both_hands_down,
+                        **calibration_bilateral,
                         lock_state=lock_state, locked_id=locked_id,
                         physical_track_id=student.physical_track_id,
                         occupancy_verified=valid and number == 1,
@@ -1158,6 +1241,7 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                         device="CUDA" if gpu else "CPU", detail=reason,
                         startup_ms=round((ready_at - boot_started) * 1000),
                         camera_phase="tracking",
+                        camera_source_timestamp=captured_at,
                         camera_frame_age_ms=round(source_frame_age * 1000),
                         camera_first_preview_ms=preview_first_sent_ms,
                         **camera_timings)
@@ -1175,7 +1259,8 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                     # missing joints are fabricated; crowds remain muted.
                     # This visual flag NEVER grants gameplay control.
                     highlight_solo_candidate=(number == 1 and len(people) == 1
-                                              and len(visible_people) == 1)))
+                                              and len(visible_people) == 1)),
+                    captured_at=captured_at, raw_person_count=number)
     finally:
         startup_preview_stop.set()
         fallback_preview_stop.set()

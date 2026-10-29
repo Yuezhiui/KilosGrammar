@@ -19,6 +19,8 @@
 [ext_resource type="Texture2D" uid="uid://ffgm87eg6y6q" path="res://Components/Gameplay/Calibration/Pose Guides/DEFAULT.png" id="21_pose_default"]
 [ext_resource type="Texture2D" uid="uid://qdhgw3lb18s8" path="res://Components/Gameplay/Calibration/Pose Guides/BALOON POP.png" id="22_pose_balloon_raise"]
 [ext_resource type="Texture2D" uid="uid://cmmubew7fphtu" path="res://Components/Gameplay/Calibration/Pose Guides/PLANE T POSE.png" id="23_pose_plane_center"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO LEFT.png" id="24_pose_plane_left"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO RIGHT.png" id="25_pose_plane_right"]
 
 [sub_resource type="StyleBoxFlat" id="CameraFrame"]
 bg_color = Color(0, 0, 0, 1)
@@ -215,6 +217,7 @@ expand_mode = 1
 
 [node name="PoseGuideBalloonRaise" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=740498862]
 editor_description = "CENTER BALOON POP.png raised-hand guide for Balloon Popping. Position/size are editor-authored and unchanged at runtime."
+visible = false
 layout_mode = 0
 offset_left = 262.0
 offset_top = 66.0
@@ -253,7 +256,6 @@ stretch_mode = 5
 
 [node name="PoseGuidePlaneCenter" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=2086394099]
 editor_description = "PLANE T POSE.png Human Plane center/T-pose guide. Scene-authored and manually transformable; intended as the 3-second center reference."
-visible = false
 layout_mode = 0
 offset_left = 262.0
 offset_top = 66.0
@@ -264,22 +266,31 @@ texture = ExtResource("23_pose_plane_center")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="BalloonHandsInstruction" type="Label" parent="TutorialStage/PoseGuides" unique_id=616117427]
-editor_description = "Balloon Popping bilateral gesture instruction. Move/resize in the Godot editor without affecting pose PNGs or camera geometry."
+[node name="PoseGuidePlaneLeft" type="TextureRect" parent="TutorialStage/PoseGuides"]
+editor_description = "Visual LEFT turn demonstration after the single CENTER T-pose hold. Move/resize independently in the Godot editor."
 visible = false
 layout_mode = 0
-offset_left = 201.0
-offset_top = 569.0
-offset_right = 1079.0
-offset_bottom = 617.0
-theme_override_colors/font_color = Color(1, 0.97, 0.79, 1)
-theme_override_colors/font_outline_color = Color(0.19, 0.11, 0.06, 1)
-theme_override_constants/outline_size = 5
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 32
-text = "KEEP BOTH HANDS DOWN • HOLD FOR 3 SECONDS"
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = 262.0
+offset_top = 66.0
+offset_right = 1029.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("24_pose_plane_left")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PoseGuidePlaneRight" type="TextureRect" parent="TutorialStage/PoseGuides"]
+editor_description = "Visual RIGHT turn demonstration after the single CENTER T-pose hold. Move/resize independently in the Godot editor."
+visible = false
+layout_mode = 0
+offset_left = 262.0
+offset_top = 66.0
+offset_right = 1029.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("25_pose_plane_right")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Directions" type="Control" parent="TutorialStage" unique_id=1119697125]
 anchors_preset = 0
@@ -327,6 +338,7 @@ stretch_mode = 5
 
 [node name="ArtTitleCenter" type="TextureRect" parent="TutorialStage/Directions" unique_id=1463487908]
 editor_description = "Updated STAY IN THE CENTER.png is 1672x432 with its lettering across the full PNG. Use original texture directly; DO NOT crop it with a previous art version's AtlasTexture."
+visible = false
 layout_mode = 0
 offset_left = 320.0
 offset_top = 28.0

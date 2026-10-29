@@ -18,7 +18,7 @@ const EXPECTED := {
 	"raise_both_hands": "raise_both_hands.wav",
 	"success": "success.wav",
 }
-const BALLOON_ORDER := ["LEFT", "CENTER", "RIGHT"]
+const BALLOON_ORDER := ["CENTER", "RIGHT", "LEFT"]
 const CATCH_ORDER := ["CENTER", "RIGHT", "LEFT"]
 # SHA-256 of the eleven genuine user-supplied VOICE1 source WAVs.
 # The exact bytes are checked, not simply filenames or decoded audio lengths.
@@ -51,9 +51,8 @@ func _run() -> void:
 	if loaded == null:
 		_finish()
 		return
-	_check(not ResourceLoader.exists(Voice.VOICE_DIR + "hands_down.wav")
-		and not ResourceLoader.exists(Voice.VOICE_DIR + "raise_hand.wav"),
-		"No fake hands-down or generic one-hand VOICE1 recording was fabricated")
+	_check(not ResourceLoader.exists(Voice.VOICE_DIR + "raise_hand.wav"),
+		"No generic one-hand VOICE1 recording was fabricated")
 	_check(EXPECTED.size() == 11 and EXPECTED_SHA256.size() == 11,
 		"Exactly eleven genuine VOICE1 recordings have pinned SHA-256 digests")
 	var menu_source := FileAccess.get_file_as_string("res://ui/main_menu/main_menu.gd")
@@ -117,13 +116,28 @@ func _run() -> void:
 				screen.set("live_step", zone)
 				screen.set("balloon_pose_phase", 0)
 				screen.call("_set_stage_instruction")
-				_check(speaker.stream == narrator.call("_load_cue", target),
-					activity + " " + target + " starts with supplied MOVE recording")
-				_check(String(narrator.get("_pending_followup_cue")) == "stay_" + target,
-					activity + " " + target + " queues corresponding STAY recording")
-				speaker.finished.emit()
-				_check(speaker.stream == narrator.call("_load_cue", "stay_" + target),
-					activity + " " + target + " plays STAY only after MOVE finishes")
+				if activity == "Balloon Popping":
+					if target == "center":
+						_check(speaker.stream == narrator.call("_load_cue", "hands_down"),
+							"Balloon CENTER uses cloned BOTH HANDS DOWN cue")
+						_check(String(narrator.get("_pending_followup_cue")).is_empty(),
+							"Balloon CENTER does not queue a second movement cue")
+					else:
+						_check(speaker.stream == narrator.call("_load_cue", target),
+							"Balloon " + target + " starts with supplied MOVE recording")
+						_check(String(narrator.get("_pending_followup_cue")) == "hands_down",
+							"Balloon " + target + " queues cloned hands-down recording")
+						speaker.finished.emit()
+						_check(speaker.stream == narrator.call("_load_cue", "hands_down"),
+							"Balloon " + target + " plays hands-down only after MOVE finishes")
+				else:
+					_check(speaker.stream == narrator.call("_load_cue", target),
+						activity + " " + target + " starts with supplied MOVE recording")
+					_check(String(narrator.get("_pending_followup_cue")) == "stay_" + target,
+						activity + " " + target + " queues corresponding STAY recording")
+					speaker.finished.emit()
+					_check(speaker.stream == narrator.call("_load_cue", "stay_" + target),
+						activity + " " + target + " plays STAY only after MOVE finishes")
 				var remembered := (narrator.get("_played_stages") as Dictionary).size()
 				screen.call("_set_stage_instruction")
 				_check((narrator.get("_played_stages") as Dictionary).size() == remembered,

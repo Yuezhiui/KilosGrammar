@@ -77,15 +77,15 @@ func _stress_round(activity: String) -> void:
 	var order: Array = screen.call("_capture_order")
 	var balloon := activity == "Balloon Popping"
 	var expected_order := (["CENTER"] if activity == "Human Plane" else
-		["LEFT", "CENTER", "RIGHT"] if balloon else ["CENTER", "RIGHT", "LEFT"])
+		["CENTER", "RIGHT", "LEFT"])
 	_assert(order == expected_order,
 		activity + " / correct once-per-round physical stage order")
-	var first_zone_x := 0.2 if balloon else 0.5
-	var second_zone_x := 0.5 if balloon else 0.8
-	var third_zone_x := 0.8 if balloon else 0.2
-	var first_zone_name := "left" if balloon else "center"
-	var second_zone_name := "center" if balloon else "right"
-	var third_zone_name := "right" if balloon else "left"
+	var first_zone_x := 0.5
+	var second_zone_x := 0.8
+	var third_zone_x := 0.2
+	var first_zone_name := "center"
+	var second_zone_name := "right"
+	var third_zone_name := "left"
 	# Multiple visible people/zero people/unknown people: even an accidentally
 	# retained 'pose':true and x=0.5 must NEVER earn hold time or route.
 	for count in [0, 2, 4, -1]:
@@ -116,7 +116,7 @@ func _stress_round(activity: String) -> void:
 	# A returning freshly tracked person may use a DIFFERENT numeric tracking
 	# ID or NO ID at all; neither changes the number of required holds.
 	if balloon:
-		_complete_balloon_zone(screen, first_zone_x, "LEFT", -1)
+		_complete_balloon_zone(screen, first_zone_x, "CENTER", -1)
 	else:
 		var first_count := 9 if activity == "Human Plane" else 34
 		for _i in range(first_count):
@@ -124,6 +124,18 @@ func _stress_round(activity: String) -> void:
 	_assert(int(screen.get("live_step")) == 1 and
 		(screen.get("measured_points") as Dictionary).has(first_zone_name),
 		activity + " / fresh no-ID solo first-zone hold succeeds after long absence")
+	if activity == "Human Plane":
+		# The 3-second CENTER T-pose is the only physical Plane capture.
+		# Its two side PNG demonstrations are visual only, and must complete
+		# before the separate 3-second SUCCESS gate begins.
+		_assert(bool(screen.plane_demo_running) and not bool(screen.success_running),
+			activity + " / measured CENTER begins visual turn guide with no side holds")
+		var demo_side_seconds := float(
+			screen.get_script().get_script_constant_map().get("PLANE_DEMO_SECONDS_PER_SIDE", 1.0))
+		for _i in range(ceili(2.0 * demo_side_seconds / 0.15) + 3):
+			_push(screen, first_zone_x, 0.15, 1, -1)
+		_assert(bool(screen.success_running) and int(screen.live_step) == 1,
+			activity + " / LEFT/RIGHT demo completes without a second measured plane position")
 	if activity != "Human Plane":
 		# Disrupt the SECOND floor zone: only its current hold restarts. The
 		# finished first zone remains measured even after a crowd arrives.
@@ -135,7 +147,7 @@ func _stress_round(activity: String) -> void:
 			is_zero_approx(float(screen.get("live_timer"))),
 			activity + " / crowd on second zone retains first completed zone")
 		if balloon:
-			_complete_balloon_zone(screen, second_zone_x, "CENTER", 301)
+			_complete_balloon_zone(screen, second_zone_x, "RIGHT", 301)
 		else:
 			for _i in range(25):
 				_push(screen, second_zone_x, 0.15, 1, 301)
@@ -154,7 +166,7 @@ func _stress_round(activity: String) -> void:
 			(screen.get("measured_points") as Dictionary).has(second_zone_name),
 			activity + " / >5s absence interrupts third zone but keeps past floor measurements")
 		if balloon:
-			_complete_balloon_zone(screen, third_zone_x, "RIGHT", -1)
+			_complete_balloon_zone(screen, third_zone_x, "LEFT", -1)
 		else:
 			for _i in range(25):
 				_push(screen, third_zone_x, 0.15, 1, -1)

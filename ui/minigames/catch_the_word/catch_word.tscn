@@ -48,8 +48,7 @@ stretch_mode = 6
 z_index = 1
 
 [node name="Bear" type="Node2D" parent="." unique_id=669911193]
-visible = false
-position = Vector2(640, 700)
+position = Vector2(640, 815)
 
 [node name="Body" type="Sprite2D" parent="Bear" unique_id=1516257554]
 position = Vector2(0.136, -217.303)
@@ -93,6 +92,7 @@ region_enabled = true
 region_rect = Rect2(19, 876, 894, 448)
 
 [node name="Dog" type="Node2D" parent="." unique_id=764711831]
+visible = false
 position = Vector2(640, 815)
 
 [node name="Body" type="Sprite2D" parent="Dog" unique_id=170348412]

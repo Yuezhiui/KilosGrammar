@@ -113,14 +113,27 @@ class OfflinePacketsTests(unittest.TestCase):
             self.assertTrue(all(not p["pose"] and p["lock_state"] == "ambiguous"
                                 for p in tracked if p["people"] == 2),
                             "both valid people must block game even with one old tracker ID")
+            self.assertTrue(all(not p.get("calibration_hand_observation_valid")
+                                and not p.get("calibration_both_hands_up")
+                                and not p.get("calibration_both_hands_down")
+                                for p in tracked if p["people"] == 2),
+                            "crowded source frames never claim bilateral calibration")
             solo = [p for p in tracked if p.get("people") == 1 and p.get("pose")]
             self.assertTrue(solo, "stable ID-less one-person poses must unlock movement")
             self.assertTrue(all(p.get("locked_id") == -1 and p.get("physical_track_id") == -1
                                 and p.get("occupancy_verified") and not p.get("needs_recalibration")
                                 for p in solo), "no physical or synthetic identity assigned")
+            self.assertTrue(all(p.get("calibration_hand_observation_valid")
+                                and p.get("calibration_both_hands_down")
+                                and not p.get("calibration_both_hands_up") for p in solo),
+                            "only fresh verified solo source packets report the two visible down wrists")
             empty = [p for p in tracked if p.get("people") == 0]
             self.assertTrue(empty, "mock worker must report observed zero people")
             self.assertTrue(all(not p.get("pose", False) for p in empty))
+            self.assertTrue(all(not p.get("calibration_hand_observation_valid")
+                                and not p.get("calibration_both_hands_up")
+                                and not p.get("calibration_both_hands_down") for p in empty),
+                            "an empty YOLO frame never inherits a prior student's wrists")
         finally:
             camera.release()
             receiver.close()

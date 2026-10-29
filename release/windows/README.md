@@ -198,6 +198,79 @@ wheelhouse/installers, redistribution review and another-computer acceptance
 have been verified. Python package versions, CUDA support and operating system
 compatibility must match the accepted target machine.
 
+## 5. Safe partial build when export templates/offline dependencies are missing
+
+**Do not publish a partial build as the classroom installer.** On the current
+development PC, the exact 4.7.2 Windows export templates have not yet been
+installed, and neither the portable CPython 3.11 wheelhouse nor the offline
+Python/PostgreSQL installers have been staged. `Build-OfflineRelease.ps1`
+intentionally refuses to make up an `offline/manifest.json` or a real release.
+
+For developer inspection only, `Build-PreviewExe.ps1` can make a *real PCK*
+via Godot `--export-pack` **without export templates**, then copy the matching
+**editor binary** as a runnable but oversized `KilosGrammar.exe`. This is NOT
+Godot's optimized Windows export template, NOT a school-ready installer, and
+does not include an isolated Python, wheels or PostgreSQL. It deliberately
+publishes only under the ignored `release/windows/staging/` directory and
+generates `PREVIEW-STATUS.json`, never a misleading `manifest.json`:
+
+```powershell
+& .\release\windows\Build-PreviewExe.ps1 `
+  -GodotExe 'C:\path\to\Godot_v4.7.2-stable_win64_console.exe' `
+  -EditorExe 'C:\path\to\Godot_v4.7.2-stable_win64.exe' `
+  -ModelPath 'C:\approved\yolo26n-pose.pt'
+
+& .\release\windows\Test-PreviewPackage.ps1 `
+  -PackageRoot '.\release\windows\staging\KilosGrammar-EDITOR-PREVIEW-win-x64'
+```
+
+The exact supplied `KILOSGRAMMAR.ico` is preserved under
+`release/windows/branding/KILOSGRAMMAR.ico` and configured in the Windows
+export preset. The separate 256x256 `KILOSGRAMMAR.png`, extracted from that
+same provided icon, is configured as the Godot in-game icon. The oversized
+developer preview retains the editor's normal Windows EXE icon; only the
+eventual verified real export is expected to embed the ICO.
+
+### Per-user install, launch-preflight and uninstall simulation
+
+The ordinary **school installation must go in a fresh writable destination**,
+by default `%LOCALAPPDATA%\Programs\KilosGrammar`. Never install the Python
+`database/.venv` beneath `C:\Program Files` because non-admin users cannot
+write there. Actual credentials and student records already belong to the
+per-user application directories, not the program folder. The separate
+portable scripts refuse overwriting existing installs and safely preserve
+external user data during uninstall. A developer preview requires an explicit
+`-AllowPreview` acknowledgment; an unverified package is always rejected.
+
+```powershell
+# Read-only rehearsal; does NOT execute EXE or connect to the database:
+& .\release\windows\tests\Test-PortableLifecycle.ps1 `
+  -PackageRoot '.\release\windows\staging\KilosGrammar-EDITOR-PREVIEW-win-x64'
+
+# Read-only inspection of EXE/PCK, hashes and existing local port listeners:
+& .\release\windows\Test-LaunchPreflight.ps1 `
+  -PackageRoot '.\release\windows\staging\KilosGrammar-EDITOR-PREVIEW-win-x64'
+```
+
+The test installs a real copy under a fresh `%LOCALAPPDATA%\Programs` path
+**containing spaces**, refuses duplicate installs, deliberately verifies that
+unknown files block destructive uninstall, removes only its owned test install,
+and checks that separately stored test user data survives. `Test-LaunchPreflight`
+reports if the local TCP ports **5432** (PostgreSQL) or **18765** (game API)
+already have listeners, but does not claim to identify their owner or connect
+to them. Any real setup must verify ownership and avoid replacing an existing
+database/API. It also never creates PostgreSQL roles, runs migrations or
+launches camera capture. A passing local simulation is NOT a real clean-PC
+offline acceptance test.
+
+The preferred full offline release still requires approved original installers,
+a fully compatible Windows CPython 3.11 wheelhouse (Torch, TorchVision,
+Ultralytics, OpenCV, LAP, Psycopg and dependencies), confirmed YOLO checkpoint
+redistribution terms, Godot/third-party notices, and classroom install/restart/
+score-persistence/camera tests on a second machine. No Inno Setup, NSIS or WiX
+compiler was found in the inspected build environment, so no conventional
+`Setup.exe` is claimed to exist.
+
 Reference sources: [Godot Windows export](https://docs.godotengine.org/en/4.7/tutorials/export/exporting_for_windows.html),
 [Godot command-line export](https://docs.godotengine.org/en/4.7/tutorials/export/exporting_projects.html),
 [PostgreSQL Windows installers](https://www.postgresql.org/download/windows/),

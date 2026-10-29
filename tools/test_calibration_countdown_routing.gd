@@ -217,7 +217,7 @@ func _complete_live_calibration(calibration: Control, pose: Node, activity: Stri
 	await process_frame
 	_check(not bool(calibration.intro_running) and int(calibration.live_step) == 0,
 		activity + ": independent 3-second intro never grants physical hold time")
-	var zones: Array = ["LEFT", "CENTER", "RIGHT"] if activity == "Balloon Popping" else ["CENTER", "RIGHT", "LEFT"]
+	var zones: Array = ["CENTER", "RIGHT", "LEFT"]
 	var x_by_zone := {"LEFT": 0.20, "CENTER": 0.50, "RIGHT": 0.80}
 	_check(calibration.call("_capture_order") == zones,
 		activity + ": current real source-floor calibration order")
@@ -232,6 +232,25 @@ func _complete_live_calibration(calibration: Control, pose: Node, activity: Stri
 		var x := float(x_by_zone[zones[index]])
 		var phases := 2 if activity == "Balloon Popping" else 1
 		for phase in range(phases):
+			if activity == "Balloon Popping":
+				# A full-length SOLO stream with only an either-hand shooting
+				# signal is still invalid for BOTH-wrist calibration.
+				for i in range(24):
+					_send_source_packet(calibration, pose, x, 1, true, phase == 1, true, true)
+				_check(int(calibration.live_step) == index
+					and int(calibration.balloon_pose_phase) == phase
+					and is_zero_approx(float(calibration.live_timer))
+					and calibration.live_samples.is_empty(),
+					activity + ": %s phase %d rejects 3.6s of one-hand SOLO spoof" % [zones[index], phase])
+				# Even a packet claiming both hands lifted/lowered is
+				# insufficient without verified landmark visibility.
+				for i in range(24):
+					_send_source_packet(calibration, pose, x, 1, true, phase == 1, false, false)
+				_check(int(calibration.live_step) == index
+					and int(calibration.balloon_pose_phase) == phase
+					and is_zero_approx(float(calibration.live_timer))
+					and calibration.live_samples.is_empty(),
+					activity + ": %s phase %d rejects 3.6s with unobserved wrists" % [zones[index], phase])
 			# This is a real per-phase source-clock hold: 19 observations
 			# cover only 2.7s and cannot grant any stage, even at >8 frames.
 			for i in range(19):
@@ -260,7 +279,8 @@ func _complete_live_calibration(calibration: Control, pose: Node, activity: Stri
 
 
 func _send_source_packet(calibration: Control, pose: Node, x: float, people: int,
-		valid: bool, raised: bool = false) -> void:
+		valid: bool, raised: bool = false, wrists_observed: bool = true,
+		one_hand_only: bool = false) -> void:
 	source_when += DT
 	var solo := people == 1 and valid
 	var balloon := String(calibration.context.get("activity", "")) == "Balloon Popping"
@@ -271,9 +291,10 @@ func _send_source_packet(calibration: Control, pose: Node, x: float, people: int
 		"lock_state": "locked" if solo else "lost",
 		"camera_frame_age_ms": 20, "fps": 8.0,
 		"x": x if solo else -1.0,
-		"hand_observation_valid": solo, "hand_up": solo and raised,
-		"both_hands_down": solo and balloon and not raised,
-		"both_hands_up": solo and balloon and raised,
+		"hand_observation_valid": solo and wrists_observed,
+		"hand_up": solo and (raised or one_hand_only),
+		"both_hands_down": solo and balloon and not raised and not one_hand_only,
+		"both_hands_up": solo and balloon and raised and not one_hand_only,
 	}
 	pose._apply_pose_packet(packet, Time.get_ticks_msec())
 	if solo:

@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://ba4ccsha5ri3j" path="res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png" id="13_lives"]
 [ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://Components/Gameplay/Catch the Word/HUD/generated/pause_badge.png" id="14_pause"]
 [ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="15_font"]
+[ext_resource type="Texture2D" uid="uid://cvmjit0yuw8lr" path="res://Components/Gameplay/Controls/pause_white.svg" id="16_pause_glyph"]
 
 [node name="BalloonPopping" type="Control" unique_id=44587833]
 layout_mode = 3
@@ -86,10 +87,10 @@ mouse_filter = 2
 
 [node name="ObjectivePanel" type="TextureRect" parent="HudLayer" unique_id=332195222]
 layout_mode = 0
-offset_left = 15.0
+offset_left = 13.0
 offset_top = 10.0
-offset_right = 490.0
-offset_bottom = 126.0
+offset_right = 519.0
+offset_bottom = 167.0
 mouse_filter = 2
 texture = ExtResource("10_objective")
 expand_mode = 1
@@ -97,10 +98,10 @@ stretch_mode = 5
 
 [node name="BannerTagline" type="Label" parent="HudLayer" unique_id=2064058955]
 layout_mode = 0
-offset_left = 110.0
-offset_top = 76.0
-offset_right = 394.0
-offset_bottom = 107.0
+offset_left = 115.0
+offset_top = 96.0
+offset_right = 421.0
+offset_bottom = 130.0
 theme_override_colors/font_color = Color(0.11, 0.25, 0.4, 1)
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 20
@@ -137,10 +138,10 @@ vertical_alignment = 1
 
 [node name="TimerPlaque" type="TextureRect" parent="HudLayer" unique_id=1263469476]
 layout_mode = 0
-offset_left = 1008.0
-offset_top = 20.0
-offset_right = 1204.0
-offset_bottom = 83.0
+offset_left = 990.0
+offset_top = 8.0
+offset_right = 1185.0
+offset_bottom = 84.0
 mouse_filter = 2
 texture = ExtResource("12_timer")
 expand_mode = 1
@@ -148,10 +149,10 @@ stretch_mode = 5
 
 [node name="TimeLabel" type="Label" parent="HudLayer" unique_id=1318252306]
 layout_mode = 0
-offset_left = 1083.0
-offset_top = 32.0
+offset_left = 1046.0
+offset_top = 27.0
 offset_right = 1171.0
-offset_bottom = 71.0
+offset_bottom = 67.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
@@ -164,22 +165,33 @@ vertical_alignment = 1
 [node name="LivesPlaque" type="TextureRect" parent="HudLayer" unique_id=1881362453]
 visible = false
 layout_mode = 0
-offset_left = 1024.0
-offset_top = 14.0
-offset_right = 1189.0
-offset_bottom = 88.0
+offset_left = 990.0
+offset_top = 8.0
+offset_right = 1185.0
+offset_bottom = 84.0
 mouse_filter = 2
 texture = ExtResource("13_lives")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="PausePlaque" type="TextureRect" parent="HudLayer" unique_id=954035683]
+layout_mode = 0
+offset_left = 1195.0
+offset_top = 8.0
+offset_right = 1276.0
+offset_bottom = 89.0
+mouse_filter = 2
+texture = ExtResource("14_pause")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="PauseButton" type="Button" parent="HudLayer" unique_id=676539593]
 layout_mode = 0
-offset_left = 1189.0
-offset_top = 11.0
-offset_right = 1270.0
-offset_bottom = 92.0
+offset_left = 1212.0
+offset_top = 25.0
+offset_right = 1260.0
+offset_bottom = 73.0
 mouse_default_cursor_shape = 2
-icon = ExtResource("14_pause")
+icon = ExtResource("16_pause_glyph")
 flat = true
 expand_icon = true

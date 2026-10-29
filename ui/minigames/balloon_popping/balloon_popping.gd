@@ -32,19 +32,24 @@ const ACTIVITY := "Balloon Popping"
 const CORRECT_POP_SCORE := 100
 const SECONDS_MODE_DURATION := 60.0
 const LIVES_MODE_HEARTS := 3
-# Each correct pop closes 20% of the remaining gap to the difficulty cap.
-# This starts at +5%/+7%/+9% and diminishes naturally without reaching an
-# excessive speed after long streaks.
-const BALLOON_SPEED_BOOST_BLEND := 0.20
-const BALLOON_SPEED_CAPS := {"Easy": 1.25, "Normal": 1.35, "Hard": 1.45}
+# Keep a long, achievable shooting window even after many correct pops.
+# Small speed rewards cannot undo the baseline accessibility nerf.
+const BALLOON_SPEED_BOOST_BLEND := 0.10
+const BALLOON_SPEED_CAPS := {"Easy": 1.10, "Normal": 1.15, "Hard": 1.20}
 const LANE_COUNT := 3
 const BALLOON_COLLISION_RADIUS := 58.0
 const PROJECTILE_COLLISION_RADIUS := 9.0
 const SWEPT_COLLISION_MIN_TRAVEL := (BALLOON_COLLISION_RADIUS + PROJECTILE_COLLISION_RADIUS) * 2.0
 const UPPER_LINE_Y := 125.0
-const BALLOON_FLOAT_SPEED := 52.0
-const BALLOON_REVEAL_SECONDS := 1.15
-const HAND_RAISE_RELOAD_MS := 1500
+const BALLOON_EXIT_Y := -145.0
+const QUESTION_DURATION_SECONDS := 7.0 # Absolute minimum; the live deadline follows full ascent.
+const QUESTION_EXIT_GRACE_SECONDS := 0.75
+# ACTUAL shootable seconds between the first visible target center and the
+# upper no-hit line (not misleading hidden-to-top transit time). At 1280x720
+# these yield about 7.0/5.8/4.6s, and at maximum boost 6.36/5.04/3.83s.
+const BALLOON_HIT_WINDOW_SECONDS := {"Easy": 7.0, "Normal": 5.8, "Hard": 4.6}
+const BALLOON_FLOAT_SPEED := 42.0
+const HAND_RAISE_RELOAD_MS := 1000
 const HAND_RAISE_LOWER_CONFIRM_MS := 180
 const HAND_RAISE_UP_CONFIRM_MS := 80
 
@@ -85,11 +90,10 @@ var is_lives_mode := false
 var projectile_speed := 1000.0
 var launcher_max_speed := 650.0
 var launcher_acceleration := 2300.0
-var round_time_limit := 7.0
+var round_time_limit := QUESTION_DURATION_SECONDS
 var balloon_float_speed := BALLOON_FLOAT_SPEED
 var balloon_base_float_speed := BALLOON_FLOAT_SPEED
 var balloon_speed_multiplier := 1.0
-var balloon_reveal_seconds := BALLOON_REVEAL_SECONDS
 var wrong_penalty := 0
 var miss_costs_heart := false
 
@@ -116,8 +120,6 @@ var valid_lanes: Array[int] = []
 var pending_valid_lanes: Array[int] = []
 
 var balloon_floating := false
-var float_start_delay := 0.55
-var float_timer := 0.0
 
 var score_label: Label
 var score_bottom_container: VBoxContainer
@@ -129,6 +131,7 @@ var shared_lives_plaque: TextureRect
 var carnival_objective_plaque: TextureRect
 var carnival_title_plaque: TextureRect
 var carnival_score_plaque: TextureRect
+var pause_plaque: TextureRect
 var time_label: Label
 var banner_tagline: Label
 var feedback_label: Label
@@ -138,8 +141,6 @@ var title_label: Label
 var _authored_banner_rects: Dictionary = {}
 var pause_button: Button
 var finish_button: Button
-var balloon_motion_tween: Tween
-var balloon_tween_paused := false
 var balloon_voice_player: AudioStreamPlayer
 var _kids_voice
 var last_missed_shot_voice_msec := -100000
@@ -275,7 +276,7 @@ func clear_body_input() -> void:
 # Caller supplies the combined (left OR right) hand-up state for each valid
 # camera frame, including repeated unchanged frames. Untracked frames must use
 # tracking_valid=false: missing pose data is never interpreted as lowering.
-# The optional clock lets headless tests verify the 1.5-second reload exactly.
+# The optional clock lets headless tests verify the one-second interval exactly.
 # Returns true only if this sample actually fired one projectile.
 func set_hand_raise_state(raised: bool, tracking_valid: bool = true, now_ms: int = -1) -> bool:
 	if not tracking_valid:
@@ -287,6 +288,7 @@ func set_hand_raise_state(raised: bool, tracking_valid: bool = true, now_ms: int
 		clear_hand_raise_tracking()
 		return false
 	if Engine.is_editor_hint() or finishing or not timer_running or not is_inside_tree():
+		clear_hand_raise_tracking()
 		return false
 	var now := Time.get_ticks_msec() if now_ms < 0 else now_ms
 	if not hand_raise_tracking_valid or raised != hand_raise_raw_raised:
@@ -294,20 +296,21 @@ func set_hand_raise_state(raised: bool, tracking_valid: bool = true, now_ms: int
 		hand_raise_raw_raised = raised
 		hand_raise_sample_since_ms = now
 	if not raised:
-		# Ignore brief pose-estimation flicker: lowering must be sustained before
-		# a fresh raise can create another shot.
+		# A confirmed LOW is required once after startup, pause or occlusion.
+		# Thereafter a continuously held UP pose repeats without lowering.
 		if now - hand_raise_sample_since_ms >= HAND_RAISE_LOWER_CONFIRM_MS:
 			hand_raise_confirmed_raised = false
 			hand_raise_armed = true
 		return false
-	if hand_raise_confirmed_raised or now - hand_raise_sample_since_ms < HAND_RAISE_UP_CONFIRM_MS:
+	if now - hand_raise_sample_since_ms < HAND_RAISE_UP_CONFIRM_MS:
 		return false
 	hand_raise_confirmed_raised = true
-	var can_fire := hand_raise_armed
-	# Every confirmed rise consumes its edge, even during reload or while a
-	# question is unavailable. Holding a hand high cannot queue a later shot.
-	hand_raise_armed = false
-	if not can_fire or (hand_raise_last_shot_ms >= 0 and now - hand_raise_last_shot_ms < HAND_RAISE_RELOAD_MS):
+	# An UP pose seen during a question transition must be released before it
+	# can fire. Never queue a shot to be released into the next question.
+	if not round_active:
+		hand_raise_armed = false
+		return false
+	if not hand_raise_armed or (hand_raise_last_shot_ms >= 0 and now - hand_raise_last_shot_ms < HAND_RAISE_RELOAD_MS):
 		return false
 	_hand_raise_firing_authorized = true
 	var fired := _launch_projectile(now)
@@ -316,8 +319,9 @@ func set_hand_raise_state(raised: bool, tracking_valid: bool = true, now_ms: int
 
 
 func clear_hand_raise_tracking() -> void:
-	# Require a real, stable lowered pose before arming after a tracking dropout
-	# or a paused/tutorial screen. Preserve the latest shot's reload deadline.
+	# Require a fresh, stable low-to-high gesture after tracking loss or pause.
+	# Once armed, held-high samples can repeat every second while tracking stays
+	# fresh. Preserve the last shot deadline across tracking loss.
 	hand_raise_tracking_valid = false
 	hand_raise_raw_raised = false
 	hand_raise_sample_since_ms = 0
@@ -375,6 +379,7 @@ func _build_scene() -> void:
 	carnival_score_plaque = hud_layer.get_node_or_null("CarnivalScore") as TextureRect
 	if carnival_score_plaque == null:
 		carnival_score_plaque = _create_carnival_hud_plaque(hud_layer, "score_plaque_blank.png", "CarnivalScore")
+	pause_plaque = hud_layer.get_node_or_null("PausePlaque") as TextureRect
 
 	shared_timer_plaque = hud_layer.get_node_or_null("TimerPlaque") as TextureRect
 	if shared_timer_plaque == null:
@@ -505,6 +510,7 @@ func _build_scene() -> void:
 		hud_layer.add_child(pause_button)
 	if not pause_button.pressed.is_connected(_toggle_pause):
 		pause_button.pressed.connect(_toggle_pause)
+	pause_button.icon = PAUSE_ICON
 
 	# Compatibility labels for QA testing
 	hearts_label = Label.new()
@@ -626,26 +632,23 @@ func _apply_context() -> void:
 			projectile_speed = 950.0
 			launcher_max_speed = 540.0
 			launcher_acceleration = 1900.0
-			round_time_limit = 9.0
-			balloon_float_speed = BALLOON_FLOAT_SPEED
-			balloon_reveal_seconds = BALLOON_REVEAL_SECONDS
-			float_start_delay = 0.55
 		"Hard":
 			projectile_speed = 1490.0
 			launcher_max_speed = 920.0
 			launcher_acceleration = 3700.0
-			round_time_limit = 5.0
-			balloon_float_speed = 154.0
-			balloon_reveal_seconds = 0.72
-			float_start_delay = 0.20
 		_:
 			projectile_speed = 1250.0
 			launcher_max_speed = 750.0
 			launcher_acceleration = 2900.0
-			round_time_limit = 7.0
-			balloon_float_speed = 98.0
-			balloon_reveal_seconds = 0.92
-			float_start_delay = 0.37
+	# Resolve speed from ACTUAL hittable distance, not the much longer route
+	# from concealed wood to the top. Every difficulty retains several seconds
+	# of real on-screen aiming time across viewport sizes.
+	balloon_float_speed = (_balloon_hit_entry_y() - UPPER_LINE_Y) / float(BALLOON_HIT_WINDOW_SECONDS[difficulty])
+	# A seven-second question timer previously ended the wave just as a
+	# slowly rising balloon first emerged. Allow the entire continuous flight
+	# to escape naturally; the 60s overall Seconds clock remains unchanged.
+	round_time_limit = maxf(QUESTION_DURATION_SECONDS,
+		(_balloon_hidden_y() - BALLOON_EXIT_Y) / balloon_float_speed + QUESTION_EXIT_GRACE_SECONDS)
 	# Every fresh gameplay session resets its boost; subsequent question rounds
 	# and ordinary pause/resume never replace this current cumulative speed.
 	balloon_base_float_speed = balloon_float_speed
@@ -685,43 +688,36 @@ func _process(delta: float) -> void:
 		return
 
 	if round_active:
-		# Wait until all three balloons have actually risen into view before
-		# counting down the question or applying their gentle floating motion.
-		# Otherwise the tween and manual movement fight over position:y, making
-		# balloons appear to jump into the middle of the booth.
-		var revealing := is_instance_valid(balloon_motion_tween) and balloon_motion_tween.is_running()
-		if not revealing:
-			round_time_remaining = maxf(round_time_remaining - delta, 0.0)
-			if round_time_remaining <= 0.0:
-				_on_question_timeout()
-				_refresh_hud()
-				return
-		if revealing:
-			pass
-		elif not balloon_floating:
-			float_timer -= delta
-			if float_timer <= 0.0:
-				balloon_floating = true
-		else:
-			for lane in range(balloons.size()):
-				var balloon := balloons[lane]
-				if balloon != null and is_instance_valid(balloon) and balloon.visible:
-					balloon.position.y -= balloon_float_speed * delta
-					if balloon.position.y < -120.0:
-						balloon.visible = false
-						balloon.monitoring = false
-						balloon.monitorable = false
-						balloons[lane] = null
-
-			var has_active := false
-			for b in balloons:
-				if b != null and is_instance_valid(b) and b.visible:
-					has_active = true
-					break
-			if not has_active:
-				round_active = false
-				balloon_floating = false
-				_schedule_next_round(0.55)
+		# No easing or mid-screen stopping: every frame moves the same distance
+		# per second from the hidden counter to beyond the upper playfield.
+		var any_in_flight := false
+		for lane in range(balloons.size()):
+			var balloon := balloons[lane]
+			if balloon == null or not is_instance_valid(balloon) or not balloon.visible:
+				continue
+			balloon.position.y -= balloon_float_speed * delta
+			if balloon.position.y < BALLOON_EXIT_Y:
+				balloon.visible = false
+				balloon.monitoring = false
+				balloon.monitorable = false
+				balloons[lane] = null
+				continue
+			# The upper portion is visible above the counter before its center
+			# reaches the old _balloon_y() reference. Grant the full playable
+			# window without permitting hidden or already escaped targets.
+			var hittable := balloon.position.y <= _balloon_hit_entry_y() and balloon.position.y > UPPER_LINE_Y
+			balloon.monitoring = hittable
+			balloon.monitorable = hittable
+			any_in_flight = true
+		if not any_in_flight:
+			_on_question_timeout()
+			_refresh_hud()
+			return
+		round_time_remaining = maxf(round_time_remaining - delta, 0.0)
+		if round_time_remaining <= 0.0:
+			_on_question_timeout()
+			_refresh_hud()
+			return
 
 	_refresh_hud()
 
@@ -1095,21 +1091,13 @@ func _normalize_round(data: Dictionary) -> Dictionary:
 
 func _spawn_balloons(options: Array[String]) -> void:
 	balloons = balloon_slots.duplicate()
-	if is_instance_valid(balloon_motion_tween):
-		balloon_motion_tween.kill()
-	balloon_tween_paused = false
-	balloon_floating = false
-	float_timer = float_start_delay
-	balloon_motion_tween = create_tween()
-	balloon_motion_tween.set_parallel(true)
+	balloon_floating = true
 	for lane in range(LANE_COUNT):
 		var balloon := balloon_slots[lane]
 		balloon.set_meta("balloon_lane", lane)
 		balloon.collision_layer = 2
 		balloon.collision_mask = 4
-		# Move while still hidden, then reveal behind the foreground counter.
-		# The rising balloon gradually enters the opening instead of flashing
-		# at its old location for one frame.
+		# Masked by the foreground counter until it actually reaches the booth.
 		balloon.monitoring = false
 		balloon.monitorable = false
 		var label := balloon.get_node("WordLabel") as Label
@@ -1117,8 +1105,6 @@ func _spawn_balloons(options: Array[String]) -> void:
 		_fit_balloon_word_label(label)
 		balloon.position = Vector2(_lane_x(lane), _balloon_hidden_y())
 		balloon.visible = true
-		balloon_motion_tween.tween_property(balloon, "position:y", _balloon_y(), balloon_reveal_seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	balloon_motion_tween.finished.connect(_on_balloon_reveal_finished)
 	_layout_scene()
 
 
@@ -1130,16 +1116,6 @@ func _fit_balloon_word_label(label: Label) -> void:
 	while font_size > 8 and FONT.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size).x > max_width:
 		font_size -= 1
 	label.add_theme_font_size_override("font_size", font_size)
-
-
-func _on_balloon_reveal_finished() -> void:
-	if not round_active or not timer_running or finishing:
-		return
-	for balloon in balloons:
-		if is_instance_valid(balloon) and balloon.visible:
-			balloon.monitoring = true
-			balloon.monitorable = true
-	float_timer = float_start_delay
 
 
 func _spawn_pop_burst(position_value: Vector2, _color: Color = Color.WHITE) -> void:
@@ -1217,9 +1193,6 @@ func _show_floating_score(score_text: String, pos: Vector2, color: Color) -> voi
 
 
 func _clear_balloons() -> void:
-	if is_instance_valid(balloon_motion_tween):
-		balloon_motion_tween.kill()
-	balloon_tween_paused = false
 	balloon_floating = false
 	for balloon in balloon_slots:
 		if is_instance_valid(balloon):
@@ -1286,7 +1259,8 @@ func _layout_hud() -> void:
 				tagline_font_size -= 1
 			banner_tagline.add_theme_font_size_override("font_size", tagline_font_size)
 		if carnival_score_plaque != null:
-			carnival_score_plaque.position = Vector2(size.x - 470.0 * ui_scale, 14.0 * ui_scale)
+			# A lower-right score avoids the timer, lives, and pause controls.
+			carnival_score_plaque.position = Vector2(size.x - 224.0 * ui_scale, size.y - 161.0 * ui_scale)
 			carnival_score_plaque.size = Vector2(204.0, 128.0) * ui_scale
 			if is_instance_valid(score_bottom_container):
 				score_bottom_container.position = carnival_score_plaque.position + Vector2(47.0, 50.0) * ui_scale
@@ -1296,27 +1270,27 @@ func _layout_hud() -> void:
 				HORIZONTAL_ALIGNMENT_LEFT, -1, score_font_size).x > score_bottom_container.size.x - 6.0:
 				score_font_size -= 2
 			score_bottom_number.add_theme_font_size_override("font_size", score_font_size)
-		# The original Catch textures are approximately 3:1, not 177:78.
-		# Give each badge one uniform width scale; derive its height from the
-		# ACTUAL active texture ratio so neither the stopwatch nor hearts squash.
-		var badge_width := 171.0 * ui_scale
-		var badge_x := size.x - 248.0 * ui_scale
-		var badge_y := 16.0 * ui_scale
-		var timer_height := badge_width * SHARED_TIMER_BADGE.get_height() / SHARED_TIMER_BADGE.get_width()
-		var lives_height := badge_width * SHARED_LIVES_STATE_3.get_height() / SHARED_LIVES_STATE_3.get_width()
+		# Catch's actual authored 1280 layout is the reference. Each PNG stays
+		# inside the same editable 195x76 box with aspect-centred rendering.
+		var badge_width := 195.0 * ui_scale
+		var badge_x := size.x - 290.0 * ui_scale
+		var badge_y := 8.0 * ui_scale
 		if is_instance_valid(shared_timer_plaque):
 			shared_timer_plaque.position = Vector2(badge_x, badge_y)
-			shared_timer_plaque.size = Vector2(badge_width, timer_height)
+			shared_timer_plaque.size = Vector2(badge_width, 76.0 * ui_scale)
 		if is_instance_valid(shared_lives_plaque):
 			shared_lives_plaque.position = Vector2(badge_x, badge_y)
-			shared_lives_plaque.size = Vector2(badge_width, lives_height)
+			shared_lives_plaque.size = Vector2(badge_width, 76.0 * ui_scale)
 		if is_instance_valid(time_label):
-			time_label.position = Vector2(badge_x + 63.0 * ui_scale, badge_y + 9.0 * ui_scale)
-			time_label.size = Vector2(101.0, 39.0) * ui_scale
+			time_label.position = Vector2(badge_x + 56.0 * ui_scale, badge_y + 19.0 * ui_scale)
+			time_label.size = Vector2(125.0, 40.0) * ui_scale
 			time_label.add_theme_font_size_override("font_size", maxi(15, int(round(26.0 * ui_scale))))
+		if is_instance_valid(pause_plaque):
+			pause_plaque.position = Vector2(size.x - 85.0 * ui_scale, 8.0 * ui_scale)
+			pause_plaque.size = Vector2(81.0, 81.0) * ui_scale
 		if is_instance_valid(pause_button):
-			pause_button.position = Vector2(size.x - 65.0 * ui_scale, 16.0 * ui_scale)
-			pause_button.size = Vector2(45.0, 45.0) * ui_scale
+			pause_button.position = Vector2(size.x - 68.0 * ui_scale, 25.0 * ui_scale)
+			pause_button.size = Vector2(48.0, 48.0) * ui_scale
 		return
 	title_label.position = Vector2(36.0, 16.0)
 	title_label.size = Vector2(340.0, 36.0)
@@ -1351,17 +1325,14 @@ func _layout_hud() -> void:
 
 
 func _hide_balloons_behind_counter() -> void:
-	if is_instance_valid(balloon_motion_tween):
-		balloon_motion_tween.kill()
-	balloon_tween_paused = false
 	balloon_floating = false
-	balloon_motion_tween = create_tween()
-	balloon_motion_tween.set_parallel(true)
 	for balloon in balloon_slots:
 		if is_instance_valid(balloon) and balloon.visible:
+			# This can run from an Area2D hit callback during physics flushing.
 			balloon.set_deferred("monitoring", false)
 			balloon.set_deferred("monitorable", false)
-			balloon_motion_tween.tween_property(balloon, "position:y", _balloon_hidden_y(), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			balloon.visible = false
+			balloon.position.y = _balloon_hidden_y()
 
 
 func _refresh_hud() -> void:
@@ -1419,10 +1390,6 @@ func _pause() -> void:
 	round_active_before_pause = round_active
 	timer_running = false
 	round_active = false
-	balloon_tween_paused = false
-	if is_instance_valid(balloon_motion_tween) and balloon_motion_tween.is_running():
-		balloon_motion_tween.pause()
-		balloon_tween_paused = true
 	round_completed = false
 	if pause_button != null:
 		pause_button.icon = PLAY_ICON
@@ -1433,9 +1400,6 @@ func _resume() -> void:
 	if finishing:
 		return
 	timer_running = true
-	if balloon_tween_paused and is_instance_valid(balloon_motion_tween):
-		balloon_motion_tween.play()
-	balloon_tween_paused = false
 	if pause_button != null:
 		pause_button.icon = PAUSE_ICON
 	if next_round_pending:
@@ -1532,9 +1496,16 @@ func _balloon_y() -> float:
 	return clampf(size.y * 0.43, 245.0, 440.0)
 
 
+func _balloon_hit_entry_y() -> float:
+	# First clearly visible portion of the balloon over the wooden counter:
+	# allow aiming once its center is a little below the old fully-exposed
+	# reference. The actual target remains hidden/non-collidable at spawn.
+	return _balloon_y() + clampf(size.y * 0.15, 75.0, 130.0)
+
+
 func _balloon_hidden_y() -> float:
 	# Entire painted balloon + string begins behind the wooden foreground.
-	# On 875x500 the larger of these bounds is also below the screen edge.
+	# The full sprite must begin below the open booth, in the opaque wood.
 	return maxf(size.y * 0.88, _balloon_y() + 265.0)
 
 

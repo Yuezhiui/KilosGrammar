@@ -28,6 +28,12 @@ class GestureState:
     # False means the hand signal is unknown, NOT deliberately lowered.
     # A missing/occluded wrist must not re-arm a Balloon Popping shot.
     hand_observation_valid: bool = False
+    # Calibration-only evidence from BOTH real wrists and shoulders in this
+    # single source frame. These readings are independent of the gameplay
+    # shooting release latch and require a separate locked SOLO worker gate.
+    calibration_hand_observation_valid: bool = False
+    calibration_both_hands_up: bool = False
+    calibration_both_hands_down: bool = False
     # Legacy optional banking diagnostic (-1..1). The current Human Plane
     # movement path consumes the separate locked torso-X/one-wrist signal.
     wing_roll: float = 0.0
@@ -213,6 +219,15 @@ class GestureDetector:
         right_valid = measured.right_rise is not None
         both_lifted = measured.left_rise is True and measured.right_rise is True
         both_lowered = measured.left_down and measured.right_down
+        # Fresh bilateral evidence for the physical calibration hold. Unlike
+        # shooting, a student who never lowered both hands during a 200ms
+        # wrist occlusion can resume the SAME 3s hold when both genuine wrists
+        # reappear. This must never influence the shooting debounce/latch.
+        calibration_evidence = {
+            "calibration_hand_observation_valid": left_valid and right_valid,
+            "calibration_both_hands_up": both_lifted,
+            "calibration_both_hands_down": both_lowered,
+        }
         hand_rise = measured.left_rise is True or measured.right_rise is True
         hand_keep = measured.left_hold is True or measured.right_hold is True
         # One good wrist can prove an up gesture; only TWO good, lowered wrists
@@ -241,11 +256,13 @@ class GestureDetector:
             return GestureState(airplane_pose=airplane,
                                 wing_roll=measured.wing_roll if airplane else 0.0,
                                 hand_observation_valid=not self._require_hand_release,
-                                both_hands_down=both_lowered and not self._require_hand_release)
+                                both_hands_down=both_lowered and not self._require_hand_release,
+                                **calibration_evidence)
 
         if not known:
             return GestureState(airplane_pose=airplane,
-                                wing_roll=measured.wing_roll if airplane else 0.0)
+                                wing_roll=measured.wing_roll if airplane else 0.0,
+                                **calibration_evidence)
 
         active = self._hand.update(hand_rise, hand_keep, now)
         return GestureState(
@@ -256,6 +273,7 @@ class GestureDetector:
             both_hands_down=not active and both_lowered,
             hand_observation_valid=True,
             wing_roll=measured.wing_roll if airplane else 0.0,
+            **calibration_evidence,
         )
 
     def _missing_hand(self) -> None:

@@ -19,18 +19,20 @@ const EXPECTED_GUIDES := {
 	"PoseGuideBalloonRaiseRight": "res://Components/Gameplay/Calibration/Pose Guides/BALOON POP.png",
 	"PoseGuideBalloonRaiseLeft": "res://Components/Gameplay/Calibration/Pose Guides/BALOON POP.png",
 	"PoseGuidePlaneCenter": "res://Components/Gameplay/Calibration/Pose Guides/PLANE T POSE.png",
+	"PoseGuidePlaneLeft": "res://Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO LEFT.png",
+	"PoseGuidePlaneRight": "res://Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO RIGHT.png",
 }
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const STEPS := [
 	{"game": "Catch the Word", "zone": "CENTER", "step": 0, "phase": 0, "guide": "PoseGuideDefault"},
 	{"game": "Catch the Word", "zone": "RIGHT", "step": 1, "phase": 0, "guide": "PoseGuideRight"},
 	{"game": "Catch the Word", "zone": "LEFT", "step": 2, "phase": 0, "guide": "PoseGuideLeft"},
-	{"game": "Balloon Popping", "zone": "LEFT / BOTH DOWN", "step": 0, "phase": 0, "guide": "PoseGuideLeft"},
-	{"game": "Balloon Popping", "zone": "LEFT / BOTH UP", "step": 0, "phase": 1, "guide": "PoseGuideBalloonRaiseLeft"},
-	{"game": "Balloon Popping", "zone": "CENTER / BOTH DOWN", "step": 1, "phase": 0, "guide": "PoseGuideDefault"},
-	{"game": "Balloon Popping", "zone": "CENTER / BOTH UP", "step": 1, "phase": 1, "guide": "PoseGuideBalloonRaise"},
-	{"game": "Balloon Popping", "zone": "RIGHT / BOTH DOWN", "step": 2, "phase": 0, "guide": "PoseGuideRight"},
-	{"game": "Balloon Popping", "zone": "RIGHT / BOTH UP", "step": 2, "phase": 1, "guide": "PoseGuideBalloonRaiseRight"},
+	{"game": "Balloon Popping", "zone": "CENTER / BOTH DOWN", "step": 0, "phase": 0, "guide": "PoseGuideDefault"},
+	{"game": "Balloon Popping", "zone": "CENTER / BOTH UP", "step": 0, "phase": 1, "guide": "PoseGuideBalloonRaise"},
+	{"game": "Balloon Popping", "zone": "RIGHT / BOTH DOWN", "step": 1, "phase": 0, "guide": "PoseGuideRight"},
+	{"game": "Balloon Popping", "zone": "RIGHT / BOTH UP", "step": 1, "phase": 1, "guide": "PoseGuideBalloonRaiseRight"},
+	{"game": "Balloon Popping", "zone": "LEFT / BOTH DOWN", "step": 2, "phase": 0, "guide": "PoseGuideLeft"},
+	{"game": "Balloon Popping", "zone": "LEFT / BOTH UP", "step": 2, "phase": 1, "guide": "PoseGuideBalloonRaiseLeft"},
 	{"game": "Human Plane", "zone": "CENTER T-POSE", "step": 0, "phase": 0, "guide": "PoseGuidePlaneCenter"},
 ]
 const GREEN_RATIO_MIN := 0.004

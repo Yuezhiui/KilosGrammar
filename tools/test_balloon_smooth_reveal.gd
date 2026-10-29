@@ -98,20 +98,20 @@ func _scenario(physical: Vector2i) -> void:
 
     # A reset recreates the question, but NEVER the 3 authored Area2D nodes.
     _fresh_round(game)
+    game.set_process(false)
     scenarios += 1
     var title := str(physical)
     await _check_reveal(game, slots, counter, title + " initial")
 
-    # Repeated context reset while a tween is in flight must kill the old
-    # tween, reposition all balloons invisibly, and restart one clean rise.
+    # Repeated reset during flight must restart from the hidden counter.
     _fresh_round(game)
-    await create_timer(0.085).timeout
+    game.set_process(false)
+    game._process(0.085)
     var midpoint: float = (slots[1] as Area2D).position.y
-    # A 1.15-second sine ease-in-out intentionally advances only a few
-    # pixels in the first 85ms. Do not mistake that smooth start for a stall.
     _check(midpoint < float(game._balloon_hidden_y()) - 0.5,
-        title + ": pre-restart tween has actually progressed")
+        title + ": pre-restart continuous ascent has progressed")
     _fresh_round(game)
+    game.set_process(false)
     _check(game.balloons.size() == 3 and game.balloon_slots.size() == 3,
         title + ": restart does not duplicate active slots")
     for lane in range(3):
@@ -136,88 +136,80 @@ func _fresh_round(game: Control) -> void:
 
 
 func _check_reveal(game: Control, slots: Array, counter: TextureRect, title: String) -> void:
+    # The camera-free scene is stepped at fixed deltas so a tween, teleport,
+    # pause drift, or invisible collision cannot masquerade as real flight.
+    game.set_process(false)
+    game.set_physics_process(false)
     var hidden_y: float = game._balloon_hidden_y()
-    var exposed_y: float = game._balloon_y()
-    var distance: float = hidden_y - exposed_y
-    _check(distance > 100.0, title + ": hidden and final points are well separated")
+    var exposed_y: float = game._balloon_hit_entry_y()
+    var speed: float = game.balloon_float_speed
+    _check(speed > 0.0 and (hidden_y - game.BALLOON_EXIT_Y) / speed < game.round_time_limit,
+        title + ": continuous flight exits before path-aware question deadline")
     var previous_y: Array[float] = []
-    var label_text: Array[String] = []
+    var labels: Array[String] = []
     for lane in range(3):
         var balloon := slots[lane] as Area2D
         var sprite := balloon.get_node("Sprite") as Sprite2D
-        label_text.append(String((balloon.get_node("WordLabel") as Label).text))
+        var painted := sprite.texture.get_image()
+        labels.append(String((balloon.get_node("WordLabel") as Label).text))
         previous_y.append(balloon.position.y)
-        _check(balloon.visible, "%s lane %d: art is enabled for masked rise" % [title, lane])
-        _check(absf(balloon.position.y - hidden_y) < 2.0,
-            "%s lane %d: starts exactly at the hidden coordinate" % [title, lane])
-        _check(_exposed_pixels(sprite, image_balloons[lane], counter) <= 2,
-            "%s lane %d: initial full balloon is concealed by counter pixels" % [title, lane])
-        _check(not balloon.monitoring and not balloon.monitorable,
-            "%s lane %d: collision disabled before visible rise finishes" % [title, lane])
-
-    # The start must feel like a continuous ascent, not a BACK ease-out
-    # teleport (~50% of the travel in the first few animation frames).
-    await create_timer(0.055).timeout
-    for lane in range(3):
-        var balloon := slots[lane] as Area2D
-        var progress: float = (hidden_y - balloon.position.y) / distance
-        _check(progress < 0.32,
-            "%s lane %d: first 55ms do not teleport >32%% of full rise (actual %.1f%%)" %
-            [title, lane, progress * 100.0])
-        _check(balloon.position.y <= previous_y[lane] + EPS,
-            "%s lane %d: initial movement goes upward only" % [title, lane])
-        if balloon.position.y > exposed_y + 4.0:
-            _check(not balloon.monitoring and not balloon.monitorable,
-                "%s lane %d: cannot collide while emerging from behind counter" % [title, lane])
-        previous_y[lane] = balloon.position.y
-
-    # Sample both tween and early floating period. A BACK easing overshoot
-    # must fail because it reverses direction at the end of its tween.
-    for elapsed in [0.075, 0.075, 0.075, 0.075]:
-        await create_timer(elapsed).timeout
+        _check(balloon.visible and not balloon.monitoring and not balloon.monitorable,
+            "%s lane %d: hidden target cannot collide" % [title, lane])
+        _check(absf(balloon.position.y - hidden_y) < EPS,
+            "%s lane %d: target starts exactly at hidden y" % [title, lane])
+        _check(_exposed_pixels(sprite, painted, counter) <= 2,
+            "%s lane %d: real painted balloon is fully masked by wood" % [title, lane])
+    var question_start: float = game.round_time_remaining
+    # Multiple frame sizes catch discontinuity and an unwanted tween that
+    # silently steals control of the balloon position.
+    for elapsed in [0.05, 0.08, 0.125, 0.20, 0.30, 0.60]:
+        game._process(elapsed)
+        game.set_process(false)
         for lane in range(3):
             var balloon := slots[lane] as Area2D
-            _check(balloon.position.y <= previous_y[lane] + EPS,
-                "%s lane %d: rise does not overshoot and rebound downward" % [title, lane])
-            if balloon.position.y > exposed_y + 4.0:
-                _check(not balloon.monitoring and not balloon.monitorable,
-                    "%s lane %d: half-exposed target still cannot collide" % [title, lane])
+            var expected_y: float = previous_y[lane] - speed * elapsed
+            _check(absf(balloon.position.y - expected_y) < EPS,
+                "%s lane %d: no acceleration, slowdown, or jump in ascent (%.2f vs %.2f)" %
+                [title, lane, balloon.position.y, expected_y])
+            _check(String((balloon.get_node("WordLabel") as Label).text) == labels[lane],
+                "%s lane %d: grammar word remains attached during ascent" % [title, lane])
+            var should_hit: bool = balloon.position.y <= exposed_y and balloon.position.y > game.UPPER_LINE_Y
+            _check(balloon.monitoring == should_hit and balloon.monitorable == should_hit,
+                "%s lane %d: collisions activate only after counter emergence" % [title, lane])
             previous_y[lane] = balloon.position.y
-
-    # Pause while there is still vertical movement; all three targets must
-    # freeze, along with both game timer fields, regardless of tween phase.
-    var before_pause: Array[float] = []
-    for lane in range(3):
-        before_pause.append((slots[lane] as Area2D).position.y)
-    var global_before: float = game.time_remaining
-    var round_before: float = game.round_time_remaining
+    _check(game.round_time_remaining < question_start,
+        title + ": question clock starts while balloon is still hidden")
+    var y_before: float = (slots[0] as Area2D).position.y
+    var seconds_before: float = game.time_remaining
+    var question_before: float = game.round_time_remaining
     game._pause()
-    await create_timer(0.18).timeout
-    for lane in range(3):
-        _check(absf((slots[lane] as Area2D).position.y - before_pause[lane]) < EPS,
-            "%s lane %d: pause freezes actual sprite motion" % [title, lane])
-    _check(is_equal_approx(game.time_remaining, global_before)
-        and is_equal_approx(game.round_time_remaining, round_before),
-        title + ": pause freezes global/question clocks")
+    game._process(0.5)
+    game._physics_process(0.5)
+    _check(absf((slots[0] as Area2D).position.y - y_before) < EPS and
+        game.time_remaining == seconds_before and game.round_time_remaining == question_before,
+        title + ": pause freezes ascent and both timers")
     game._resume()
-
-    # A slow, smooth introduction can be >0.34 s. Wait out tween safely,
-    # then ensure exactly one active target per lane and no erroneous word.
-    # The production reveal lasts 1.15s. Earlier we sampled ~0.36s before
-    # pause, so allow enough resumed time for the finished callback to run.
-    await create_timer(1.05).timeout
+    game.set_process(false)
+    _check(game.round_active and game.timer_running,
+        title + ": resume keeps same wave active")
+    var remaining_flight: float = ((slots[0] as Area2D).position.y - game.BALLOON_EXIT_Y) / speed + 0.06
+    game._process(remaining_flight)
+    game.set_process(false)
+    _check(not game.round_active and game.next_round_pending,
+        title + ": top escape retires all targets and schedules next wave")
+    _check(game.attempts == 0 and game.score == 0 and not game.round_completed,
+        title + ": missed wave has no ghost shots, score or completed result")
     for lane in range(3):
         var balloon := slots[lane] as Area2D
-        _check(balloon.visible and balloon.monitoring and balloon.monitorable,
-            "%s lane %d: collisions enabled when ascent has finished" % [title, lane])
-        _check(balloon.position.y < hidden_y - distance * 0.75,
-            "%s lane %d: after resume balloon has reached exposed play area" % [title, lane])
-        _check(String((balloon.get_node("WordLabel") as Label).text) == label_text[lane],
-            "%s lane %d: correct word survives reveal and pause" % [title, lane])
-    _check(game.score == 0 and game.attempts == 0,
-        title + ": reveal and pause do not score or register ghost hits")
-
-
+        _check(not balloon.visible and not balloon.monitoring and not balloon.monitorable,
+            "%s lane %d: escaped balloon is invisible and noncolliding" % [title, lane])
+    game._on_next_round_delay_elapsed()
+    game.set_process(false)
+    _check(game.round_active and game.balloons.size() == 3,
+        title + ": next wave appears automatically")
+    for lane in range(3):
+        _check(absf((slots[lane] as Area2D).position.y - hidden_y) < EPS,
+            "%s lane %d: new wave always starts beneath counter" % [title, lane])
 func _exposed_pixels(sprite: Sprite2D, sprite_image: Image, counter: TextureRect) -> int:
     # Check real artist-authored PNG alpha, *not* just that center Y is below
     # the foreground Control. The 1672x941 counter PNG has a transparent

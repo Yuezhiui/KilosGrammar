@@ -1454,6 +1454,13 @@ func _on_database_request_finished(info: Dictionary, result: Dictionary) -> void
 						session_state["score_saved"] = not bool(data.get("recovery_pending", false))
 						if current_route == "results" and is_instance_valid(active_panel):
 							active_panel.call("set_context", session_state.duplicate(true))
+						# A teacher may have opened Leaderboard before this
+						# completed round finished replaying. Its earlier GET may
+						# legitimately have returned zero rows. Once the backend has
+						# durably accepted the score, refresh the visible board rather
+						# than leaving a misleading "no scores saved yet" message.
+						if operation == "complete_round" and current_route == "leaderboard" and database_online:
+							_request_database_leaderboard()
 					call_deferred("_flush_recovery_outbox")
 			elif String(result.get("error", "")) in [
 					"student_conflict", "student_exists", "student_not_found",

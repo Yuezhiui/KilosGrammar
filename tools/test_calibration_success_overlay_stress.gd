@@ -158,20 +158,25 @@ func _complete_physical_holds(screen: Control, activity: String) -> void:
 	if activity == "Human Plane":
 		for n in range(36):
 			_send_packet(screen, 0.5, 1, activity)
+			if screen.plane_demo_running:
+				break
+		_expect(screen.plane_demo_running, "Human Plane physical CENTER T-pose initiates side demo")
+		for n in range(15):
+			_send_packet(screen, 0.5, 1, activity)
 			if screen.success_running:
 				break
 	elif activity == "Balloon Popping":
-		# The user now requires LEFT -> CENTER -> RIGHT, with a fresh physical
+		# The user now requires CENTER -> RIGHT -> LEFT, with a fresh physical
 		# BOTH HANDS DOWN 3s hold followed by BOTH HANDS UP 3s at EACH zone.
 		# No camera/pose frames are forged by the UI; every observation goes
 		# through the real PoseService source-frame queue.
 		for zone_index in range(3):
-			var x: float = [0.2, 0.5, 0.8][zone_index]
-			var zone: String = ["LEFT", "CENTER", "RIGHT"][zone_index]
+			var x: float = [0.5, 0.8, 0.2][zone_index]
+			var zone: String = ["CENTER", "RIGHT", "LEFT"][zone_index]
 			for phase in range(2):
 				_expect(int(screen.live_step) == zone_index
 					and int(screen.balloon_pose_phase) == phase,
-					"Balloon " + zone + ": stage starts in proper LEFT-CENTER-RIGHT order")
+					"Balloon " + zone + ": stage starts in proper CENTER-RIGHT-LEFT order")
 				# EITHER-hand gameplay field is deliberately true for a full
 				# 3.6s, while actual bilateral evidence is FALSE. This must
 				# never be accepted as the UP or the DOWN calibration gesture.

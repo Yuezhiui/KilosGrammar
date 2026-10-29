@@ -49,8 +49,11 @@ func _initialize() -> void:
 
 func _run() -> void:
 	await _test_serialized_scene_resources()
-	await _test_catch_random_art()
-	await _test_catch_inventory_and_pause()
+	# Isolate Balloon integration regressions with the command-line argument
+	# -- --balloon-only. The default mixed art audit continues checking Catch.
+	if not OS.get_cmdline_user_args().has("--balloon-only"):
+		await _test_catch_random_art()
+		await _test_catch_inventory_and_pause()
 	await _test_balloon_reveal_hide_pause_and_collision()
 
 	if failures.is_empty():
@@ -324,235 +327,175 @@ func _test_balloon_reveal_hide_pause_and_collision() -> void:
 	if balloon == null:
 		return
 	balloon.call("set_context", {
-		"activity": "Balloon Popping",
-		"topic": "Noun",
-		"game_style": "Noun",
-		"game_mode": "Activity",
-		"difficulty": "Normal",
-		"camera_live": false,
+		"activity": "Balloon Popping", "topic": "Noun", "game_style": "Noun",
+		"game_mode": "Activity", "difficulty": "Normal", "camera_live": false
 	})
-	await process_frame
-
+	balloon.set_process(false)
+	balloon.set_physics_process(false)
 	var layer := balloon.get_node("BalloonLayer") as Node2D
 	var counter := balloon.get_node("ForegroundCounter") as TextureRect
-	_assert(counter.z_index > layer.z_index, "Balloon foreground counter renders above rising targets")
+	_assert(counter.z_index > layer.z_index, "Balloon wooden foreground occludes target sprites")
 
-	# Force a deterministic target set without changing gameplay implementation.
+	# The title matches Catch's 506x157 rectangle, with the changing grammar
+	# prompt inside the cream band rather than across the title lettering.
+	var title := balloon.get_node("HudLayer/ObjectivePanel") as TextureRect
+	var prompt := balloon.get_node("HudLayer/BannerTagline") as Label
+	_assert(title.position.distance_to(Vector2(13.0, 10.0)) < 0.5
+		and title.size.distance_to(Vector2(506.0, 157.0)) < 0.5,
+		"Balloon title matches Catch's exact authored objective position and size")
+	_assert(prompt.position.distance_to(Vector2(115.0, 96.0)) < 0.5
+		and prompt.size.distance_to(Vector2(306.0, 34.0)) < 0.5,
+		"Balloon grammar text uses the cream strip, clear of title lettering")
+
+	# Set real editor-owned Area2D lanes and remember their identity.
 	balloon.call("_clear_balloons")
 	balloon.set("timer_running", true)
 	balloon.set("round_active", true)
 	var one_lane: Array[int] = [0]
+	var options: Array[String] = ["APPLE", "SHE", "SOFTLY"]
 	balloon.set("valid_lanes", one_lane.duplicate())
 	balloon.set("pending_valid_lanes", one_lane.duplicate())
-	var balloon_options: Array[String] = ["APPLE", "SHE", "SOFTLY"]
-	balloon.call("_spawn_balloons", balloon_options)
+	balloon.call("_spawn_balloons", options)
+	balloon.set_process(false)
 	var slots: Array = balloon.get("balloon_slots")
-	var hidden_y := float(balloon.call("_balloon_hidden_y"))
-	var exposed_y := float(balloon.call("_balloon_y"))
-	_assert(hidden_y > exposed_y + 100.0, "Balloon hidden position is well below exposed target position")
+	var hidden_y: float = float(balloon.call("_balloon_hidden_y"))
+	var exposed_y: float = float(balloon.call("_balloon_y"))
+	var speed: float = float(balloon.get("balloon_float_speed"))
+	var exit_y: float = float(balloon.get("BALLOON_EXIT_Y"))
+	var baseline_ids: Array[int] = []
+	_assert((hidden_y - exit_y) / speed < float(balloon.get("round_time_limit")),
+		"Balloon continuous flight reaches the top before its path-aware question cutoff")
 	for lane in range(3):
 		var target := slots[lane] as Area2D
-		_assert(target.visible, "Balloon lane %d becomes visible for rise animation" % lane)
-		_assert(absf(target.position.y - hidden_y) < 3.0, "Balloon lane %d starts behind counter" % lane)
+		baseline_ids.append(target.get_instance_id())
+		_assert(target.visible and absf(target.position.y - hidden_y) < 1.0,
+			"Balloon lane %d starts fully behind wooden counter" % lane)
 		_assert(not target.monitoring and not target.monitorable,
-			"Balloon lane %d has no collision during concealed entrance" % lane)
-	# The source's contract is the user's 1.15s ease-in-out tween. Capture all
-	# three lanes in one transition rather than checking only the final frame.
-	var question_before_reveal := float(balloon.get("round_time_remaining"))
-	var float_before_reveal := float(balloon.get("float_timer"))
-
-	# Pause partway through the rise: tween and both timers must remain frozen.
-	await create_timer(0.08).timeout
-	var rising_y := (slots[0] as Area2D).position.y
-	var global_time := float(balloon.get("time_remaining"))
-	var question_time := float(balloon.get("round_time_remaining"))
-	balloon.call("_pause")
-	var paused_y := (slots[0] as Area2D).position.y
-	await create_timer(0.18).timeout
-	_assert(absf((slots[0] as Area2D).position.y - paused_y) < 0.5, "Balloon rise tween freezes on pause")
-	_assert(absf(float(balloon.get("time_remaining")) - global_time) < 0.01, "Balloon global timer freezes on pause")
-	_assert(absf(float(balloon.get("round_time_remaining")) - question_time) < 0.01, "Balloon question timer freezes on pause")
-	_assert(paused_y < hidden_y and paused_y > exposed_y, "Balloon was genuinely mid-rise when paused")
-	_assert(absf(question_time - question_before_reveal) < 0.01,
-		"Balloon question countdown does not start before reveal finishes")
-	_assert(absf(float_before_reveal - float(balloon.get("float_timer"))) < 0.01,
-		"Balloon manual float does not start before reveal finishes")
-	balloon.call("_resume")
-	var rise_resume_started := Time.get_ticks_msec()
-	var last_y: Array[float] = []
-	var lane_zero_steps: Array[float] = []
-	for lane in range(3):
-		last_y.append((slots[lane] as Area2D).position.y)
-	var checked_midpoints := 0
-	var reveal_deadline := Time.get_ticks_msec() + 2400
-	var tween := balloon.get("balloon_motion_tween") as Tween
-	while is_instance_valid(tween) and tween.is_running() and Time.get_ticks_msec() < reveal_deadline:
-		await create_timer(0.11).timeout
-		checked_midpoints += 1
-		for lane in range(3):
-			var target := slots[lane] as Area2D
-			var current_y := target.position.y
-			_assert(current_y >= exposed_y - 4.0 and current_y <= hidden_y + 3.0,
-				"Balloon lane %d remains within hidden-to-exposed path (no overshoot)" % lane)
-			_assert(current_y <= last_y[lane] + 1.0,
-				"Balloon lane %d continues rising, never teleports backward" % lane)
-			_assert(last_y[lane] - current_y <= (hidden_y - exposed_y) * 0.35,
-				"Balloon lane %d advances smoothly without a mid-screen teleport" % lane)
-			if lane == 0:
-				lane_zero_steps.append(maxf(last_y[lane] - current_y, 0.0))
-			last_y[lane] = current_y
-			if is_instance_valid(tween) and tween.is_running():
-				_assert(not target.monitoring and not target.monitorable,
-					"Balloon lane %d stays non-collidable until reveal completes" % lane)
-		if is_instance_valid(tween) and tween.is_running():
-			_assert(absf(float(balloon.get("round_time_remaining")) - question_before_reveal) < 0.01,
-				"Balloon question timer does not tick during 1.15s reveal")
-			_assert(absf(float(balloon.get("float_timer")) - float_before_reveal) < 0.01,
-				"Balloon manual float stays stopped during reveal")
-	_assert(checked_midpoints >= 6, "Balloon 1.15s reveal has several observable gradual animation frames")
-	var resumed_rise_elapsed := float(Time.get_ticks_msec() - rise_resume_started) / 1000.0
-	_assert(resumed_rise_elapsed >= 0.85 and resumed_rise_elapsed <= 1.35,
-		"Balloon new 1.15s entrance does not finish early or stall after resume")
-	if lane_zero_steps.size() >= 7:
-		var peak_step: float = 0.0
-		for step_size in lane_zero_steps:
-			peak_step = maxf(peak_step, step_size)
-		_assert(peak_step > lane_zero_steps[0] * 1.15 and peak_step > lane_zero_steps[-1] * 1.15,
-			"Balloon SINE EASE_IN_OUT rise is slower near its start and end than the middle")
-	_assert(is_instance_valid(tween) and not tween.is_running(), "Balloon complete 1.15s tween ends before exposure")
-	await process_frame
+			"Concealed balloon lane %d has no collision" % lane)
+	var initial_question: float = balloon.get("round_time_remaining")
+	balloon._process(0.30)
+	balloon.set_process(false)
+	_assert(absf((slots[0] as Area2D).position.y - (hidden_y - speed * 0.30)) < 0.5,
+		"Balloon first 300ms follows constant speed without an easing tween")
+	_assert(absf(float(balloon.get("round_time_remaining")) - (initial_question - 0.30)) < 0.01,
+		"Balloon seven-second question clock starts during concealed ascent")
 	for lane in range(3):
 		var target := slots[lane] as Area2D
-		_assert(absf(target.position.y - exposed_y) < 4.0, "Balloon lane %d completes rise to exposed position" % lane)
-		_assert(target.monitoring and target.monitorable, "Exposed balloon lane %d has active collision" % lane)
-
-	await _capture("user://qa_balloon_exposed_1280x720.png")
-
-	# A real question transition marks the round inactive before hiding. Verify
-	# that an already-fired stone cannot score after that transition begins.
-	_assert(not bool(balloon.call("_launch_projectile")),
-		"Direct projectile spawn cannot bypass the physical lower-then-raise gesture")
-	_assert(_fire_with_observed_raise(balloon),
-		"Stable observed lower-then-raise fires the first projectile")
-	var late_projectiles: Array = balloon.get("projectiles")
-	_assert(late_projectiles.size() == 1, "Balloon can have an in-flight stone before hide transition")
-	var late_attempts := int(balloon.get("attempts"))
-	var late_correct := int(balloon.get("correct_count"))
-	var late_score := int(balloon.get("score"))
-	var late_hearts := int(balloon.get("hearts"))
-	balloon.set("round_active", false)
-	_assert(not bool(balloon.get("round_active")), "Balloon hide transition is no longer answer-active")
-
-	# Hiding moves the art behind the foreground counter and defers Area2D
-	# monitoring changes until the next safe frame.
-	balloon.call("_hide_balloons_behind_counter")
-	# Monitoring is changed with set_deferred() because Area2D state must not be
-	# mutated while physics is flushing overlap notifications.
-	await process_frame
-	for lane in range(3):
-		var target := slots[lane] as Area2D
-		_assert(not target.monitoring and not target.monitorable, "Hiding balloon lane %d disables collision" % lane)
-	if not late_projectiles.is_empty():
-		var late_projectile := late_projectiles[0] as Area2D
-		if is_instance_valid(late_projectile):
-			# Force its path across the former target band and also exercise the
-			# Area2D callback. Both code paths must respect round_active=false.
-			balloon.call("_update_projectiles", 0.35)
-			if is_instance_valid(late_projectile):
-				balloon.call("_on_projectile_area_entered", slots[0], late_projectile)
-	if int(balloon.get("attempts")) != late_attempts:
-		print("ART_QA_LATE_PROJECTILE attempts_before=", late_attempts,
-			" attempts_after=", balloon.get("attempts"),
-			" round_active=", balloon.get("round_active"),
-			" hearts_after=", balloon.get("hearts"))
-	_assert(int(balloon.get("attempts")) == late_attempts, "Late stone during hide does not register an attempt")
-	_assert(int(balloon.get("correct_count")) == late_correct, "Late stone during hide does not register a correct answer")
-	_assert(int(balloon.get("score")) == late_score, "Late stone during hide cannot score")
-	_assert(int(balloon.get("hearts")) == late_hearts, "Late stone during hide must not deduct a Lives heart")
-	balloon.call("_clear_projectiles")
-	await create_timer(0.07).timeout
-	balloon.call("_pause")
-	var hide_pause_y := (slots[1] as Area2D).position.y
-	await create_timer(0.16).timeout
-	_assert(absf((slots[1] as Area2D).position.y - hide_pause_y) < 0.5, "Balloon hide tween freezes on pause")
-	balloon.call("_resume")
-	await create_timer(0.31).timeout
-	for lane in range(3):
-		var target := slots[lane] as Area2D
-		_assert(absf(target.position.y - hidden_y) < 4.0, "Balloon lane %d finishes hiding behind counter" % lane)
+		_assert(not target.monitoring, "Balloon lane %d is noncolliding below exposed area" % lane)
 	await _capture("user://qa_balloon_hidden_1280x720.png")
 
-	# Re-expose the same editor target nodes and verify a real stone physically
-	# collides with the exposed valid balloon.
+	# Pause freezes actual positions, question clock and global clock.
+	var rising_y: float = (slots[0] as Area2D).position.y
+	var question_before_pause: float = balloon.get("round_time_remaining")
+	var timer_before_pause: float = balloon.get("time_remaining")
+	balloon._pause()
+	balloon._process(0.5)
+	balloon._physics_process(0.5)
+	_assert(absf((slots[0] as Area2D).position.y - rising_y) < 0.5,
+		"Balloon continuous ascent freezes on pause")
+	_assert(absf(float(balloon.get("round_time_remaining")) - question_before_pause) < 0.01
+		and absf(float(balloon.get("time_remaining")) - timer_before_pause) < 0.01,
+		"Balloon pause freezes question and total mode clock")
+	balloon._resume()
+	balloon.set_process(false)
+	var destination_y := float(balloon.get("UPPER_LINE_Y")) + 135.0
+	balloon._process((rising_y - destination_y) / speed)
+	balloon.set_process(false)
+	for lane in range(3):
+		var target := slots[lane] as Area2D
+		_assert(absf(target.position.y - destination_y) < 1.0 and
+			target.position.y < exposed_y,
+			"Balloon lane %d continues same ascent into visible playfield" % lane)
+		_assert(target.monitoring and target.monitorable,
+			"Exposed balloon lane %d permits a valid hit" % lane)
+	await _capture("user://qa_balloon_exposed_1280x720.png")
+
+	# A stone already launched when the question closes cannot score, damage
+	# health or alter attempts, even if it crosses the old target position.
+	_assert(not bool(balloon.call("_launch_projectile")),
+		"Direct projectile spawn cannot bypass verified hand gesture")
+	_assert(_fire_with_observed_raise(balloon),
+		"Fresh physical low/high gesture launches a real stone")
+	var late_stones: Array = balloon.get("projectiles")
+	_assert(late_stones.size() == 1, "One editor-authored stone flies before a transition")
+	var before_attempts: int = balloon.get("attempts")
+	var before_correct: int = balloon.get("correct_count")
+	var before_score: int = balloon.get("score")
+	var before_hearts: int = balloon.get("hearts")
+	balloon.set("round_active", false)
+	balloon.call("_hide_balloons_behind_counter")
+	await process_frame
+	for lane in range(3):
+		var target := slots[lane] as Area2D
+		_assert(not target.visible and not target.monitoring and not target.monitorable,
+			"Retired balloon lane %d remains fully hidden and noncolliding" % lane)
+	if not late_stones.is_empty():
+		var late := late_stones[0] as Area2D
+		if is_instance_valid(late):
+			balloon.call("_update_projectiles", 0.35)
+			if is_instance_valid(late):
+				balloon.call("_on_projectile_area_entered", slots[0], late)
+	_assert(int(balloon.get("attempts")) == before_attempts
+		and int(balloon.get("correct_count")) == before_correct
+		and int(balloon.get("score")) == before_score
+		and int(balloon.get("hearts")) == before_hearts,
+		"Late projectile after wave retirement cannot score, cost hearts or count attempts")
+	balloon.call("_clear_projectiles")
+
+	# Reuse the authored targets on the following wave and test actual physics
+	# collision against the left correct balloon (not just direct hit handler).
 	balloon.set("timer_running", true)
 	balloon.set("round_active", true)
 	balloon.set("valid_lanes", one_lane.duplicate())
 	balloon.set("pending_valid_lanes", one_lane.duplicate())
-	balloon.call("_spawn_balloons", balloon_options)
-	var replay_tween := balloon.get("balloon_motion_tween") as Tween
+	balloon.call("_spawn_balloons", options)
+	balloon.set_process(false)
 	_assert(not (slots[0] as Area2D).monitorable,
-		"Balloon second entrance remains non-collidable immediately after respawn")
-	# In particular do not fire an exposed-target hit test halfway through the
-	# new non-overshooting 1.15s reveal as the old 0.38s fixture did.
-	var replay_deadline := Time.get_ticks_msec() + 2400
-	while is_instance_valid(replay_tween) and replay_tween.is_running() and Time.get_ticks_msec() < replay_deadline:
-		await process_frame
-	_assert(is_instance_valid(replay_tween) and not replay_tween.is_running(),
-		"Balloon second 1.15s entrance completes before real projectile collision test")
-	await process_frame
-	var target_zero := slots[0] as Area2D
-	_assert(target_zero.monitoring and target_zero.monitorable,
-		"Balloon second entrance enables physical hit collision after tween")
-	var target_zero_id := target_zero.get_instance_id()
+		"Respawned balloon does not collide until it rises past counter")
+	balloon._process((hidden_y - destination_y) / float(balloon.get("balloon_float_speed")))
+	balloon.set_process(false)
+	var left_target := slots[0] as Area2D
+	_assert(left_target.visible and left_target.monitoring and left_target.monitorable,
+		"Second ascent enables real collision at the exposed balloon")
+	_assert(left_target.get_instance_id() == baseline_ids[0],
+		"New wave reuses the original editable left target Area2D")
 	balloon.set("launcher_x", float(balloon.call("_lane_x", 0)))
 	balloon.call("_layout_scene")
-	var attempts_before := int(balloon.get("attempts"))
-	var correct_before := int(balloon.get("correct_count"))
-	var score_before := int(balloon.get("score"))
-	# An early confirmed raise (1499ms after the last genuine projectile) must
-	# consume that gesture, not queue a delayed shot. A NEW lower-then-raise
-	# after the 1500ms cooldown may then fire the real stone.
-	var previous_shot_ms := int(balloon.get("hand_raise_last_shot_ms"))
-	_assert(previous_shot_ms >= 0 and int(balloon.get("HAND_RAISE_RELOAD_MS")) == 1500,
-		"Balloon stores real last stone launch and uses exactly 1500ms cooldown")
-	if previous_shot_ms >= 0:
-		var early_start := previous_shot_ms + 1100
-		balloon.call("set_hand_raise_state", false, true, early_start)
-		balloon.call("set_hand_raise_state", false, true, early_start + 200)
-		balloon.call("set_hand_raise_state", true, true, early_start + 201)
-		_assert(not bool(balloon.call("set_hand_raise_state", true, true, previous_shot_ms + 1499))
-			and (balloon.get("projectiles") as Array).is_empty(),
-			"Confirmed early hand raise at 1499ms is blocked without spawning a projectile")
+	var shots_before: int = balloon.get("attempts")
+	var correct_before: int = balloon.get("correct_count")
+	var score_before: int = balloon.get("score")
+	var previous_shot: int = int(balloon.get("hand_raise_last_shot_ms"))
+	_assert(previous_shot >= 0 and balloon.HAND_RAISE_RELOAD_MS == 1000,
+		"Balloon uses the approved 1000ms repeat interval for genuine hands")
 	_assert(_fire_with_observed_raise(balloon),
-		"Fresh LOWER-to-rearm then RAISE fires actual stone after 1500ms cooldown")
-	_assert(int(balloon.get("hand_raise_last_shot_ms")) - previous_shot_ms >= 1500,
-		"New stone launch timestamp honors full 1500ms cooldown")
-	var projectiles: Array = balloon.get("projectiles")
-	_assert(projectiles.size() == 1, "Balloon launches one editor-scene stone projectile")
-	if not projectiles.is_empty():
-		var projectile := projectiles[0] as Area2D
-		_assert(projectile.get_node_or_null("CollisionShape2D") is CollisionShape2D, "Stone projectile carries collision shape")
-
-	for _frame in range(55):
-		if int(balloon.get("attempts")) > attempts_before:
+		"Fresh re-raise after previous stone sends another physical projectile")
+	_assert(int(balloon.get("hand_raise_last_shot_ms")) >= previous_shot + 1000,
+		"Real launched stone is spaced by at least 1000ms")
+	_assert((balloon.get("projectiles") as Array).size() == 1,
+		"Live scene contains one moving projectile")
+	balloon.set_physics_process(true)
+	for frame in range(90):
+		if int(balloon.get("attempts")) > shots_before:
 			break
 		await physics_frame
 		await process_frame
-	_assert(int(balloon.get("attempts")) == attempts_before + 1, "Exposed balloon registers one physical projectile collision")
-	_assert(int(balloon.get("correct_count")) == correct_before + 1, "Valid exposed balloon collision increments correct count")
+	balloon.set_physics_process(false)
+	_assert(int(balloon.get("attempts")) == shots_before + 1,
+		"Real Area2D projectile collision registers exactly one attempt")
+	_assert(int(balloon.get("correct_count")) == correct_before + 1,
+		"Physical collision registers correct grammar answer")
 	_assert(int(balloon.get("score")) == score_before + int(balloon.get("CORRECT_POP_SCORE")),
-		"Valid exposed balloon physical collision awards exactly +100")
-	_assert(target_zero.get_instance_id() == target_zero_id, "Balloon collision reuses editor target node rather than replacing it")
-	_assert(not target_zero.visible and not target_zero.monitoring, "Popped editor target is hidden and non-collidable")
-
+		"Physical collision awards exactly +100")
+	_assert(not left_target.visible and not left_target.monitoring,
+		"Successful physical pop hides target and retires its collision")
+	_assert(left_target.get_instance_id() == baseline_ids[0],
+		"Balloon never replaces the authored target instance")
 	await _dispose(balloon)
-
-
 func _fire_with_observed_raise(game: Control) -> bool:
 	# Launch permission is deliberately private to a fresh camera gesture. A
-	# legacy direct _launch_projectile() test was bypassing the new safety gate.
+	# direct _launch_projectile() call must never bypass the new safety gate.
 	# Advance source times monotonically and honor the actual 180ms lowered,
-	# 80ms raised and 1500ms post-shot refractory requirements.
+	# 80ms raised and 1000ms post-shot reload requirements.
 	var last_shot := int(game.get("hand_raise_last_shot_ms"))
 	var start := maxi(Time.get_ticks_msec(), last_shot + int(game.get("HAND_RAISE_RELOAD_MS")) + 100)
 	game.call("set_hand_raise_state", false, true, start)

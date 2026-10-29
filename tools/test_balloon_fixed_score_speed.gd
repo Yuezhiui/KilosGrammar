@@ -35,7 +35,10 @@ func _run() -> void:
 			_check(game._correct_award() == 100, label + " award is always 100")
 			if mode == "Seconds":
 				speeds[difficulty] = [game.balloon_float_speed, game.projectile_speed,
-					game.launcher_max_speed, game.balloon_reveal_seconds, game.round_time_limit]
+					game.launcher_max_speed, game._balloon_hidden_y() - game.BALLOON_EXIT_Y,
+					game.round_time_limit]
+				_check((game._balloon_hidden_y() - game.BALLOON_EXIT_Y) / game.balloon_float_speed < game.round_time_limit,
+					label + " entire continuous ascent completes before path-aware question cutoff")
 
 			# A wrong balloon counts as an attempt, preserves score and penalizes
 			# only Lives mode. No changes to those existing gameplay rules.
@@ -101,10 +104,11 @@ func _run() -> void:
 			_check(speeds["Easy"][speed_index] < speeds["Normal"][speed_index]
 				and speeds["Normal"][speed_index] < speeds["Hard"][speed_index],
 				"balloon, projectile and launcher speeds increase with difficulty (%d)" % speed_index)
-		for timing_index in [3, 4]:
-			_check(speeds["Easy"][timing_index] > speeds["Normal"][timing_index]
-				and speeds["Normal"][timing_index] > speeds["Hard"][timing_index],
-				"reveal and reaction windows shrink with difficulty (%d)" % timing_index)
+		_check(speeds["Easy"][3] == speeds["Normal"][3] and speeds["Normal"][3] == speeds["Hard"][3],
+			"all difficulties ascend the same bottom-to-top route")
+		_check(speeds["Easy"][4] > speeds["Normal"][4] and speeds["Normal"][4] > speeds["Hard"][4]
+			and speeds["Hard"][4] > 7.0,
+			"question timeout follows actual longer whole-path travel for each difficulty")
 
 	# Let outstanding round-transition timers expire after their scenes are
 	# freed, so transient callbacks do not remain alive at Godot shutdown.

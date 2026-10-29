@@ -75,10 +75,14 @@ func _check_plane_center_hold_and_handoff() -> void:
 	_check(guide != null and guide.owner == screen and guide.texture != null
 		and guide.texture.resource_path.contains("PLANE T POSE"),
 		"source T-pose guide is authored and draggable at PoseGuides/PoseGuidePlaneCenter")
+	var left_guide := stage.get_node_or_null("PoseGuides/PoseGuidePlaneLeft") as TextureRect
+	var right_guide := stage.get_node_or_null("PoseGuides/PoseGuidePlaneRight") as TextureRect
 	_check(guide != null and guide.visible
-		and stage.get_node_or_null("PoseGuides/PoseGuidePlaneLeft") == null
-		and stage.get_node_or_null("PoseGuides/PoseGuidePlaneRight") == null,
-		"only center T-pose PNG is authored for stationary one-stage hold; unused directional duplicates pruned")
+		and left_guide != null and right_guide != null
+		and not left_guide.visible and not right_guide.visible
+		and left_guide.position == guide.position and right_guide.position == guide.position
+		and left_guide.size == guide.size and right_guide.size == guide.size,
+		"only CENTER visible during physical T-pose; side images are aligned demo guides")
 	var plane_text := constants.get("PLANE_STAGE_TEXT", {}) as Dictionary
 	var center_text := plane_text.get("CENTER", []) as Array
 	_check(not center_text.is_empty() and String(center_text[0]).contains("T-POSE"),
@@ -115,8 +119,16 @@ func _check_plane_center_hold_and_handoff() -> void:
 	if not bool(measured.get("valid", false)):
 		await _dispose(screen)
 		return
-	_check(bool(screen.success_running) and is_zero_approx(float(screen.success_elapsed))
-		and routes.is_empty(), "physical hold enters separate 3-second SUCCESS overlay")
+	_check(bool(screen.plane_demo_running) and not bool(screen.success_running)
+		and left_guide.visible and routes.is_empty(), "physical hold enters visual LEFT guide demo")
+	for i in range(11):
+		_packet(screen, CENTER, 1, false, SUCCESS_DT)
+	_check(right_guide.visible and screen.plane_demo_running,
+		"RIGHT demonstration follows LEFT without another physical calibration stage")
+	for i in range(11):
+		_packet(screen, CENTER, 1, false, SUCCESS_DT)
+	_check(bool(screen.success_running) and routes.is_empty(),
+		"completed visual illustration enters existing authenticated SUCCESS overlay")
 	_check((stage.get_node_or_null("SuccessOverlay") as Control).visible,
 		"success artwork is the actual editor-authored SuccessOverlay")
 	_check(bool(pose.calibration.get("valid", false))
@@ -153,20 +165,21 @@ func _check_plane_center_hold_and_handoff() -> void:
 		"new ByteTrack ID alone cannot erase authentic same-session SOLO calibration")
 
 	var completed_measurements: Dictionary = (screen.measured_points as Dictionary).duplicate(true)
+	var success_at_crowd: float = float(screen.success_elapsed)
 	for population in [2, 0]:
 		_packet(screen, CENTER, population, false, SUCCESS_DT)
 		_check(screen.success_running and routes.is_empty()
 			and screen.measured_points == completed_measurements
-			and is_zero_approx(float(screen.success_elapsed)),
+			and is_equal_approx(float(screen.success_elapsed), success_at_crowd),
 			"%d-person YOLO occupancy freezes success without a new calibration" % population)
 	# A current-session, raw SOLO frame resumes SUCCESS even without a keypoint
 	# T-pose. It must remain pending until the full 3.0-second overlay elapses.
-	for tick in range(29):
+	for tick in range(26):
 		_packet(screen, CENTER, 1, false, SUCCESS_DT, false)
 	_check(routes.is_empty() and screen.success_running
 		and float(screen.success_elapsed) < 3.0,
 		"fresh SOLO occupancy cannot bypass the three-second success overlay")
-	for tick in range(3):
+	for tick in range(6):
 		_packet(screen, CENTER, 1, false, SUCCESS_DT, false)
 	_check(routes.size() == 1 and String(routes[0].get("route", "")) == "gameplay",
 		"completed authenticated source sequence routes exactly once")
@@ -195,8 +208,7 @@ func _check_other_games_still_require_physical_holds() -> void:
 			return
 		screen._process(3.01)
 		var order := screen.call("_capture_order") as Array
-		var expected: Array = (["LEFT", "CENTER", "RIGHT"]
-			if activity == "Balloon Popping" else ["CENTER", "RIGHT", "LEFT"])
+		var expected: Array = ["CENTER", "RIGHT", "LEFT"]
 		_check(order == expected, activity + ": correct three-stage floor order")
 		for zone in expected:
 			var x := 0.5 if zone == "CENTER" else 0.80 if zone == "RIGHT" else 0.20

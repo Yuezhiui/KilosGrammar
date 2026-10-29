@@ -18,6 +18,19 @@ $modelDestination = Join-Path (Join-Path $env:APPDATA 'Godot\app_userdata\KilosG
 $marker = Join-Path $dbFolder '.venv\kilos-offline-manifest.sha256'
 $manifest = Join-Path $offlineDir 'manifest.json'
 
+# A fresh classroom deployment must be writable by the current school-user
+# account: this setup intentionally creates database/.venv beside the EXE.
+# Program Files is therefore NOT a supported default install destination.
+if (-not $CheckOnly) {
+    foreach ($protected in @(${env:ProgramFiles}, ${env:ProgramFiles(x86)})) {
+        if (-not $protected) { continue }
+        $prefix = [IO.Path]::GetFullPath($protected).TrimEnd('\','/') + '\'
+        if ([IO.Path]::GetFullPath($folder).StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Program Files is not writable for per-user offline Python setup. Install under %LOCALAPPDATA%\Programs\KilosGrammar instead.'
+        }
+    }
+}
+
 & (Join-Path $folder 'Test-OfflinePayload.ps1') -PayloadRoot $folder
 if (-not (Test-Path -LiteralPath (Join-Path $folder 'KilosGrammar.exe') -PathType Leaf)) {
     throw 'KilosGrammar.exe missing. Copy the complete exported release folder before running setup.'

@@ -46,9 +46,21 @@ func _run() -> void:
 	root.add_child(wrapper)
 	wrapper.set_context({"activity": "Balloon Popping", "game_mode": "Seconds",
 		"topic": "Noun", "difficulty": "Easy", "camera_live": true,
-		"guided_tutorial": false, "start_countdown": false})
+		"guided_tutorial": false, "start_countdown": false,
+		"calibration_measured": true})
 	await process_frame
 	await process_frame
+	# Current production always puts a live camera round through a mandatory
+	# 3-2-1 count-in. In this synthetic fixture the already-authenticated solo
+	# frame + real 3-point calibration allow us to finish that count-in safely.
+	_check(wrapper.guided_stage == "countdown",
+		"camera game starts disabled until its required 3-2-1 completes")
+	await _emit_pose(service, 0.50, false, true)
+	_check(wrapper._has_live_calibrated_player(),
+		"fresh authenticated solo player and measured calibration authorize GO")
+	wrapper._complete_countdown_start()
+	_check(wrapper.guided_stage.is_empty() and wrapper.active_game.process_mode != Node.PROCESS_MODE_DISABLED,
+		"measured calibration and trusted sole person release gameplay after countdown cleanup")
 	wrapper.set_process(false)
 	var game := wrapper.get("active_game") as Control
 	_check(game != null, "Balloon scene mounted in real gameplay wrapper")
@@ -61,7 +73,7 @@ func _run() -> void:
 	game.set_process(false)
 	game.set_physics_process(false)
 	_check(game.round_active and game.timer_running, "game round is live")
-	_check(game.HAND_RAISE_RELOAD_MS == 500, "new reload is 0.5 seconds")
+	_check(game.HAND_RAISE_RELOAD_MS == 1000, "held-high reload is exactly one second")
 
 	# An *invalid* hand observation with a tracked torso must neither re-arm
 	# nor shoot. Reacquiring the SAME raised pose is still disarmed.
@@ -97,6 +109,10 @@ func _run() -> void:
 
 		# The camera's aggregate 'hand_up' can come from EITHER wrist. The
 		# per-wrist fields are metadata: they cannot steer the gun by themselves.
+		# Clock manipulation stays confined to this synthetic test: exact
+		# millisecond deadlines are tested by the deterministic gesture suites.
+		if lane > 0:
+			game.hand_raise_last_shot_ms = Time.get_ticks_msec() - 1100
 		var left_hand := lane != 1
 		await _emit_pose(service, lane_xs[lane], true, true, left_hand, not left_hand)
 		_wrapper_raise(wrapper, game)
@@ -114,17 +130,16 @@ func _run() -> void:
 				[lane_names[lane], projectile.position.x, expected_x])
 		for _held in range(20):
 			wrapper.call("_update_gesture_input")
-		_check(game.projectiles.size() == 1, "%s sustained high pose never auto-fires" % lane_names[lane])
+		_check(game.projectiles.size() == 1, "%s high wrist respects one-second cooldown" % lane_names[lane])
 		game.call("_clear_projectiles")
 		if lane < 2:
-			# Headless Godot timer callbacks may advance virtual frames faster
-			# than the Time.get_ticks_msec() monotonic cooldown clock. Simulate
-			# time elapsed by shifting ONLY the test instance's last-shot mark.
-			# Exact 499/500ms behavior is covered by the dedicated state test.
-			game.hand_raise_last_shot_ms = Time.get_ticks_msec() - 600
+			# Advancing just the synthetic shot clock lets the same continuously
+			# observed high wrist fire again, with no lower-to-rearm.
+			game.hand_raise_last_shot_ms = Time.get_ticks_msec() - 1100
 			wrapper.call("_update_gesture_input")
-			_check(game.projectiles.is_empty(),
-				"%s holding an arm up cannot re-fire when cooldown expires" % lane_names[lane])
+			_check(game.projectiles.size() == 1,
+				"%s held-high wrist repeats after 1000ms without lowering" % lane_names[lane])
+			game.call("_clear_projectiles")
 
 	_check(observed_xs.size() == 3, "all three lane projectiles recorded")
 	if observed_xs.size() == 3:
