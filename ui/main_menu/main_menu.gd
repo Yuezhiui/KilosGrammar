@@ -1553,7 +1553,13 @@ func _on_database_request_finished(info: Dictionary, result: Dictionary) -> void
 			# Mixed-case historical IDs may still differ from the uppercase
 			# spelling. An exact full-name lookup can recover the original
 			# canonical ID only when that ID also matches case-insensitively.
-			if purpose != "registration_lookup_name" and database_client.has_method("find_student_by_name"):
+			# A teacher may register a child using a single-word display name.
+			# The optional by-name endpoint requires at least TWO name parts,
+			# unlike actual student registration. Never let its local
+			# `invalid_full_name` preflight block a genuinely new Student ID.
+			var full_name := _normalized_student_name(String(expected.get("student_name", "")))
+			if purpose != "registration_lookup_name" and database_client.has_method("find_student_by_name") \
+					and full_name.split(" ", false).size() >= 2:
 				database_registration_request_id = int(database_client.call("find_student_by_name",
 					String(expected.get("student_name", "")).strip_edges(),
 					{"purpose": "registration_lookup_name", "registration_ticket": database_registration_ticket}))
@@ -1584,10 +1590,12 @@ func _on_database_request_finished(info: Dictionary, result: Dictionary) -> void
 				verified["student_lookup_connected"] = true
 				verified["registration_deferred"] = false
 				verified["database_connected"] = true
-		elif String(result.get("error", "")) in ["student_not_found", "student_ambiguous", "connection_error", "database_unavailable", "schema_not_ready"]:
+		elif String(result.get("error", "")) in ["student_not_found", "student_ambiguous", "invalid_full_name", "lookup_unavailable", "connection_error", "database_unavailable", "schema_not_ready"]:
 			# A missing ID is a candidate for registration *after* a completed
 			# round. A transport failure likewise creates no pre-game outbox item.
-			if String(result.get("error", "")) != "student_not_found":
+			# A locally rejected optional name lookup or a nonunique name does
+			# not mean PostgreSQL disconnected; only transport/storage faults do.
+			if String(result.get("error", "")) in ["connection_error", "database_unavailable", "schema_not_ready"]:
 				database_online = false
 			verified["student_lookup_connected"] = false
 			verified["registration_deferred"] = true

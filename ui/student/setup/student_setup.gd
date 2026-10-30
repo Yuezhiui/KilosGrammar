@@ -10,6 +10,8 @@ const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const AUTOFILL_IDLE_SECONDS := 2.5
 const CONFLICT_ID_TEXT_COLOR := Color(0.65, 0.26, 0.16, 1.0)
 const STATUS_TEXT_COLOR := Color(0.32, 0.29, 0.22, 1.0)
+const MAX_STUDENT_ID_LENGTH := 64
+const INVALID_STUDENT_ID_MESSAGE := "STUDENT ID: USE LETTERS, NUMBERS, . _ - (MAX 64)"
 
 const DESIGN_SIZE := Vector2(1280.0, 720.0)
 var _setup_stage: Control
@@ -139,6 +141,11 @@ func show_database_status(message: String, connected: bool = false, setup_requir
 	# asynchronous check must not look like a dead green Continue button.
 	var upper := message.strip_edges().to_upper()
 	_lookup_pending = upper.begins_with("CHECKING STUDENT ID") or upper.begins_with("STILL CHECKING STUDENT ID")
+	# An absent ID is an ordinary first-time Play registration. A fresh
+	# confirmed not-found result may clear a previous transient lookup error,
+	# but it must never lift a hold on a genuinely conflicting existing ID.
+	if _is_missing_student_status(upper) and not _is_existing_identity_conflict(_registration_error):
+		_registration_error = ""
 	if not _lookup_pending:
 		context["database_connected"] = connected
 	_update_validation()
@@ -148,8 +155,54 @@ func show_registration_error(message: String) -> void:
 	# A mismatched student ID remains a real safety hold. Explain what to
 	# correct in a short neutral message; don't reproduce the long red banner.
 	_lookup_pending = false
-	_registration_error = message.strip_edges()
+	# The router may report a confirmed missing ID through either status
+	# entry point. It means "new student", not a failed/invalid registration.
+	var clean_message := message.strip_edges()
+	if _is_missing_student_status(clean_message):
+		if not _is_existing_identity_conflict(_registration_error):
+			_registration_error = ""
+	else:
+		_registration_error = clean_message
 	_update_validation()
+
+
+func _is_missing_student_status(message: String) -> bool:
+	var upper := message.strip_edges().to_upper()
+	return (
+		upper.begins_with("STUDENT ID NOT FOUND")
+		or upper.begins_with("STUDENT NOT FOUND")
+		or upper.begins_with("NEW STUDENT")
+		or upper == "STUDENT_NOT_FOUND"
+	)
+
+
+func _is_existing_identity_conflict(message: String) -> bool:
+	var upper := message.strip_edges().to_upper()
+	return (
+		upper.contains("ALREADY REGISTERED")
+		or upper.contains("CHECK STUDENT ID AND NAME")
+		or upper.contains("STUDENT_CONFLICT")
+		or upper.contains("IDENTITY CONFLICT")
+	)
+
+
+func _valid_student_id(value: String) -> bool:
+	# Match the offline Python API's student_id_field exactly: the first
+	# character must be an ASCII letter or digit; subsequent characters may
+	# additionally be dot, underscore or hyphen. No spaces or Unicode IDs.
+	var student_id := value.strip_edges()
+	if student_id.is_empty() or student_id.length() > MAX_STUDENT_ID_LENGTH:
+		return false
+	for index in student_id.length():
+		var char_code := student_id.unicode_at(index)
+		var ascii_letter := (char_code >= 65 and char_code <= 90) or (char_code >= 97 and char_code <= 122)
+		var digit := char_code >= 48 and char_code <= 57
+		if ascii_letter or digit:
+			continue
+		if index > 0 and char_code in [46, 95, 45]:
+			continue
+		return false
+	return true
 
 
 func _should_prefill(source: Dictionary) -> bool:
@@ -432,6 +485,7 @@ func _update_validation() -> void:
 	var missing: Array[String] = []
 	if _student_id_edit.text.strip_edges().is_empty():
 		missing.append("Student ID")
+	var invalid_student_id := not _student_id_edit.text.strip_edges().is_empty() and not _valid_student_id(_student_id_edit.text)
 	if _name_edit.text.strip_edges().is_empty():
 		missing.append("Name")
 	if _grade_edit.text.strip_edges().is_empty():
@@ -443,23 +497,25 @@ func _update_validation() -> void:
 	if not DIFFICULTIES.has(_selected_difficulty):
 		missing.append("Difficulty")
 
-	_continue_button.disabled = not missing.is_empty() or not _registration_error.is_empty() or _lookup_pending
+	_continue_button.disabled = not missing.is_empty() or invalid_student_id or not _registration_error.is_empty() or _lookup_pending
 	_continue_button.modulate = Color.WHITE
 	# Retain the supplied art, position, font and stage geometry. Only a brief
 	# non-red actionable status appears when a database lookup pauses Play.
-	_validation_label.visible = _lookup_pending or not _registration_error.is_empty()
-	if _lookup_pending:
+	_validation_label.visible = invalid_student_id or _lookup_pending or not _registration_error.is_empty()
+	if invalid_student_id:
+		_validation_label.text = INVALID_STUDENT_ID_MESSAGE
+	elif _lookup_pending:
 		_validation_label.text = "CHECKING STUDENT ID..."
 	elif not _registration_error.is_empty():
-		_validation_label.text = "CHECK STUDENT ID AND NAME" if (
-			_registration_error.contains("ALREADY REGISTERED") or
-			_registration_error.contains("CHECK STUDENT ID AND NAME")
-		) else "STUDENT ID CHECK FAILED • TRY AGAIN"
+		if _is_existing_identity_conflict(_registration_error):
+			_validation_label.text = "CHECK STUDENT ID AND NAME"
+		else:
+			_validation_label.text = "STUDENT ID CHECK FAILED • TRY AGAIN"
 	else:
 		_validation_label.text = ""
 	_validation_label.add_theme_color_override("font_color", STATUS_TEXT_COLOR)
 	_student_id_edit.add_theme_color_override("font_color",
-		CONFLICT_ID_TEXT_COLOR if not _registration_error.is_empty() else _default_id_text_color)
+		CONFLICT_ID_TEXT_COLOR if invalid_student_id or not _registration_error.is_empty() else _default_id_text_color)
 	var active_art := _continue_button.get_node_or_null("ButtonArtwork") as CanvasItem
 	var disabled_art := _continue_button.get_node_or_null("ContinueDisabledArtwork") as CanvasItem
 	if is_instance_valid(active_art):
