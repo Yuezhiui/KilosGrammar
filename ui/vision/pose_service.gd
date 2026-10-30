@@ -55,6 +55,11 @@ var _last_packet_ms := 0
 # Timestamp of the last ACCEPTED real camera inference count, separate from
 # worker warmup/heartbeat/preview statuses and from the last usable torso.
 var _last_occupancy_packet_ms := 0
+# A foreground-only occupancy report is distinct from the raw YOLO count.
+# Raw people remains available for classroom diagnostics.
+var _last_foreground_packet_ms := 0
+var _bound_player_epoch := -1
+var _bound_player_session := ""
 var _launch_ms := 0
 var _ever_tracked := false
 var _worker_was_tracking := false
@@ -212,6 +217,7 @@ func _launch_worker(recovering: bool = false, prewarm_only: bool = false) -> boo
 	var now := Time.get_ticks_msec()
 	last_pose_ms = 0
 	_last_occupancy_packet_ms = 0
+	_last_foreground_packet_ms = 0
 	_latest_worker_packet_time = -1.0
 	_last_preview_source_time = -1.0
 	_preview_invalidated_source_time = -1.0
@@ -274,29 +280,33 @@ func _decode_preview_packet(bytes: PackedByteArray) -> Dictionary:
 	if bytes.is_empty():
 		return {}
 	if bytes[0] == 1 and bytes.size() <= 60000:
-		return {"jpg": bytes.slice(1), "source": -1.0,
-			"inferred": false, "people": -1, "source_age_ms": 0.0}
+			return {"jpg": bytes.slice(1), "source": -1.0,
+				"inferred": false, "people": -1, "foreground_people": -1,
+				"source_age_ms": 0.0}
 	if bytes[0] != 2 or bytes.size() > 60064:
 		return {}
 	var end := bytes.find(59, 1) # ASCII semicolon before JPEG binary bytes
 	if end < 2 or end > 64:
 		return {}
 	var fields := bytes.slice(1, end).get_string_from_ascii().split(",")
-	if fields.size() != 4 or not fields[0].is_valid_float() \
+	if fields.size() != 5 or not fields[0].is_valid_float() \
 			or not fields[1].is_valid_int() or not fields[2].is_valid_int() \
-			or not fields[3].is_valid_int():
+			or not fields[3].is_valid_int() or not fields[4].is_valid_int():
 		return {}
 	var source := fields[0].to_float()
 	var inferred := fields[1].to_int()
 	var people := fields[2].to_int()
 	var source_age_ms := fields[3].to_int()
+	var foreground_people := fields[4].to_int()
 	if not is_finite(source) or source < 0.0 \
 			or inferred < 0 or inferred > 1 or people < -1 or people > 12 \
+			or foreground_people < -1 or foreground_people > people \
 			or source_age_ms < 0 or source_age_ms > 650 \
 			or (inferred == 1 and people < 0):
 		return {}
 	return {"jpg": bytes.slice(end + 1), "source": source,
-		"inferred": inferred == 1, "people": people,
+			"inferred": inferred == 1, "people": people,
+			"foreground_people": foreground_people,
 		"source_age_ms": float(source_age_ms)}
 
 
@@ -339,6 +349,8 @@ func begin_new_round_tracking() -> void:
 	calibration.clear()
 	plane_calibration.clear()
 	_recent_pose_samples.clear()
+	_bound_player_epoch = -1
+	_bound_player_session = ""
 	# IMPORTANT: Preserve these monotonically increasing source IDs while a
 	# healthy worker stays alive. The newly mounted authored calibration scene
 	# snapshots last_fresh_sample_id BEFORE calling this reset. Rewinding IDs
@@ -348,6 +360,7 @@ func begin_new_round_tracking() -> void:
 	_smoothed_x = -1.0
 	last_pose_ms = 0
 	_last_occupancy_packet_ms = 0
+	_last_foreground_packet_ms = 0
 	first_valid_pose_ms = -1
 	var snapshot := current_status.duplicate(true)
 	snapshot["pose"] = false
@@ -389,8 +402,11 @@ func stop_camera() -> void:
 	packet_sequence = 0
 	latest_pose_sample_id = 0
 	_recent_pose_samples.clear()
+	_bound_player_epoch = -1
+	_bound_player_session = ""
 	last_pose_ms = 0
 	_last_occupancy_packet_ms = 0
+	_last_foreground_packet_ms = 0
 	_latest_worker_packet_time = -1.0
 	_last_preview_source_time = -1.0
 	_preview_invalidated_source_time = -1.0
@@ -510,8 +526,9 @@ func _process(_delta: float) -> void:
 		# the view; no old pose or student count is inferred from pixels.
 		var safe_preview := source < 0.0 or (source > _last_preview_source_time
 			and (not bool(newest_preview["inferred"])
-			or int(newest_preview["people"]) != 1
-			or source > _preview_invalidated_source_time))
+			or int(newest_preview["foreground_people"]) != 1
+			or (source > _preview_invalidated_source_time
+			and not bool(current_status.get("foreground_ambiguous", true)))))
 		if safe_preview:
 			var picture := Image.new()
 			if picture.load_jpg_from_buffer(newest_preview["jpg"]) == OK:
@@ -524,7 +541,7 @@ func _process(_delta: float) -> void:
 				_last_preview_ms = now
 				_preview_source_age_ms = float(newest_preview["source_age_ms"])
 				_preview_contains_solo_skeleton = bool(newest_preview["inferred"]) \
-					and int(newest_preview["people"]) == 1
+					and int(newest_preview["foreground_people"]) == 1
 				if source >= 0.0:
 					_last_preview_source_time = source
 				preview_updated.emit(preview_texture)
@@ -589,8 +606,8 @@ func _camera_watchdog_status(now: int) -> String:
 
 
 func _record_fresh_calibration_pose(data: Dictionary, packet_when: float) -> void:
-	# Count ACTUAL YOLO people, not registered track IDs. A genuine stable solo
-	# sample is the only usable frame; IDs/epochs never bind the measurements.
+	# Source timestamps, physical position and foreground identity must all
+	# correspond to the same verified student. Distant spectators are diagnostic.
 	if not active or String(data.get("state", "")) != "tracking" or not bool(data.get("pose", false)):
 		return
 	if data.has("camera") and (not bool(data.get("camera", false)) \
@@ -599,7 +616,7 @@ func _record_fresh_calibration_pose(data: Dictionary, packet_when: float) -> voi
 	# Old headless FIFO tests directly record synthetic source samples without
 	# tracker metadata. Production packets from the real webcam ALWAYS contain
 	# camera=true and are first enforced by _trusted_live_tracking_packet().
-	if data.has("people") and not _has_exactly_one_person(data):
+	if data.has("camera") and not _trusted_live_tracking_packet(data):
 		return
 	if data.has("lock_state") and String(data.get("lock_state", "")) != "locked":
 		return
@@ -611,12 +628,15 @@ func _record_fresh_calibration_pose(data: Dictionary, packet_when: float) -> voi
 		return
 	if not _has_fresh_source_frame(data):
 		return
+	if bool(data.get("camera", false)) and _bound_player_epoch < 0:
+		_bind_player_epoch(data)
 	# Defend the bounded sample history against duplicated/reordered source
 	# timestamps even if a test/caller bypasses the UDP receiver.
 	if not _recent_pose_samples.is_empty() \
 			and packet_when <= float(_recent_pose_samples.back().get("when", -1.0)):
 		return
-	var pose_sample: Dictionary = {"x": x, "when": packet_when, "people": 1}
+	var pose_sample: Dictionary = {"x": x, "when": packet_when, "people": 1,
+		"raw_people": _raw_camera_population(data)}
 	# Genuine source-frame gesture observations belong with the same monotonic
 	# physical packet as torso X. Calibration must not reuse a later/earlier
 	# hand raise, or accept a fake gesture from rendering the last cached frame.
@@ -681,12 +701,14 @@ func _apply_pose_packet(data: Dictionary, now: int) -> void:
 	# token and monotonic source timestamp. Other status packets revoke this
 	# authority immediately, rather than borrowing a previous person count.
 	_last_occupancy_packet_ms = now if _is_raw_camera_occupancy_packet(data) else 0
+	_last_foreground_packet_ms = now if _is_foreground_camera_occupancy_packet(data) else 0
 	# A newer real observation of zero/two+ people, or an explicit camera
 	# interruption, invalidates all older skeleton artwork immediately. The
 	# pending fresh JPEG can repopulate the TextureRect on its own merits.
-	var count := _raw_camera_population(data)
+	var count := _foreground_camera_population(data)
 	var unsafe_occupancy := String(data.get("state", "")) == "tracking" \
-		and bool(data.get("camera", false)) and count >= 0 and count != 1
+		and bool(data.get("camera", false)) and (
+			count != 1 or bool(data.get("foreground_ambiguous", true)))
 	var interrupted := String(data.get("state", "")) in ["recovering", "stale", "error", "off"]
 	if unsafe_occupancy or interrupted:
 		var invalid_source: Variant = data.get("camera_source_timestamp", null)
@@ -715,6 +737,7 @@ func _apply_pose_packet(data: Dictionary, now: int) -> void:
 				var alpha := 1.0 - exp(-float(elapsed) / POSITION_SMOOTHING_MS)
 				_smoothed_x = lerpf(_smoothed_x, measured_x, clampf(alpha, 0.0, 1.0))
 			player_x = clampf(_smoothed_x, 0.0, 1.0)
+			_bind_player_epoch(data)
 			last_pose_ms = now
 			if first_valid_pose_ms < 0:
 				first_valid_pose_ms = now - _launch_ms
@@ -794,20 +817,44 @@ func _live_capture_total_age_ms(now: int = -1) -> float:
 
 
 func _trusted_live_tracking_packet(data: Dictionary) -> bool:
-	## Worker6's live occupancy protocol: 1 YOLO person, stable fresh solo
-	## pose and no crowd. A valid body may have NO ByteTrack integer ID.
+	## Only the one foreground child selected by StudentLock may control a
+	## round. Raw YOLO counts include distant spectators and are diagnostic.
 	return String(data.get("lock_state", "")) == "locked" \
 		and bool(data.get("camera", false)) and bool(data.get("pose", false)) \
-		and _has_exactly_one_person(data) \
+		and _foreground_camera_population(data) == 1 \
+		and not bool(data.get("foreground_ambiguous", true)) \
+		and data.get("occupancy_verified", null) is bool \
+		and bool(data.get("occupancy_verified", false)) \
+		and _matches_player_epoch(data) \
 		and data.has("camera_frame_age_ms") and _has_fresh_source_frame(data)
 
 
+func _matches_player_epoch(data: Dictionary) -> bool:
+	# Epoch attests to one continuous Python lock session. It is not a facial
+	# identity; never infer identity from a raw count or an arbitrary ByteTrack ID.
+	var source_epoch: Variant = data.get("player_lock_epoch", null)
+	if not (source_epoch is int or source_epoch is float) \
+			or not is_finite(float(source_epoch)) or float(source_epoch) < 1.0 \
+			or floorf(float(source_epoch)) != float(source_epoch):
+		return false
+	if _bound_player_epoch < 0:
+		return true
+	return _bound_player_session == session_token \
+		and _bound_player_epoch == int(source_epoch)
+
+
+func _bind_player_epoch(data: Dictionary) -> void:
+	if _bound_player_epoch >= 0:
+		return
+	if not _matches_player_epoch(data):
+		return
+	_bound_player_epoch = int(data["player_lock_epoch"])
+	_bound_player_session = session_token
+
+
 func _has_exactly_one_person(data: Dictionary) -> bool:
-	## JSON.parse_string converts integer JSON values to float in Godot.
-	## Accept 1 or 1.0, but never round 1.5, NaN, missing or malformed counts.
-	var people: Variant = data.get("people", null)
-	return (people is int or people is float) and is_finite(float(people)) \
-		and float(people) == 1.0
+	return _foreground_camera_population(data) == 1 \
+		and not bool(data.get("foreground_ambiguous", true))
 
 
 func _raw_camera_population(data: Dictionary) -> int:
@@ -823,6 +870,27 @@ func _raw_camera_population(data: Dictionary) -> int:
 	return int(number)
 
 
+func _foreground_camera_population(data: Dictionary) -> int:
+	# No fallback to raw people: a seated bystander can make people=2 while
+	# only the standing child is eligible. Missing metadata is unsafe.
+	var value: Variant = data.get("foreground_people", null)
+	if not (value is int or value is float):
+		return -1
+	var number := float(value)
+	var raw := _raw_camera_population(data)
+	if not is_finite(number) or number < 0.0 or floorf(number) != number \
+			or raw < 0 or number > float(raw):
+		return -1
+	return int(number)
+
+
+func _is_foreground_camera_occupancy_packet(data: Dictionary) -> bool:
+	return _is_raw_camera_occupancy_packet(data) \
+		and _foreground_camera_population(data) >= 0 \
+		and data.get("foreground_ambiguous", null) is bool \
+		and data.get("occupancy_verified", null) is bool
+
+
 func _is_raw_camera_occupancy_packet(data: Dictionary) -> bool:
 	# This protocol is sent after a genuine YOLO predict() inference. Worker
 	# warmup, preview, missing frames and inference error statuses cannot claim
@@ -834,13 +902,8 @@ func _is_raw_camera_occupancy_packet(data: Dictionary) -> bool:
 		and data.has("camera_frame_age_ms") and _has_fresh_source_frame(data)
 
 
-func fresh_camera_population() -> int:
-	## Raw YOLO occupancy ONLY, independent of pose/StudentLock/track ID.
-	## 0 = no person, 1 = precisely one person, 2..12 = crowd,
-	## -1 = unknown/invalid/stale/disconnected camera. A caller may use 1 to
-	## keep a previously PHYSICALLY calibrated round running, but it MUST call
-	## has_valid_pose() separately for movement and has_fresh_gesture_pose()
-	## separately for gestures. This method never creates a ghost pose.
+func fresh_raw_camera_population() -> int:
+	## Diagnostic only: includes every YOLO person box, distant or near.
 	if not active or _restart_pending or peer == null or session_token.is_empty() \
 			or worker_pid <= 0 or not OS.is_process_running(worker_pid) \
 			or _last_occupancy_packet_ms <= 0 \
@@ -855,9 +918,38 @@ func fresh_camera_population() -> int:
 	return _raw_camera_population(current_status)
 
 
+func fresh_camera_population() -> int:
+	## Eligible foreground count, not raw detections. -1 means uncertain,
+	## ambiguous or stale. A one-person report by itself never grants gesture
+	## or movement; has_valid_pose also needs a verified active player.
+	if fresh_raw_camera_population() < 0 or _last_foreground_packet_ms <= 0 \
+			or not _is_foreground_camera_occupancy_packet(current_status) \
+			or bool(current_status.get("foreground_ambiguous", true)):
+		return -1
+	return _foreground_camera_population(current_status)
+
+
+func foreground_is_ambiguous() -> bool:
+	## Show an immediate multi-player warning when two similarly near bodies
+	## overlap, even if the detector only counted one foreground box.
+	return fresh_raw_camera_population() >= 0 \
+		and _is_foreground_camera_occupancy_packet(current_status) \
+		and (bool(current_status.get("foreground_ambiguous", true)) \
+		or _foreground_camera_population(current_status) > 1)
+
+
 func has_fresh_solo_presence() -> bool:
-	## Presence is not a movement/gesture permission or an identity match.
+	## A detector count alone is not movement permission or an identity match.
 	return fresh_camera_population() == 1
+
+
+func has_verified_foreground_player() -> bool:
+	## Require an authenticated, stable selected student before advancing the
+	## round. A new spectator cannot inherit a finished calibration by count.
+	return fresh_camera_population() == 1 \
+		and bool(current_status.get("occupancy_verified", false)) \
+		and String(current_status.get("lock_state", "")) == "locked" \
+		and _matches_player_epoch(current_status)
 
 
 func _schedule_restart(now: int, allow_before_enrollment: bool = false) -> void:
@@ -865,6 +957,7 @@ func _schedule_restart(now: int, allow_before_enrollment: bool = false) -> void:
 		return
 	player_x = -1.0
 	_last_occupancy_packet_ms = 0
+	_last_foreground_packet_ms = 0
 	_clear_live_preview()
 	if (not _ever_tracked and not allow_before_enrollment) \
 			or _automatic_restarts >= MAX_AUTOMATIC_RESTARTS:
@@ -911,6 +1004,7 @@ func _fail_camera(message: String) -> void:
 	active = false
 	player_x = -1.0
 	_last_occupancy_packet_ms = 0
+	_last_foreground_packet_ms = 0
 	_clear_live_preview()
 	set_process(false)
 	_set_status({"state": "error", "pose": false, "detail": message})

@@ -99,8 +99,11 @@ func _case(resolution: Vector2i, mode: String, guided: bool, native: bool) -> vo
 	await process_frame
 	await process_frame
 	var overlay := game.get_node("GuidedTutorialLayer/GuidedTutorial") as Control
+	var visible_layer := game.get_node("GuidedTutorialLayer") as CanvasLayer
 	_check(game.is_tutorial_active() == guided and overlay.visible == guided,
 		tag + ": only guided Tutorial starts component explanations")
+	_check(visible_layer.visible == guided,
+		tag + ": parent CanvasLayer actually shows explanations in Tutorial only")
 	if not guided:
 		_check(completed["count"] == 0, tag + ": regular Play never emits guide completion")
 		game.queue_free()
@@ -168,7 +171,8 @@ func _case(resolution: Vector2i, mode: String, guided: bool, native: bool) -> vo
 	_check(completed["count"] == 0 and game.is_tutorial_active(),
 		tag + ": countdown cannot begin before all five explanations")
 	game.tutorial_next_step()
-	_check(completed["count"] == 1 and not game.is_tutorial_active() and not overlay.visible,
+	_check(completed["count"] == 1 and not game.is_tutorial_active()
+		and not overlay.visible and not visible_layer.visible,
 		tag + ": finishing last explanation emits one countdown request")
 	game.tutorial_next_step()
 	game.skip_guided_tutorial()

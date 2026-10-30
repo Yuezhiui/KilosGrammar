@@ -290,6 +290,61 @@ func _redraw_rows() -> void:
 						cell.tooltip_text = "%s • Grammar topic: %s" % [minigame, topic]
 				else:
 					cell.text = _record_text(record, col)
+					# Long IDs, names, and grade/section values are real school data.
+					# Keep the complete source text available when the row must ellipsize.
+					cell.tooltip_text = cell.text
+					_fit_row_cell_font(cell, col)
+
+
+func _fit_row_cell_font(cell: Label, column: int) -> void:
+	# Columns and their maximum fonts are defined in leaderboard_row.tscn.
+	# IDs, names and grade/section can use two lines within the authored row.
+	# Shrink overflowing text only after using that vertical space. Exceptionally
+	# long values are still available in full through the tooltip.
+	var font := cell.get_theme_font("font")
+	var font_size := cell.get_theme_font_size("font_size")
+	var minimum_size := 10
+	if font == null:
+		return
+	var available_width := cell.size.x - 6.0
+	if column <= 2 and _row_text_width(font, cell.text, font_size) > available_width:
+		cell.text = _break_row_text(cell.text, font, font_size)
+	while font_size > minimum_size and (_row_text_width(font, cell.text, font_size) > available_width
+		or cell.text.contains("\n") and font.get_height(font_size) * 2.0 > cell.size.y - 2.0):
+		font_size -= 1
+	cell.add_theme_font_size_override("font_size", font_size)
+
+
+func _row_text_width(font: Font, cell_text: String, font_size: int) -> float:
+	var result := 0.0
+	for line in cell_text.split("\n"):
+		result = maxf(result, font.get_string_size(line,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+	return result
+
+
+func _break_row_text(value: String, font: Font, font_size: int) -> String:
+	# Prefer a meaningful break, e.g. KG-2026 / 001 or Grade 5 / Section A.
+	# For an all-digit student ID there may be no separator; use its midpoint.
+	var best_split := -1
+	var smallest_width := INF
+	for index in range(2, value.length() - 1):
+		var before := value[index - 1]
+		var after := value[index]
+		if before != " " and before != "-" and before != "_" and after != " ":
+			continue
+		var first := value.substr(0, index).strip_edges()
+		var second := value.substr(index).strip_edges()
+		if first.is_empty() or second.is_empty():
+			continue
+		var widest := maxf(_row_text_width(font, first, font_size),
+			_row_text_width(font, second, font_size))
+		if widest < smallest_width:
+			smallest_width = widest
+			best_split = index
+	if best_split < 0:
+		best_split = value.length() / 2
+	return value.substr(0, best_split).strip_edges() + "\n" + value.substr(best_split).strip_edges()
 
 
 func _minigame_name(record: Dictionary) -> String:

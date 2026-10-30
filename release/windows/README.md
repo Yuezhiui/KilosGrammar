@@ -141,14 +141,14 @@ manifest by running the staging command again.
 ## 2. Preflight and export
 
 ```powershell
-.\release\windows\Build-OfflineRelease.ps1 -GodotExe 'C:\path\Godot_v4.7.2-stable_win64_console.exe' -PreflightOnly
-.\release\windows\Build-OfflineRelease.ps1 -GodotExe 'C:\path\Godot_v4.7.2-stable_win64_console.exe'
+.\release\windows\Build-OfflineRelease.ps1 -GodotExe 'C:\path\Godot_v4.7.2-stable_win64_console.exe' -BuildLabel 'v0.3.0-beta.4' -PreflightOnly
+.\release\windows\Build-OfflineRelease.ps1 -GodotExe 'C:\path\Godot_v4.7.2-stable_win64_console.exe' -BuildLabel 'v0.3.0-beta.4'
 ```
 
 Both commands stop with actionable diagnostics if a required template/source,
 model, installer, wheel, or checksum is missing. Export uses the checked-in
 `export_presets.cfg` `Windows Desktop` preset and generates the paired EXE/PCK.
-The release folder appears at `release/windows/out/KilosGrammar-win-x64/`.
+The release folder appears at `release/windows/out/KilosGrammar-win-x64-v0.3.0-beta.4/`.
 It contains a canonical root **`manifest.json`** generated only after successful
 EXE/PCK export and dependency staging. `release-manifest.json` is a separate
 summary for backward compatibility. `Test-ReleasePackage.ps1` verifies the

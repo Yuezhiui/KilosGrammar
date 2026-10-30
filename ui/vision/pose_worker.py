@@ -79,7 +79,8 @@ class PreviewPublisher:
                     and now - self.last_raw_sent_at >= 0.15)
 
     def publish(self, jpeg: bytes | None, captured_at: float,
-                inferred: bool, people_count: int = -1) -> bool:
+                inferred: bool, people_count: int = -1,
+                foreground_count: int = -1) -> bool:
         if jpeg is None or not math.isfinite(captured_at):
             return False
         # A JPEG encoder may finish after the camera/inference that supplied
@@ -92,14 +93,17 @@ class PreviewPublisher:
                 return False
             if captured_at <= self.last_source_at:
                 return False
-            # 0x02: capture time / inference flag / raw person count /
-            # capture-to-send age, then the JPEG. Including source age stops
+            # 0x02: capture time / inference flag / RAW person count /
+            # capture-to-send age / foreground candidate count, then the JPEG.
+            # The fourth field stays at its original position; Godot may
+            # use the appended fifth field to validate a real foreground pose.
+            # Including source age stops
             # the recipient giving a late JPEG a second full stale lifetime.
             # The marker and bounded textual header avoid platform byte order
             # assumptions in Godot's PackedByteArray decoder.
             source_age_ms = round((now - captured_at) * 1000)
             heading = (f"{captured_at:.9f},{int(inferred)},{people_count},"
-                       f"{source_age_ms};").encode("ascii")
+                       f"{source_age_ms},{foreground_count};").encode("ascii")
             self.sock.sendto(b"\x02" + heading + jpeg, self.destination)
             self.last_source_at = captured_at
             if inferred:
@@ -171,7 +175,8 @@ def draw_skeleton_preview(cv2: object, frame: object, visible_people: list[dict]
 
 
 def preview_people(people: list[dict], selected: dict | None,
-                   highlight_solo_candidate: bool = False) -> list[dict]:
+                   highlight_solo_candidate: bool = False,
+                   foreground_candidate: dict | None = None) -> list[dict]:
     """Real visible candidates for preview, with exactly one active controller.
 
     Return new lightweight dictionaries: do not mutate the StudentLock's
@@ -179,13 +184,47 @@ def preview_people(people: list[dict], selected: dict | None,
     An explicitly verified raw-solo body still enrolling may use a softer
     green visual role; it is NEVER an active gameplay/controller role.
     """
-    selected_id = selected.get("track_id") if selected is not None else None
+    def same_source_detection(person: dict, target: dict | None) -> bool:
+        if target is None:
+            return False
+        # A raw predict() result has no ByteTrack ID: every sighting is -1.
+        # Only this frame's YOLO detection index can reliably map its own
+        # torso selection to its own preview keypoints, regardless of ID churn.
+        index = target.get("detection_index")
+        if index is not None and person.get("detection_index") is not None:
+            return person["detection_index"] == index
+        if person is target:
+            return True
+        track = target.get("track_id", -1)
+        return isinstance(track, int) and track >= 0 and person.get("track_id") == track \
+            and sum(p.get("track_id") == track for p in people) == 1
+
+    pending = foreground_candidate
+    if pending is None and highlight_solo_candidate and len(people) == 1:
+        pending = people[0]
     return [{**person, "preview_role": (
-                "active" if selected_id is not None and
-                person["track_id"] == selected_id else
+                "active" if same_source_detection(person, selected) else
                 "solo_pending" if selected is None and highlight_solo_candidate
-                and len(people) == 1 else "candidate")}
+                and same_source_detection(person, pending) else "candidate")}
             for person in people]
+
+
+def foreground_preview_people(visible_people: list[dict], selected: dict | None,
+                              foreground_candidate: dict | None,
+                              foreground_count: int,
+                              foreground_ambiguous: bool) -> list[dict]:
+    """Draw only the one source-matched foreground skeleton, never spectators."""
+    if foreground_ambiguous or foreground_count != 1 or foreground_candidate is None:
+        return []
+    index = foreground_candidate.get("detection_index")
+    if index is None:
+        return []  # Never guess using a ByteTrack ID or spatial coincidence.
+    matched = [p for p in visible_people if p.get("detection_index") == index]
+    if len(matched) != 1:
+        return []
+    return preview_people(matched, selected,
+                          highlight_solo_candidate=selected is None,
+                          foreground_candidate=foreground_candidate)
 
 
 def encode_preview_jpeg(cv2: object, canvas: object) -> bytes | None:
@@ -818,11 +857,12 @@ def observed_pose_people(prediction: object, width: int, height: int) -> tuple[l
                 keypoints = []
         if keypoints:
             preview.append({"track_id": real_id if has_id else -1,
-                            "keypoints": keypoints})
+                            "detection_index": index, "keypoints": keypoints})
         x = resilient_body_position(keypoints)
         eligible = x is not None and math.isfinite(x) and 0 <= x <= 1
         detected.append({
-            "track_id": sighting_id, "x": float(x) if eligible else box_x,
+            "track_id": sighting_id, "detection_index": index,
+            "x": float(x) if eligible else box_x,
             "height": box_height, "box": box, "eligible": eligible,
             "keypoints": keypoints if eligible else [],
         })
@@ -858,11 +898,13 @@ class LatestPreview:
         self.thread.start()
 
     def submit(self, frame: object, people: list[dict],
-               captured_at: float | None = None, raw_person_count: int = -1) -> None:
+               captured_at: float | None = None, raw_person_count: int = -1,
+               foreground_person_count: int = -1) -> None:
         if captured_at is None:
             captured_at = time.monotonic()
         with self.lock:
-            self.latest = (frame, people, captured_at, raw_person_count)
+            self.latest = (frame, people, captured_at, raw_person_count,
+                           foreground_person_count)
 
     def _send(self) -> None:
         next_sent = 0.0
@@ -875,12 +917,13 @@ class LatestPreview:
                 self.latest = None
             if item is None:
                 continue
-            frame, people, captured_at, raw_person_count = item
+            frame, people, captured_at, raw_person_count, foreground_count = item
             try:
                 canvas = draw_skeleton_preview(
                     self.cv2, frame, people, self.bones_offset, self.bones_scale)
                 jpeg = encode_preview_jpeg(self.cv2, canvas)
-                if self.publisher.publish(jpeg, captured_at, True, raw_person_count):
+                if self.publisher.publish(jpeg, captured_at, True,
+                                          raw_person_count, foreground_count):
                     self.last_sent_at = time.monotonic()
                     self.failure_count = 0
                 # Even noisy, over-limit JPEGs must be rate-limited. Encoding
@@ -1163,9 +1206,9 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
             gesture = False
             people, visible_people = observed_pose_people(prediction, width, height)
             now = time.monotonic()
-            # Trust ONLY actual YOLO box occupancy, including id-less boxes.
-            # >=2 occupants or zero occupants immediately revoke ALL game
-            # control, even if one person remains recognized by ByteTrack.
+            # Preserve truthful raw YOLO occupancy, including id-less boxes.
+            # Ignore only unambiguously smaller, separated background bodies;
+            # near or overlapping people always revoke foreground controls.
             selected, lock_state, reason = student.update(
                 people, now, detected_count=number)
             gesture_flags = gesture_detector.update(
@@ -1200,7 +1243,8 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
             plane_bank = 0.0
             # A real fresh SOLO body can bank without requiring that BOTH
             # wrists stay level. No ByteTrack identifier is registered here.
-            if valid and lock_state == "locked" and number == 1 and selected is not None:
+            if (valid and lock_state == "locked"
+                    and student.foreground_people == 1 and selected is not None):
                 plane_t_pose_valid, plane_bank_valid, plane_bank = plane_arm_bank(
                     selected["keypoints"])
 
@@ -1210,7 +1254,10 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                 inferred_count = 0
                 inferred_start = now
             send_status(sock, target, token, state="tracking", camera=True, pose=valid,
-                        people=number, x=round(torso_x, 5), raised=gesture,
+                        people=number, foreground_people=student.foreground_people,
+                        foreground_ambiguous=student.foreground_ambiguous,
+                        player_lock_epoch=student.player_lock_epoch,
+                        x=round(torso_x, 5), raised=gesture,
                         hand_up=gesture_flags.hand_up,
                         hand_observation_valid=gesture_flags.hand_observation_valid,
                         airplane_pose=gesture_flags.airplane_pose,
@@ -1228,8 +1275,10 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                         **calibration_bilateral,
                         lock_state=lock_state, locked_id=locked_id,
                         physical_track_id=student.physical_track_id,
-                        occupancy_verified=valid and number == 1,
-                        occupancy_mode="single_person",
+                        occupancy_verified=valid and lock_state == "locked"
+                                           and student.foreground_people == 1
+                                           and not student.foreground_ambiguous,
+                        occupancy_mode="single_foreground",
                         # Session/calibration retains one epoch regardless of
                         # ByteTrack churn or 5/15/60-second player absences.
                         tracking_epoch=student.tracking_epoch,
@@ -1246,21 +1295,17 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                         camera_first_preview_ms=preview_first_sent_ms,
                         **camera_timings)
 
-            # Render ALL real current YOLO skeletons; only the locked child
-            # may steer. Others are subdued passive candidates and never
-            # receive game control, including during ambiguous crossings.
+            # Render only the actual selected foreground's source keypoints.
+            # Background spectators must not receive distracting skeletons.
+            # Ambiguous near/crossing people show raw webcam pixels alone.
             if live_preview is not None:
-                live_preview.submit(frame, preview_people(
+                live_preview.submit(frame, foreground_preview_people(
                     visible_people,
                     selected if valid and lock_state == "locked" else None,
-                    # A visible fresh ONE-person YOLO skeleton should be
-                    # green during calibration even if strict torso geometry
-                    # is not yet valid for the actual 3-second hold. No
-                    # missing joints are fabricated; crowds remain muted.
-                    # This visual flag NEVER grants gameplay control.
-                    highlight_solo_candidate=(number == 1 and len(people) == 1
-                                              and len(visible_people) == 1)),
-                    captured_at=captured_at, raw_person_count=number)
+                    student.foreground_candidate, student.foreground_people,
+                    student.foreground_ambiguous),
+                    captured_at=captured_at, raw_person_count=number,
+                    foreground_person_count=student.foreground_people)
     finally:
         startup_preview_stop.set()
         fallback_preview_stop.set()

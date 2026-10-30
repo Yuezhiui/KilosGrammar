@@ -5,7 +5,7 @@ extends SceneTree
 const SCENE := preload("res://ui/minigames/balloon_popping/balloon_popping.tscn")
 const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const AUDIO_ROOT := "res://assets/audio/tutorial_spotlight/balloon_popping_"
-const OUTPUT := "res://showcase/balloon_integrated_tutorial_20261030_worker18"
+const OUTPUT := "user://worker2_balloon_cartoon_tutorial_20261030"
 
 var checks := 0
 var failures: Array[String] = []
@@ -30,6 +30,7 @@ func _run() -> void:
 		for mode in ["Seconds", "Lives"]:
 			await _case(resolution, mode, true, native)
 			await _case(resolution, mode, false, false)
+	await _material_isolation_case()
 	for reason in failures:
 		printerr("BALLOON GUIDED QA FAIL: ", reason)
 	print("BALLOON INTEGRATED TUTORIAL QA: %s checks=%d failures=%d screenshots=%d backend=%s" % [
@@ -87,6 +88,10 @@ func _case(resolution: Vector2i, mode: String, guided: bool, native: bool) -> vo
 		_check(not game.tutorial_caption.text.is_empty()
 			and game.tutorial_caption.text == String(entry["caption"]),
 			tag + ": narration text is readable on the card")
+		_check(game.tutorial_counter.text == "STEP %d OF 5" % [i + 1]
+			and (game.tutorial_overlay.get_node("TutorialCard/PanelArt") as TextureRect).texture != null,
+			tag + ": numbered cartoon art is loaded for " + expected[i])
+		_check_cartoon_controls(game, tag + " " + expected[i], i == expected.size() - 1)
 		_check(overlay.visible and game.tutorial_focus.size.x > 30.0
 			and game.tutorial_focus.size.y > 20.0,
 			tag + ": real art spotlight is bounded and overlay visible at %s" % expected[i])
@@ -162,6 +167,69 @@ func _case(resolution: Vector2i, mode: String, guided: bool, native: bool) -> vo
 		tag + ": Skip closes the guide immediately and requests countdown once")
 	skipped.queue_free()
 	await process_frame
+
+
+func _material_isolation_case() -> void:
+	# Two games may briefly coexist during Play/Tutorial transitions. Their
+	# spotlight rectangles must never share a mutable material uniform.
+	var games: Array[Control] = []
+	for mode in ["Seconds", "Lives"]:
+		var game := SCENE.instantiate() as Control
+		game.process_mode = Node.PROCESS_MODE_DISABLED
+		root.add_child(game)
+		game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		game.set_context({"guided_tutorial": true, "game_mode": mode,
+			"topic": "Noun", "difficulty": "Normal"})
+		games.append(game)
+	await process_frame
+	await process_frame
+	var first_material := games[0].tutorial_dim.material as ShaderMaterial
+	var second_material := games[1].tutorial_dim.material as ShaderMaterial
+	_check(first_material != second_material,
+		"simultaneous guide scenes have independent shader materials")
+	var second_focus: Vector4 = second_material.get_shader_parameter("focus_rect")
+	games[0].tutorial_next_step()
+	_check(second_material.get_shader_parameter("focus_rect") == second_focus,
+		"advancing first guide never moves second guide's focus")
+	for game in games:
+		game.queue_free()
+	await process_frame
+
+
+func _check_cartoon_controls(game: Control, tag: String, final_step: bool) -> void:
+	var card := game.tutorial_overlay.get_node("TutorialCard") as Control
+	for name in ["BackButton", "NextButton", "ReplayButton", "SkipButton"]:
+		var button := card.get_node(name) as Button
+		var image_name: String = String(name).trim_suffix("Button") + "Art"
+		var art := button.get_node(image_name) as TextureRect
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			_check(button.get_theme_stylebox(state) is StyleBoxEmpty,
+				tag + ": " + name + " has no old Godot " + state + " background")
+		_check(art.mouse_filter == Control.MOUSE_FILTER_IGNORE
+			and button.mouse_filter == Control.MOUSE_FILTER_STOP
+			and art.size.distance_to(button.size) < 1.0,
+			tag + ": " + name + " image ignores mouse and hitbox matches artwork")
+		_check(Rect2(Vector2.ZERO, card.size).grow(1.0).encloses(button.get_rect()),
+			tag + ": " + name + " keeps its entire active rectangle inside card")
+		game.call("_set_tutorial_art_hover", button, true)
+		_check((art.modulate != Color.WHITE) == (not button.disabled),
+			tag + ": " + name + " hover respects active/disabled state")
+		game.call("_set_tutorial_art_hover", button, false)
+		_check(art.modulate == Color.WHITE,
+			tag + ": " + name + " hover restores original cartoon colors")
+	var next := game.tutorial_next as Button
+	var plate := next.get_node("StartPlate") as Panel
+	var next_art := next.get_node("NextArt") as TextureRect
+	_check(plate.visible == final_step and next_art.visible != final_step,
+		tag + ": illustrated NEXT swaps to readable green START plate only on final step")
+	_check((plate.get_node("StartLabel") as Label).text == "START" and
+		plate.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+		tag + ": START plate text and non-blocking mouse input")
+	var pause_voice := game.tutorial_pause_voice as Button
+	_check(pause_voice.get_theme_stylebox("normal") is StyleBoxFlat and
+		pause_voice.get_theme_stylebox("pressed") is StyleBoxFlat and
+		pause_voice.text in ["PAUSE VOICE", "RESUME VOICE"],
+		tag + ": native PAUSE/RESUME VOICE remains readable and clickable")
 
 
 func _capture(resolution: Vector2i, mode: String, stage: String) -> void:

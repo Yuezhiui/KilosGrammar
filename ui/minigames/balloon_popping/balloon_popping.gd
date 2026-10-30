@@ -587,6 +587,9 @@ func _wire_integrated_tutorial() -> void:
 	# The dim, focus and navigation live in this editor-authored game scene.
 	# No standalone guide scene or directional arrows are needed.
 	tutorial_overlay.visible = false
+	# Each game instance owns its cutout position. Without an instance-local
+	# material, a second mounted scene changes the first scene's highlight.
+	tutorial_dim.material = tutorial_dim.material.duplicate(true)
 	tutorial_overlay.process_mode = Node.PROCESS_MODE_ALWAYS
 	tutorial_narration.process_mode = Node.PROCESS_MODE_ALWAYS
 	tutorial_back.pressed.connect(tutorial_previous_step)
@@ -594,6 +597,26 @@ func _wire_integrated_tutorial() -> void:
 	tutorial_skip.pressed.connect(skip_guided_tutorial)
 	tutorial_replay.pressed.connect(replay_tutorial_voice)
 	tutorial_pause_voice.pressed.connect(toggle_tutorial_voice_pause)
+	for art_button: Button in [tutorial_back, tutorial_next, tutorial_replay, tutorial_skip]:
+		# Godot's combined hover+pressed/focus states have separate font colors.
+		# Hide native text under PNG lettering in every possible interaction.
+		art_button.add_theme_color_override("font_hover_pressed_color", Color.TRANSPARENT)
+		art_button.add_theme_color_override("font_focus_color", Color.TRANSPARENT)
+		art_button.mouse_entered.connect(_set_tutorial_art_hover.bind(art_button, true))
+		art_button.mouse_exited.connect(_set_tutorial_art_hover.bind(art_button, false))
+		art_button.focus_entered.connect(_set_tutorial_art_hover.bind(art_button, true))
+		art_button.focus_exited.connect(_set_tutorial_art_hover.bind(art_button, false))
+
+
+func _set_tutorial_art_hover(button: Button, highlighted: bool) -> void:
+	if not is_instance_valid(button):
+		return
+	# Hover applies only to cartoon imagery; all underlying Button boxes are empty.
+	var tint := Color(1.0, 0.96, 0.8, 1.0) if highlighted and not button.disabled else Color.WHITE
+	for node_name in ["BackArt", "NextArt", "ReplayArt", "SkipArt", "StartPlate"]:
+		var artwork := button.get_node_or_null(node_name) as CanvasItem
+		if artwork != null:
+			artwork.modulate = tint
 
 
 func _tutorial_steps() -> Array[Dictionary]:
@@ -684,11 +707,24 @@ func _show_tutorial_step() -> void:
 	if tutorial_step_index < 0 or tutorial_step_index >= steps.size():
 		return
 	var entry := steps[tutorial_step_index]
-	tutorial_counter.text = "GUIDED TUTORIAL  •  STEP %d OF %d" % [tutorial_step_index + 1, steps.size()]
+	tutorial_counter.text = "STEP %d OF %d" % [tutorial_step_index + 1, steps.size()]
 	tutorial_title.text = String(entry["title"])
 	tutorial_caption.text = String(entry["caption"])
 	tutorial_back.disabled = tutorial_step_index == 0
-	tutorial_next.text = "START COUNTDOWN" if tutorial_step_index == steps.size() - 1 else "NEXT"
+	var back_art := tutorial_back.get_node_or_null("BackArt") as TextureRect
+	if back_art != null:
+		back_art.texture = preload("res://ui/minigames/catch_the_word/tutorial_art/back_disabled.png") \
+			if tutorial_back.disabled else preload("res://ui/minigames/catch_the_word/tutorial_art/back_enabled.png")
+	var final_step := tutorial_step_index == steps.size() - 1
+	tutorial_next.text = "START" if final_step else "NEXT"
+	var next_art := tutorial_next.get_node_or_null("NextArt") as TextureRect
+	if next_art != null:
+		# The supplied NEXT illustration has its own lettering. Show native
+		# art-backed START on the last step so it never says NEXT and START.
+		next_art.visible = not final_step
+	var start_plate := tutorial_next.get_node_or_null("StartPlate") as Panel
+	if start_plate != null:
+		start_plate.visible = final_step
 	tutorial_replay.disabled = false
 	_refresh_tutorial_focus()
 	replay_tutorial_voice()
@@ -714,32 +750,39 @@ func _refresh_tutorial_focus() -> void:
 			target = pause_plaque
 	if not is_instance_valid(target):
 		return
+	# The HUD and launcher have independent native 2D transforms. Convert all
+	# four rendered corners into this CanvasLayer's local coordinate system;
+	# a global origin + scaled size drifts when the game is embedded or resized.
 	var bounds := Rect2()
 	if target is Control:
 		var control := target as Control
 		var transform := control.get_global_transform_with_canvas()
-		bounds = Rect2(transform * Vector2.ZERO,
-			transform * control.size - transform * Vector2.ZERO).abs()
+		bounds = _tutorial_transformed_bounds(transform, Rect2(Vector2.ZERO, control.size))
 	elif target is Sprite2D:
 		var sprite := target as Sprite2D
 		var transform := sprite.get_global_transform_with_canvas()
-		var local_rect := sprite.get_rect()
-		var first_corner := transform * local_rect.position
-		bounds = Rect2(first_corner, transform * local_rect.end - first_corner).abs()
-	var viewport_size := get_viewport_rect().size
-	if not bounds.has_area() or viewport_size.x < 2.0 or viewport_size.y < 2.0:
+		bounds = _tutorial_transformed_bounds(transform, sprite.get_rect())
+	var canvas_size := tutorial_overlay.size
+	if not bounds.has_area() or canvas_size.x < 2.0 or canvas_size.y < 2.0:
 		return
-	var scale_factor := maxf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.01)
-	tutorial_overlay.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	tutorial_overlay.position = Vector2.ZERO
-	tutorial_overlay.size = viewport_size / scale_factor
-	tutorial_overlay.scale = Vector2.ONE * scale_factor
-	bounds = bounds.grow(10.0 * scale_factor).intersection(Rect2(Vector2.ZERO, viewport_size))
-	tutorial_focus.position = bounds.position / scale_factor
-	tutorial_focus.size = bounds.size / scale_factor
-	var uv := Rect2(bounds.position / viewport_size, bounds.size / viewport_size)
+	var padding := maxf(7.0, 10.0 * minf(canvas_size.x / 1280.0, canvas_size.y / 720.0))
+	bounds = bounds.grow(padding).intersection(Rect2(Vector2.ZERO, canvas_size))
+	# Both the shader's transparent hole and the outline use the exact SAME
+	# rectangle in local canvas coordinates, including non-720p classroom UI.
+	tutorial_focus.position = bounds.position
+	tutorial_focus.size = bounds.size
+	var uv := Rect2(bounds.position / canvas_size, bounds.size / canvas_size)
 	(tutorial_dim.material as ShaderMaterial).set_shader_parameter("focus_rect",
 		Vector4(uv.position.x, uv.position.y, uv.size.x, uv.size.y))
+
+
+func _tutorial_transformed_bounds(transform: Transform2D, local_rect: Rect2) -> Rect2:
+	var to_overlay := tutorial_overlay.get_global_transform_with_canvas().affine_inverse() * transform
+	var result := Rect2(to_overlay * local_rect.position, Vector2.ZERO)
+	for point in [Vector2(local_rect.end.x, local_rect.position.y),
+			local_rect.end, Vector2(local_rect.position.x, local_rect.end.y)]:
+		result = result.expand(to_overlay * point)
+	return result.abs()
 
 
 func _cancel_integrated_tutorial() -> void:
@@ -1492,6 +1535,9 @@ func _layout_scene() -> void:
 			balloon.position.x = _lane_x(lane)
 
 	_layout_hud()
+	# HUD plaques finish their responsive placement here, after resizing.
+	if tutorial_active:
+		_refresh_tutorial_focus()
 
 
 func _layout_hud() -> void:

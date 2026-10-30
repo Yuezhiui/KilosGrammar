@@ -518,7 +518,7 @@ func _process(delta: float) -> void:
 			# must not discard seven genuine detections in the same UI frame.
 			for sample: Dictionary in fresh_samples:
 				var sample_x := float(sample.get("x", -1.0))
-				if int(sample.get("people", int(PoseService.current_status.get("people", -1)))) != 1 \
+				if int(sample.get("people", -1)) != 1 \
 						or not _inside_zone(target, sample_x) or absf(sample_x - anchor_x) > MAX_SAMPLE_SPREAD:
 					_reset_current_hold()
 					_set_live_instruction("ONE PERSON ONLY • Keep your position steady.\nIsang tao lamang • Panatilihin ang puwesto.")
@@ -628,11 +628,11 @@ func _process_stationary_plane(delta: float) -> void:
 				and _keep_hold_for_brief_wrist_dropout(delta, sample):
 			_set_live_instruction("HOLD YOUR CENTER POSITION • Wrist tracking paused briefly.\nManatili sa gitna • Sandaling naka-pause ang bilang.")
 			return
-		if int(sample.get("people", int(PoseService.current_status.get("people", -1)))) != 1 \
-					or not bool(sample.get("plane_t_pose_valid", false)) \
-				or not (raw is float or raw is int) \
-				or not is_finite(float(raw)) or absf(float(raw)) > 1.0 \
-				or not is_finite(packet_when) or camera_x < 0.28 or camera_x > 0.72:
+		if int(sample.get("people", -1)) != 1 \
+			or not bool(sample.get("plane_t_pose_valid", false)) \
+			or not (raw is float or raw is int) \
+			or not is_finite(float(raw)) or absf(float(raw)) > 1.0 \
+			or not is_finite(packet_when) or camera_x < 0.28 or camera_x > 0.72:
 			_reset_current_hold()
 			_set_live_instruction("ONE PERSON • HOLD A FULL T-POSE IN CENTER.\nIsang tao • Iunat ang magkabilang braso sa gitna.")
 			return
@@ -766,13 +766,12 @@ func _keep_hold_for_brief_solo_dropout(delta: float) -> bool:
 	# This is *not* a synthetic valid pose: calibration never advances on a
 	# rejected packet. It only retains the existing real samples for a brief
 	# confidence hiccup while a newly received source frame still reports one
-	# person. Lost camera, stale packet, zero and multiple people reset normally.
+	# safe foreground person. Never interpret distant spectators as a crowd.
 	var status: Dictionary = PoseService.current_status
-	var people: Variant = status.get("people", null)
 	if not PoseService.active or String(status.get("state", "")) != "tracking" \
 			or not bool(status.get("camera", false)) \
-			or not (people is float or people is int) or not is_finite(float(people)) \
-			or float(people) != 1.0 \
+			or PoseService.fresh_camera_population() != 1 \
+			or PoseService.foreground_is_ambiguous() \
 			or Time.get_ticks_msec() - int(PoseService.get("_last_packet_ms")) > 250:
 		return false
 	var unobserved := maxf(delta, 0.0)
@@ -991,11 +990,11 @@ func _clear_previous_calibration_for_reentry() -> void:
 
 
 func _has_fresh_solo_pose() -> bool:
-	# A retained skeleton is not proof of a current student. Require the actual
-	# latest observation to report ONE person; zero/unknown/crowd never advances.
+	# Only the authenticated foreground player can earn a physical 3-second,
+	# eight-source-frame hold. Raw YOLO people may include distant spectators.
 	var status: Dictionary = PoseService.current_status
 	return PoseService.active and PoseService.has_valid_pose() \
-		and int(status.get("people", -1)) == 1 \
+		and PoseService.has_verified_foreground_player() \
 		and String(status.get("state", "")) == "tracking" \
 		and bool(status.get("pose", false)) \
 		and PoseService.player_x >= 0.0 \
@@ -1003,11 +1002,11 @@ func _has_fresh_solo_pose() -> bool:
 
 
 func _has_fresh_raw_solo_on_camera() -> bool:
-	# PoseService authenticates raw YOLO population independently of keypoints
-	# (live worker, socket, camera phase, source capture age and recent packets).
+	# Completed calibration can only hand off a verified foreground player.
+	# Raw count remains diagnostic and includes distant classmates.
 	# Its current_status must also belong to the current camera session so
 	# packets from before a reconnect cannot release a completed round.
-	return PoseService.fresh_camera_population() == 1 \
+	return PoseService.has_verified_foreground_player() \
 		and String(PoseService.current_status.get("token", "")) == String(PoseService.session_token)
 
 

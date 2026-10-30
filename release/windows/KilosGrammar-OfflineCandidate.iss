@@ -2,10 +2,10 @@
 ; release folder. This installs files, NOT PostgreSQL/Python services silently.
 ; A teacher must run the bundled installers and Setup Offline.cmd afterwards.
 #ifndef AppVersion
-  #define AppVersion "0.3.0-beta.3"
+  #define AppVersion "0.3.0-beta.4"
 #endif
 #ifndef ReleaseSource
-  #define ReleaseSource "out\KilosGrammar-win-x64"
+  #define ReleaseSource "out\KilosGrammar-win-x64-v" + AppVersion
 #endif
 #ifdef QAInstall
   #define AppIdText "{{F4CE5467-8A7C-4656-9D4D-85B191767CAC}"

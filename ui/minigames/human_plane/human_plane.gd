@@ -155,6 +155,10 @@ var _last_presented_words: Dictionary = {}
 var _vocabulary_cycle := 0
 var _words_exhausted := false
 var gate_progress := 0.0
+# Exact starting progress of the active prefetched wave. The 3D renderer
+# needs this to reconstruct the real forward distance when multiple gameplay
+# ticks happen between 3D render frames (e.g. a slow classroom laptop).
+var _wave_entry_progress := 0.0
 var gate_resolved := false
 var selected_lane := -1
 var selected_was_correct := false
@@ -253,6 +257,14 @@ func _ready() -> void:
 	$TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/BackButton.pressed.connect(_previous_tutorial_step)
 	$TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/ReplayButton.pressed.connect(replay_tutorial_voice)
 	$TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/PauseVoiceButton.pressed.connect(toggle_tutorial_voice_pause)
+	for name in ["BackButton", "NextButton", "ReplayButton", "SkipButton"]:
+		var art_button := $TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide.get_node(name) as Button
+		art_button.add_theme_color_override("font_hover_pressed_color", Color.TRANSPARENT)
+		art_button.add_theme_color_override("font_focus_color", Color.TRANSPARENT)
+		art_button.mouse_entered.connect(_set_tutorial_art_hover.bind(art_button, true))
+		art_button.mouse_exited.connect(_set_tutorial_art_hover.bind(art_button, false))
+		art_button.focus_entered.connect(_set_tutorial_art_hover.bind(art_button, true))
+		art_button.focus_exited.connect(_set_tutorial_art_hover.bind(art_button, false))
 	rng.randomize()
 	_initialize_voice_feedback()
 	if ResourceLoader.exists(GRAMMAR_BANK_PATH):
@@ -338,11 +350,34 @@ func _show_tutorial_step() -> void:
 	var guide := $TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide as Control
 	(guide.get_node("Title") as Label).text = String(info["title"])
 	(guide.get_node("Message") as Label).text = String(info["message"])
-	(guide.get_node("StepCounter") as Label).text = "%d / %d" % [_tutorial_step + 1, TUTORIAL_COMPONENTS.size()]
-	(guide.get_node("NextButton") as Button).text = "START" if _tutorial_step == TUTORIAL_COMPONENTS.size() - 1 else "NEXT"
-	(guide.get_node("BackButton") as Button).disabled = _tutorial_step == 0
+	(guide.get_node("StepCounter") as Label).text = "STEP %d OF %d" % [_tutorial_step + 1, TUTORIAL_COMPONENTS.size()]
+	var final_step := _tutorial_step == TUTORIAL_COMPONENTS.size() - 1
+	var next_button := guide.get_node("NextButton") as Button
+	next_button.text = "START" if final_step else "NEXT"
+	var next_art := next_button.get_node_or_null("NextArt") as TextureRect
+	if next_art != null:
+		next_art.visible = not final_step
+	var start_plate := next_button.get_node_or_null("StartPlate") as Panel
+	if start_plate != null:
+		start_plate.visible = final_step
+	var back_button := guide.get_node("BackButton") as Button
+	back_button.disabled = _tutorial_step == 0
+	var back_art := back_button.get_node_or_null("BackArt") as TextureRect
+	if back_art != null:
+		back_art.texture = preload("res://ui/minigames/catch_the_word/tutorial_art/back_disabled.png") \
+			if back_button.disabled else preload("res://ui/minigames/catch_the_word/tutorial_art/back_enabled.png")
 	_layout_tutorial_spotlight()
 	replay_tutorial_voice()
+
+
+func _set_tutorial_art_hover(button: Button, highlighted: bool) -> void:
+	if not is_instance_valid(button):
+		return
+	var tint := Color(1.0, 0.96, 0.8, 1.0) if highlighted and not button.disabled else Color.WHITE
+	for node_name in ["BackArt", "NextArt", "ReplayArt", "SkipArt", "StartPlate"]:
+		var artwork := button.get_node_or_null(node_name) as CanvasItem
+		if artwork != null:
+			artwork.modulate = tint
 
 
 func replay_tutorial_voice() -> void:
@@ -394,25 +429,28 @@ func _layout_tutorial_spotlight() -> void:
 	var target := String(info["target"])
 	var visible_rect := Rect2()
 	if target == "PlaneRig":
+		# This accessor projects the actual 22 3D airplane mesh AABBs. The
+		# invisible oversized 2D steering rig must NEVER enlarge the cutout.
 		visible_rect = ($HybridFlight3D as Node2D).call("get_airplane_highlight_rect")
-		# The editable 2D flight rig remains the teacher's placement guide.
-		# Enclose both its authored frame and every rendered wingtip so this
-		# explanation never highlights an empty patch or dims part of the plane.
-		visible_rect = visible_rect.merge(_plane_rig.get_global_rect())
 	elif target == "ring":
-		var hybrid := $HybridFlight3D as Node2D
-		visible_rect = hybrid.call("get_ring_highlight_rect", 1)
+		visible_rect = _tutorial_projected_ring_mesh_rect(1)
 	elif target == "mode":
 		var mode_path := "HUDLayer/HUD/TimerPlaque" if is_seconds_mode else "HUDLayer/HUD/LivesPlaque"
-		visible_rect = (get_node(mode_path) as Control).get_global_rect()
+		visible_rect = _tutorial_control_rect(get_node(mode_path) as Control)
 	else:
-		visible_rect = (get_node(target) as Control).get_global_rect()
+		visible_rect = _tutorial_control_rect(get_node(target) as Control)
+	if target == "PlaneRig" or target == "ring":
+		# Hybrid's projected pixels are in the game's local canvas; convert to
+		# the independent CanvasLayer coordinates used by the four dim pieces.
+		visible_rect = _tutorial_canvas_rect(visible_rect)
 	# Four source-authored dimming regions create a REAL transparent cutout.
 	# Their bounds follow the currently highlighted editor component and
 	# automatically adapt to 1280, 1600 and 1920 classroom viewports.
 	var canvas := overlay.size
 	var padding := maxf(canvas.y / 720.0 * 9.0, 5.0)
 	var focus := visible_rect.grow(padding).intersection(Rect2(Vector2.ZERO, canvas))
+	if not focus.has_area():
+		return
 	var left := overlay.get_node("DimLeft") as ColorRect
 	var right := overlay.get_node("DimRight") as ColorRect
 	var above := overlay.get_node("DimAbove") as ColorRect
@@ -436,6 +474,59 @@ func _layout_tutorial_spotlight() -> void:
 	var anchor := top_anchor if focus.get_center().y > canvas.y * 0.53 else bottom_anchor
 	guide.position = anchor.position
 	guide.size = anchor.size
+
+
+func _tutorial_control_rect(control: Control) -> Rect2:
+	if control == null:
+		return Rect2()
+	var to_overlay := ($TutorialSpotlightLayer/TutorialSpotlight as Control).get_global_transform_with_canvas().affine_inverse() * control.get_global_transform_with_canvas()
+	return _tutorial_transform_rect(to_overlay, Rect2(Vector2.ZERO, control.size))
+
+
+func _tutorial_canvas_rect(rect: Rect2) -> Rect2:
+	var to_overlay := ($TutorialSpotlightLayer/TutorialSpotlight as Control).get_global_transform_with_canvas().affine_inverse() * get_global_transform_with_canvas()
+	return _tutorial_transform_rect(to_overlay, rect)
+
+
+func _tutorial_transform_rect(transform: Transform2D, rect: Rect2) -> Rect2:
+	var result := Rect2(transform * rect.position, Vector2.ZERO)
+	for corner in [Vector2(rect.end.x, rect.position.y), rect.end,
+			Vector2(rect.position.x, rect.end.y)]:
+		result = result.expand(transform * corner)
+	return result.abs()
+
+
+func _tutorial_projected_ring_mesh_rect(lane: int) -> Rect2:
+	# Actual native TorusMesh geometry and camera projection, including depth.
+	# The projected 2D editor gate is deliberately not a focus target.
+	var hybrid := $HybridFlight3D as Node2D
+	var pools: Array = hybrid.get("_ring_pools")
+	var active_parent := _gate_nodes[0].get_parent()
+	var front_index := 0 if active_parent == hybrid.get("_first_gate_group") else 1
+	if pools.size() <= front_index or (pools[front_index] as Array).size() <= lane:
+		return hybrid.call("get_ring_highlight_rect", lane)
+	var ring := (pools[front_index] as Array)[lane] as Node3D
+	var mesh := ring.get_node_or_null("Ring") as MeshInstance3D
+	var camera := hybrid.get("view_camera") as Camera3D
+	var viewport := hybrid.get("viewport") as SubViewport
+	if mesh == null or not mesh.mesh is TorusMesh or camera == null or viewport == null \
+			or viewport.size.x < 1 or viewport.size.y < 1:
+		return hybrid.call("get_ring_highlight_rect", lane)
+	var tex_scale := size / Vector2(viewport.size)
+	var bounds := Rect2()
+	var has_corner := false
+	var aabb := mesh.get_aabb()
+	for corner in range(8):
+		var world_corner := mesh.to_global(aabb.get_endpoint(corner))
+		if camera.is_position_behind(world_corner):
+			continue
+		var projected := camera.unproject_position(world_corner) * tex_scale
+		if not has_corner:
+			bounds = Rect2(projected, Vector2.ZERO)
+			has_corner = true
+		else:
+			bounds = bounds.expand(projected)
+	return bounds if has_corner and bounds.has_area() else hybrid.call("get_ring_highlight_rect", lane)
 
 
 func get_context() -> Dictionary:
@@ -713,12 +804,18 @@ func _advance_gate_step(delta: float) -> void:
 	var current_y := _gate_y(gate_progress)
 	var answer_y := _answer_line_y()
 	if not gate_resolved and previous_y < answer_y and current_y >= answer_y:
-		_resolve_at_answer_line()
+		# The actual airplane and ring colliders, at this frame's crossing,
+		# decide the lane. A projected guide alone must never grant points.
+		# Only a genuinely live webcam round can rely on the current physics
+		# frame. Offline previews and isolated deterministic tests have no
+		# authenticated tracking frame to synchronize with native collision
+		# objects; preserve the predictive collider-geometry check for them.
+		_resolve_at_answer_line(bool(context.get("camera_live", false)))
 	if finished:
 		return
 	if gate_progress >= 1.0:
 		if not gate_resolved:
-			_resolve_at_answer_line()
+			_resolve_at_answer_line(bool(context.get("camera_live", false)))
 		waves_completed += 1
 		if is_lives_mode and lives <= 0:
 			_finish_round("OUT OF LIVES")
@@ -780,6 +877,7 @@ func _promote_prefetched_wave() -> void:
 	round_data = next_round_data
 	_mark_presented_wave(round_data)
 	gate_progress = next_gate_progress
+	_wave_entry_progress = gate_progress
 	next_round_data = {}
 	next_gate_progress = 0.0
 	gate_resolved = false
@@ -814,6 +912,7 @@ func _start_wave() -> void:
 	_remember_displayed_words(round_data)
 	_mark_presented_wave(round_data)
 	gate_progress = 0.0
+	_wave_entry_progress = 0.0
 	gate_resolved = false
 	selected_lane = -1
 	selected_was_correct = false
@@ -950,14 +1049,14 @@ func _fallback_lane_round() -> Dictionary:
 	}
 
 
-func _resolve_at_answer_line() -> void:
+func _resolve_at_answer_line(require_live_collision: bool = false) -> void:
 	if gate_resolved or finished or paused or not running or _tutorial_active:
 		return
 	gate_resolved = true
 	attempts += 1
 	var flight := get_node_or_null("HybridFlight3D") as Node2D
 	if flight != null and bool(flight.get("hybrid_enabled")) and bool(flight.get("draw_3d_gates")):
-		selected_lane = int(flight.call("physical_lane_at_answer_line"))
+		selected_lane = int(flight.call("physical_lane_at_answer_line", require_live_collision))
 	else:
 		selected_lane = _lane_hit_at_answer_line()
 	var valid: Array = round_data.get("valid_indices", [])

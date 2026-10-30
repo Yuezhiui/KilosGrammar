@@ -35,8 +35,8 @@ var _countdown_waiting_for_pose := false
 var _paused_canvas_layer_visibility: Dictionary = {}
 const TRACKING_NOTICE_MISSING := "COME BACK INTO THE CAMERA!"
 const TRACKING_NOTICE_MISSING_DETAIL := "Step into view • Bumalik sa harap ng camera"
-const TRACKING_NOTICE_MULTIPLE := "ONLY ONE PLAYER!"
-const TRACKING_NOTICE_MULTIPLE_DETAIL := "Classmates, please step aside • Isang manlalaro lang"
+const TRACKING_NOTICE_MULTIPLE := "ONE PLAYER IN FRONT!"
+const TRACKING_NOTICE_MULTIPLE_DETAIL := "Keep the play area clear • Lumayo muna sa harap ng camera"
 const COUNTDOWN_STANDING_HINT := "Stand in the center and watch for the first word!"
 
 
@@ -288,10 +288,8 @@ func _has_live_calibrated_player() -> bool:
 
 
 func _fresh_camera_population() -> int:
-	# Authenticated live YOLO person-box count, not pose/StudentLock success.
-	# PoseService rejects stale source captures, warmup/recovering snapshots,
-	# missing UDP transport, invalid counts and offline workers. Only a truly
-	# fresh one-person box permits the calibrated round to keep PLAYING.
+	# Counts eligible foreground students; raw YOLO counts can include distant
+	# classmates. Unknown, ambiguous and stale packets cannot advance a round.
 	return PoseService.fresh_camera_population()
 
 
@@ -364,14 +362,14 @@ func _process(delta: float) -> void:
 		return
 	if not is_instance_valid(active_game):
 		return
-	# Temporary YOLO tracker IDs/epochs may churn, including after the worker
-	# restarts. There is NO automatic calibration route during a round.
-	# Camera PRESENCE (one real YOLO detection) controls the round's pause;
-	# independently, a fresh enrolled pose controls movement and gestures.
-	# This deliberate ID-free policy permits a different sole person to take
-	# over the unfinished round when the previous child leaves the camera.
+	# An authenticated single FOREGROUND player may resume the calibrated round
+	# despite seated spectators further from the camera. Raw YOLO occupancy is
+	# retained for diagnostics. Nearby ambiguity or a different lock freezes
+	# immediately, without automatically transferring the first student's round.
 	var population := _fresh_camera_population()
-	var has_solo_pose := population == 1 and _has_live_calibrated_player()
+	var ambiguous_foreground := PoseService.foreground_is_ambiguous()
+	var has_solo_pose := population == 1 and not ambiguous_foreground \
+		and _has_live_calibrated_player()
 	if guided_stage == "countdown" and is_instance_valid(countdown_timer):
 		if not has_solo_pose:
 			countdown_timer.stop()
@@ -381,7 +379,7 @@ func _process(delta: float) -> void:
 		if countdown_hint != null and not _countdown_waiting_for_pose:
 			if population == 0:
 				countdown_hint.text = TRACKING_NOTICE_MISSING
-			elif population >= 2:
+			elif ambiguous_foreground or population >= 2:
 				countdown_hint.text = TRACKING_NOTICE_MULTIPLE
 			elif not has_solo_pose:
 				countdown_hint.text = "WAIT FOR ONE STEADY PLAYER IN THE CAMERA!"
@@ -389,26 +387,24 @@ func _process(delta: float) -> void:
 				countdown_hint.text = COUNTDOWN_STANDING_HINT
 	if _countdown_waiting_for_pose and has_solo_pose:
 		_complete_countdown_start()
-	# Human Plane's arms and wrists still require real fresh landmarks before
-	# steering, but not to keep the round's timer running when ONE box is seen.
+	# Human Plane's wrists still require their own fresh landmarks for steering.
 	var human_plane := String(context.get("activity", "")) == "Human Plane"
 	var verified_plane_pose := not human_plane or PoseService.has_stationary_plane_pose()
 	var countdown_active := guided_stage == "countdown"
-	# Physical calibration remains a hard prerequisite. After the game has
-	# actually started, exactly ONE freshly detected person (even an untracked
-	# passerby or a person with momentarily missing joints) keeps it running.
+	# A completed physical calibration never transfers to an unverified
+	# replacement player. One raw detection alone is insufficient evidence.
 	var measured_round := bool(PoseService.calibration.get("valid", false)) \
 		and (not human_plane or bool(PoseService.plane_calibration.get("valid", false)))
-	var solo_present := population == 1 and measured_round
+	var solo_present := population == 1 and not ambiguous_foreground \
+		and measured_round and PoseService.has_verified_foreground_player()
 	var usable_pose := has_solo_pose and verified_plane_pose
-	# The previous completed camera calibration is also proof that this
-	# session had a real locked player, even if the first gameplay frame after
-	# GO is empty. Never arm on fake/demo pose data.
+	# A prior real calibration is useful for a missing-player warning, but it
+	# cannot authenticate a new bystander or resurrect expired control input.
 	var previously_seen := saw_student_in_live_round or (bool(PoseService.calibration.get("valid", false)) \
 		and bool(PoseService.get("_ever_tracked")))
 	var confirmed_missing := previously_seen and not countdown_active and population == 0
 	# During 3-2-1 the scene must still wait for ACTUAL usable pose.
-	# Only an already-started activity uses presence-only pause policy.
+	# During 3-2-1 a real verified pose is also required to complete GO.
 	if not solo_present or (countdown_active and not usable_pose):
 		_clear_gesture_input()
 		missing_pose_seconds += maxf(delta, 0.0)
@@ -417,8 +413,8 @@ func _process(delta: float) -> void:
 			if active_game.has_method("clear_body_input"):
 				active_game.call("clear_body_input")
 		last_pose_valid = false
-		# Zero/multiple/unknown/stale camera data freeze the whole activity
-		# immediately. No fabricated person, inferred ID or stale bones can play.
+		# Unknown foreground identity, nearby overlap or stale camera data freeze
+		# gameplay immediately. A spectator must never take over this student.
 		if not countdown_active:
 			active_game.process_mode = Node.PROCESS_MODE_DISABLED
 			tracking_suspended = true
@@ -426,7 +422,7 @@ func _process(delta: float) -> void:
 				_game_music.call("pause_music")
 		if not countdown_active and population == 0:
 			_show_tracking_problem("missing")
-		elif not countdown_active and population >= 2:
+		elif not countdown_active and (ambiguous_foreground or population >= 2):
 			_show_tracking_problem("multiple")
 		else:
 			tracking_notice.visible = false
@@ -446,10 +442,8 @@ func _process(delta: float) -> void:
 		# A transient, single-frame SOLO dropout froze gameplay without
 		# changing the visible pause state. Resume on the next VERIFIED pose.
 		active_game.process_mode = Node.PROCESS_MODE_INHERIT
-	# With ONE real person present, the game itself keeps playing even when
-	# YOLO cannot measure a trustworthy body pose. No stale body movement,
-	# shooting, or airplane input is allowed until genuinely fresh landmarks
-	# come back. The timer/score/other gameplay continue normally.
+	# A verified foreground lock can have partially missing wrist landmarks.
+	# Clear affected controls, while preserving the round's measured positions.
 	if not usable_pose:
 		_clear_gesture_input()
 		if last_pose_valid and active_game.has_method("clear_body_input"):

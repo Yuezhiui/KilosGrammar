@@ -21,8 +21,9 @@ class CapturedPackets:
 def unpack(packet):
     assert packet[0] == 2
     metadata, pixels = packet[1:].split(b";", 1)
-    timestamp, inferred, people, age = metadata.decode("ascii").split(",")
+    timestamp, inferred, people, age, foreground = metadata.decode("ascii").split(",")
     assert 0 <= int(age) <= 650
+    assert int(foreground) >= -1
     return float(timestamp), int(inferred), int(people), pixels
 
 

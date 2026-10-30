@@ -117,11 +117,21 @@ func _process(delta: float) -> void:
 	var wave_count := int(_game.get("waves_completed"))
 	if _last_wave_count < 0:
 		_last_wave_count = wave_count
-	elif wave_count != _last_wave_count or now_progress + 0.01 < _last_progress:
-		# The prefetched pool becomes active with a nonzero head start. Keep
-		# camera world-Z continuous rather than teleporting at wave handoff.
-		_wave_origin_distance = _forward_distance - step_forward
+	elif wave_count != _last_wave_count:
+		# The gameplay advances at its own fixed substeps, independently of 3D
+		# frame scheduling. A camera update may have skipped the entire passage
+		# after the last scored frame; advance through that distance explicitly.
+		# The prefetched torus is already fixed at this exact handoff position.
+		var entry_progress := float(_game.get("_wave_entry_progress"))
+		var previous_wave_end := 42.0 - _gate_distance(1.0, scored_progress)
+		var new_wave_start := 42.0 - _gate_distance(entry_progress, scored_progress)
+		_wave_origin_distance += (previous_wave_end - new_wave_start) * \
+			float(maxi(wave_count - _last_wave_count, 1))
 		_last_wave_count = wave_count
+	elif now_progress + 0.01 < _last_progress:
+		# The prefetched pool becomes active with a nonzero head start. Keep
+		# camera world-Z continuous during an explicit manual restart.
+		_wave_origin_distance = _forward_distance - step_forward
 	_last_progress = now_progress
 	_forward_distance = _wave_origin_distance + step_forward
 	view_camera.position = _world_camera_start - Vector3(0, 0, _forward_distance)
@@ -225,11 +235,11 @@ func _update_ring_pool(pool_index: int, controls: Array[Control], offsets: Array
 			material.emission = Color(color.r * 0.18, color.g * 0.18, color.b * 0.18)
 
 
-func physical_lane_at_answer_line() -> int:
-	# Called ONLY by HumanPlane's one-shot AnswerLine crossing. Compute the
-	# actual aircraft / hollow-TorusMesh aperture geometry at that precise
-	# crossing, before the 3D child's _process() can run this frame. Looking up
-	# last-rendered positions would lag one pose frame and miss real pass-throughs.
+func physical_lane_at_answer_line(require_live_collision: bool = false) -> int:
+	# The live path is called by the real wave crossing. It reads the physical
+	# 3D shapes after synchronizing them to the SAME frame as the scoring event.
+	# The predictive path remains available to layout/calibration tests which
+	# ask which aperture will fit before a wave has reached the airplane.
 	if not hybrid_enabled or not draw_3d_gates or not is_instance_valid(_game):
 		return -1
 	# A crossing is an intentional answer only while the enrolled student's
@@ -240,6 +250,8 @@ func physical_lane_at_answer_line() -> int:
 	var options: Array = (_game.get("round_data") as Dictionary).get("options", [])
 	if options.size() != 3:
 		return -1
+	if require_live_collision:
+		return _lane_from_live_collision_shapes()
 	var canvas_size := _game.size
 	if canvas_size.x <= 0.0 or canvas_size.y <= 0.0:
 		return -1
@@ -291,6 +303,53 @@ func physical_lane_at_answer_line() -> int:
 	# Two coincident or artist-overlapped rings are ambiguous, even if both
 	# options happen to be correct. The game may award a score only once.
 	return winning_lane if winners == 1 else -1
+
+
+func _lane_from_live_collision_shapes() -> int:
+	# _advance_gate_step changes gate_progress before the Node2D's own render
+	# tick. Resync the authored pilot rig and 3D world once, so a moving plane
+	# can never be scored against its position from the preceding video frame.
+	_game.call("_sync_visuals")
+	_process(0.0)
+	var active_gates: Array[Control] = _game.get("_gate_nodes")
+	var front_index := 0 if active_gates[0].get_parent() == _first_gate_group else 1
+	var pilot_hit := plane_anchor.get_node("PlanePassageHitbox/HitShape") as CollisionShape3D
+	if not (pilot_hit.shape is SphereShape3D):
+		return -1
+	var pilot_center := pilot_hit.global_position
+	var pilot_scale := pilot_hit.global_transform.basis.get_scale()
+	var pilot_radius := (pilot_hit.shape as SphereShape3D).radius * \
+		maxf(pilot_scale.x, maxf(pilot_scale.y, pilot_scale.z))
+	var winning_lane := -1
+	for lane in range(3):
+		var ring := _ring_pools[front_index][lane] as Node3D
+		if not ring.visible:
+			continue
+		var mesh := ring.get_node("Ring") as MeshInstance3D
+		var hole := ring.get_node("RingPassageHitbox/HitShape") as CollisionShape3D
+		if not (mesh.mesh is TorusMesh) or not (hole.shape is CylinderShape3D):
+			return -1
+		var cylinder := hole.shape as CylinderShape3D
+		var cylinder_scale := hole.global_transform.basis.get_scale()
+		var ring_scale := ring.global_transform.basis.get_scale()
+		var opening_radius := minf(cylinder.radius * minf(cylinder_scale.x, cylinder_scale.z),
+			(mesh.mesh as TorusMesh).inner_radius * minf(ring_scale.x, ring_scale.y))
+		# The cylinder's local Y axis is rotated to the torus' forward Z axis.
+		# A wing touching its inner tube, an off-center lane, or a ring still
+		# ahead of/behind the airplane does not count as a complete passage.
+		var normal := hole.global_transform.basis.y.normalized()
+		var delta := pilot_center - hole.global_position
+		var axial_gap := absf(delta.dot(normal))
+		var radial_gap := (delta - normal * delta.dot(normal)).length()
+		var half_depth := cylinder.height * cylinder_scale.y * 0.5
+		if axial_gap > pilot_radius + half_depth + PASSAGE_CLEARANCE_EPSILON:
+			continue
+		if radial_gap + pilot_radius + PASSAGE_CLEARANCE_EPSILON >= opening_radius:
+			continue
+		if winning_lane >= 0:
+			return -1
+		winning_lane = lane
+	return winning_lane
 
 
 func get_ring_highlight_rect(lane: int) -> Rect2:

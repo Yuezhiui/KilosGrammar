@@ -18,12 +18,28 @@
 [ext_resource type="Texture2D" uid="uid://bs8svw36vmuui" path="res://Components/Gameplay/Catch the Word/Characters/LION BASKET.png" id="17_lion_basket"]
 [ext_resource type="Texture2D" uid="uid://d1afudx80d54i" path="res://Components/Gameplay/Catch the Word/Characters/PANDA BODY.png" id="18_panda_body"]
 [ext_resource type="Texture2D" uid="uid://btqwdpn8e70n2" path="res://Components/Gameplay/Catch the Word/Characters/PANDA BASKET.png" id="19_panda_basket"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/background.png" id="tutorial_panel_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/header.png" id="tutorial_header_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/badge.png" id="tutorial_star_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/back_disabled.png" id="tutorial_back_disabled"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/next.png" id="tutorial_next_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/replay.png" id="tutorial_replay_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/skip.png" id="tutorial_skip_art"]
 
 [sub_resource type="Shader" id="CatchTutorialCutoutShader"]
-code = "shader_type canvas_item;\nuniform vec4 focus_rect = vec4(0.1, 0.1, 0.4, 0.2);\nuniform float dim_alpha : hint_range(0.0, 1.0) = 0.77;\nvoid fragment() {\n    bool lit = UV.x >= focus_rect.x && UV.x <= focus_rect.x + focus_rect.z && UV.y >= focus_rect.y && UV.y <= focus_rect.y + focus_rect.w;\n    COLOR = vec4(0.02, 0.015, 0.09, lit ? 0.0 : dim_alpha);\n}\n"
+code = "shader_type canvas_item;
+uniform vec4 focus_rect = vec4(0.1, 0.1, 0.4, 0.2);
+uniform float dim_alpha : hint_range(0.0, 1.0) = 0.77;
+void fragment() {
+    bool lit = UV.x >= focus_rect.x && UV.x <= focus_rect.x + focus_rect.z && UV.y >= focus_rect.y && UV.y <= focus_rect.y + focus_rect.w;
+    COLOR = vec4(0.02, 0.015, 0.09, lit ? 0.0 : dim_alpha);
+}
+"
 
 [sub_resource type="ShaderMaterial" id="CatchTutorialCutoutMaterial"]
 shader = SubResource("CatchTutorialCutoutShader")
+shader_parameter/focus_rect = Vector4(0.1, 0.1, 0.4, 0.2)
+shader_parameter/dim_alpha = 0.77
 
 [sub_resource type="StyleBoxFlat" id="CatchTutorialFocusBorder"]
 bg_color = Color(1, 1, 1, 0)
@@ -38,32 +54,35 @@ corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
 
 [sub_resource type="StyleBoxFlat" id="CatchTutorialCardStyle"]
-bg_color = Color(0.12, 0.095, 0.24, 0.97)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.99, 0.76, 0.29, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-shadow_color = Color(0, 0, 0, 0.37)
-shadow_size = 8
+bg_color = Color(1, 1, 1, 0)
 
 [sub_resource type="StyleBoxFlat" id="CatchTutorialButtonStyle"]
-bg_color = Color(0.35, 0.23, 0.66, 1)
+bg_color = Color(0.06, 0.55, 0.34, 1)
 corner_radius_top_left = 9
 corner_radius_top_right = 9
 corner_radius_bottom_right = 9
 corner_radius_bottom_left = 9
 
 [sub_resource type="StyleBoxFlat" id="CatchTutorialButtonHover"]
-bg_color = Color(0.47, 0.34, 0.79, 1)
+bg_color = Color(0.08, 0.69, 0.43, 1)
 corner_radius_top_left = 9
 corner_radius_top_right = 9
 corner_radius_bottom_right = 9
 corner_radius_bottom_left = 9
+
+[sub_resource type="StyleBoxEmpty" id="CatchTutorialArtButton"]
+
+[sub_resource type="StyleBoxFlat" id="CatchTutorialKeyboardFocus"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.88, 0.17, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
 
 [node name="CatchTheWord" type="Control" unique_id=1403184396]
 layout_mode = 3
@@ -308,23 +327,20 @@ offset_top = 22.0
 offset_right = 1258.0
 offset_bottom = 108.0
 
-; The guided explanation is integrated into the Catch scene. Every art/label/
-; control is editable here; no extra tutorial scene or runtime-created arrows.
-[node name="GuidedTutorialLayer" type="CanvasLayer" parent="."]
+[node name="GuidedTutorialLayer" type="CanvasLayer" parent="." unique_id=267755798]
 layer = 90
-
-[node name="GuidedTutorial" type="Control" parent="GuidedTutorialLayer"]
-process_mode = 3
 visible = false
+
+[node name="GuidedTutorial" type="Control" parent="GuidedTutorialLayer" unique_id=195704014]
+process_mode = 3
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 
-[node name="Dim" type="ColorRect" parent="GuidedTutorialLayer/GuidedTutorial"]
+[node name="Dim" type="ColorRect" parent="GuidedTutorialLayer/GuidedTutorial" unique_id=1923512475]
 material = SubResource("CatchTutorialCutoutMaterial")
 layout_mode = 1
 anchors_preset = 15
@@ -332,10 +348,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
-color = Color(1, 1, 1, 1)
 
-[node name="FocusOutline" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial"]
+[node name="FocusOutline" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial" unique_id=1182276936]
 layout_mode = 0
 offset_left = 115.0
 offset_top = 93.0
@@ -344,103 +358,253 @@ offset_bottom = 126.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("CatchTutorialFocusBorder")
 
-[node name="TutorialCard" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial"]
+[node name="TutorialCard" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial" unique_id=1614225093]
 layout_mode = 0
 offset_left = 462.0
 offset_top = 210.0
 offset_right = 1222.0
 offset_bottom = 474.0
-mouse_filter = 0
 theme_override_styles/panel = SubResource("CatchTutorialCardStyle")
 
-[node name="StepCounter" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 13.0
-offset_right = 716.0
-offset_bottom = 42.0
-theme_override_colors/font_color = Color(1, 0.84, 0.35, 1)
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 16
-text = "GUIDED TUTORIAL • STEP 1 OF 5"
+[node name="PanelArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_panel_art")
+expand_mode = 1
+stretch_mode = 0
 
-[node name="StepTitle" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 44.0
-offset_right = 716.0
-offset_bottom = 83.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 25
-text = "READ THE QUESTION"
-
-[node name="StepCaption" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 91.0
-offset_right = 716.0
-offset_bottom = 164.0
-theme_override_colors/font_color = Color(1, 0.98, 0.92, 1)
-theme_override_font_sizes/font_size = 19
-text = "Read the grammar question, then find the matching word on a falling apple."
-autowrap_mode = 3
-vertical_alignment = 1
-
-[node name="BackButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+[node name="TitleBanner" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
 offset_left = 22.0
-offset_top = 191.0
-offset_right = 122.0
-offset_bottom = 242.0
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("CatchTutorialButtonStyle")
-theme_override_styles/hover = SubResource("CatchTutorialButtonHover")
+offset_top = 39.0
+offset_right = 450.0
+offset_bottom = 113.0
+mouse_filter = 2
+texture = ExtResource("tutorial_header_art")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="TutorialStar" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+layout_mode = 0
+offset_left = 663.0
+offset_top = 18.0
+offset_right = 722.0
+offset_bottom = 77.0
+mouse_filter = 2
+texture = ExtResource("tutorial_star_art")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StepCounter" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard" unique_id=253915482]
+layout_mode = 0
+offset_left = 43.0
+offset_top = 15.0
+offset_right = 600.0
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.43, 0.23, 0.11, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 16
+text = "STEP 1 OF 5"
+
+[node name="StepTitle" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard" unique_id=635379330]
+layout_mode = 0
+offset_left = 49.0
+offset_top = 57.0
+offset_right = 420.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.39, 0.2, 0.07, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 22
+text = "READ THE QUESTION"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StepCaption" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard" unique_id=24837043]
+layout_mode = 0
+offset_left = 43.0
+offset_top = 113.0
+offset_right = 711.0
+offset_bottom = 193.0
+theme_override_colors/font_color = Color(0.34, 0.21, 0.12, 1)
+theme_override_font_sizes/font_size = 18
+text = "Read the grammar question, then find the matching word on a falling apple."
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="BackButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard" unique_id=553468025]
+layout_mode = 0
+focus_mode = 2
+offset_left = 26.0
+offset_top = 198.0
+offset_right = 142.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("CatchTutorialArtButton")
+theme_override_styles/hover = SubResource("CatchTutorialArtButton")
+theme_override_styles/pressed = SubResource("CatchTutorialArtButton")
+theme_override_styles/disabled = SubResource("CatchTutorialArtButton")
+theme_override_styles/focus = SubResource("CatchTutorialArtButton")
 text = "BACK"
 
-[node name="NextButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+[node name="BackArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/BackButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_back_disabled")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="KeyboardFocusRing" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/BackButton"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("CatchTutorialKeyboardFocus")
+
+[node name="NextButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard" unique_id=1241964395]
 layout_mode = 0
-offset_left = 130.0
-offset_top = 191.0
-offset_right = 252.0
-offset_bottom = 242.0
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("CatchTutorialButtonStyle")
-theme_override_styles/hover = SubResource("CatchTutorialButtonHover")
+focus_mode = 2
+offset_left = 149.0
+offset_top = 198.0
+offset_right = 273.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("CatchTutorialArtButton")
+theme_override_styles/hover = SubResource("CatchTutorialArtButton")
+theme_override_styles/pressed = SubResource("CatchTutorialArtButton")
+theme_override_styles/disabled = SubResource("CatchTutorialArtButton")
+theme_override_styles/focus = SubResource("CatchTutorialArtButton")
 text = "NEXT"
 
-[node name="ReplayButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+[node name="NextArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_next_art")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="StartLabel" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.36, 0.2, 0.09, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 12
+text = "START COUNTDOWN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="KeyboardFocusRing" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("CatchTutorialKeyboardFocus")
+
+[node name="ReplayButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard" unique_id=1325745582]
 layout_mode = 0
-offset_left = 262.0
-offset_top = 191.0
-offset_right = 410.0
-offset_bottom = 242.0
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("CatchTutorialButtonStyle")
-theme_override_styles/hover = SubResource("CatchTutorialButtonHover")
+focus_mode = 2
+offset_left = 280.0
+offset_top = 198.0
+offset_right = 438.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("CatchTutorialArtButton")
+theme_override_styles/hover = SubResource("CatchTutorialArtButton")
+theme_override_styles/pressed = SubResource("CatchTutorialArtButton")
+theme_override_styles/disabled = SubResource("CatchTutorialArtButton")
+theme_override_styles/focus = SubResource("CatchTutorialArtButton")
 text = "REPLAY VOICE"
 
-[node name="PauseVoiceButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+[node name="ReplayArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/ReplayButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_replay_art")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="KeyboardFocusRing" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/ReplayButton"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("CatchTutorialKeyboardFocus")
+
+[node name="PauseVoiceButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard" unique_id=188486596]
 layout_mode = 0
-offset_left = 418.0
-offset_top = 191.0
-offset_right = 572.0
-offset_bottom = 242.0
-theme_override_font_sizes/font_size = 17
+focus_mode = 2
+offset_left = 445.0
+offset_top = 201.0
+offset_right = 608.0
+offset_bottom = 245.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("CatchTutorialButtonStyle")
 theme_override_styles/hover = SubResource("CatchTutorialButtonHover")
 text = "PAUSE VOICE"
 
-[node name="SkipButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+[node name="SkipButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard" unique_id=1473867934]
 layout_mode = 0
-offset_left = 580.0
-offset_top = 191.0
-offset_right = 733.0
-offset_bottom = 242.0
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("CatchTutorialButtonStyle")
-theme_override_styles/hover = SubResource("CatchTutorialButtonHover")
+focus_mode = 2
+offset_left = 615.0
+offset_top = 198.0
+offset_right = 734.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_styles/normal = SubResource("CatchTutorialArtButton")
+theme_override_styles/hover = SubResource("CatchTutorialArtButton")
+theme_override_styles/pressed = SubResource("CatchTutorialArtButton")
+theme_override_styles/disabled = SubResource("CatchTutorialArtButton")
+theme_override_styles/focus = SubResource("CatchTutorialArtButton")
 text = "SKIP GUIDE"
 
-[node name="TutorialNarration" type="AudioStreamPlayer" parent="GuidedTutorialLayer/GuidedTutorial"]
+[node name="SkipArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/SkipButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_skip_art")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="KeyboardFocusRing" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/SkipButton"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("CatchTutorialKeyboardFocus")
+
+[node name="TutorialNarration" type="AudioStreamPlayer" parent="GuidedTutorialLayer/GuidedTutorial" unique_id=1484021558]
 process_mode = 3

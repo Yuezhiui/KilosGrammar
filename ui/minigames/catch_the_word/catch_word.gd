@@ -40,6 +40,20 @@ const CATCH_TUTORIAL_STEPS := [
 		"caption": "Need a little break? Press Pause to stop for a moment. Press Resume when you're ready to play again!"}
 ]
 
+# Inspector controls use coordinates of the authored 1280x720 tutorial.
+# Adjust the cutout without changing any character, basket or HUD geometry.
+@export_group("Catch Tutorial Spotlight")
+@export var tutorial_focus_padding := Vector2(10.0, 10.0)
+@export var tutorial_focus_offset := Vector2.ZERO
+@export var tutorial_step_focus_offsets: Dictionary = {
+	"prompt": Vector2.ZERO,
+	"movement": Vector2.ZERO,
+	"seconds": Vector2.ZERO,
+	"lives": Vector2.ZERO,
+	"score": Vector2.ZERO,
+	"pause": Vector2.ZERO,
+}
+
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const FALLBACK_WORDS := {
 	"Noun": ["apple", "teacher", "river", "school", "pencil", "garden", "friend", "planet", "basket", "window"],
@@ -172,6 +186,7 @@ var tile_style_cache: Dictionary = {}
 @onready var prompt_label: Label = $HUDLayer/HUD/PromptLabel
 @onready var time_label: Label = $HUDLayer/HUD/TimeLabel
 @onready var pause_button: Button = $HUDLayer/HUD/PauseButton
+@onready var tutorial_layer: CanvasLayer = $GuidedTutorialLayer
 @onready var tutorial_overlay: Control = $GuidedTutorialLayer/GuidedTutorial
 @onready var tutorial_dim: ColorRect = $GuidedTutorialLayer/GuidedTutorial/Dim
 @onready var tutorial_focus: Panel = $GuidedTutorialLayer/GuidedTutorial/FocusOutline
@@ -184,6 +199,9 @@ var tile_style_cache: Dictionary = {}
 @onready var tutorial_skip: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/SkipButton
 @onready var tutorial_replay: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/ReplayButton
 @onready var tutorial_pause_voice: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/PauseVoiceButton
+@onready var tutorial_back_art: TextureRect = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/BackButton/BackArt
+@onready var tutorial_next_art: TextureRect = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton/NextArt
+@onready var tutorial_start_label: Label = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton/StartLabel
 @onready var tutorial_narration: AudioStreamPlayer = $GuidedTutorialLayer/GuidedTutorial/TutorialNarration
 
 var hearts_box: HBoxContainer
@@ -235,7 +253,7 @@ func _ready() -> void:
 	_refresh_collected_words()
 	set_process(true)
 	resized.connect(_on_resized)
-	get_viewport().size_changed.connect(_refresh_tutorial_focus)
+	get_viewport().size_changed.connect(_on_tutorial_viewport_resized)
 	call_deferred("_deferred_begin")
 
 
@@ -371,6 +389,7 @@ func _deferred_begin() -> void:
 func _wire_integrated_tutorial() -> void:
 	# Only editor-authored controls are used; no detached tutorial .tscn,
 	# runtime-created arrows or dynamic panel/character positions.
+	tutorial_layer.visible = false
 	tutorial_overlay.visible = false
 	# Every scene instance owns its cutout parameter; switching between
 	# Tutorial and Play must not inherit another instance's last highlight.
@@ -382,6 +401,19 @@ func _wire_integrated_tutorial() -> void:
 	tutorial_skip.pressed.connect(skip_guided_tutorial)
 	tutorial_replay.pressed.connect(replay_tutorial_voice)
 	tutorial_pause_voice.pressed.connect(toggle_tutorial_voice_pause)
+	# The cartoon textures own the visual button states. The native Button
+	# keeps the hitbox/keyboard activation and a visible yellow focus ring.
+	for art_button: Button in [tutorial_back, tutorial_next, tutorial_replay, tutorial_skip]:
+		art_button.focus_entered.connect(_set_tutorial_art_focus.bind(art_button, true))
+		art_button.focus_exited.connect(_set_tutorial_art_focus.bind(art_button, false))
+
+
+func _set_tutorial_art_focus(button: Button, focused: bool) -> void:
+	if not is_instance_valid(button):
+		return
+	var focus_ring := button.get_node_or_null("KeyboardFocusRing") as Panel
+	if is_instance_valid(focus_ring):
+		focus_ring.visible = focused
 
 
 func _tutorial_steps() -> Array[Dictionary]:
@@ -412,6 +444,7 @@ func begin_guided_tutorial() -> void:
 	# The outer wrapper can keep this game disabled until after 3-2-1.
 	set_process(false)
 	tutorial_overlay.visible = true
+	tutorial_layer.visible = true
 	tutorial_overlay.move_to_front()
 	_show_tutorial_step()
 
@@ -470,14 +503,23 @@ func _show_tutorial_step() -> void:
 	if tutorial_step_index < 0 or tutorial_step_index >= steps.size():
 		return
 	var entry := steps[tutorial_step_index]
-	tutorial_counter.text = "GUIDED TUTORIAL  •  STEP %d OF %d" % [tutorial_step_index + 1, steps.size()]
+	tutorial_counter.text = "STEP %d OF %d" % [tutorial_step_index + 1, steps.size()]
 	tutorial_title.text = entry["title"]
 	tutorial_caption.text = entry["caption"]
 	tutorial_back.disabled = tutorial_step_index == 0
-	tutorial_next.text = "START COUNTDOWN" if tutorial_step_index == steps.size() - 1 else "NEXT"
+	tutorial_back_art.texture = preload("res://ui/minigames/catch_the_word/tutorial_art/back_disabled.png") if tutorial_back.disabled else preload("res://ui/minigames/catch_the_word/tutorial_art/back_enabled.png")
+	var is_final := tutorial_step_index == steps.size() - 1
+	tutorial_next.text = "START COUNTDOWN" if is_final else "NEXT"
+	tutorial_next_art.texture = preload("res://ui/minigames/catch_the_word/tutorial_art/header.png") if is_final else preload("res://ui/minigames/catch_the_word/tutorial_art/next.png")
+	tutorial_start_label.visible = is_final
 	tutorial_replay.disabled = false
 	_refresh_tutorial_focus()
 	replay_tutorial_voice()
+
+
+func _on_tutorial_viewport_resized() -> void:
+	# HUD and gameplay sizing may run later in the same resize notification.
+	call_deferred("_refresh_tutorial_focus")
 
 
 func _refresh_tutorial_focus() -> void:
@@ -496,34 +538,51 @@ func _refresh_tutorial_focus() -> void:
 			target = score_plaque
 		"pause":
 			target = pause_plaque
-	var bounds := Rect2()
-	if target is Control:
-		var c := target as Control
-		var xf := c.get_global_transform_with_canvas()
-		bounds = Rect2(xf * Vector2.ZERO, xf * c.size - xf * Vector2.ZERO).abs()
-	elif target is Sprite2D:
-		var sprite := target as Sprite2D
-		var xf := sprite.get_global_transform_with_canvas()
-		var sr := sprite.get_rect()
-		var first_corner := xf * sr.position
-		bounds = Rect2(first_corner, xf * sr.end - first_corner).abs()
 	var viewport_size := get_viewport_rect().size
-	if not bounds.has_area() or viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
+	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
 		return
-	# Runtime bounds are read from the already-authored HUD and sprites;
-	# the only moving decoration is the guide's spotlight cutout border.
-	# Match Catch HUD scaling, leaving the tutorial card editor-draggable.
+	# Keep the draggable guide at the same design scale as the Catch HUD.
 	var factor := maxf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.01)
 	tutorial_overlay.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	tutorial_overlay.position = Vector2.ZERO
 	tutorial_overlay.size = viewport_size / factor
 	tutorial_overlay.scale = Vector2.ONE * factor
-	var padding := factor * 10.0
-	bounds = bounds.grow(padding)
-	bounds = bounds.intersection(Rect2(Vector2.ZERO, viewport_size))
-	tutorial_focus.position = bounds.position / factor
-	tutorial_focus.size = bounds.size / factor
-	var uv := Rect2(bounds.position / viewport_size, bounds.size / viewport_size)
+	# Both the target and overlay may live in different CanvasLayers.
+	# Transform all four local corners into the overlay's coordinate system;
+	# the SAME local rectangle drives the yellow outline AND the shader hole.
+	var target_rect := Rect2()
+	if target is Control:
+		target_rect = Rect2(Vector2.ZERO, (target as Control).size)
+	elif target is Sprite2D:
+		target_rect = (target as Sprite2D).get_rect()
+	if not target_rect.has_area():
+		return
+	var into_overlay := tutorial_overlay.get_global_transform_with_canvas().affine_inverse() * target.get_global_transform_with_canvas()
+	var corners := [
+		into_overlay * target_rect.position,
+		into_overlay * Vector2(target_rect.end.x, target_rect.position.y),
+		into_overlay * target_rect.end,
+		into_overlay * Vector2(target_rect.position.x, target_rect.end.y),
+	]
+	var focus := Rect2(corners[0], Vector2.ZERO)
+	for corner in corners:
+		focus = focus.expand(corner)
+	var step_offset: Variant = tutorial_step_focus_offsets.get(String(step["id"]), Vector2.ZERO)
+	if step_offset is Vector2:
+		focus.position += step_offset
+	focus.position += tutorial_focus_offset
+	focus = focus.grow_individual(maxf(tutorial_focus_padding.x, 0.0),
+		maxf(tutorial_focus_padding.y, 0.0),
+		maxf(tutorial_focus_padding.x, 0.0),
+		maxf(tutorial_focus_padding.y, 0.0))
+	focus = focus.intersection(Rect2(Vector2.ZERO, tutorial_overlay.size))
+	if not focus.has_area():
+		return
+	tutorial_dim.position = Vector2.ZERO
+	tutorial_dim.size = tutorial_overlay.size
+	tutorial_focus.position = focus.position
+	tutorial_focus.size = focus.size
+	var uv := Rect2(focus.position / tutorial_dim.size, focus.size / tutorial_dim.size)
 	(tutorial_dim.material as ShaderMaterial).set_shader_parameter("focus_rect",
 		Vector4(uv.position.x, uv.position.y, uv.size.x, uv.size.y))
 
@@ -538,6 +597,8 @@ func _cancel_integrated_tutorial() -> void:
 		tutorial_narration.stream_paused = false
 	if is_instance_valid(tutorial_overlay):
 		tutorial_overlay.visible = false
+	if is_instance_valid(tutorial_layer):
+		tutorial_layer.visible = false
 
 
 func _finish_integrated_tutorial() -> void:
@@ -1578,4 +1639,5 @@ func _on_resized() -> void:
 	_sync_character_position()
 	_refresh_collected_words()
 	_refresh_hud()
+	_refresh_tutorial_focus()
 	queue_redraw()

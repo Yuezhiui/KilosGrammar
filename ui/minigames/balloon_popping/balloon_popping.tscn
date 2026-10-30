@@ -14,6 +14,12 @@
 [ext_resource type="Texture2D" uid="uid://dop61vx8doeyf" path="res://Components/Gameplay/Catch the Word/HUD/generated/pause_badge.png" id="14_pause"]
 [ext_resource type="FontFile" uid="uid://r5ko286cyydw" path="res://assets/fonts/TitanOne-Regular.ttf" id="15_font"]
 [ext_resource type="Texture2D" uid="uid://cvmjit0yuw8lr" path="res://Components/Gameplay/Controls/pause_white.svg" id="16_pause_glyph"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/background.png" id="tutorial_panel_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/badge.png" id="tutorial_badge_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/back_disabled.png" id="tutorial_back_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/next.png" id="tutorial_next_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/replay.png" id="tutorial_replay_art"]
+[ext_resource type="Texture2D" path="res://ui/minigames/catch_the_word/tutorial_art/skip.png" id="tutorial_skip_art"]
 
 [sub_resource type="Shader" id="BalloonTutorialCutoutShader"]
 code = "shader_type canvas_item;\nuniform vec4 focus_rect = vec4(0.1, 0.1, 0.4, 0.2);\nuniform float dim_alpha : hint_range(0.0, 1.0) = 0.77;\nvoid fragment() {\n    bool lit = UV.x >= focus_rect.x && UV.x <= focus_rect.x + focus_rect.z && UV.y >= focus_rect.y && UV.y <= focus_rect.y + focus_rect.w;\n    COLOR = vec4(0.02, 0.015, 0.09, lit ? 0.0 : dim_alpha);\n}\n"
@@ -34,28 +40,41 @@ corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
 
 [sub_resource type="StyleBoxFlat" id="BalloonTutorialCardStyle"]
-bg_color = Color(0.12, 0.095, 0.24, 0.97)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.99, 0.76, 0.29, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-shadow_color = Color(0, 0, 0, 0.37)
-shadow_size = 8
+bg_color = Color(1, 1, 1, 0)
+
+[sub_resource type="StyleBoxEmpty" id="BalloonTutorialArtButton"]
+
+[sub_resource type="StyleBoxFlat" id="BalloonTutorialStartPlate"]
+bg_color = Color(0.18, 0.62, 0.36, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.98, 0.83, 0.44, 1)
+corner_radius_top_left = 13
+corner_radius_top_right = 13
+corner_radius_bottom_right = 13
+corner_radius_bottom_left = 13
 
 [sub_resource type="StyleBoxFlat" id="BalloonTutorialButtonStyle"]
-bg_color = Color(0.35, 0.23, 0.66, 1)
+bg_color = Color(0.99, 0.82, 0.4, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.43, 0.12, 1)
 corner_radius_top_left = 9
 corner_radius_top_right = 9
 corner_radius_bottom_right = 9
 corner_radius_bottom_left = 9
 
 [sub_resource type="StyleBoxFlat" id="BalloonTutorialButtonHover"]
-bg_color = Color(0.47, 0.34, 0.79, 1)
+bg_color = Color(1, 0.89, 0.58, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.43, 0.12, 1)
 corner_radius_top_left = 9
 corner_radius_top_right = 9
 corner_radius_bottom_right = 9
@@ -298,94 +317,215 @@ offset_bottom = 474.0
 mouse_filter = 0
 theme_override_styles/panel = SubResource("BalloonTutorialCardStyle")
 
+[node name="PanelArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_panel_art")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="TutorialStar" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
+layout_mode = 0
+offset_left = 660.0
+offset_top = 14.0
+offset_right = 718.0
+offset_bottom = 72.0
+mouse_filter = 2
+texture = ExtResource("tutorial_badge_art")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="StepCounter" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
-offset_left = 24.0
-offset_top = 13.0
-offset_right = 716.0
-offset_bottom = 42.0
-theme_override_colors/font_color = Color(1, 0.84, 0.35, 1)
+offset_left = 43.0
+offset_top = 16.0
+offset_right = 621.0
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.43, 0.23, 0.11, 1)
 theme_override_fonts/font = ExtResource("15_font")
 theme_override_font_sizes/font_size = 16
-text = "GUIDED TUTORIAL • STEP 1 OF 5"
+text = "STEP 1 OF 5"
 
 [node name="StepTitle" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
-offset_left = 24.0
-offset_top = 44.0
-offset_right = 716.0
-offset_bottom = 83.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+offset_left = 43.0
+offset_top = 48.0
+offset_right = 675.0
+offset_bottom = 92.0
+theme_override_colors/font_color = Color(0.39, 0.2, 0.07, 1)
 theme_override_fonts/font = ExtResource("15_font")
-theme_override_font_sizes/font_size = 25
+theme_override_font_sizes/font_size = 22
 text = "READ THE GRAMMAR GOAL"
 
 [node name="StepCaption" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
-offset_left = 24.0
-offset_top = 91.0
-offset_right = 716.0
-offset_bottom = 164.0
-theme_override_colors/font_color = Color(1, 0.98, 0.92, 1)
-theme_override_font_sizes/font_size = 19
+offset_left = 43.0
+offset_top = 112.0
+offset_right = 714.0
+offset_bottom = 191.0
+theme_override_colors/font_color = Color(0.34, 0.21, 0.12, 1)
+theme_override_font_sizes/font_size = 18
 text = "Look at the instruction at the top. Read which kind of word you need to find before choosing a balloon."
 autowrap_mode = 3
 vertical_alignment = 1
 
 [node name="BackButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
+mouse_default_cursor_shape = 2
 offset_left = 22.0
-offset_top = 191.0
-offset_right = 112.0
-offset_bottom = 242.0
+offset_top = 197.0
+offset_right = 144.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
 theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("BalloonTutorialButtonStyle")
-theme_override_styles/hover = SubResource("BalloonTutorialButtonHover")
+theme_override_styles/normal = SubResource("BalloonTutorialArtButton")
+theme_override_styles/hover = SubResource("BalloonTutorialArtButton")
+theme_override_styles/pressed = SubResource("BalloonTutorialArtButton")
+theme_override_styles/disabled = SubResource("BalloonTutorialArtButton")
+theme_override_styles/focus = SubResource("BalloonTutorialArtButton")
 text = "BACK"
+
+[node name="BackArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/BackButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_back_art")
+expand_mode = 1
+stretch_mode = 0
 
 [node name="NextButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
-offset_left = 120.0
-offset_top = 191.0
-offset_right = 300.0
-offset_bottom = 242.0
+mouse_default_cursor_shape = 2
+offset_left = 149.0
+offset_top = 197.0
+offset_right = 273.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
 theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("BalloonTutorialButtonStyle")
-theme_override_styles/hover = SubResource("BalloonTutorialButtonHover")
+theme_override_styles/normal = SubResource("BalloonTutorialArtButton")
+theme_override_styles/hover = SubResource("BalloonTutorialArtButton")
+theme_override_styles/pressed = SubResource("BalloonTutorialArtButton")
+theme_override_styles/disabled = SubResource("BalloonTutorialArtButton")
+theme_override_styles/focus = SubResource("BalloonTutorialArtButton")
 text = "NEXT"
+
+[node name="NextArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_next_art")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="StartPlate" type="Panel" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("BalloonTutorialStartPlate")
+
+[node name="StartLabel" type="Label" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton/StartPlate"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("15_font")
+theme_override_font_sizes/font_size = 16
+text = "START"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ReplayButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
-offset_left = 308.0
-offset_top = 191.0
-offset_right = 443.0
-offset_bottom = 242.0
+mouse_default_cursor_shape = 2
+offset_left = 280.0
+offset_top = 197.0
+offset_right = 438.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
 theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("BalloonTutorialButtonStyle")
-theme_override_styles/hover = SubResource("BalloonTutorialButtonHover")
+theme_override_styles/normal = SubResource("BalloonTutorialArtButton")
+theme_override_styles/hover = SubResource("BalloonTutorialArtButton")
+theme_override_styles/pressed = SubResource("BalloonTutorialArtButton")
+theme_override_styles/disabled = SubResource("BalloonTutorialArtButton")
+theme_override_styles/focus = SubResource("BalloonTutorialArtButton")
 text = "REPLAY VOICE"
+
+[node name="ReplayArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/ReplayButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_replay_art")
+expand_mode = 1
+stretch_mode = 0
 
 [node name="PauseVoiceButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
-offset_left = 451.0
-offset_top = 191.0
-offset_right = 593.0
-offset_bottom = 242.0
-theme_override_font_sizes/font_size = 17
+offset_left = 445.0
+offset_top = 200.0
+offset_right = 608.0
+offset_bottom = 245.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.27, 0.15, 0.08, 1)
+theme_override_colors/font_hover_color = Color(0.27, 0.15, 0.08, 1)
+theme_override_colors/font_pressed_color = Color(0.27, 0.15, 0.08, 1)
+theme_override_font_sizes/font_size = 15
 theme_override_styles/normal = SubResource("BalloonTutorialButtonStyle")
 theme_override_styles/hover = SubResource("BalloonTutorialButtonHover")
+theme_override_styles/pressed = SubResource("BalloonTutorialButtonStyle")
+theme_override_styles/disabled = SubResource("BalloonTutorialButtonStyle")
 text = "PAUSE VOICE"
 
 [node name="SkipButton" type="Button" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard"]
 layout_mode = 0
-offset_left = 601.0
-offset_top = 191.0
-offset_right = 733.0
-offset_bottom = 242.0
+mouse_default_cursor_shape = 2
+offset_left = 615.0
+offset_top = 197.0
+offset_right = 745.0
+offset_bottom = 248.0
+theme_override_colors/font_color = Color(1, 1, 1, 0)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 0)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 0)
+theme_override_colors/font_disabled_color = Color(1, 1, 1, 0)
 theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("BalloonTutorialButtonStyle")
-theme_override_styles/hover = SubResource("BalloonTutorialButtonHover")
+theme_override_styles/normal = SubResource("BalloonTutorialArtButton")
+theme_override_styles/hover = SubResource("BalloonTutorialArtButton")
+theme_override_styles/pressed = SubResource("BalloonTutorialArtButton")
+theme_override_styles/disabled = SubResource("BalloonTutorialArtButton")
+theme_override_styles/focus = SubResource("BalloonTutorialArtButton")
 text = "SKIP GUIDE"
+
+[node name="SkipArt" type="TextureRect" parent="GuidedTutorialLayer/GuidedTutorial/TutorialCard/SkipButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("tutorial_skip_art")
+expand_mode = 1
+stretch_mode = 0
 
 [node name="TutorialNarration" type="AudioStreamPlayer" parent="GuidedTutorialLayer/GuidedTutorial"]
 process_mode = 3
