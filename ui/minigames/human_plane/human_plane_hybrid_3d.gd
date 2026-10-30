@@ -41,6 +41,14 @@ var _lane_materials: Array[StandardMaterial3D] = []
 var _ring_pools: Array = []
 var _ring_material_pools: Array = []
 var _first_gate_group: Control
+var _world_camera_start := Vector3.ZERO
+var _forward_distance := 0.0
+var _wave_origin_distance := 0.0
+var _last_wave_count := -1
+var _last_progress := 0.0
+var _pool_words: Array[String] = ["", ""]
+var _ring_world_scales: Array[float] = []
+var _ring_world_positions: Array = [[], []]
 
 
 func _ready() -> void:
@@ -52,6 +60,7 @@ func _ready() -> void:
 	overlay.texture = viewport.get_texture()
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_first_gate_group = _game.get_node("MovingGates") as Control
+	_world_camera_start = view_camera.position
 	# Keep the THREE source-authored ring meshes and clone exactly THREE
 	# additional node instances ONCE at startup. Both pools retain the same
 	# TorusMesh resource from the world scene; there is no per-wave allocation.
@@ -63,6 +72,10 @@ func _ready() -> void:
 		ring.visible = false
 		queued_units.append(ring)
 	_ring_pools = [gate_units, queued_units]
+	_ring_world_positions = [[], []]
+	# One immutable world radius per native authored TorusMesh. Perspective
+	# naturally changes its ON-SCREEN diameter while camera/aircraft moves.
+	# Never stretch x and y independently or rebuild TorusMesh each frame.
 	for pool in _ring_pools:
 		var materials: Array[StandardMaterial3D] = []
 		for lane in range(3):
@@ -96,6 +109,20 @@ func _process(delta: float) -> void:
 		viewport.size = Vector2i(maxi(320, roundi(canvas_size.x * viewport_resolution_scale)),
 			maxi(180, roundi(canvas_size.y * viewport_resolution_scale)))
 		viewport.msaa_3d = Viewport.MSAA_4X if force_4x_msaa or canvas_size.y <= 720.0 else Viewport.MSAA_2X
+	var scored_progress := maxf(0.05, float(_game.call("_progress_for_answer_line")))
+	var now_progress := float(_game.get("gate_progress"))
+	var step_forward := 42.0 - _gate_distance(now_progress, scored_progress)
+	var wave_count := int(_game.get("waves_completed"))
+	if _last_wave_count < 0:
+		_last_wave_count = wave_count
+	elif wave_count != _last_wave_count or now_progress + 0.01 < _last_progress:
+		# The prefetched pool becomes active with a nonzero head start. Keep
+		# camera world-Z continuous rather than teleporting at wave handoff.
+		_wave_origin_distance = _forward_distance - step_forward
+		_last_wave_count = wave_count
+	_last_progress = now_progress
+	_forward_distance = _wave_origin_distance + step_forward
+	view_camera.position = _world_camera_start - Vector3(0, 0, _forward_distance)
 	var pilot := _game.get_node("PlaneRig") as Control
 	var bank := float(_game.get("_bank_input"))
 	var pilot_pos := pilot.get_rect().get_center()
@@ -109,12 +136,12 @@ func _process(delta: float) -> void:
 
 	if bool(_game.get("running")) and not bool(_game.get("paused")) and not bool(_game.get("finished")) and bool(_game.get("airplane_pose_active")):
 		_cloud_elapsed += maxf(delta, 0.0)
-	# Distinct 3D distances, true perspective scaling, and different movement
-	# speed/parallax. Camera/plane movement never depends on these clouds.
+		# Clouds recycle relative to real forward travel, never expire after
+		# the first gate. Their independent XY drift remains intact.
 	far_clouds.position = Vector3(-bank * 0.24 + sin(_cloud_elapsed * 0.14) * 0.34,
-		sin(_cloud_elapsed * 0.09) * 0.14, sin(_cloud_elapsed * 0.11) * 0.8)
+		sin(_cloud_elapsed * 0.09) * 0.14, -_forward_distance - 22.0 + sin(_cloud_elapsed * 0.11) * 0.8)
 	near_clouds.position = Vector3(-bank * 0.85 + sin(_cloud_elapsed * 0.32) * 0.95,
-		sin(_cloud_elapsed * 0.22) * 0.34, sin(_cloud_elapsed * 0.27) * 1.6)
+		sin(_cloud_elapsed * 0.22) * 0.34, -_forward_distance - 12.0 + sin(_cloud_elapsed * 0.27) * 1.6)
 
 	var active_gates: Array[Control] = _game.get("_gate_nodes")
 	var upcoming_gates: Array[Control] = _game.get("_upcoming_gate_nodes")
@@ -133,8 +160,43 @@ func _update_ring_pool(pool_index: int, controls: Array[Control], offsets: Array
 	var scoring_progress := maxf(0.05, float(_game.call("_progress_for_answer_line")))
 	var passing := is_front and bool(_game.get("gate_resolved"))
 	var alpha := float(_game.call("_gate_passage_alpha", progress)) if passing else 1.0
-	var plane_depth := airplane_camera_distance
 	var target_width := plane_width_pixels * canvas_size.y / DESIGN_SIZE.y
+	var world_ring_radius := target_width * plane_ring_clearance * 0.5 / 0.82 * \
+		_units_per_pixel(airplane_camera_distance, canvas_size)
+	var signature := "|".join(options)
+	if signature != _pool_words[pool_index]:
+		_pool_words[pool_index] = signature
+		_ring_world_positions[pool_index] = []
+		for lane in range(3):
+			if lane >= options.size():
+				break
+			# The editor-authored 2D scoring guide determines ring world XY ONCE.
+			# Preserve that world XY/Z while the CAMERA AND PLANE fly forward.
+			var at_score: Rect2 = _game.call("_gate_visible_rect_with_offsets",
+				lane, scoring_progress, offsets, controls)
+			var target := Vector2(at_score.get_center().x,
+				(_game.get_node("PlaneRig") as Control).get_rect().get_center().y)
+			var projected := _project_at(target, airplane_camera_distance, canvas_size)
+			var fixed_z := view_camera.position.z - _gate_distance(progress, scoring_progress)
+			if not is_front:
+				# A queued ring is a STATIONARY physical destination for the NEXT
+				# forward-flight segment. At prefetch, predict the queued head
+				# start at handoff from the real scene's preview travel factor.
+				# Align its fixed world Z with the future camera/airplane crossing,
+				# not just the current preview depth (which moves 0.6x faster).
+				# This also prevents post-first-wave physical pass-through drift.
+				var active_progress := float(_game.get("gate_progress"))
+				var preview_factor := float(_game.get_script().get_script_constant_map().get(
+					"GATE_PREVIEW_TRAVEL_FACTOR", 0.6))
+				var at_handoff := clampf(progress +
+					maxf(0.0, 1.0 - active_progress) *
+					preview_factor, 0.0, 1.0)
+				var next_origin := _wave_origin_distance + (
+					42.0 - _gate_distance(1.0, scoring_progress)) - (
+					42.0 - _gate_distance(at_handoff, scoring_progress))
+				fixed_z = _world_camera_start.z - next_origin - 42.0
+			_ring_world_positions[pool_index].append(Vector3(projected.x,
+				projected.y, fixed_z))
 	for lane in range(3):
 		var ring := pool[lane] as Node3D
 		ring.visible = draw_3d_gates and not bool(_game.get("finished")) and \
@@ -146,28 +208,11 @@ func _update_ring_pool(pool_index: int, controls: Array[Control], offsets: Array
 		if not rect.has_area():
 			ring.visible = false
 			continue
-		var at_score_rect: Rect2 = _game.call("_gate_visible_rect_with_offsets",
-			lane, scoring_progress, offsets, controls)
-		var distance := _gate_distance(progress, scoring_progress)
-		var center := gate_screen_center(lane, progress, rect, not is_front, offsets, controls)
-		if progress > scoring_progress:
-			# XY is FROZEN at the plane's physical crossing position. Only Z
-			# advances toward the near clip. Reprojecting at every Z would move
-			# the ring with the camera ray instead of flying through it.
-			var at_score_center := gate_screen_center(lane, scoring_progress,
-				at_score_rect, not is_front, offsets, controls)
-			var at_plane := _project_at(at_score_center, plane_depth, canvas_size)
-			var now := _project_at(at_score_center, distance, canvas_size)
-			ring.position = Vector3(at_plane.x, at_plane.y, now.z)
-		else:
-			ring.position = _project_at(center, distance, canvas_size)
-		var scale_depth := plane_depth if progress > scoring_progress else distance
-		var basis_rect := at_score_rect if progress > scoring_progress else rect
-		var pixels_per_unit := _units_per_pixel(scale_depth, canvas_size)
-		var minimum_outer_width := target_width * plane_ring_clearance / 0.82
-		ring.scale = Vector3(maxf(basis_rect.size.x, lerpf(0.0, minimum_outer_width,
-			clampf(progress / scoring_progress, 0.0, 1.0))) * pixels_per_unit * 0.5,
-			maxf(basis_rect.size.y, minimum_outer_width * 0.82) * pixels_per_unit * 0.5, 1.0)
+		if lane >= _ring_world_positions[pool_index].size():
+			ring.visible = false
+			continue
+		ring.position = _ring_world_positions[pool_index][lane]
+		ring.scale = Vector3.ONE * world_ring_radius
 		var chosen := passing and int(_game.get("selected_lane")) == lane
 		var color: Color = (Color("#43DF79") if bool(_game.get("selected_was_correct"))
 			else Color("#FF5068")) if chosen else GATE_COLORS[lane]

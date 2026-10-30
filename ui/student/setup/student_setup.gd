@@ -9,6 +9,7 @@ const GAME_MODES := ["Seconds", "Lives"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const AUTOFILL_IDLE_SECONDS := 2.5
 const CONFLICT_ID_TEXT_COLOR := Color(0.65, 0.26, 0.16, 1.0)
+const STATUS_TEXT_COLOR := Color(0.32, 0.29, 0.22, 1.0)
 
 const DESIGN_SIZE := Vector2(1280.0, 720.0)
 var _setup_stage: Control
@@ -28,6 +29,7 @@ var _identity_student_id := ""
 var _verified_lookup_identity: Dictionary = {}
 var _applying_context := false
 var _registration_error := ""
+var _lookup_pending := false
 var _default_id_text_color := Color.WHITE
 
 var _student_id_edit: LineEdit
@@ -66,6 +68,7 @@ func _ready() -> void:
 func set_context(new_context: Dictionary) -> void:
 	_invalidate_autofill()
 	_registration_error = ""
+	_lookup_pending = false
 	context = new_context.duplicate(true)
 	if not _should_prefill(new_context):
 		_clear_setup_context()
@@ -131,14 +134,20 @@ func apply_autofill_result(profile: Dictionary, field: String, query: String, ed
 func show_database_status(message: String, connected: bool = false, setup_required: bool = false) -> void:
 	# The form intentionally contains no connection/lookup UI. Keep state for
 	# score persistence, but don't disclose internal database errors to pupils.
-	context["database_connected"] = connected
+	# The router sends a read-only ID check before Play can open Game Selection.
+	# Give a small, neutral status in the existing editor-authored label; an
+	# asynchronous check must not look like a dead green Continue button.
+	var upper := message.strip_edges().to_upper()
+	_lookup_pending = upper.begins_with("CHECKING STUDENT ID") or upper.begins_with("STILL CHECKING STUDENT ID")
+	if not _lookup_pending:
+		context["database_connected"] = connected
 	_update_validation()
 
 
 func show_registration_error(message: String) -> void:
-	# Keep identity/storage conflicts as a real Continue lock. Show the teacher
-	# which field needs attention through its existing inline text color; avoid
-	# displaying the old large red error text on the game artwork.
+	# A mismatched student ID remains a real safety hold. Explain what to
+	# correct in a short neutral message; don't reproduce the long red banner.
+	_lookup_pending = false
 	_registration_error = message.strip_edges()
 	_update_validation()
 
@@ -289,6 +298,7 @@ func _on_student_id_changed(value: String) -> void:
 	if _applying_context:
 		return
 	_registration_error = ""
+	_lookup_pending = false
 	_schedule_autofill("id", value)
 	var clean_id := value.strip_edges()
 	student_id_edited.emit(clean_id)
@@ -307,6 +317,7 @@ func _on_student_name_changed(value: String) -> void:
 	if _applying_context:
 		return
 	_registration_error = ""
+	_lookup_pending = false
 	# A verified prior student's ID and grade must never be left on a newly
 	# entered full name. Manually typed unverified IDs are not overwritten.
 	if not _verified_lookup_identity.is_empty() \
@@ -325,6 +336,7 @@ func _on_student_name_changed(value: String) -> void:
 func _on_grade_changed(value: String) -> void:
 	if _applying_context:
 		return
+	_lookup_pending = false
 	# Teacher edits to Grade & Section invalidate any in-flight ID/name
 	# autofill. A late old response must not repopulate a deliberately cleared
 	# grade and incorrectly unlock the green Continue button.
@@ -367,6 +379,7 @@ func _on_field_changed(_value: String) -> void:
 	if _applying_context:
 		return
 	_registration_error = ""
+	_lookup_pending = false
 	if not _verified_lookup_identity.is_empty() and not _lookup_matches_current_fields():
 		_verified_lookup_identity.clear()
 		context["student_lookup_connected"] = false
@@ -391,6 +404,7 @@ func _associate_identity_with_current_id() -> void:
 func _select_style(game_style: String) -> void:
 	var canonical := _canonical_value(game_style, GAME_STYLES)
 	_selected_style = canonical if not canonical.is_empty() else game_style
+	_lookup_pending = false
 	_sync_selection_buttons()
 	_update_validation()
 
@@ -398,6 +412,7 @@ func _select_style(game_style: String) -> void:
 func _select_mode(game_mode: String) -> void:
 	var canonical := _canonical_value(game_mode, GAME_MODES)
 	_selected_mode = canonical if not canonical.is_empty() else game_mode
+	_lookup_pending = false
 	_sync_selection_buttons()
 	_update_validation()
 
@@ -405,6 +420,7 @@ func _select_mode(game_mode: String) -> void:
 func _select_difficulty(difficulty: String) -> void:
 	var canonical := _canonical_value(difficulty, DIFFICULTIES)
 	_selected_difficulty = canonical if not canonical.is_empty() else difficulty
+	_lookup_pending = false
 	_sync_selection_buttons()
 	_update_validation()
 
@@ -427,12 +443,21 @@ func _update_validation() -> void:
 	if not DIFFICULTIES.has(_selected_difficulty):
 		missing.append("Difficulty")
 
-	_continue_button.disabled = not missing.is_empty() or not _registration_error.is_empty()
+	_continue_button.disabled = not missing.is_empty() or not _registration_error.is_empty() or _lookup_pending
 	_continue_button.modulate = Color.WHITE
-	# This label is retired from the on-screen design, including identity
-	# conflicts. The conflict itself still blocks Continue and is never ignored.
-	_validation_label.visible = false
-	_validation_label.text = ""
+	# Retain the supplied art, position, font and stage geometry. Only a brief
+	# non-red actionable status appears when a database lookup pauses Play.
+	_validation_label.visible = _lookup_pending or not _registration_error.is_empty()
+	if _lookup_pending:
+		_validation_label.text = "CHECKING STUDENT ID..."
+	elif not _registration_error.is_empty():
+		_validation_label.text = "CHECK STUDENT ID AND NAME" if (
+			_registration_error.contains("ALREADY REGISTERED") or
+			_registration_error.contains("CHECK STUDENT ID AND NAME")
+		) else "STUDENT ID CHECK FAILED • TRY AGAIN"
+	else:
+		_validation_label.text = ""
+	_validation_label.add_theme_color_override("font_color", STATUS_TEXT_COLOR)
 	_student_id_edit.add_theme_color_override("font_color",
 		CONFLICT_ID_TEXT_COLOR if not _registration_error.is_empty() else _default_id_text_color)
 	var active_art := _continue_button.get_node_or_null("ButtonArtwork") as CanvasItem

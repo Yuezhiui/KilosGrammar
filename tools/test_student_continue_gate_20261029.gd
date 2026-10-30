@@ -139,8 +139,16 @@ func _gate(form: Control, enabled: bool, label: String) -> void:
     _check(gray.visible == not enabled, label + " gray visible iff invalid")
     _check(next.modulate == Color.WHITE, label + " no dimming contaminates authored artwork")
     var feedback := form.get_node("SetupStage/GameSetupCard/GameContent/ValidationPanel/ValidationLabel") as Label
-    _check(not feedback.visible and feedback.text.is_empty(),
-        label + " retired red ValidationLabel is fully blank and hidden")
+    var checking: bool = bool(form.get("_lookup_pending"))
+    var conflict: bool = not String(form.get("_registration_error")).is_empty()
+    _check(feedback.visible == (checking or conflict),
+        label + " neutral lookup status appears only during pending or conflict")
+    _check((not checking and not conflict and feedback.text.is_empty())
+        or (checking and feedback.text == "CHECKING STUDENT ID...")
+        or (conflict and feedback.text in [
+            "CHECK STUDENT ID AND NAME", "STUDENT ID CHECK FAILED • TRY AGAIN"
+        ]),
+        label + " status accurately describes progress without old red banner")
 
 
 func _check_no_default_selection(form: Control, label: String) -> void:

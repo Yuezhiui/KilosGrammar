@@ -114,8 +114,13 @@ func _exercise(dims: Vector2i) -> void:
 			label + " " + LANES[i] + " physical ring depth crosses airplane placement at score line")
 		_assert(absf(projected_pivot.x - hole_center.x) < ellipse_rx * 0.23,
 			label + " " + LANES[i] + " lateral player steering aligns with selected ring")
-		_assert(camera.global_transform.is_equal_approx(original_camera),
-			label + " " + LANES[i] + " camera does not follow player bank or teleport")
+		# Current forward-flight contract: camera and airplane advance on Z to
+		# a fixed physical torus target. Camera X/Y must NEVER steer with the
+		# child's bank; it is not a lateral chase camera or a teleport.
+		_assert(absf(camera.global_position.x - original_camera.origin.x) < 0.001
+			and absf(camera.global_position.y - original_camera.origin.y) < 0.001
+			and camera.global_position.z < original_camera.origin.z - 0.1,
+			label + " " + LANES[i] + " forward camera advances on Z only, does not chase player bank")
 		if i == 1 and DisplayServer.get_name() != "headless":
 			await _capture(label, "crossing")
 	if normalized_lanes.size() == 3:

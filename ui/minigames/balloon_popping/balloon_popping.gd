@@ -30,6 +30,8 @@ const MISSED_SHOT_VOICE_COOLDOWN_MS := 1400
 
 const ACTIVITY := "Balloon Popping"
 const CORRECT_POP_SCORE := 100
+const SCORE_CORRECT_COLOR := Color("#4EF082")
+const SCORE_ZERO_COLOR := Color(0.12, 0.12, 0.12, 1.0)
 const SECONDS_MODE_DURATION := 60.0
 const LIVES_MODE_HEARTS := 3
 # Keep a long, achievable shooting window even after many correct pops.
@@ -339,6 +341,7 @@ func _finish_round() -> void:
 		return
 	clear_hand_raise_tracking()
 	_stop_voice_feedback()
+	_clear_score_feedback()
 	finishing = true
 	round_completed = true
 	timer_running = false
@@ -593,6 +596,7 @@ func _load_raw_png(path: String) -> Texture2D:
 
 
 func _apply_context() -> void:
+	_clear_score_feedback()
 	clear_hand_raise_tracking()
 	hand_raise_last_shot_ms = -1
 	_stop_voice_feedback()
@@ -876,6 +880,9 @@ func _handle_balloon_hit(lane: int, hit_pos: Vector2) -> void:
 	# the balloon cannot pop. Show the pop burst starburst, but balloon keeps floating!
 	if balloon.position.y <= UPPER_LINE_Y:
 		_spawn_pop_burst(hit_pos)
+		# The stone was consumed but the balloon was already out of bounds.
+		# Show the zero-point result without counting a second hit or attempt.
+		_show_floating_score("+0", hit_pos, SCORE_ZERO_COLOR)
 		return
 	_pop_balloon(lane)
 
@@ -904,7 +911,7 @@ func _pop_balloon(lane: int) -> void:
 		_speak_balloon_feedback(true)
 		var award := _correct_award()
 		score += award
-		_show_floating_score("+%d" % award, pop_position, Color("#FFEB3B"))
+		_show_floating_score("+%d" % award, pop_position, SCORE_CORRECT_COLOR)
 		_spawn_confetti(pop_position, true)
 		if pending_valid_lanes.is_empty():
 			feedback_label.text = "+%d • GREAT POP!" % award
@@ -915,21 +922,22 @@ func _pop_balloon(lane: int) -> void:
 			feedback_label.text = "+%d • ONE CORRECT BALLOON LEFT" % award
 	else:
 		_speak_balloon_feedback(false)
-		_show_floating_score("-0", pop_position, Color("#E53935"))
+		_show_floating_score("+0", pop_position, SCORE_ZERO_COLOR)
 		_spawn_confetti(pop_position, false)
 		if is_lives_mode:
 			hearts = maxi(hearts - 1, 0)
-			feedback_label.text = "WRONG BALLOON • -0 POINTS • -1 HEART"
+			feedback_label.text = "WRONG BALLOON • 0 POINTS • -1 HEART"
 			if hearts <= 0:
 				_finish_round()
 		else:
-			feedback_label.text = "WRONG BALLOON • -0 POINTS"
+			feedback_label.text = "WRONG BALLOON • 0 POINTS"
 	_refresh_hud()
 
 
 func _on_projectile_missed(projectile: Area2D) -> void:
 	if not projectile_velocities.has(projectile):
 		return
+	var missed_position := projectile.position
 	_forget_projectile(projectile)
 	projectile.queue_free()
 	# A late physics/miss notification after a round ends is cleanup only; it
@@ -937,6 +945,7 @@ func _on_projectile_missed(projectile: Area2D) -> void:
 	if finishing or not timer_running or not round_active:
 		return
 	attempts += 1
+	_show_floating_score("+0", missed_position, SCORE_ZERO_COLOR)
 	_speak_balloon_feedback(false, true)
 	if miss_costs_heart:
 		hearts = maxi(hearts - 1, 0)
@@ -951,6 +960,14 @@ func _on_projectile_missed(projectile: Area2D) -> void:
 func _on_question_timeout() -> void:
 	if not round_active:
 		return
+	# One missed question earns zero points regardless of how many balloons
+	# remain; never show a zero for each lane or charge an extra attempt.
+	var miss_position := Vector2(size.x * 0.5, _balloon_y())
+	for lane in pending_valid_lanes:
+		if lane >= 0 and lane < balloons.size() and is_instance_valid(balloons[lane]) and balloons[lane].visible:
+			miss_position = balloons[lane].position
+			break
+	_show_floating_score("+0", miss_position, SCORE_ZERO_COLOR)
 	round_active = false
 	balloon_floating = false
 	_speak_balloon_feedback(false, true)
@@ -1176,20 +1193,40 @@ func _spawn_confetti(pos: Vector2, is_correct: bool) -> void:
 
 func _show_floating_score(score_text: String, pos: Vector2, color: Color) -> void:
 	var label := Label.new()
+	label.name = "BalloonScorePopup"
 	label.text = score_text
 	label.add_theme_font_override("font", FONT)
 	label.add_theme_font_size_override("font_size", 28)
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.add_theme_constant_override("outline_size", 5)
-	label.position = pos - Vector2(30.0, 40.0)
+	# Keep the entire Catch-style rise visible, including misses above the top
+	# line, while anchoring normal hits to the actual balloon/stone location.
+	label.position = Vector2(clampf(pos.x - 30.0, 12.0, maxf(size.x - 110.0, 12.0)),
+		clampf(pos.y - 40.0, 75.0, maxf(size.y - 80.0, 75.0)))
 	label.z_index = 25
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_to_group("balloon_score_popup")
 	add_child(label)
 
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(label, "position:y", pos.y - 80.0, 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var tween := create_tween().bind_node(label).set_parallel(true)
+	tween.tween_property(label, "position:y", label.position.y - 40.0, 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(label, "modulate:a", 0.0, 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.chain().tween_callback(label.queue_free)
+
+
+func _pause_score_feedback(paused: bool) -> void:
+	# A tween bound to a disabled label stops with that label. The popup then
+	# resumes at the exact same point when the player returns from Pause.
+	for child in get_children():
+		if child.is_in_group("balloon_score_popup"):
+			child.process_mode = Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
+
+
+func _clear_score_feedback() -> void:
+	for child in get_children():
+		if child.is_in_group("balloon_score_popup"):
+			child.queue_free()
 
 
 func _clear_balloons() -> void:
@@ -1387,6 +1424,7 @@ func _pause() -> void:
 		return
 	clear_hand_raise_tracking()
 	_stop_voice_feedback()
+	_pause_score_feedback(true)
 	round_active_before_pause = round_active
 	timer_running = false
 	round_active = false
@@ -1400,6 +1438,7 @@ func _resume() -> void:
 	if finishing:
 		return
 	timer_running = true
+	_pause_score_feedback(false)
 	if pause_button != null:
 		pause_button.icon = PAUSE_ICON
 	if next_round_pending:
@@ -1415,6 +1454,7 @@ func _exit_to_results() -> void:
 		return
 	clear_hand_raise_tracking()
 	_stop_voice_feedback()
+	_clear_score_feedback()
 	finishing = true
 	timer_running = false
 	round_active = false

@@ -72,8 +72,8 @@ func _check_game(mode: String, difficulty: String) -> void:
 		_check(int(game.get("streak")) == correct_number, label + " streak still counts")
 		_check(int(game.get("correct_count")) == correct_number, label + " correct count still counts")
 		_check(String(game.get("feedback_text")).begins_with("+100"), label + " feedback says +100")
-		_check((game.get_node("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label).text == str(game.get("score")),
-			label + " HUD displays whole-number score")
+		_check((game.get_node("HUDLayer/HUD/ScoreNumber") as Label).text == str(game.get("score")),
+			label + " direct Catch-exact HUD displays whole-number score")
 		var payload: Dictionary = game.call("get_context")
 		_check(int(payload.get("score", -1)) == int(game.get("score")) and
 			typeof(payload.get("score")) == TYPE_INT, label + " result payload stores integer score")

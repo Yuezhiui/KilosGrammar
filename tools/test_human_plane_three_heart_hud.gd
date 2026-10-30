@@ -3,8 +3,8 @@ extends SceneTree
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_three_heart_hud.gd
 # Verify Human Plane's own editor-authored HUD retains real Catch-compatible
 # shared artwork, three life states and its independently positioned controls.
-# Current Catch has direct HUD/ScoreNumber; Plane deliberately owns a
-# ScoreBottomContainer. Do not force old cross-game positions or title art.
+# Both games now share direct HUD/ScoreNumber and the exact editor-authored
+# ScorePlaque rect/font; Human Plane title artwork still differs intentionally.
 const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const CATCH_SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const LIVES_STATE_3 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png")
@@ -23,8 +23,7 @@ const HUD_PARTS := [
     "HUDLayer/HUD/PausePlaque",
     "HUDLayer/HUD/PauseButton",
     "HUDLayer/HUD/ScorePlaque",
-    "HUDLayer/HUD/ScoreBottomContainer",
-    "HUDLayer/HUD/ScoreBottomContainer/ScoreNumber"
+    "HUDLayer/HUD/ScoreNumber"
 ]
 const DELETED_PARTS := [
     "HUD/ScoreArtwork", "HUD/LivesArtwork", "HUD/TimerArtwork", "HUD/TitleArtwork",
@@ -33,7 +32,8 @@ const DELETED_PARTS := [
     "HUD/InstructionLabel", "HUD/DifficultyLabel",
     "HUD/StatsBar/ScoreLabel", "HUD/StatsBar/TimerLabel",
     "HUD/StatsBar/WaveLabel", "PauseButton", "HUDLayer/HUD/WaveLabel",
-    "HUDLayer/HUD/LivesHearts/Heart4", "HUDLayer/HUD/LivesHearts/Heart5"
+    "HUDLayer/HUD/LivesHearts/Heart4", "HUDLayer/HUD/LivesHearts/Heart5",
+    "HUDLayer/HUD/ScoreBottomContainer"
 ]
 var failures: Array[String] = []
 var checks := 0
@@ -96,8 +96,14 @@ func _exercise(catch: Control, screen: Vector2i, mode: String, difficulty: Strin
         source_nodes[path] = item.get_instance_id()
     _check(catch.get_node_or_null("HUDLayer/HUD/ScoreNumber") is Label
         and catch.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer") == null,
-        "Latest Catch uses its own direct HUD ScoreNumber layout; Plane owns a separate container")
-    var score := game.get_node("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
+        "Catch and Plane now both use direct ScoreNumber with no obsolete VBox")
+    var score := game.get_node("HUDLayer/HUD/ScoreNumber") as Label
+    var catch_score := catch.get_node("HUDLayer/HUD/ScoreNumber") as Label
+    var catch_plaque := catch.get_node("HUDLayer/HUD/ScorePlaque") as TextureRect
+    _check(score.get_rect().is_equal_approx(catch_score.get_rect()) and
+        (game.get_node("HUDLayer/HUD/ScorePlaque") as TextureRect).get_rect().is_equal_approx(catch_plaque.get_rect())
+        and score.get_theme_font_size("font_size") == catch_score.get_theme_font_size("font_size"),
+        tag + " EXACT current Catch editor score plaque/number rects and font 35")
     var timer_plaque := game.get_node("HUDLayer/HUD/TimerPlaque") as TextureRect
     var timer := game.get_node("HUDLayer/HUD/TimeLabel") as Label
     var lives_art := game.get_node("HUDLayer/HUD/LivesPlaque") as TextureRect
@@ -119,7 +125,7 @@ func _exercise(catch: Control, screen: Vector2i, mode: String, difficulty: Strin
     _check(int(game.get_context().get("lives", -1)) == 3, tag + " saved context cannot leak 4/5 hearts")
     _check(int(game.get("score")) == 48 and score.text == "48",
         tag + " ScoreNumber shows str(score), NOT padded with zeroes")
-    _check(score.is_visible_in_tree(), tag + " ScoreNumber visible in Catch's lower-right ScorePlaque")
+    _check(score.is_visible_in_tree(), tag + " direct ScoreNumber remains visible in Catch-exact score plaque")
     _check((game.get_node("HUDLayer/HUD/PromptLabel") as Label).text == "WHICH WORD IS AN ADJECTIVE?",
         tag + " prompt matches Catch-style grammar instruction")
     _check(lives_art.texture == LIVES_STATE_3, tag + " actual runtime three-heart artwork")

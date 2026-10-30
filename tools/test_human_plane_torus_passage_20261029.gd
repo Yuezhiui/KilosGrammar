@@ -97,7 +97,8 @@ func _exercise(dims: Vector2i, mode: String) -> void:
 		var near_clip := false
 		var late_alpha_checked := false
 		var current_words_hidden := false
-		var first_next_depth := -INF
+		var first_next_depth := INF
+		var queued_fixed_world_z := INF
 		var queued_options: Array = []
 		var score_before := int(game.get("score"))
 		var attempt_before := int(game.get("attempts"))
@@ -129,8 +130,10 @@ func _exercise(dims: Vector2i, mode: String) -> void:
 					_check((pools[active_idx][i] as Node3D).visible and upcoming.visible,
 						tag + " wave %d %s both physical trios on screen together" % [cycle, LANES[i]])
 				_check(trio_is_real, tag + " wave %d authentic approaching next labels visible" % cycle)
-				first_next_depth = (pools[next_idx][1] as Node3D).position.z
-				_check(first_next_depth < (pools[active_idx][1] as Node3D).position.z - 2.0,
+				queued_fixed_world_z = (pools[next_idx][1] as Node3D).global_position.z
+				first_next_depth = camera.global_position.z - queued_fixed_world_z
+				_check(queued_fixed_world_z < (pools[active_idx][1] as Node3D).global_position.z - 2.0
+					and first_next_depth > float(renderer.airplane_camera_distance),
 					tag + " wave %d prefetched torus starts farther from camera" % cycle)
 				queued_visible = true
 			if bool(game.get("gate_resolved")) and not scored:
@@ -226,8 +229,11 @@ func _exercise(dims: Vector2i, mode: String) -> void:
 			(game.get("_gate_nodes") as Array)[0].get_parent() ==
 				(game.get_node("MovingGates") if next_idx == 0 else game.get_node("UpcomingGates")),
 			tag + " wave %d prefetched real GrammarBank question promoted in source guide pool" % cycle)
-		_check((pools[next_idx][1] as Node3D).position.z > first_next_depth,
-			tag + " wave %d next trio actually approached continuously during outgoing passage" % cycle)
+		var queued_world_z := (pools[next_idx][1] as Node3D).global_position.z
+		var final_next_depth := camera.global_position.z - queued_world_z
+		_check(absf(queued_world_z - queued_fixed_world_z) < 0.002
+			and final_next_depth < first_next_depth - 1.0,
+			tag + " wave %d fixed-world prefetched torus gets genuinely closer as airplane+camera move forward" % cycle)
 		_check(int(game.get("lives")) == 3 and not bool(game.get("finished")) and
 			(mode == "Lives" or float(game.get("time_remaining")) > 0.0),
 			tag + " wave %d preserves hearts and strict Seconds/Lives ending" % cycle)

@@ -54,7 +54,9 @@ func _exercise(size: Vector2i, mode: String, difficulty: String) -> void:
 	var first_layout: Rect2 = (current.get_node("GateCenter") as Control).get_rect()
 	var second_layout: Rect2 = (upcoming.get_node("GateCenter") as Control).get_rect()
 	_check(first_layout.is_equal_approx(second_layout), title + " standby guide inherits user-authored initial dimensions")
-	_check(game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") != null, title + " Catch HUD score preserved")
+	_check(game.get_node_or_null("HUDLayer/HUD/ScoreNumber") is Label
+		and game.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer") == null,
+		title + " current Catch exact direct ScoreNumber without retired container")
 	_check(game.get_node_or_null("HUDLayer/HUD/TimeLabel") != null, title + " Catch HUD timer preserved")
 	_check(game.get_node_or_null("HUDLayer/HUD/WaveLabel") == null, title + " no WAVE counter resurrected")
 	var events: Array[String] = []

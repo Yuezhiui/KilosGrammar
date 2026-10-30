@@ -1,13 +1,18 @@
 ; KilosGrammar beta Windows EXE installer. Built ONLY from a validated offline
 ; release folder. This installs files, NOT PostgreSQL/Python services silently.
 ; A teacher must run the bundled installers and Setup Offline.cmd afterwards.
-#define AppVersion "0.3.0-beta.1"
+#ifndef AppVersion
+  #define AppVersion "0.3.0-beta.1"
+#endif
+#ifndef ReleaseSource
+  #define ReleaseSource "out\KilosGrammar-win-x64"
+#endif
 #ifdef QAInstall
   #define AppIdText "{{F4CE5467-8A7C-4656-9D4D-85B191767CAC}"
-  #define OutputName "KilosGrammar-v0.3.0-beta.1-OFFLINE-INSTALLER-QA-NOT-FOR-RELEASE"
+  #define OutputName "KilosGrammar-v" + AppVersion + "-OFFLINE-INSTALLER-QA-NOT-FOR-RELEASE"
 #else
   #define AppIdText "{{8EFAEB6F-439A-451C-8261-BBF40A3B9DC0}"
-  #define OutputName "KilosGrammar-v0.3.0-beta.1-OFFLINE-CANDIDATE-NOT-CLEAN-PC-TESTED-Setup"
+  #define OutputName "KilosGrammar-v" + AppVersion + "-OFFLINE-CANDIDATE-NOT-CLEAN-PC-TESTED-Setup"
 #endif
 
 [Setup]
@@ -37,7 +42,7 @@ UsePreviousAppDir=no
 CloseApplications=no
 
 [Files]
-Source: "out\KilosGrammar-win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ReleaseSource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\KilosGrammar"; Filename: "{app}\Play KilosGrammar.cmd"; WorkingDir: "{app}"

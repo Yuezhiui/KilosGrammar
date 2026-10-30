@@ -4,7 +4,7 @@
 
 KilosGrammar is a **movement-based, 2D English grammar learning game** developed in **Godot 4.7.2** for elementary learners (Grades 1–6). Three arcade-style activities combine word recognition, immediate game feedback, and optional webcam-based body movement. The project is a capstone-stage application, not a published study of learning outcomes.
 
-> **Status — source beta `v0.3.0-beta.1` (main).** The repository contains playable game scenes, a local Python/YOLO pose bridge, and a PostgreSQL-backed student/score workflow. **No verified, ready-to-download Windows offline installer or complete release package is provided.** Export and physical classroom acceptance remain separate release gates. See [Deployment and release acceptance](docs/DEPLOYMENT.md).
+> **Status — source beta `v0.3.0-beta.2` (in preparation).** The repository contains playable game scenes, a local Python/YOLO pose bridge, and a PostgreSQL-backed student/score workflow. A locally integrity-verified offline Windows ZIP and installer candidate exist, but **they are not yet approved as school-ready or uploaded to GitHub Releases**. Export integrity and physical classroom acceptance are separate release gates. See [Deployment and release acceptance](docs/DEPLOYMENT.md).
 
 ## Play the three grammar games
 

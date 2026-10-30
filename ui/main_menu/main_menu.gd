@@ -1038,10 +1038,16 @@ func _registration_form_matches(expected: Dictionary) -> bool:
 	var id_field := active_panel.get("_student_id_edit") as LineEdit
 	var name_field := active_panel.get("_name_edit") as LineEdit
 	var grade_field := active_panel.get("_grade_edit") as LineEdit
+	# An ID lookup authorizes the exact form submitted on Continue. A teacher
+	# can still change grammar topic, mode or difficulty while the request is
+	# in flight: never launch the stale options after that edit.
 	return id_field != null and name_field != null and grade_field != null \
 		and id_field.text.strip_edges() == String(expected.get("student_id", "")) \
 		and name_field.text.strip_edges() == String(expected.get("student_name", "")) \
-		and grade_field.text.strip_edges() == String(expected.get("grade_section", ""))
+		and grade_field.text.strip_edges() == String(expected.get("grade_section", "")) \
+		and String(active_panel.get("_selected_style")) == String(expected.get("game_style", "")) \
+		and String(active_panel.get("_selected_mode")) == String(expected.get("game_mode", "")) \
+		and String(active_panel.get("_selected_difficulty")) == String(expected.get("difficulty", ""))
 
 
 func _normalized_student_name(value: String) -> String:

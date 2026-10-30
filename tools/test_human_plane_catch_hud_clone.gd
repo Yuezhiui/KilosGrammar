@@ -1,7 +1,8 @@
 extends SceneTree
 
-# Shared Catch/Human Plane HUD art comparison; Human Plane has its own
-# inspector-authored positions/title/fonts. Do NOT overwrite with Catch geometry.
+# Shared Catch/Human Plane HUD art comparison. Catch-exact ScorePlaque and
+# ScoreNumber rect/font now match; titles and other independently authored
+# game HUD elements must not be overwritten with generic Catch geometry.
 # Godot --headless --path . --script res://tools/test_human_plane_catch_hud_clone.gd
 const CATCH := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const PLANE := preload("res://ui/minigames/human_plane/human_plane.tscn")
@@ -37,8 +38,15 @@ func _run() -> void:
 	var target_hud := target.get_node("HUDLayer/HUD") as Control
 	_check(source_hud.has_node("ScoreNumber") and not source_hud.has_node("ScoreBottomContainer"),
 		"Catch keeps its designer-authored direct ScoreNumber without an empty container")
-	_check(target_hud.has_node("ScoreBottomContainer/ScoreNumber"),
-		"Human Plane retains its separate, unchanged score hierarchy")
+	_check(target_hud.has_node("ScoreNumber") and not target_hud.has_node("ScoreBottomContainer"),
+		"Human Plane now matches Catch's DIRECT ScoreNumber, no extra container")
+	_check((target_hud.get_node("ScorePlaque") as TextureRect).get_rect().is_equal_approx(
+		(source_hud.get_node("ScorePlaque") as TextureRect).get_rect()) and
+		(target_hud.get_node("ScoreNumber") as Label).get_rect().is_equal_approx(
+		(source_hud.get_node("ScoreNumber") as Label).get_rect()) and
+		(target_hud.get_node("ScoreNumber") as Label).get_theme_font_size("font_size") ==
+		(source_hud.get_node("ScoreNumber") as Label).get_theme_font_size("font_size"),
+		"Shared Catch score plaque/number have exact editor rectangles and 35pt font")
 	_check(target_hud.owner == target, "complete HUD copied as scene-authored nodes")
 	_check((target.get_node("HUDLayer") as CanvasLayer).layer == (source.get_node("HUDLayer") as CanvasLayer).layer, "CanvasLayer 20 matches Catch and stays above moving gates")
 	var title_plate := target_hud.get_node_or_null("HumanPlaneTitlePanel") as Panel
@@ -112,7 +120,7 @@ func _check_live(dims: Vector2i, mode: String) -> void:
 		and (hud.get_node("TitlePlaque") as TextureRect).visible
 		and (hud.get_node("TitlePlaque") as TextureRect).texture.resource_path.ends_with("/human_plane.png"),
 		label + " supplied Human Plane title remains visible without duplicate nodes")
-	var score := game.get_node("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
+	var score := game.get_node("HUDLayer/HUD/ScoreNumber") as Label
 	var prompt := game.get_node("HUDLayer/HUD/PromptLabel") as Label
 	var timer_art := game.get_node("HUDLayer/HUD/TimerPlaque") as TextureRect
 	var timer := game.get_node("HUDLayer/HUD/TimeLabel") as Label

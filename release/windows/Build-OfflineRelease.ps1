@@ -4,14 +4,19 @@
 param(
     [string]$GodotExe = '',
     [string]$PythonExe = '',
+    [string]$BuildLabel = '',
     [switch]$PreflightOnly
 )
 
 $ErrorActionPreference = 'Stop'
 $sourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $outputRoot = Join-Path $PSScriptRoot 'out'
-$stage = Join-Path $PSScriptRoot 'staging\KilosGrammar-win-x64'
-$final = Join-Path $outputRoot 'KilosGrammar-win-x64'
+if ($BuildLabel -and $BuildLabel -cnotmatch '^[a-zA-Z0-9][a-zA-Z0-9._-]{0,69}$') {
+    throw 'BuildLabel must be 1..70 safe ASCII letters, numbers, hyphen, underscore or dot (starting with a letter or number).'
+}
+$packageName = 'KilosGrammar-win-x64' + $(if ($BuildLabel) { '-' + $BuildLabel } else { '' })
+$stage = Join-Path $PSScriptRoot ('staging\' + $packageName)
+$final = Join-Path $outputRoot $packageName
 $manifestSource = Join-Path $PSScriptRoot 'offline\manifest.json'
 
 if ([string]::IsNullOrWhiteSpace($GodotExe)) {

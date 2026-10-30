@@ -717,10 +717,10 @@ expand_mode = 1
 
 [node name="ScorePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1188822547]
 layout_mode = 0
-offset_left = 15.0
-offset_top = 160.0
-offset_right = 289.0
-offset_bottom = 336.0
+offset_left = 981.0
+offset_top = 519.0
+offset_right = 1261.0
+offset_bottom = 719.0
 mouse_filter = 2
 texture = ExtResource("r_score")
 expand_mode = 1
@@ -764,23 +764,37 @@ offset_bottom = 73.0
 mouse_default_cursor_shape = 2
 flat = true
 
-[node name="ScoreBottomContainer" type="VBoxContainer" parent="HUDLayer/HUD" unique_id=1426763398]
-layout_mode = 0
-offset_left = 79.0
-offset_top = 232.0
-offset_right = 253.0
-offset_bottom = 292.0
-mouse_filter = 2
-theme_override_constants/separation = -4
-
-[node name="ScoreNumber" type="Label" parent="HUDLayer/HUD/ScoreBottomContainer" unique_id=1415204146]
+[node name="ScoreNumber" type="Label" parent="HUDLayer/HUD" unique_id=1415204146]
 custom_minimum_size = Vector2(174, 60)
-layout_mode = 2
+layout_mode = 0
+offset_left = 1036.0
+offset_top = 607.0
+offset_right = 1224.0
+offset_bottom = 667.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.207843, 0.109804, 0.0666667, 1)
 theme_override_constants/outline_size = 4
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 35
 text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScoreFeedbackLayer" type="CanvasLayer" parent="."]
+layer = 21
+
+[node name="FloatingScore" type="Label" parent="ScoreFeedbackLayer"]
+visible = false
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 82.0
+offset_bottom = 42.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.305882, 0.941176, 0.509804, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 28
+text = "+100"
 horizontal_alignment = 1
 vertical_alignment = 1

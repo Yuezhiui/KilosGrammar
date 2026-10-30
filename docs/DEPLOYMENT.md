@@ -1,16 +1,16 @@
 # KilosGrammar — deployment and release acceptance
 
-This document is the **release gate** for an offline Windows school deployment. It complements the project [README](../README.md), the authoritative [Windows packaging instructions](../release/windows/README.md), and the [local PostgreSQL setup and migration guide](../database/README.md). It is **not evidence** that a distributable installer has been built or independently accepted.
+This document is the **release gate** for an offline Windows school deployment. It complements the project [README](../README.md), the authoritative [Windows packaging instructions](../release/windows/README.md), and the [local PostgreSQL setup and migration guide](../database/README.md). A locally verifiable installer candidate has been built, but this document is **not evidence of independently accepted school deployment**.
 
 ## Verified documentation status (2026-10-30)
 
 | Item | Status / interpretation |
 | --- | --- |
-| Public source beta | `v0.3.0-beta.1` is reported by the local `origin/main:VERSION` tracking ref. This is a **source beta**, not a signed Windows installer. |
-| Local checkout metadata | `VERSION` and `project.godot` now both read `0.3.0-beta.1`. [Older build notes](BUILD_VERSION.md) refer to an earlier beta and remain historical. |
-| Windows EXE version resource | [`export_presets.cfg`](../export_presets.cfg) now specifies `0.3.0.0` file/product metadata, but these settings are **not proof of an exported Windows binary**. |
-| Build outputs | No finished `release/windows/out/KilosGrammar-win-x64/KilosGrammar.exe`, `KilosGrammar.pck` or canonical `manifest.json` was present during this documentation review. |
-| Offline prerequisites | `release/windows/offline/manifest.json` was absent. A complete approved offline payload is therefore **not evidenced** here. |
+| Source beta | Prior `v0.3.0-beta.1` source tag is published; `v0.3.0-beta.2` with new gameplay fixes is being prepared. Release assets are not yet published. |
+| Local checkout metadata | `VERSION` and `project.godot` are aligned to `0.3.0-beta.2`. [Older build notes](BUILD_VERSION.md) are historical. |
+| Windows EXE version resource | [`export_presets.cfg`](../export_presets.cfg) now specifies `0.3.0.2` file/product metadata. |
+| Build outputs | The earlier beta.1 native release EXE/PCK and full manifests have been built and SHA-256-verified locally. A **new** build is required to include the beta.2 gameplay fixes. |
+| Offline prerequisites | The real 47-file `release/windows/offline/manifest.json`, signed Python/PostgreSQL installers and all 44 Windows wheels exist locally; offline pip install/import and model CPU synthetic inference passed. |
 | External acceptance | Successful automated/mock tests are not proof of webcam behavior, dependable pose FPS, classroom performance, or functioning installation on a second disconnected PC. |
 
 **Release classification: NOT YET ACCEPTED.** Do not attach a fabricated EXE, claim that a packaged installer is ready, or publish a release based only on source features or mocked test counts. Re-evaluate the actual bytes and signoffs at build time.
@@ -123,10 +123,10 @@ All boxes are deliberately **unchecked** until validated on the release candidat
 
 ## 5. Known boundaries and troubleshooting
 
-- **No installer/manifest present:** This repository checkout does not contain a finished verified package as reviewed on 2026-10-30. Run preflight; do not manufacture a manifest or imply an installer exists.
+- **Installer readiness:** Locally built beta.1 native EXE, full offline ZIP and an unsigned Inno Setup installer candidate passed integrity checks and a separate QA installation/uninstallation. These are excluded from source Git history and do **not** prove success on a clean disconnected school computer. Rebuild for beta.2 and perform target-PC acceptance before publishing a school-ready release.
 - **Leaderboard empty after restart:** Confirm the local PostgreSQL service, the API's `/health`, correct Windows account/DPAPI credentials and the current minigame-aware schema. Empty UI does **not** prove rows were deleted. Inspect read-only before migration; see [database/README.md](../database/README.md).
 - **Camera unavailable:** Verify physical webcam permission, approved model file, Python interpreter and all installed imports; use the actual target PC for performance assessment. No real-device reliability guarantee is provided by mock frames.
-- **Version consistency:** `VERSION`, `project.godot`, and the Windows export preset are aligned for source beta 0.3.0-beta.1, but no completed official Windows binary/export release or disconnected-PC acceptance is established by metadata alone.
+- **Version consistency:** `VERSION`, `project.godot`, and Windows metadata are aligned for source beta 0.3.0-beta.2. The earlier beta.1 installer candidate is not a beta.2 gameplay build. Metadata alone does not establish disconnected-PC acceptance.
 - **Score integrity:** Keep the rule that registration is identity-safe and **only completed normal Play rounds** update durable scores. Do not reset databases, bypass confirmation, or confuse a tutorial/aborted run with a valid completion.
 - **Scope:** No automatic cloud synchronization, account federation, universal device support, automated pedagogy assessment, or independent classroom research claim is made.
 

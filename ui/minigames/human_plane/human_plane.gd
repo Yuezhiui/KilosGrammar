@@ -96,6 +96,7 @@ const FALLBACK_WORDS := {
 @onready var _plane_rig: Control = $PlaneRig
 @onready var _plane_artwork: TextureRect = $PlaneRig/PlaneArtwork
 @onready var _catch_hud: Control = $HUDLayer/HUD
+@onready var _floating_score: Label = $ScoreFeedbackLayer/FloatingScore
 # The latest editor-authored Human Plane scene may intentionally omit the
 # old visible answer-line UI. Fall back to its existing draggable gate-end
 # marker rather than re-adding old artwork or crashing during gameplay.
@@ -111,6 +112,7 @@ var _authored_gate_colors: Array[Dictionary] = []
 var _authored_gate_rect_offsets: Array[Rect2] = []
 var _upcoming_gate_colors: Array[Dictionary] = []
 var _upcoming_rect_offsets: Array[Rect2] = []
+var _editor_word_offsets: Dictionary = {}
 var next_round_data: Dictionary = {}
 var next_gate_progress := 0.0
 var _last_prompt_text := ""
@@ -177,6 +179,7 @@ var _kids_voice
 var feedback_text := ""
 var feedback_color := CREAM
 var feedback_time := 0.0
+var _floating_score_tween: Tween
 
 
 func _ready() -> void:
@@ -220,6 +223,15 @@ func _ready() -> void:
 		for part in ["LeftPillar", "RightPillar", "TopBar"]:
 			colors[part] = (_upcoming_gate_nodes[i].get_node(part) as ColorRect).color
 		_upcoming_gate_colors.append(colors)
+	# WordPlate/WordLabel anchors and Inspector offsets remain the authored
+	# source. A right-lane word that intersects Catch's exact score plaque
+	# shifts UP just enough for readability, never changes gate/hitbox position.
+	for group in [_gate_nodes, _upcoming_gate_nodes]:
+		for gate in group:
+			for child_name in ["WordPlate", "WordLabel"]:
+				var item := (gate as Control).get_node(child_name) as Control
+				_editor_word_offsets[item.get_instance_id()] = Vector4(
+					item.offset_left, item.offset_top, item.offset_right, item.offset_bottom)
 	resized.connect(_on_scene_resized)
 	$HUDLayer/HUD/PauseButton.pressed.connect(_request_pause)
 	rng.randomize()
@@ -767,6 +779,7 @@ func _resolve_at_answer_line() -> void:
 		score += POINTS_PER_CORRECT_GATE
 		feedback_text = "+%d  CORRECT!" % POINTS_PER_CORRECT_GATE
 		feedback_color = GREEN
+		_show_floating_score("+%d" % POINTS_PER_CORRECT_GATE, Color("#4EF082"))
 		_play_voice_feedback(true)
 	elif selected_lane >= 0:
 		streak = 0
@@ -775,6 +788,7 @@ func _resolve_at_answer_line() -> void:
 		var options: Array = round_data.get("options", [])
 		feedback_text = "TRY AGAIN  •  %s" % String(options[selected_lane])
 		feedback_color = RED
+		_show_floating_score("+0", Color(0.12, 0.12, 0.12, 1.0))
 		_play_voice_feedback(false)
 	else:
 		streak = 0
@@ -782,6 +796,7 @@ func _resolve_at_answer_line() -> void:
 			lives = maxi(lives - 1, 0)
 		feedback_text = "MISSED THE GATES  •  TRY AGAIN"
 		feedback_color = YELLOW
+		_show_floating_score("+0", Color(0.12, 0.12, 0.12, 1.0))
 		_play_voice_feedback(false, true)
 	feedback_time = 1.15
 	# Update the serialized heart/score sprites immediately when a gate resolves;
@@ -789,6 +804,36 @@ func _resolve_at_answer_line() -> void:
 	_sync_visuals()
 	if is_lives_mode and lives <= 0:
 		_finish_round("OUT OF LIVES")
+
+
+func _show_floating_score(value: String, color: Color) -> void:
+	# Catch's +100 / zero-points 28pt outlined pop-and-rise, using ONE
+	# reusable editor-authored Label. Its destination derives from the actual
+	# authored PlaneRig position, not hardcoded viewport coordinates.
+	if not is_instance_valid(_floating_score):
+		return
+	if _floating_score_tween != null and _floating_score_tween.is_running():
+		_floating_score_tween.kill()
+	_floating_score.text = value
+	_floating_score.add_theme_color_override("font_color", color)
+	var pilot := $PlaneRig as Control
+	# The answer may resolve before the next _sync_visuals() updates PlaneRig.
+	# Read the SAME current authoritative collision/steering coordinates as
+	# scoring, never the previous render frame's visual rig X.
+	var label_size := _floating_score.size
+	# A missed gate can occur at the edge of the camera frame. Keep the
+	# Catch-style +0 readable even when a test/recovery state is out-of-range.
+	var pilot_center := Vector2(clampf(_plane_center_x(), label_size.x * 0.5,
+		maxf(label_size.x * 0.5, size.x - label_size.x * 0.5)), _plane_y())
+	_floating_score.position = pilot_center - Vector2(label_size.x * 0.5, pilot.size.y * 0.70)
+	_floating_score.modulate.a = 1.0
+	_floating_score.scale = Vector2.ONE
+	_floating_score.visible = true
+	_floating_score_tween = create_tween().bind_node(_floating_score).set_parallel(true)
+	_floating_score_tween.tween_property(_floating_score, "position:y",
+		_floating_score.position.y - pilot.size.y * 0.6, 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_floating_score_tween.tween_property(_floating_score, "modulate:a", 0.0, 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_floating_score_tween.chain().tween_callback(func() -> void: _floating_score.visible = false)
 
 
 func _initialize_voice_feedback() -> void:
@@ -949,10 +994,10 @@ func _draw_plane() -> void:
 func _sync_visuals() -> void:
 	if not is_node_ready():
 		return
-	var score_number := $HUDLayer/HUD/ScoreBottomContainer/ScoreNumber as Label
+	var score_number := $HUDLayer/HUD/ScoreNumber as Label
 	score_number.text = str(score)
 	# Match the original Catch score plaque while accommodating long scores.
-	var score_font_size := 40
+	var score_font_size := 35
 	while score_font_size > 16 and FONT.get_string_size(score_number.text, HORIZONTAL_ALIGNMENT_LEFT, -1, score_font_size).x > score_number.size.x - 18.0:
 		score_font_size -= 2
 	if score_number.get_theme_font_size("font_size") != score_font_size:
@@ -1056,11 +1101,38 @@ func _render_gate_trio(gates: Array[Control], data: Dictionary, progress: float,
 		word_label.add_theme_font_size_override("font_size", int(fit["font_size"]))
 		word_label.pivot_offset.x = word_label.size.x * 0.5
 		word_label.scale.x = float(fit["scale_x"])
+		_keep_word_clear_of_catch_score(gate, word_plate as Control, word_label)
 		for part in ["LeftPillar", "RightPillar", "TopBar"]:
 			var authored_color: Color = colors[i][part]
 			if resolved and not upcoming and i == selected_lane:
 				authored_color = GREEN if selected_was_correct else RED
 			(gate.get_node(part) as ColorRect).color = authored_color
+
+
+func _keep_word_clear_of_catch_score(gate: Control, word_plate: Control, word_label: Label) -> void:
+	# Uses ONLY two editor-authored rectangles and original per-gate anchors.
+	# The Catch-identical ScorePlaque position is NEVER adjusted at runtime;
+	# gate travel, words, hitboxes, and three-lane scoring remain unchanged.
+	for item in [word_plate, word_label]:
+		var authored: Vector4 = _editor_word_offsets.get(item.get_instance_id(),
+			Vector4(item.offset_left, item.offset_top, item.offset_right, item.offset_bottom))
+		item.offset_left = authored.x
+		item.offset_top = authored.y
+		item.offset_right = authored.z
+		item.offset_bottom = authored.w
+	var plaque := $HUDLayer/HUD/ScorePlaque as TextureRect
+	if not gate.visible or not word_plate.visible or not plaque.is_visible_in_tree():
+		return
+	var word_box := word_plate.get_global_rect()
+	var score_box := plaque.get_global_rect()
+	if not score_box.intersects(word_box):
+		return
+	var padding := maxf(3.0, float(word_label.get_theme_font_size("font_size")) * 0.25)
+	var shift := minf(0.0, score_box.position.y - padding - word_box.end.y) / \
+		maxf(gate.get_global_transform().get_scale().y, 0.001)
+	for item in [word_plate, word_label]:
+		item.offset_top += shift
+		item.offset_bottom += shift
 
 
 func _gate_passage_alpha(progress: float) -> float:

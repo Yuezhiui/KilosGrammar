@@ -46,7 +46,7 @@ func _run() -> void:
 		_check(image.stretch_mode in [TextureRect.STRETCH_KEEP_ASPECT_CENTERED, TextureRect.STRETCH_KEEP_ASPECT_COVERED], node_path + " preserves aspect ratio")
 	# The old Human Plane-specific HUD was replaced by the exact Catch Word
 	# scene-authored plaques; gate/pose QA must check the current source nodes.
-	for path in ["HUDLayer/HUD/TitlePlaque", "HUDLayer/HUD/PromptLabel", "HUDLayer/HUD/TimerPlaque", "HUDLayer/HUD/TimeLabel", "HUDLayer/HUD/LivesPlaque", "HUDLayer/HUD/PausePlaque", "HUDLayer/HUD/PauseButton", "HUDLayer/HUD/ScorePlaque", "HUDLayer/HUD/ScoreBottomContainer/ScoreNumber"]:
+	for path in ["HUDLayer/HUD/TitlePlaque", "HUDLayer/HUD/PromptLabel", "HUDLayer/HUD/TimerPlaque", "HUDLayer/HUD/TimeLabel", "HUDLayer/HUD/LivesPlaque", "HUDLayer/HUD/PausePlaque", "HUDLayer/HUD/PauseButton", "HUDLayer/HUD/ScorePlaque", "HUDLayer/HUD/ScoreNumber"]:
 		var node := panel.get_node_or_null(path)
 		_check(node != null and node.owner == panel, path + " editor-authored HUD")
 	panel.set_context({"topic": "Noun", "game_mode": "Lives", "difficulty": "Hard"})
@@ -66,7 +66,7 @@ func _run() -> void:
 	panel.call("set_body_x", 1.0)
 	panel.call("_update_plane_motion", 0.33)
 	var active_x := float(panel.get("plane_x_norm"))
-	_check(active_x > at_start + 0.1, "valid airplane pose smoothly steers to the right")
+	_check(active_x > at_start + 0.02, "valid continuous arm-bank moves right without teleporting")
 	panel.call("set_airplane_pose_active", false)
 	panel.call("set_body_x", -1.0)
 	panel.call("_update_plane_motion", 3.0)
@@ -79,7 +79,7 @@ func _run() -> void:
 	_check(is_equal_approx(float(panel.get("plane_x_norm")), active_x), "re-raised arms do not replay stale target")
 	panel.call("set_body_x", -1.0)
 	panel.call("_update_plane_motion", 0.4)
-	_check(float(panel.get("plane_x_norm")) < active_x - 0.1, "re-raised arms resume fresh tracking movement")
+	_check(float(panel.get("plane_x_norm")) < active_x - 0.02, "re-raised arms resume smooth fresh bank movement")
 	panel.call("_process", 0.1)
 	_check(int(panel.get("lives")) == 3, "three-life mode remains unchanged during pose transitions")
 	_check(is_zero_approx(float(panel.get("time_remaining"))), "Lives remains untimed during pose transitions")

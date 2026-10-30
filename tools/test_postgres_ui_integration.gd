@@ -149,8 +149,9 @@ func _test_conflict_and_offline_play() -> void:
 	_assert(continue_button.disabled
 		and String(form.get("_registration_error")) == "PLEASE CHECK STUDENT ID AND NAME",
 		"Existing-ID/full-name mismatch blocks Continue with a real identity hold")
-	_assert(not feedback.is_visible_in_tree() and feedback.text.is_empty(),
-		"old red identity-warning banner stays hidden and blank")
+	_assert(feedback.is_visible_in_tree() and feedback.text == "CHECK STUDENT ID AND NAME"
+		and feedback.get_theme_color("font_color").r < 0.5,
+		"short neutral inline conflict message replaces old red error banner")
 	var conflicted_id_color: Color = (form.get("_student_id_edit") as LineEdit).get_theme_color("font_color")
 	_assert(conflicted_id_color.is_equal_approx(form.get_script().get_script_constant_map()["CONFLICT_ID_TEXT_COLOR"]),
 		"conflicting Student ID uses a subtle inline color cue")
