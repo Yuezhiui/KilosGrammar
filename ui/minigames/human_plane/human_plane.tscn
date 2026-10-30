@@ -27,6 +27,42 @@ corner_radius_bottom_left = 8
 shadow_color = Color(0.0431373, 0.0862745, 0.176471, 0.28)
 shadow_size = 3
 
+[sub_resource type="StyleBoxFlat" id="tutorial_highlight_frame"]
+bg_color = Color(1, 1, 1, 0)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 0.87, 0.32, 1)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="tutorial_guide_panel"]
+bg_color = Color(0.09, 0.17, 0.31, 0.96)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.83, 0.35, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="tutorial_next_button"]
+bg_color = Color(1, 0.79, 0.26, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.96, 0.71, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [node name="HumanPlane" type="Control" unique_id=877560333]
 layout_mode = 3
 anchors_preset = 15
@@ -798,3 +834,180 @@ theme_override_font_sizes/font_size = 28
 text = "+100"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="TutorialSpotlightLayer" type="CanvasLayer" parent="."]
+process_mode = 3
+layer = 40
+
+[node name="TutorialNarration" type="AudioStreamPlayer" parent="TutorialSpotlightLayer"]
+process_mode = 3
+volume_db = -1.0
+
+[node name="TutorialSpotlight" type="Control" parent="TutorialSpotlightLayer"]
+process_mode = 3
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="DimLeft" type="ColorRect" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+layout_mode = 1
+mouse_filter = 2
+color = Color(0.027, 0.039, 0.098, 0.77)
+
+[node name="DimRight" type="ColorRect" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+layout_mode = 1
+mouse_filter = 2
+color = Color(0.027, 0.039, 0.098, 0.77)
+
+[node name="DimAbove" type="ColorRect" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+layout_mode = 1
+mouse_filter = 2
+color = Color(0.027, 0.039, 0.098, 0.77)
+
+[node name="DimBelow" type="ColorRect" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+layout_mode = 1
+mouse_filter = 2
+color = Color(0.027, 0.039, 0.098, 0.77)
+
+[node name="HighlightOutline" type="Panel" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+z_index = 1
+layout_mode = 1
+mouse_filter = 2
+theme_override_styles/panel = SubResource("tutorial_highlight_frame")
+
+[node name="GuideTopAnchor" type="Control" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+layout_mode = 1
+anchor_left = 0.16
+anchor_top = 0.045
+anchor_right = 0.84
+anchor_bottom = 0.31
+mouse_filter = 2
+
+[node name="GuideBottomAnchor" type="Control" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+layout_mode = 1
+anchor_left = 0.16
+anchor_top = 0.67
+anchor_right = 0.84
+anchor_bottom = 0.955
+mouse_filter = 2
+
+[node name="TutorialGuide" type="Panel" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+process_mode = 3
+z_index = 2
+layout_mode = 1
+offset_left = 205.0
+offset_top = 31.0
+offset_right = 1075.0
+offset_bottom = 223.0
+mouse_filter = 0
+theme_override_styles/panel = SubResource("tutorial_guide_panel")
+
+[node name="Title" type="Label" parent="TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide"]
+layout_mode = 1
+anchor_left = 0.05
+anchor_top = 0.06
+anchor_right = 0.75
+anchor_bottom = 0.29
+theme_override_colors/font_color = Color(1, 0.88, 0.43, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+text = "FLY WITH YOUR ARMS"
+vertical_alignment = 1
+
+[node name="StepCounter" type="Label" parent="TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide"]
+layout_mode = 1
+anchor_left = 0.82
+anchor_top = 0.065
+anchor_right = 0.95
+anchor_bottom = 0.27
+theme_override_colors/font_color = Color(1, 0.88, 0.43, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 17
+text = "1 / 6"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Message" type="Label" parent="TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide"]
+layout_mode = 1
+anchor_left = 0.05
+anchor_top = 0.31
+anchor_right = 0.95
+anchor_bottom = 0.69
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 17
+text = "Stretch both arms out to fly. Lean left or right to steer toward a ring."
+autowrap_mode = 3
+vertical_alignment = 1
+
+[node name="NextButton" type="Button" parent="TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide"]
+process_mode = 3
+layout_mode = 1
+anchor_left = 0.80
+anchor_top = 0.73
+anchor_right = 0.96
+anchor_bottom = 0.94
+theme_override_colors/font_color = Color(0.1, 0.18, 0.31, 1)
+theme_override_colors/font_hover_color = Color(0.1, 0.18, 0.31, 1)
+theme_override_colors/font_pressed_color = Color(0.1, 0.18, 0.31, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("tutorial_next_button")
+theme_override_styles/hover = SubResource("tutorial_next_button")
+theme_override_styles/pressed = SubResource("tutorial_next_button")
+text = "NEXT"
+
+[node name="SkipButton" type="Button" parent="TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide"]
+process_mode = 3
+layout_mode = 1
+anchor_left = 0.67
+anchor_top = 0.74
+anchor_right = 0.79
+anchor_bottom = 0.93
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "SKIP"
+
+[node name="BackButton" type="Button" parent="TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide"]
+process_mode = 3
+layout_mode = 1
+anchor_left = 0.04
+anchor_top = 0.74
+anchor_right = 0.15
+anchor_bottom = 0.93
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "BACK"
+disabled = true
+
+[node name="ReplayButton" type="Button" parent="TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide"]
+process_mode = 3
+layout_mode = 1
+anchor_left = 0.16
+anchor_top = 0.74
+anchor_right = 0.38
+anchor_bottom = 0.93
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "REPLAY VOICE"
+
+[node name="PauseVoiceButton" type="Button" parent="TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide"]
+process_mode = 3
+layout_mode = 1
+anchor_left = 0.39
+anchor_top = 0.74
+anchor_right = 0.66
+anchor_bottom = 0.93
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 15
+text = "PAUSE VOICE"
+
+[node name="TutorialArrow" type="TextureRect" parent="TutorialSpotlightLayer/TutorialSpotlight"]
+visible = false
+layout_mode = 1
+mouse_filter = 2

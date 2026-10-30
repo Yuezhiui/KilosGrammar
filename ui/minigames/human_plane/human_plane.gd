@@ -1,6 +1,7 @@
 extends Control
 
 signal requested(target: String, payload: Dictionary)
+signal tutorial_finished
 
 const FONT := preload("res://assets/fonts/TitanOne-Regular.ttf")
 const GRAMMAR_BANK_PATH := "res://ui/minigames/shared/grammar_bank.gd"
@@ -91,8 +92,9 @@ const FALLBACK_WORDS := {
 # The class camera/pose is the only steering source in the actual game. This
 # opt-in switch exists strictly for developers testing with no physical camera.
 @export var allow_keyboard_debug := false
-# The active flight scene is a genuine Node3D perspective world; the original
-# hidden editor-authored Control guides remain the collision authority.
+# The active flight scene is a genuine Node3D perspective world. Hidden
+# editor-authored Control guides PLACE the gates; 3D airplane/torus hitbox
+# clearance determines which opening was physically crossed.
 @onready var _plane_rig: Control = $PlaneRig
 @onready var _plane_artwork: TextureRect = $PlaneRig/PlaneArtwork
 @onready var _catch_hud: Control = $HUDLayer/HUD
@@ -180,6 +182,18 @@ var feedback_text := ""
 var feedback_color := CREAM
 var feedback_time := 0.0
 var _floating_score_tween: Tween
+var _tutorial_active := false
+var _tutorial_step := 0
+var _tutorial_voice_paused := false
+const TUTORIAL_AUDIO_ROOT := "res://assets/audio/tutorial_spotlight/human_plane_"
+const TUTORIAL_COMPONENTS := [
+	{"target": "PlaneRig", "title": "FLY WITH YOUR ARMS", "message": "Stretch both arms out to fly. Lean left or right to steer toward a ring. Lowering an arm holds your position.", "audio": "movement"},
+	{"target": "ring", "title": "FLY THROUGH A WORD RING", "message": "Three word rings approach: LEFT, CENTER and RIGHT. Steer the airplane through the opening of the correct ring.", "audio": "ring"},
+	{"target": "HUDLayer/HUD/PromptLabel", "title": "READ THE QUESTION", "message": "Look at the grammar question and choose the word that belongs to its requested category.", "audio": "prompt"},
+	{"target": "mode", "title": "WATCH YOUR ROUND", "message": "Seconds mode gives you 60 seconds. Lives mode gives you three hearts. Keep playing until the round ends.", "audio": "mode"},
+	{"target": "HUDLayer/HUD/ScorePlaque", "title": "EARN POINTS", "message": "A correct ring gives +100 points. A wrong ring or missed opening gives +0. Watch your score here.", "audio": "score"},
+	{"target": "HUDLayer/HUD/PausePlaque", "title": "PAUSE ANYTIME", "message": "Use the Pause button to stop the game and resume when you are ready.", "audio": "pause"}
+]
 
 
 func _ready() -> void:
@@ -234,6 +248,11 @@ func _ready() -> void:
 					item.offset_left, item.offset_top, item.offset_right, item.offset_bottom)
 	resized.connect(_on_scene_resized)
 	$HUDLayer/HUD/PauseButton.pressed.connect(_request_pause)
+	$TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/NextButton.pressed.connect(_next_tutorial_step)
+	$TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/SkipButton.pressed.connect(_end_guided_tutorial)
+	$TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/BackButton.pressed.connect(_previous_tutorial_step)
+	$TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/ReplayButton.pressed.connect(replay_tutorial_voice)
+	$TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/PauseVoiceButton.pressed.connect(toggle_tutorial_voice_pause)
 	rng.randomize()
 	_initialize_voice_feedback()
 	if ResourceLoader.exists(GRAMMAR_BANK_PATH):
@@ -252,6 +271,171 @@ func set_context(new_context: Dictionary) -> void:
 		difficulty = _canonical_difficulty(_first_text(context, ["difficulty"], difficulty))
 		speed_multiplier = _earned_gate_speed_multiplier()
 	_sync_visuals()
+	if _tutorial_active:
+		_show_tutorial_step()
+
+
+func begin_guided_tutorial() -> void:
+	# The router invokes this on the actual minigame scene before countdown.
+	# Freeze time, gates, pose steering and all scoring while explaining HUD.
+	if finished:
+		return
+	_ensure_started()
+	_tutorial_active = true
+	_tutorial_step = 0
+	_tutorial_voice_paused = false
+	running = false
+	set_airplane_pose_active(false)
+	$TutorialSpotlightLayer/TutorialSpotlight.visible = true
+	_show_tutorial_step()
+
+
+func is_tutorial_active() -> bool:
+	return _tutorial_active
+
+
+func _next_tutorial_step() -> void:
+	if not _tutorial_active:
+		return
+	_tutorial_step += 1
+	if _tutorial_step >= TUTORIAL_COMPONENTS.size():
+		_end_guided_tutorial()
+	else:
+		_show_tutorial_step()
+
+
+func _previous_tutorial_step() -> void:
+	if not _tutorial_active or _tutorial_step <= 0:
+		return
+	_tutorial_step -= 1
+	_show_tutorial_step()
+
+
+func _end_guided_tutorial() -> void:
+	if not _tutorial_active:
+		return
+	_tutorial_active = false
+	$TutorialSpotlightLayer/TutorialSpotlight.visible = false
+	var narration := $TutorialSpotlightLayer/TutorialNarration as AudioStreamPlayer
+	narration.stop()
+	narration.stream_paused = false
+	_tutorial_voice_paused = false
+	# The router receives tutorial_finished and owns the subsequent countdown.
+	# Keep flight frozen until the router explicitly resumes this instance.
+	running = false
+	tutorial_finished.emit()
+
+
+func _show_tutorial_step() -> void:
+	if not _tutorial_active or not is_node_ready():
+		return
+	# The Gameplay router intentionally disables the entire minigame before
+	# tutorial begins. Place the real native 3D airplane and torus once with a
+	# zero-delta render sync, so spotlight geometry matches what is VISIBLE to
+	# students even before the first active game frame / countdown.
+	($HybridFlight3D as Node2D).call("_process", 0.0)
+	var info: Dictionary = TUTORIAL_COMPONENTS[_tutorial_step]
+	var guide := $TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide as Control
+	(guide.get_node("Title") as Label).text = String(info["title"])
+	(guide.get_node("Message") as Label).text = String(info["message"])
+	(guide.get_node("StepCounter") as Label).text = "%d / %d" % [_tutorial_step + 1, TUTORIAL_COMPONENTS.size()]
+	(guide.get_node("NextButton") as Button).text = "START" if _tutorial_step == TUTORIAL_COMPONENTS.size() - 1 else "NEXT"
+	(guide.get_node("BackButton") as Button).disabled = _tutorial_step == 0
+	_layout_tutorial_spotlight()
+	replay_tutorial_voice()
+
+
+func replay_tutorial_voice() -> void:
+	if not _tutorial_active:
+		return
+	var info: Dictionary = TUTORIAL_COMPONENTS[_tutorial_step]
+	var narration := $TutorialSpotlightLayer/TutorialNarration as AudioStreamPlayer
+	narration.stop()
+	narration.stream_paused = false
+	_tutorial_voice_paused = false
+	var guide := $TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide as Control
+	var replay := guide.get_node("ReplayButton") as Button
+	var pause_button := guide.get_node("PauseVoiceButton") as Button
+	pause_button.text = "PAUSE VOICE"
+	var audio_name := String(info["audio"])
+	if audio_name == "mode":
+		audio_name = "seconds" if is_seconds_mode else "lives"
+	if not audio_name.is_empty():
+		var audio_path := TUTORIAL_AUDIO_ROOT + audio_name + ".wav"
+		if ResourceLoader.exists(audio_path):
+			narration.stream = load(audio_path) as AudioStream
+			replay.disabled = narration.stream == null
+			pause_button.disabled = replay.disabled
+			if narration.stream != null:
+				narration.play()
+			return
+	narration.stream = null
+	replay.disabled = true
+	pause_button.disabled = true
+
+
+func toggle_tutorial_voice_pause() -> void:
+	if not _tutorial_active:
+		return
+	var narration := $TutorialSpotlightLayer/TutorialNarration as AudioStreamPlayer
+	if narration.stream == null:
+		return
+	_tutorial_voice_paused = not _tutorial_voice_paused
+	narration.stream_paused = _tutorial_voice_paused
+	($TutorialSpotlightLayer/TutorialSpotlight/TutorialGuide/PauseVoiceButton as Button).text = \
+		"RESUME VOICE" if _tutorial_voice_paused else "PAUSE VOICE"
+
+
+func _layout_tutorial_spotlight() -> void:
+	if not _tutorial_active or not is_node_ready():
+		return
+	var overlay := $TutorialSpotlightLayer/TutorialSpotlight as Control
+	var info: Dictionary = TUTORIAL_COMPONENTS[_tutorial_step]
+	var target := String(info["target"])
+	var visible_rect := Rect2()
+	if target == "PlaneRig":
+		visible_rect = ($HybridFlight3D as Node2D).call("get_airplane_highlight_rect")
+		# The editable 2D flight rig remains the teacher's placement guide.
+		# Enclose both its authored frame and every rendered wingtip so this
+		# explanation never highlights an empty patch or dims part of the plane.
+		visible_rect = visible_rect.merge(_plane_rig.get_global_rect())
+	elif target == "ring":
+		var hybrid := $HybridFlight3D as Node2D
+		visible_rect = hybrid.call("get_ring_highlight_rect", 1)
+	elif target == "mode":
+		var mode_path := "HUDLayer/HUD/TimerPlaque" if is_seconds_mode else "HUDLayer/HUD/LivesPlaque"
+		visible_rect = (get_node(mode_path) as Control).get_global_rect()
+	else:
+		visible_rect = (get_node(target) as Control).get_global_rect()
+	# Four source-authored dimming regions create a REAL transparent cutout.
+	# Their bounds follow the currently highlighted editor component and
+	# automatically adapt to 1280, 1600 and 1920 classroom viewports.
+	var canvas := overlay.size
+	var padding := maxf(canvas.y / 720.0 * 9.0, 5.0)
+	var focus := visible_rect.grow(padding).intersection(Rect2(Vector2.ZERO, canvas))
+	var left := overlay.get_node("DimLeft") as ColorRect
+	var right := overlay.get_node("DimRight") as ColorRect
+	var above := overlay.get_node("DimAbove") as ColorRect
+	var below := overlay.get_node("DimBelow") as ColorRect
+	left.position = Vector2.ZERO
+	left.size = Vector2(maxf(focus.position.x, 0.0), canvas.y)
+	right.position = Vector2(focus.end.x, 0.0)
+	right.size = Vector2(maxf(canvas.x - focus.end.x, 0.0), canvas.y)
+	above.position = Vector2(focus.position.x, 0.0)
+	above.size = Vector2(focus.size.x, maxf(focus.position.y, 0.0))
+	below.position = Vector2(focus.position.x, focus.end.y)
+	below.size = Vector2(focus.size.x, maxf(canvas.y - focus.end.y, 0.0))
+	var outline := overlay.get_node("HighlightOutline") as Panel
+	outline.position = focus.position
+	outline.size = focus.size
+	var guide := overlay.get_node("TutorialGuide") as Control
+	# Use Inspector-authored guide anchors at the top or bottom depending on
+	# where the highlighted control lives, so it does not block the cutout.
+	var top_anchor := overlay.get_node("GuideTopAnchor") as Control
+	var bottom_anchor := overlay.get_node("GuideBottomAnchor") as Control
+	var anchor := top_anchor if focus.get_center().y > canvas.y * 0.53 else bottom_anchor
+	guide.position = anchor.position
+	guide.size = anchor.size
 
 
 func get_context() -> Dictionary:
@@ -419,6 +603,9 @@ func _earned_gate_speed_multiplier() -> float:
 
 func _process(delta: float) -> void:
 	if not started:
+		return
+	if _tutorial_active:
+		_layout_tutorial_spotlight()
 		return
 	if paused:
 		return
@@ -764,11 +951,15 @@ func _fallback_lane_round() -> Dictionary:
 
 
 func _resolve_at_answer_line() -> void:
-	if gate_resolved:
+	if gate_resolved or finished or paused or not running or _tutorial_active:
 		return
 	gate_resolved = true
 	attempts += 1
-	selected_lane = _lane_hit_at_answer_line()
+	var flight := get_node_or_null("HybridFlight3D") as Node2D
+	if flight != null and bool(flight.get("hybrid_enabled")) and bool(flight.get("draw_3d_gates")):
+		selected_lane = int(flight.call("physical_lane_at_answer_line"))
+	else:
+		selected_lane = _lane_hit_at_answer_line()
 	var valid: Array = round_data.get("valid_indices", [])
 	selected_was_correct = selected_lane >= 0 and selected_lane in valid
 	if selected_was_correct:
@@ -868,8 +1059,9 @@ func _exit_tree() -> void:
 
 
 func _lane_hit_at_answer_line() -> int:
-	# Deliberately sampled only when the approaching gates cross the answer line.
-	# Lateral movement before this moment never selects the center (or any other) lane.
+	# Legacy 2D fallback for the non-hybrid art view. Native 3D gameplay calls
+	# physical_lane_at_answer_line() on the 3D flight renderer instead.
+	# Lateral movement before the answer line never locks in a selection.
 	var plane_x := _plane_center_x()
 	var authored_hitbox := $PlaneRig/Hitbox as Control
 	var half_hitbox := authored_hitbox.size.x * 0.5
@@ -955,6 +1147,8 @@ func _resume() -> void:
 
 
 func _request_pause() -> void:
+	if _tutorial_active:
+		return
 	_pause()
 
 
@@ -1035,9 +1229,10 @@ func _sync_visuals() -> void:
 
 
 func _normalized_scoring_lane_centers(answer_progress: float) -> PackedFloat32Array:
-	# Resolve the authored PlaneRig/Hitbox center to the SAME 0..1 calibrated
-	# steering coordinates used by the scoring function. No pixel hardcoding:
-	# moving a Godot editor gate changes both the projected artwork and collision.
+	# Convert artist-authored 2D lane centers to the SAME 0..1 calibrated
+	# steering coordinates used by the 3D airplane. Moving a Godot editor
+	# guide moves the physical torus target, with the renderer checking its
+	# actual ring opening rather than a transparent 2D artwork rectangle.
 	var left_x := _plane_left_limit.get_rect().get_center().x
 	var right_x := _plane_right_limit.get_rect().get_center().x
 	var width := right_x - left_x
@@ -1072,8 +1267,8 @@ func _render_gate_trio(gates: Array[Control], data: Dictionary, progress: float,
 		# already outside the camera. Reuse the same original label and plaque.
 		gate.modulate.a = passage_alpha
 		var rect := _gate_rect_with_offsets(i, progress, offsets)
-		# The original authored guides still own scoring and dimensions; only
-		# the painted 2D plaque follows the actual native ring's projected center.
+		# Authored guides place the physical target rings; the 2D word plaques
+		# follow their visual positions and never decide a 3D collision.
 		var visual_center := rect.get_center()
 		if renderer != null and bool(renderer.get("hybrid_enabled")) and bool(renderer.get("draw_3d_gates")):
 			var ring_rect := _gate_visible_rect_with_offsets(i, progress, offsets, gates)
@@ -1157,6 +1352,7 @@ func _on_scene_resized() -> void:
 		# The 3D layer has its own viewport resize handling and editor-authored
 		# cloud hierarchy; only 2D HUD uses this responsive scaling.
 	_sync_visuals()
+	_layout_tutorial_spotlight()
 
 
 func _gate_rect(lane: int, progress: float) -> Rect2:

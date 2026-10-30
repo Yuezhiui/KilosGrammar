@@ -52,6 +52,7 @@ func _check_scoring_and_restore(tier: String, mode: String) -> void:
 	await process_frame
 	await process_frame
 	game.set_process(false)
+	game.set_airplane_pose_active(true)
 	var feedback := game.get_node_or_null("HUDLayer/HUD/FeedbackLabel") as Label
 	_check(feedback == null, label + " unwanted duplicate FeedbackLabel is removed")
 	_check(int(game.get("lives")) == 3, label + " starts with exactly three hearts")
@@ -69,8 +70,8 @@ func _check_scoring_and_restore(tier: String, mode: String) -> void:
 			break
 		var lane := int(valid[0])
 		_place_at_lane(game, lane)
-		_check(int(game.call("_lane_hit_at_answer_line")) == lane,
-			label + " correct collision hits visible arc %d" % correct)
+		_check(int((game.get_node("HybridFlight3D") as Node2D).call("physical_lane_at_answer_line")) == lane,
+			label + " correct airplane clears visible 3D arc %d" % correct)
 		var old_points := int(game.get("score"))
 		game.call("_resolve_at_answer_line")
 		var expected := 1.0 + (float(CEILINGS[tier]) - 1.0) * (1.0 - pow(0.8, float(correct)))
@@ -113,8 +114,8 @@ func _check_scoring_and_restore(tier: String, mode: String) -> void:
 	_check(wrong >= 0, label + " real wave has wrong gate")
 	if wrong >= 0:
 		_place_at_lane(game, wrong)
-		_check(int(game.call("_lane_hit_at_answer_line")) == wrong,
-			label + " wrong gate detected by native collision")
+		_check(int((game.get_node("HybridFlight3D") as Node2D).call("physical_lane_at_answer_line")) == wrong,
+			label + " wrong gate detected by native 3D collision")
 		game.call("_resolve_at_answer_line")
 		_check(int(game.get("score")) == points, label + " wrong gate never deducts score")
 		_check(int(game.get("lives")) == (3 if mode == "Seconds" else 2),
@@ -358,16 +359,10 @@ func _check_full_sixty_seconds(topic: String, tier: String) -> void:
 
 
 func _place_at_lane(game: Control, lane: int) -> void:
-	var progress: float = game.call("_progress_for_answer_line")
-	var rect: Rect2 = game.call("_gate_visible_rect", lane, progress)
-	var left: Control = game.get_node("FlightPaths/PlaneLeftLimit")
-	var right: Control = game.get_node("FlightPaths/PlaneRightLimit")
-	var pilot: Control = game.get_node("PlaneRig")
-	var hitbox: Control = game.get_node("PlaneRig/Hitbox")
-	var hit_offset := hitbox.get_rect().get_center().x - pilot.size.x * 0.5
-	game.set("plane_x_norm", (rect.get_center().x - hit_offset -
-		float(game.get("_plane_authored_offset_x")) - left.get_rect().get_center().x) /
-		(right.get_rect().get_center().x - left.get_rect().get_center().x))
+	var centers: PackedFloat32Array = game.call("_normalized_scoring_lane_centers",
+		float(game.call("_progress_for_answer_line")))
+	if centers.size() == 3:
+		game.set("plane_x_norm", centers[lane])
 
 
 func _check(condition: bool, description: String) -> void:

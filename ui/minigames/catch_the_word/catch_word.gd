@@ -1,6 +1,7 @@
 extends Control
 
 signal requested(target: String, payload: Dictionary)
+signal tutorial_finished()
 
 const TITLE_FONT: Font = preload("res://assets/fonts/TitanOne-Regular.ttf")
 const KidsVoice = preload("res://ui/shared/kids_voice_feedback.gd")
@@ -23,6 +24,21 @@ const GENERATED_ITEM_DIR := "res://Components/Gameplay/Catch the Word/Characters
 const LIVES_STATE_DIR := "res://Components/Gameplay/Catch the Word/HUD/generated/replacement/"
 const HUD_DESIGN_SIZE := Vector2(1280.0, 720.0)
 const HUD_INK := Color("#57321F")
+const TUTORIAL_AUDIO_ROOT := "res://assets/audio/tutorial_spotlight/catch_word_"
+const CATCH_TUTORIAL_STEPS := [
+	{"id": "prompt", "title": "READ THE QUESTION",
+		"caption": "Look at the question at the top of the screen. Read it carefully, then find the matching word on a falling apple."},
+	{"id": "movement", "title": "MOVE YOUR BASKET",
+		"caption": "Move your body left, center, or right to guide your basket. Catch the apple with the correct word. You've got this!"},
+	{"id": "seconds", "title": "WATCH YOUR TIMER",
+		"caption": "In Seconds mode, you have sixty seconds. Catch as many correct words as you can before the timer reaches zero!"},
+	{"id": "lives", "title": "PROTECT YOUR HEARTS",
+		"caption": "In Lives mode, you start with three hearts. Catching a wrong apple costs one heart, so look carefully before you move."},
+	{"id": "score", "title": "EARN POINTS",
+		"caption": "Every correct apple earns one hundred points! A wrong answer never takes away points you have already earned. Keep trying!"},
+	{"id": "pause", "title": "TAKE A BREAK",
+		"caption": "Need a little break? Press Pause to stop for a moment. Press Resume when you're ready to play again!"}
+]
 
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const FALLBACK_WORDS := {
@@ -156,6 +172,19 @@ var tile_style_cache: Dictionary = {}
 @onready var prompt_label: Label = $HUDLayer/HUD/PromptLabel
 @onready var time_label: Label = $HUDLayer/HUD/TimeLabel
 @onready var pause_button: Button = $HUDLayer/HUD/PauseButton
+@onready var tutorial_overlay: Control = $GuidedTutorialLayer/GuidedTutorial
+@onready var tutorial_dim: ColorRect = $GuidedTutorialLayer/GuidedTutorial/Dim
+@onready var tutorial_focus: Panel = $GuidedTutorialLayer/GuidedTutorial/FocusOutline
+@onready var tutorial_card: Panel = $GuidedTutorialLayer/GuidedTutorial/TutorialCard
+@onready var tutorial_counter: Label = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/StepCounter
+@onready var tutorial_title: Label = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/StepTitle
+@onready var tutorial_caption: Label = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/StepCaption
+@onready var tutorial_back: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/BackButton
+@onready var tutorial_next: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton
+@onready var tutorial_skip: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/SkipButton
+@onready var tutorial_replay: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/ReplayButton
+@onready var tutorial_pause_voice: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/PauseVoiceButton
+@onready var tutorial_narration: AudioStreamPlayer = $GuidedTutorialLayer/GuidedTutorial/TutorialNarration
 
 var hearts_box: HBoxContainer
 @onready var score_bottom_number: Label = $HUDLayer/HUD/ScoreNumber
@@ -168,6 +197,11 @@ var gameplay_apple_texture: Texture2D = APPLE_TEXTURE
 var lives_texture_cache: Dictionary = {}
 var last_score_layout_value := -1
 var last_prompt_layout_text := ""
+var tutorial_step_index := -1
+var tutorial_active := false
+var tutorial_voice_paused := false
+var tutorial_generation := 0
+var tutorial_was_running := true
 
 
 func _ready() -> void:
@@ -191,6 +225,7 @@ func _ready() -> void:
 	_initialize_voice_feedback()
 	_load_grammar_bank_if_available()
 	_build_controls()
+	_wire_integrated_tutorial()
 	_apply_generated_reference_assets()
 	_place_score_behind_character()
 	_select_round_art({})
@@ -200,10 +235,12 @@ func _ready() -> void:
 	_refresh_collected_words()
 	set_process(true)
 	resized.connect(_on_resized)
+	get_viewport().size_changed.connect(_refresh_tutorial_focus)
 	call_deferred("_deferred_begin")
 
 
 func set_context(value: Dictionary) -> void:
+	_cancel_integrated_tutorial()
 	_stop_voice_feedback()
 	context = value.duplicate(true)
 	context["activity"] = "Catch the Word"
@@ -270,6 +307,13 @@ func set_context(value: Dictionary) -> void:
 	_spawn_wave()
 	queue_redraw()
 
+	# The gameplay router may have disabled this minigame before the first
+	# frame. Its embedded guide is PROCESS_MODE_ALWAYS so the student can still
+	# read/hear the explanations and press Next before the 3-2-1 overlay.
+	# Ordinary Play, resumed sessions and score/camera logic never enter here.
+	if bool(context.get("guided_tutorial", false)) and not is_resume:
+		call_deferred("begin_guided_tutorial")
+
 
 func get_context() -> Dictionary:
 	return _result_payload()
@@ -301,7 +345,7 @@ func _finish_round() -> void:
 
 
 func _process(delta: float) -> void:
-	if round_finished or not round_running:
+	if tutorial_active or round_finished or not round_running:
 		return
 
 	_update_basket(delta)
@@ -322,6 +366,189 @@ func _deferred_begin() -> void:
 	_refresh_hud()
 	_ensure_matching_tile()
 	queue_redraw()
+
+
+func _wire_integrated_tutorial() -> void:
+	# Only editor-authored controls are used; no detached tutorial .tscn,
+	# runtime-created arrows or dynamic panel/character positions.
+	tutorial_overlay.visible = false
+	# Every scene instance owns its cutout parameter; switching between
+	# Tutorial and Play must not inherit another instance's last highlight.
+	tutorial_dim.material = tutorial_dim.material.duplicate(true)
+	tutorial_overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	tutorial_narration.process_mode = Node.PROCESS_MODE_ALWAYS
+	tutorial_back.pressed.connect(tutorial_previous_step)
+	tutorial_next.pressed.connect(tutorial_next_step)
+	tutorial_skip.pressed.connect(skip_guided_tutorial)
+	tutorial_replay.pressed.connect(replay_tutorial_voice)
+	tutorial_pause_voice.pressed.connect(toggle_tutorial_voice_pause)
+
+
+func _tutorial_steps() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for entry in CATCH_TUTORIAL_STEPS:
+		if entry["id"] == "seconds" and not is_seconds_mode:
+			continue
+		if entry["id"] == "lives" and not is_lives_mode:
+			continue
+		result.append(entry)
+	return result
+
+
+func is_tutorial_active() -> bool:
+	return tutorial_active
+
+
+func begin_guided_tutorial() -> void:
+	if tutorial_active or round_finished or not bool(context.get("guided_tutorial", false)):
+		return
+	tutorial_generation += 1
+	tutorial_active = true
+	tutorial_step_index = 0
+	tutorial_was_running = round_running
+	round_running = false
+	_stop_voice_feedback()
+	# The guide does not progress waves, answer correctness, hearts or time.
+	# The outer wrapper can keep this game disabled until after 3-2-1.
+	set_process(false)
+	tutorial_overlay.visible = true
+	tutorial_overlay.move_to_front()
+	_show_tutorial_step()
+
+
+func tutorial_next_step() -> void:
+	if not tutorial_active:
+		return
+	if tutorial_step_index >= _tutorial_steps().size() - 1:
+		_finish_integrated_tutorial()
+		return
+	tutorial_step_index += 1
+	_show_tutorial_step()
+
+
+func tutorial_previous_step() -> void:
+	if not tutorial_active or tutorial_step_index <= 0:
+		return
+	tutorial_step_index -= 1
+	_show_tutorial_step()
+
+
+func skip_guided_tutorial() -> void:
+	if tutorial_active:
+		_finish_integrated_tutorial()
+
+
+func replay_tutorial_voice() -> void:
+	if not tutorial_active:
+		return
+	tutorial_voice_paused = false
+	tutorial_pause_voice.text = "PAUSE VOICE"
+	tutorial_narration.stop()
+	var step := _tutorial_steps()[tutorial_step_index]
+	var clip_path := TUTORIAL_AUDIO_ROOT + String(step["id"]) + ".wav"
+	if ResourceLoader.exists(clip_path):
+		tutorial_narration.stream = load(clip_path) as AudioStream
+		tutorial_narration.play()
+	else:
+		# Captions remain legible and navigation works when sound is missing.
+		tutorial_narration.stream = null
+		tutorial_replay.disabled = true
+
+
+func toggle_tutorial_voice_pause() -> void:
+	if not tutorial_active:
+		return
+	tutorial_voice_paused = not tutorial_voice_paused
+	tutorial_narration.stream_paused = tutorial_voice_paused
+	tutorial_pause_voice.text = "RESUME VOICE" if tutorial_voice_paused else "PAUSE VOICE"
+
+
+func _show_tutorial_step() -> void:
+	if not tutorial_active:
+		return
+	var steps := _tutorial_steps()
+	if tutorial_step_index < 0 or tutorial_step_index >= steps.size():
+		return
+	var entry := steps[tutorial_step_index]
+	tutorial_counter.text = "GUIDED TUTORIAL  •  STEP %d OF %d" % [tutorial_step_index + 1, steps.size()]
+	tutorial_title.text = entry["title"]
+	tutorial_caption.text = entry["caption"]
+	tutorial_back.disabled = tutorial_step_index == 0
+	tutorial_next.text = "START COUNTDOWN" if tutorial_step_index == steps.size() - 1 else "NEXT"
+	tutorial_replay.disabled = false
+	_refresh_tutorial_focus()
+	replay_tutorial_voice()
+
+
+func _refresh_tutorial_focus() -> void:
+	if not tutorial_active or not is_instance_valid(tutorial_dim):
+		return
+	var step := _tutorial_steps()[tutorial_step_index]
+	var target: CanvasItem = prompt_label
+	match String(step["id"]):
+		"movement":
+			target = basket_sprite
+		"seconds":
+			target = timer_plaque
+		"lives":
+			target = lives_plaque
+		"score":
+			target = score_plaque
+		"pause":
+			target = pause_plaque
+	var bounds := Rect2()
+	if target is Control:
+		var c := target as Control
+		var xf := c.get_global_transform_with_canvas()
+		bounds = Rect2(xf * Vector2.ZERO, xf * c.size - xf * Vector2.ZERO).abs()
+	elif target is Sprite2D:
+		var sprite := target as Sprite2D
+		var xf := sprite.get_global_transform_with_canvas()
+		var sr := sprite.get_rect()
+		var first_corner := xf * sr.position
+		bounds = Rect2(first_corner, xf * sr.end - first_corner).abs()
+	var viewport_size := get_viewport_rect().size
+	if not bounds.has_area() or viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
+		return
+	# Runtime bounds are read from the already-authored HUD and sprites;
+	# the only moving decoration is the guide's spotlight cutout border.
+	# Match Catch HUD scaling, leaving the tutorial card editor-draggable.
+	var factor := maxf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.01)
+	tutorial_overlay.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	tutorial_overlay.position = Vector2.ZERO
+	tutorial_overlay.size = viewport_size / factor
+	tutorial_overlay.scale = Vector2.ONE * factor
+	var padding := factor * 10.0
+	bounds = bounds.grow(padding)
+	bounds = bounds.intersection(Rect2(Vector2.ZERO, viewport_size))
+	tutorial_focus.position = bounds.position / factor
+	tutorial_focus.size = bounds.size / factor
+	var uv := Rect2(bounds.position / viewport_size, bounds.size / viewport_size)
+	(tutorial_dim.material as ShaderMaterial).set_shader_parameter("focus_rect",
+		Vector4(uv.position.x, uv.position.y, uv.size.x, uv.size.y))
+
+
+func _cancel_integrated_tutorial() -> void:
+	tutorial_generation += 1
+	tutorial_active = false
+	tutorial_step_index = -1
+	tutorial_voice_paused = false
+	if is_instance_valid(tutorial_narration):
+		tutorial_narration.stop()
+		tutorial_narration.stream_paused = false
+	if is_instance_valid(tutorial_overlay):
+		tutorial_overlay.visible = false
+
+
+func _finish_integrated_tutorial() -> void:
+	if not tutorial_active:
+		return
+	_cancel_integrated_tutorial()
+	round_running = tutorial_was_running
+	set_process(true)
+	# The wrapper receives this exactly once and starts its frozen 3-2-1.
+	# A standalone tutorial test can also observe this without a router.
+	tutorial_finished.emit()
 
 
 func _load_grammar_bank_if_available() -> void:
@@ -1028,6 +1255,7 @@ func _stop_voice_feedback() -> void:
 
 
 func _exit_tree() -> void:
+	_cancel_integrated_tutorial()
 	_stop_voice_feedback()
 	if _kids_voice != null:
 		_kids_voice.release()
@@ -1106,6 +1334,18 @@ func _handle_missed_correct(tile: Dictionary) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
+		if tutorial_active:
+			match event.keycode:
+				KEY_ESCAPE, KEY_P, KEY_SPACE:
+					toggle_tutorial_voice_pause()
+				KEY_ENTER, KEY_KP_ENTER, KEY_RIGHT:
+					tutorial_next_step()
+				KEY_LEFT:
+					tutorial_previous_step()
+				_:
+					return
+			get_viewport().set_input_as_handled()
+			return
 		if event.keycode in [KEY_ESCAPE, KEY_P]:
 			_pause()
 			get_viewport().set_input_as_handled()
@@ -1113,6 +1353,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _pause() -> void:
 	if round_finished:
+		return
+	if tutorial_active:
+		toggle_tutorial_voice_pause()
 		return
 	_stop_voice_feedback()
 	round_running = false

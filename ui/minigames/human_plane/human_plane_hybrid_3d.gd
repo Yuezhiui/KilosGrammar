@@ -1,8 +1,8 @@
 extends Node2D
 
 ## Native perspective 3D flight world in its own Node3D .tscn, composited below
-## the unchanged 2D scoring/grammar HUD. 2D editor guides determine the hit
-## lane; visual positions are projected from those SAME scoring rectangles.
+## the unchanged 2D score/grammar HUD. 2D editor guides place three real
+## torus openings; native 3D collision volumes determine actual passage.
 @export var hybrid_enabled := true
 @export var draw_3d_gates := true
 @export_range(0.75, 1.0, 0.05) var viewport_resolution_scale := 1.0
@@ -18,6 +18,8 @@ extends Node2D
 ## Minimum clear hole around the full airplane wings at the answer line.
 ## Teacher-controlled model width and the native TorusMesh hole set the fit.
 @export_range(1.05, 1.6, 0.05) var plane_ring_clearance := 1.35
+## Prevent a floating-point edge touch from claiming a physical pass.
+const PASSAGE_CLEARANCE_EPSILON := 0.001
 
 const DESIGN_SIZE := Vector2(1280.0, 720.0)
 const GATE_COLORS := [Color("#A944F1"), Color("#43DF79"), Color("#299AF7")]
@@ -221,6 +223,133 @@ func _update_ring_pool(pool_index: int, controls: Array[Control], offsets: Array
 		if material.albedo_color != color:
 			material.albedo_color = color
 			material.emission = Color(color.r * 0.18, color.g * 0.18, color.b * 0.18)
+
+
+func physical_lane_at_answer_line() -> int:
+	# Called ONLY by HumanPlane's one-shot AnswerLine crossing. Compute the
+	# actual aircraft / hollow-TorusMesh aperture geometry at that precise
+	# crossing, before the 3D child's _process() can run this frame. Looking up
+	# last-rendered positions would lag one pose frame and miss real pass-throughs.
+	if not hybrid_enabled or not draw_3d_gates or not is_instance_valid(_game):
+		return -1
+	# A crossing is an intentional answer only while the enrolled student's
+	# calibrated BOTH-ARMS pose remains active. Missing wrists, arms lowered,
+	# occlusion, and student-lock loss cannot win an unattended +100.
+	if not bool(_game.get("airplane_pose_active")):
+		return -1
+	var options: Array = (_game.get("round_data") as Dictionary).get("options", [])
+	if options.size() != 3:
+		return -1
+	var canvas_size := _game.size
+	if canvas_size.x <= 0.0 or canvas_size.y <= 0.0:
+		return -1
+	var pilot_hit_shape := plane_anchor.get_node("PlanePassageHitbox/HitShape") as CollisionShape3D
+	if not (pilot_hit_shape.shape is SphereShape3D):
+		return -1
+	var pilot_radius: float = (pilot_hit_shape.shape as SphereShape3D).radius
+	var target_width := plane_width_pixels * canvas_size.y / DESIGN_SIZE.y
+	var units_at_plane := _units_per_pixel(airplane_camera_distance, canvas_size)
+	var plane_scale := target_width * units_at_plane / plane_model_width_units
+	pilot_radius *= plane_scale
+	var pilot_screen := Vector2(float(_game.call("_plane_center_x")),
+		float(_game.call("_plane_y")))
+	var pilot_world := _project_at(pilot_screen, airplane_camera_distance, canvas_size)
+	pilot_world += pilot_hit_shape.position * plane_scale
+	var active_gates: Array[Control] = _game.get("_gate_nodes")
+	var offsets: Array[Rect2] = _game.get("_authored_gate_rect_offsets")
+	var score_progress := float(_game.call("_progress_for_answer_line"))
+	var ring_scale := target_width * plane_ring_clearance * 0.5 / 0.82 * units_at_plane
+	var front_index := 0 if active_gates[0].get_parent() == _first_gate_group else 1
+	var winners := 0
+	var winning_lane := -1
+	for lane in range(3):
+		var ring := _ring_pools[front_index][lane] as Node3D
+		var mesh := ring.get_node("Ring") as MeshInstance3D
+		var aperture_shape := ring.get_node("RingPassageHitbox/HitShape") as CollisionShape3D
+		if not (mesh.mesh is TorusMesh) or not (aperture_shape.shape is CylinderShape3D):
+			return -1
+		var torus := mesh.mesh as TorusMesh
+		var cylinder := aperture_shape.shape as CylinderShape3D
+		# Never score contact with the torus tube. Use the SMALLER of the
+		# teacher-editable aperture cylinder and the actual hollow mesh radius.
+		var open_radius := minf(cylinder.radius, torus.inner_radius) * ring_scale
+		var rect: Rect2 = _game.call("_gate_visible_rect_with_offsets",
+			lane, score_progress, offsets, active_gates)
+		if not rect.has_area():
+			continue
+		var ring_screen := Vector2(rect.get_center().x, pilot_screen.y)
+		var ring_world := _project_at(ring_screen, airplane_camera_distance, canvas_size)
+		ring_world += aperture_shape.position * ring_scale
+		# The airplane and torus both have scene-authored physical hitboxes.
+		# Their XY clearance is measured in world units at the common crossing
+		# Z-plane, independent of projected sprite width or the monitor size.
+		var radial_distance := Vector2(pilot_world.x - ring_world.x,
+			pilot_world.y - ring_world.y).length()
+		if radial_distance + pilot_radius + PASSAGE_CLEARANCE_EPSILON < open_radius:
+			winning_lane = lane
+			winners += 1
+	# Two coincident or artist-overlapped rings are ambiguous, even if both
+	# options happen to be correct. The game may award a score only once.
+	return winning_lane if winners == 1 else -1
+
+
+func get_ring_highlight_rect(lane: int) -> Rect2:
+	# The tutorial spotlight follows the CURRENT 3D torus itself. A 2D gate
+	# guide would outline empty space while perspective moves the ring.
+	var canvas := _game.size
+	var active: Array[Control] = _game.get("_gate_nodes")
+	var front_index := 0 if active[0].get_parent() == _first_gate_group else 1
+	var pool: Array = _ring_pools[front_index]
+	if pool.is_empty() or viewport.size.x <= 0 or viewport.size.y <= 0:
+		return Rect2()
+	var ring := pool[clampi(lane, 0, 2)] as Node3D
+	var mesh := ring.get_node("Ring") as MeshInstance3D
+	if not (mesh.mesh is TorusMesh):
+		return Rect2()
+	var dist := absf(view_camera.global_position.z - ring.global_position.z)
+	var image_center := view_camera.unproject_position(ring.global_position)
+	image_center *= Vector2(canvas.x / float(viewport.size.x), canvas.y / float(viewport.size.y))
+	var radius := ((mesh.mesh as TorusMesh).outer_radius * ring.scale.x) / \
+		maxf(_units_per_pixel(dist, canvas), 0.0001)
+	# Give the far-away target a useful readable cutout without modifying the
+	# ring mesh, actual physical radius, or the camera perspective.
+	radius = maxf(radius, canvas.y / DESIGN_SIZE.y * 28.0)
+	return Rect2(image_center - Vector2.ONE * radius, Vector2.ONE * radius * 2.0)
+
+
+func get_airplane_highlight_rect() -> Rect2:
+	# The painted airplane has 22 editable glTF mesh parts. Its actual rendered
+	# AABB corners, projected through the live camera, are the only reliable
+	# highlight; the collision sphere may be smaller than a wingtip and the
+	# hidden 2D pilot guide may be much larger than the painted model.
+	var canvas := _game.size
+	var factor := Vector2(canvas.x / float(viewport.size.x), canvas.y / float(viewport.size.y))
+	var has_bounds := false
+	var bounds := Rect2()
+	for node in plane_anchor.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		if mesh.mesh == null or not mesh.is_visible_in_tree():
+			continue
+		var aabb := mesh.get_aabb()
+		for corner in range(8):
+			var world := mesh.to_global(aabb.get_endpoint(corner))
+			if view_camera.is_position_behind(world):
+				continue
+			var pixel := view_camera.unproject_position(world) * factor
+			if not has_bounds:
+				bounds = Rect2(pixel, Vector2.ZERO)
+				has_bounds = true
+			else:
+				bounds = bounds.expand(pixel)
+	if has_bounds:
+		return bounds
+	# Imported artwork may still be loading before the first viewport frame;
+	# retain a stable procedural collision-sphere fallback for that frame only.
+	var center := view_camera.unproject_position(plane_anchor.global_position) * factor
+	var hitbox := plane_anchor.get_node("PlanePassageHitbox/HitShape") as CollisionShape3D
+	var radius: float = (hitbox.shape as SphereShape3D).radius * plane_anchor.scale.x / \
+		maxf(_units_per_pixel(airplane_camera_distance, canvas), 0.0001)
+	return Rect2(center - Vector2.ONE * radius, Vector2.ONE * radius * 2.0)
 
 
 func _gate_distance(progress: float, scored_progress: float) -> float:

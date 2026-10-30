@@ -2,7 +2,8 @@ extends SceneTree
 
 ## Full real gameplay flight passage through two fixed TorusMesh pools.
 ## Each of four waves in both modes uses source GrammarBank options and
-## authoritative PlaneRig/Hitbox scoring; no fabricated success or manual score.
+## authoritative native TorusMesh aperture and airplane-collision scoring;
+## no fabricated success or manual score.
 ## --headless supported; native OpenGL -- --capture saves GPU images to user://.
 const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const STEP := 1.0 / 60.0
@@ -41,6 +42,9 @@ func _exercise(dims: Vector2i, mode: String) -> void:
 	for frame in range(3):
 		await process_frame
 	game.set_process(false)
+	# Camera-free verification must model a freshly locked student spreading
+	# BOTH arms; an inactive pose cannot safely award points in the real game.
+	game.set_airplane_pose_active(true)
 	var renderer := game.get_node("HybridFlight3D") as Node2D
 	renderer.set_process(false)
 	var world := renderer.get_node("RenderViewport/FlightWorld3D") as Node3D
@@ -83,8 +87,8 @@ func _exercise(dims: Vector2i, mode: String) -> void:
 			break
 		var correct_lane := int(valid[0])
 		_place_at_lane(game, correct_lane)
-		_check(int(game.call("_lane_hit_at_answer_line")) == correct_lane,
-			tag + " wave %d real hitbox aligned with correct scoring lane" % cycle)
+		_check(int(renderer.call("physical_lane_at_answer_line")) == correct_lane,
+			tag + " wave %d full 3D airplane clears correct physical torus hole" % cycle)
 		var answer_progress := float(game.call("_progress_for_answer_line"))
 		_check(answer_progress > 0.0 and answer_progress < 0.98,
 			tag + " wave %d valid scoring before camera exit" % cycle)
@@ -260,16 +264,10 @@ func _exercise(dims: Vector2i, mode: String) -> void:
 
 
 func _place_at_lane(game: Control, lane: int) -> void:
-	var at_line := float(game.call("_progress_for_answer_line"))
-	var rect: Rect2 = game.call("_gate_visible_rect", lane, at_line)
-	var left := game.get_node("FlightPaths/PlaneLeftLimit") as Control
-	var right := game.get_node("FlightPaths/PlaneRightLimit") as Control
-	var rig := game.get_node("PlaneRig") as Control
-	var hitbox := game.get_node("PlaneRig/Hitbox") as Control
-	var offset := hitbox.get_rect().get_center().x - rig.size.x * 0.5
-	game.set("plane_x_norm", (rect.get_center().x - offset -
-		float(game.get("_plane_authored_offset_x")) - left.get_rect().get_center().x) /
-		(right.get_rect().get_center().x - left.get_rect().get_center().x))
+	var centers: PackedFloat32Array = game.call("_normalized_scoring_lane_centers",
+		float(game.call("_progress_for_answer_line")))
+	if centers.size() == 3:
+		game.set("plane_x_norm", centers[lane])
 	game.call("_sync_visuals")
 
 

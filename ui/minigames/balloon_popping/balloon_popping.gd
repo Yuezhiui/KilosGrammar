@@ -2,6 +2,7 @@
 extends Control
 
 signal requested(target: String, payload: Dictionary)
+signal tutorial_finished()
 
 const UI = preload("res://ui/play/shared/play_ui.gd")
 const FONT: Font = preload("res://assets/fonts/TitanOne-Regular.ttf")
@@ -27,6 +28,21 @@ const PAUSE_ICON: Texture2D = preload("res://Components/Gameplay/Controls/pause_
 const PLAY_ICON: Texture2D = preload("res://Components/Gameplay/Controls/play_white.svg")
 const KidsVoice = preload("res://ui/shared/kids_voice_feedback.gd")
 const MISSED_SHOT_VOICE_COOLDOWN_MS := 1400
+const TUTORIAL_AUDIO_ROOT := "res://assets/audio/tutorial_spotlight/balloon_popping_"
+const BALLOON_TUTORIAL_STEPS := [
+	{"id": "prompt", "title": "READ THE GRAMMAR GOAL",
+		"caption": "Look at the instruction at the top. Read which kind of word you need to find before choosing a balloon."},
+	{"id": "movement", "title": "AIM AND SHOOT",
+		"caption": "Move your body left, center, or right to aim. Start with hands lowered, then raise either hand to shoot. Keep it raised to fire again after a short cooldown!"},
+	{"id": "seconds", "title": "WATCH THE 60-SECOND CLOCK",
+		"caption": "In Seconds mode, you have sixty seconds to pop the correct balloons. Answer as many as you can before time runs out!"},
+	{"id": "lives", "title": "PROTECT YOUR THREE HEARTS",
+		"caption": "In Lives mode, you have three hearts. A wrong balloon, missed shot, or unanswered question costs one heart. Think before shooting!"},
+	{"id": "score", "title": "EARN 100 POINTS",
+		"caption": "Each correctly popped balloon gives you one hundred points. Wrong balloons and missed shots give zero points. Look for the floating +100 or +0!"},
+	{"id": "pause", "title": "PAUSE WHEN NEEDED",
+		"caption": "Press the Pause button in the top right to take a break. Resume when you're ready, and the game will continue where you stopped."}
+]
 
 const ACTIVITY := "Balloon Popping"
 const CORRECT_POP_SCORE := 100
@@ -147,6 +163,25 @@ var balloon_voice_player: AudioStreamPlayer
 var _kids_voice
 var last_missed_shot_voice_msec := -100000
 
+@onready var tutorial_overlay: Control = $GuidedTutorialLayer/GuidedTutorial
+@onready var tutorial_dim: ColorRect = $GuidedTutorialLayer/GuidedTutorial/Dim
+@onready var tutorial_focus: Panel = $GuidedTutorialLayer/GuidedTutorial/FocusOutline
+@onready var tutorial_counter: Label = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/StepCounter
+@onready var tutorial_title: Label = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/StepTitle
+@onready var tutorial_caption: Label = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/StepCaption
+@onready var tutorial_back: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/BackButton
+@onready var tutorial_next: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/NextButton
+@onready var tutorial_skip: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/SkipButton
+@onready var tutorial_replay: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/ReplayButton
+@onready var tutorial_pause_voice: Button = $GuidedTutorialLayer/GuidedTutorial/TutorialCard/PauseVoiceButton
+@onready var tutorial_narration: AudioStreamPlayer = $GuidedTutorialLayer/GuidedTutorial/TutorialNarration
+
+var tutorial_step_index := -1
+var tutorial_active := false
+var tutorial_voice_paused := false
+var tutorial_was_running := true
+var tutorial_was_round_active := false
+
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
@@ -158,8 +193,10 @@ func _ready() -> void:
 	rng.randomize()
 	_initialize_voice_feedback()
 	_build_scene()
+	_wire_integrated_tutorial()
 	_apply_context()
 	resized.connect(_layout_scene)
+	get_viewport().size_changed.connect(_refresh_tutorial_focus)
 	call_deferred("_layout_scene")
 	set_process(true)
 	set_physics_process(true)
@@ -281,6 +318,9 @@ func clear_body_input() -> void:
 # The optional clock lets headless tests verify the one-second interval exactly.
 # Returns true only if this sample actually fired one projectile.
 func set_hand_raise_state(raised: bool, tracking_valid: bool = true, now_ms: int = -1) -> bool:
+	if tutorial_active:
+		clear_hand_raise_tracking()
+		return false
 	if not tracking_valid:
 		clear_hand_raise_tracking()
 		return false
@@ -543,6 +583,187 @@ func _build_scene() -> void:
 	hud_layer.add_child(finish_button)
 
 
+func _wire_integrated_tutorial() -> void:
+	# The dim, focus and navigation live in this editor-authored game scene.
+	# No standalone guide scene or directional arrows are needed.
+	tutorial_overlay.visible = false
+	tutorial_overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	tutorial_narration.process_mode = Node.PROCESS_MODE_ALWAYS
+	tutorial_back.pressed.connect(tutorial_previous_step)
+	tutorial_next.pressed.connect(tutorial_next_step)
+	tutorial_skip.pressed.connect(skip_guided_tutorial)
+	tutorial_replay.pressed.connect(replay_tutorial_voice)
+	tutorial_pause_voice.pressed.connect(toggle_tutorial_voice_pause)
+
+
+func _tutorial_steps() -> Array[Dictionary]:
+	var steps: Array[Dictionary] = []
+	for entry in BALLOON_TUTORIAL_STEPS:
+		if String(entry["id"]) == "seconds" and not is_seconds_mode:
+			continue
+		if String(entry["id"]) == "lives" and not is_lives_mode:
+			continue
+		steps.append(entry)
+	return steps
+
+
+func is_tutorial_active() -> bool:
+	return tutorial_active
+
+
+func begin_guided_tutorial() -> void:
+	if not is_node_ready() or tutorial_active or finishing or not bool(context.get("guided_tutorial", false)):
+		return
+	tutorial_active = true
+	tutorial_step_index = 0
+	tutorial_was_running = timer_running
+	tutorial_was_round_active = round_active
+	timer_running = false
+	round_active = false
+	clear_hand_raise_tracking()
+	_stop_voice_feedback()
+	_pause_score_feedback(true)
+	tutorial_overlay.visible = true
+	tutorial_overlay.move_to_front()
+	_show_tutorial_step()
+
+
+func tutorial_next_step() -> void:
+	if not tutorial_active:
+		return
+	if tutorial_step_index >= _tutorial_steps().size() - 1:
+		_finish_integrated_tutorial()
+		return
+	tutorial_step_index += 1
+	_show_tutorial_step()
+
+
+func tutorial_previous_step() -> void:
+	if not tutorial_active or tutorial_step_index <= 0:
+		return
+	tutorial_step_index -= 1
+	_show_tutorial_step()
+
+
+func skip_guided_tutorial() -> void:
+	if tutorial_active:
+		_finish_integrated_tutorial()
+
+
+func replay_tutorial_voice() -> void:
+	if not tutorial_active:
+		return
+	tutorial_narration.stop()
+	tutorial_narration.stream_paused = false
+	tutorial_voice_paused = false
+	tutorial_pause_voice.text = "PAUSE VOICE"
+	var entry := _tutorial_steps()[tutorial_step_index]
+	var clip_path := TUTORIAL_AUDIO_ROOT + String(entry["id"]) + ".wav"
+	if ResourceLoader.exists(clip_path):
+		tutorial_narration.stream = load(clip_path) as AudioStream
+		tutorial_replay.disabled = tutorial_narration.stream == null
+		if tutorial_narration.stream != null:
+			tutorial_narration.play()
+	else:
+		tutorial_narration.stream = null
+		tutorial_replay.disabled = true
+
+
+func toggle_tutorial_voice_pause() -> void:
+	if not tutorial_active or tutorial_narration.stream == null:
+		return
+	tutorial_voice_paused = not tutorial_voice_paused
+	tutorial_narration.stream_paused = tutorial_voice_paused
+	tutorial_pause_voice.text = "RESUME VOICE" if tutorial_voice_paused else "PAUSE VOICE"
+
+
+func _show_tutorial_step() -> void:
+	if not tutorial_active:
+		return
+	var steps := _tutorial_steps()
+	if tutorial_step_index < 0 or tutorial_step_index >= steps.size():
+		return
+	var entry := steps[tutorial_step_index]
+	tutorial_counter.text = "GUIDED TUTORIAL  •  STEP %d OF %d" % [tutorial_step_index + 1, steps.size()]
+	tutorial_title.text = String(entry["title"])
+	tutorial_caption.text = String(entry["caption"])
+	tutorial_back.disabled = tutorial_step_index == 0
+	tutorial_next.text = "START COUNTDOWN" if tutorial_step_index == steps.size() - 1 else "NEXT"
+	tutorial_replay.disabled = false
+	_refresh_tutorial_focus()
+	replay_tutorial_voice()
+
+
+func _refresh_tutorial_focus() -> void:
+	if not tutorial_active or not is_instance_valid(tutorial_dim):
+		return
+	var steps := _tutorial_steps()
+	if tutorial_step_index < 0 or tutorial_step_index >= steps.size():
+		return
+	var target: CanvasItem = carnival_objective_plaque
+	match String(steps[tutorial_step_index]["id"]):
+		"movement":
+			target = launcher.get_node_or_null("TutorialFocusArea") as Control
+		"seconds":
+			target = shared_timer_plaque
+		"lives":
+			target = shared_lives_plaque
+		"score":
+			target = carnival_score_plaque
+		"pause":
+			target = pause_plaque
+	if not is_instance_valid(target):
+		return
+	var bounds := Rect2()
+	if target is Control:
+		var control := target as Control
+		var transform := control.get_global_transform_with_canvas()
+		bounds = Rect2(transform * Vector2.ZERO,
+			transform * control.size - transform * Vector2.ZERO).abs()
+	elif target is Sprite2D:
+		var sprite := target as Sprite2D
+		var transform := sprite.get_global_transform_with_canvas()
+		var local_rect := sprite.get_rect()
+		var first_corner := transform * local_rect.position
+		bounds = Rect2(first_corner, transform * local_rect.end - first_corner).abs()
+	var viewport_size := get_viewport_rect().size
+	if not bounds.has_area() or viewport_size.x < 2.0 or viewport_size.y < 2.0:
+		return
+	var scale_factor := maxf(minf(viewport_size.x / 1280.0, viewport_size.y / 720.0), 0.01)
+	tutorial_overlay.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	tutorial_overlay.position = Vector2.ZERO
+	tutorial_overlay.size = viewport_size / scale_factor
+	tutorial_overlay.scale = Vector2.ONE * scale_factor
+	bounds = bounds.grow(10.0 * scale_factor).intersection(Rect2(Vector2.ZERO, viewport_size))
+	tutorial_focus.position = bounds.position / scale_factor
+	tutorial_focus.size = bounds.size / scale_factor
+	var uv := Rect2(bounds.position / viewport_size, bounds.size / viewport_size)
+	(tutorial_dim.material as ShaderMaterial).set_shader_parameter("focus_rect",
+		Vector4(uv.position.x, uv.position.y, uv.size.x, uv.size.y))
+
+
+func _cancel_integrated_tutorial() -> void:
+	tutorial_active = false
+	tutorial_step_index = -1
+	tutorial_voice_paused = false
+	if is_instance_valid(tutorial_narration):
+		tutorial_narration.stop()
+		tutorial_narration.stream_paused = false
+	if is_instance_valid(tutorial_overlay):
+		tutorial_overlay.visible = false
+
+
+func _finish_integrated_tutorial() -> void:
+	if not tutorial_active:
+		return
+	_cancel_integrated_tutorial()
+	timer_running = tutorial_was_running
+	round_active = tutorial_was_round_active
+	_pause_score_feedback(false)
+	# The outer gameplay wrapper starts 3-2-1 only after this one signal.
+	tutorial_finished.emit()
+
+
 func _create_carnival_hud_plaque(hud_layer: Control, filename: String, node_name: String) -> TextureRect:
 	var path := CARNIVAL_ART + filename
 	if not ResourceLoader.exists(path):
@@ -596,6 +817,7 @@ func _load_raw_png(path: String) -> Texture2D:
 
 
 func _apply_context() -> void:
+	_cancel_integrated_tutorial()
 	_clear_score_feedback()
 	clear_hand_raise_tracking()
 	hand_raise_last_shot_ms = -1
@@ -677,10 +899,14 @@ func _apply_context() -> void:
 	round_index = maxi(int(context.get("balloon_round", 0)), 0)
 	_refresh_hud()
 	_start_new_round()
+	# The router mounts a guided game disabled while waiting for explanation and
+	# countdown. Our embedded CanvasLayer remains interactive during that wait.
+	if bool(context.get("guided_tutorial", false)) and not bool(context.get("resume_round", false)):
+		call_deferred("begin_guided_tutorial")
 
 
 func _process(delta: float) -> void:
-	if not timer_running or finishing:
+	if tutorial_active or not timer_running or finishing:
 		return
 	if is_seconds_mode:
 		time_remaining = maxf(time_remaining - delta, 0.0)
@@ -727,7 +953,7 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if finishing:
+	if finishing or tutorial_active:
 		return
 	if event is InputEventKey:
 		var key_event := event as InputEventKey
@@ -745,7 +971,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if finishing or not timer_running:
+	if tutorial_active or finishing or not timer_running:
 		return
 	_update_launcher(delta)
 	_update_projectiles(delta)
@@ -1411,7 +1637,7 @@ func _refresh_hud() -> void:
 
 
 func _toggle_pause() -> void:
-	if finishing:
+	if finishing or tutorial_active:
 		return
 	if timer_running:
 		_pause()
@@ -1420,7 +1646,7 @@ func _toggle_pause() -> void:
 
 
 func _pause() -> void:
-	if finishing or not timer_running:
+	if finishing or tutorial_active or not timer_running:
 		return
 	clear_hand_raise_tracking()
 	_stop_voice_feedback()
@@ -1435,7 +1661,7 @@ func _pause() -> void:
 
 
 func _resume() -> void:
-	if finishing:
+	if finishing or tutorial_active:
 		return
 	timer_running = true
 	_pause_score_feedback(false)
@@ -1493,6 +1719,7 @@ func _stop_voice_feedback() -> void:
 
 
 func _exit_tree() -> void:
+	_cancel_integrated_tutorial()
 	clear_hand_raise_tracking()
 	_stop_voice_feedback()
 	if _kids_voice != null:

@@ -26,7 +26,8 @@ var countdown_layer: CanvasLayer
 var countdown_panel: Control
 var countdown_timer: Timer
 var countdown_value := 0
-var guided_stage := "" # "countdown" until the round becomes live (both entry routes).
+var guided_stage := "" # "tutorial" -> "countdown" -> live gameplay.
+var _mount_generation := 0
 var _retain_camera_for_restart := false
 var _game_music: Node
 var _countdown_requires_locked_pose := false
@@ -65,6 +66,9 @@ func get_context() -> Dictionary:
 
 
 func _mount_game() -> void:
+	# Deferred guide/countdown calls from the previous scene must never start
+	# a newly selected activity or revive one that is being removed.
+	_mount_generation += 1
 	_clear_countdown_ui()
 	# Reuse the SceneTree-level player across Calibration, the 3-2-1 and all
 	# three minigames. Never reset the track just because a scene was mounted.
@@ -115,7 +119,7 @@ func _mount_game() -> void:
 		# scoring, before its first frame. The camera service is a separate
 		# autoload and remains live for a verified single student.
 		active_game.process_mode = Node.PROCESS_MODE_DISABLED
-		guided_stage = "countdown"
+		guided_stage = "tutorial" if guided else "countdown"
 	add_child(active_game)
 	active_game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if active_game.has_signal("requested"):
@@ -125,12 +129,52 @@ func _mount_game() -> void:
 	# Never carry over a previous activity's live gesture eligibility. A new
 	# game must observe a fresh, verified pose and (for shooting) a new rise.
 	_clear_gesture_input()
-	if count_in:
-		# The Guided Tutorial menu remains a valid route. Both entry paths
-		# enter the same 3-2-1 after successful measured calibration.
+	if guided:
+		# Integrated component narration belongs to this actual minigame. Its
+		# CanvasLayer controls run in PROCESS_MODE_ALWAYS while gameplay stays
+		# completely disabled. The one-shot signal is the ONLY countdown gate.
+		if not active_game.has_signal("tutorial_finished") or not active_game.has_method("begin_guided_tutorial") \
+				or not active_game.has_method("is_tutorial_active"):
+			push_error("Integrated tutorial contract missing: " + game_path)
+			return
+		active_game.connect("tutorial_finished", Callable(self, "_on_guided_tutorial_finished").bind(active_game, _mount_generation))
+		call_deferred("_begin_integrated_tutorial", active_game, _mount_generation)
+	elif count_in:
+		# Normal Play still enters its 3-2-1 as soon as the game is mounted.
 		call_deferred("_begin_countdown")
 	else:
 		_start_gameplay_music()
+
+
+func _begin_integrated_tutorial(game: Control, generation: int) -> void:
+	if guided_stage != "tutorial" or generation != _mount_generation \
+			or not is_instance_valid(game) or game != active_game:
+		return
+	# Each editor-authored spotlight is in its own named CanvasLayer. Allow
+	# ONLY those tutorial layers to process while their gameplay parent stays
+	# disabled: narration, Next, Back and Skip must remain interactive even if
+	# the camera currently has no trustworthy pose or student in view.
+	for node in game.find_children("*", "CanvasLayer", true, false):
+		var layer := node as CanvasLayer
+		var layer_name := layer.name.to_lower()
+		if layer_name.contains("tutorial") or layer_name.contains("guide"):
+			layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	game.call("begin_guided_tutorial")
+	if guided_stage == "tutorial" and not bool(game.call("is_tutorial_active")):
+		# Fail safely if a minigame has not displayed its integrated controls.
+		# Never advance a tutorial straight to 3-2-1 on missing/broken guides.
+		push_error("Integrated tutorial did not activate: " + String(context.get("activity", "")))
+
+
+func _on_guided_tutorial_finished(game: Control, generation: int) -> void:
+	# Duplicate Skip/Next events and signals emitted by a removed old game
+	# cannot consume more countdowns or activate a replacement scene.
+	if guided_stage != "tutorial" or generation != _mount_generation \
+			or not is_instance_valid(game) or game != active_game:
+		return
+	guided_stage = "countdown"
+	_clear_gesture_input()
+	call_deferred("_begin_countdown")
 
 
 func _start_gameplay_music() -> void:
@@ -210,6 +254,10 @@ func _complete_countdown_start() -> void:
 	confirmed_missing_student_seconds = 0.0
 	tracking_notice.visible = false
 	if is_instance_valid(active_game):
+		if bool(context.get("guided_tutorial", false)) and active_game.has_method("_resume"):
+			# Human Plane deliberately keeps running=false after its explanations;
+			# other games may similarly hold their timers until the real GO.
+			active_game.call("_resume")
 		active_game.process_mode = Node.PROCESS_MODE_INHERIT
 	_start_gameplay_music()
 
@@ -259,6 +307,13 @@ func _show_tracking_problem(kind: String) -> void:
 
 
 func _relay_navigation(route: String, payload: Dictionary) -> void:
+	if guided_stage in ["tutorial", "countdown"] and route in ["pause", "results"]:
+		return # A frozen explanation/countdown cannot end or pause a round.
+	if guided_stage in ["tutorial", "countdown"]:
+		# Leaving an unstarted round (including change activity and restart)
+		# cancels its pending callback/timer before another scene takes over.
+		_mount_generation += 1
+		_clear_countdown_ui()
 	if route == "pause":
 		_conceal_gameplay_layers()
 	if is_instance_valid(_game_music):
@@ -300,6 +355,11 @@ func _restore_gameplay_layers() -> void:
 func _process(delta: float) -> void:
 	# Camera-only gameplay: no keyboard steering or demo movement fallback.
 	# Godot animates up to 60 FPS independently from YOLO inference.
+	if guided_stage == "tutorial":
+		# The independent pose service stays live for calibration continuity.
+		# Gameplay must remain disabled even if camera presence disappears or
+		# reappears; the guide's ALWAYS-process controls can still be used.
+		return
 	if not bool(context.get("camera_live", false)):
 		return
 	if not is_instance_valid(active_game):
@@ -472,7 +532,7 @@ func _finish_round() -> void:
 
 
 func _pause() -> void:
-	if guided_stage == "countdown":
+	if guided_stage in ["tutorial", "countdown"]:
 		return
 	_conceal_gameplay_layers()
 	if is_instance_valid(_game_music):

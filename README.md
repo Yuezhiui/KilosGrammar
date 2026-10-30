@@ -2,9 +2,9 @@
 
 **Move. Think. Learn English grammar.**
 
-KilosGrammar is a **movement-based, 2D English grammar learning game** developed in **Godot 4.7.2** for elementary learners (Grades 1–6). Three arcade-style activities combine word recognition, immediate game feedback, and optional webcam-based body movement. The project is a capstone-stage application, not a published study of learning outcomes.
+KilosGrammar is a **movement-based English grammar learning game** developed in **Godot 4.7.2** for elementary learners (Grades 1–6). Three colorful arcade activities turn grammar practice into interactive challenges using word recognition, immediate feedback, and webcam-based body movement.
 
-> **Status — source beta `v0.3.0-beta.2` (in preparation).** The repository contains playable game scenes, a local Python/YOLO pose bridge, and a PostgreSQL-backed student/score workflow. A locally integrity-verified offline Windows ZIP and installer candidate exist, but **they are not yet approved as school-ready or uploaded to GitHub Releases**. Export integrity and physical classroom acceptance are separate release gates. See [Deployment and release acceptance](docs/DEPLOYMENT.md).
+The system includes an on-screen movement tutorial, single-student pose calibration, three grammar minigames, student setup, a local completed-score leaderboard, and CSV import/export tools.
 
 ## Play the three grammar games
 
@@ -18,7 +18,7 @@ Practice topics: **nouns, pronouns, verbs, adjectives, and adverbs**. Each game 
 
 ## How the system works
 
-**Student & game setup → camera calibration → 3–2–1 countdown → active game → results → local leaderboard**
+**Student & game setup → camera calibration → guided explanation (Tutorial) → 3–2–1 countdown → active game → results → local leaderboard**
 
 - **Single-student pose control.** A locally run **Python/YOLO pose worker** and student-lock logic are designed to select one learner rather than treat every person in view as the player. Camera play requires a working webcam, model file, local Python dependencies, and fresh **measured calibration**. Catch the Word and Balloon Popping guide **CENTER → RIGHT → LEFT**; Human Plane uses a neutral center calibration and verifies arm posture during steering. Live webcam reliability and crowd behavior still require validation on actual target hardware.
 - **Verified local student identity.** A student ID is checked against the locally registered **name and grade/section** when the database is connected. A reused ID with conflicting details must be resolved rather than silently attributed to a different learner. This is **record-consistency validation**, not biometric identification or formal proof of identity.
@@ -59,25 +59,11 @@ If existing scores use the older schema, inspect first without changing data:
 
 Follow the documented backup-and-confirm migration procedure for `database/migrations/002_add_minigame.sql` only if preflight identifies the legacy schema. Full instructions, API contracts, and troubleshooting: **[database/README.md](database/README.md)**.
 
-## Offline Windows deployment: preparation, not a released installer
+## Windows installation and deployment
 
 The repository includes **release-building and school-PC setup scripts**, but those scripts alone are **not** an installable distribution. A reproducible package still needs the **matching Godot 4.7.2 Windows x64 export templates**, legally redistributable YOLO checkpoint, **CPython 3.11 x64**, **PostgreSQL 18 x64**, a complete compatible offline wheelhouse, and reviewed third-party licenses. A successful export must include the actual EXE/PCK and verified SHA-256 manifests; a manifest is not proof of digital signing.
 
 Start with **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** and the full **[release/windows/README.md](release/windows/README.md)**. Only after the package passes preflight, integrity validation, and offline target-PC acceptance should its **`Setup Offline.cmd`** and **`Play KilosGrammar.cmd`** be offered to a teacher. Do not present a source checkout or partial build folder as a finished installer.
-
-## Capstone defense / release acceptance
-
-The release candidate must demonstrate the **same functional flow** on a real target PC, not just passing automated fixtures:
-
-- [ ] Version, source revision, Windows export metadata, authorship/asset licenses, and redistribution permissions are reviewed.
-- [ ] A real EXE/PCK, complete offline prerequisites, and both verified release manifests exist and pass package integrity tests.
-- [ ] Offline setup and launch succeed on a **second Windows x64 school PC with the Internet disconnected**, including after reboot.
-- [ ] Webcam permission, local YOLO model loading, **single-student selection**, calibration, and all three movement games are verified with a person on that PC.
-- [ ] Student-ID conflicts are handled safely; **only completed Play scores** persist in the correct minigame/topic/mode/difficulty leaderboard after restart.
-- [ ] CSV import/export and guarded deletion work with authorized, disposable test data; real student data is never used for destructive tests.
-- [ ] Performance, readability, accessibility, privacy safeguards, backups, and error recovery are reviewed with the intended school users.
-
-**Unverified claims:** An offline installer is **not yet verified/published**; there is no universal Windows compatibility guarantee, certified real-world accuracy/FPS figure, second-PC acceptance signoff, or validated educational impact claim.
 
 ## Repository guide
 

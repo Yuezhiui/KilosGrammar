@@ -1,11 +1,14 @@
 extends SceneTree
 
-# Dedicated offline full-3D Human Plane collision-boundary regression.
-# Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_collision_boundary.gd
-# All test movements are synthetic editor-authored Control geometry. No
-# webcam, live pose service, database, or external score saving.
+# Offline native-3D Human Plane collision-boundary regression. Both airplane
+# and each hollow torus have independent editor-authored CollisionShape3D.
+# A student must have a fresh BOTH-ARMS pose and clear precisely one ring's
+# *physical aperture* at the authoritative AnswerLine to earn any score.
+# No live camera, database, network or saved student profile is accessed.
 const GAME := preload("res://ui/minigames/human_plane/human_plane.tscn")
-const VIEWPORTS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
+const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
+const MODES := ["Seconds", "Lives"]
+const RING_NAMES := ["Left", "Center", "Right"]
 
 var checks := 0
 var failures: Array[String] = []
@@ -16,236 +19,166 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	for viewport in VIEWPORTS:
-		for mode in ["Seconds", "Lives"]:
-			await _verify(viewport, mode)
-	print("HUMAN PLANE COLLISION BOUNDARY: %s (%d checks, %d failures)" %
-		["PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
+	for dims in SIZES:
+		for mode in MODES:
+			await _verify(dims, mode)
+	print("HUMAN PLANE COLLISION BOUNDARY: %s (%d checks, %d failures)" % [
+		"PASS" if failures.is_empty() else "FAIL", checks, failures.size()])
 	quit(0 if failures.is_empty() else 1)
 
 
-func _verify(dimensions: Vector2i, mode: String) -> void:
-	root.size = dimensions
+func _verify(dims: Vector2i, mode: String) -> void:
+	root.size = dims
 	root.content_scale_size = Vector2i(1280, 720)
+	var tag := "%dx%d/%s" % [dims.x, dims.y, mode]
 	var game := GAME.instantiate() as Control
 	root.add_child(game)
 	game.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	game.set_context({"activity": "Human Plane", "topic": "Noun", "game_mode": mode, "difficulty": "Normal"})
-	await process_frame
-	await process_frame
+	game.set_context({"activity":"Human Plane", "topic":"Noun",
+		"difficulty":"Normal", "game_mode":mode})
+	for i in range(3):
+		await process_frame
 	game.set_process(false)
-	var prefix := "%dx%d/%s" % [dimensions.x, dimensions.y, mode]
-	var progress := float(game.call("_progress_for_answer_line"))
-	var hitbox := game.get_node("PlaneRig/Hitbox") as Control
-	var rects: Array[Rect2] = []
+	var renderer := game.get_node("HybridFlight3D") as Node2D
+	renderer.set_process(false)
+	var world := renderer.get_node("RenderViewport/FlightWorld3D") as Node3D
+	var pilot := world.get_node("PlaneAnchor/PlanePassageHitbox/HitShape") as CollisionShape3D
+	_check(pilot.shape is SphereShape3D and pilot.position.is_finite(),
+		tag + " airplane owns an editor-authored physical collision sphere")
+	var norm: PackedFloat32Array = game.call("_normalized_scoring_lane_centers",
+		float(game.call("_progress_for_answer_line")))
+	_check(norm.size() == 3, tag + " three distinct 3D physical lane centers")
+	if norm.size() != 3:
+		game.queue_free()
+		await process_frame
+		return
 	for lane in range(3):
-		var rect := game.call("_gate_visible_rect", lane, progress) as Rect2
-		rects.append(rect)
-		_check(rect.size.x > hitbox.size.x * 2.0 and rect.size.y > 0.0,
-			prefix + " lane%d retains readable editor-authored visible ring bounds" % lane)
-		_place_hitbox_at_x(game, rect.get_center().x)
-		_check(int(game.call("_lane_hit_at_answer_line")) == lane,
-			prefix + " lane%d safely centered selects exactly that ring" % lane)
-		var grazing_center := rect.get_center().x + rect.size.x * 0.41
-		_place_hitbox_at_x(game, grazing_center)
-		_check(_overlap_count(grazing_center, hitbox.size.x, rects) >= 1,
-			prefix + " lane%d off-center still physically touches a ring" % lane)
-		_check(int(game.call("_lane_hit_at_answer_line")) == -1,
-			prefix + " lane%d outer-edge graze cannot select ring" % lane)
+		var ring: Node3D = world.get_node("Gates/Gate" + RING_NAMES[lane])
+		var mesh := ring.get_node("Ring") as MeshInstance3D
+		var hit := ring.get_node("RingPassageHitbox/HitShape") as CollisionShape3D
+		_check(hit.shape is CylinderShape3D and mesh.mesh is TorusMesh,
+			tag + " lane%d has hollow TorusMesh plus separate 3D collision aperture" % lane)
+		if hit.shape is CylinderShape3D and mesh.mesh is TorusMesh:
+			_check((hit.shape as CylinderShape3D).radius <= (mesh.mesh as TorusMesh).inner_radius,
+				tag + " lane%d scoring aperture never exceeds visible hole radius" % lane)
+		_check(norm[lane] >= 0.0 and norm[lane] <= 1.0,
+			tag + " lane%d remains reachable through calibrated body movement" % lane)
+		if lane > 0:
+			_check(norm[lane] > norm[lane - 1] + 0.06,
+				tag + " lane%d has distinct nonoverlapping physical target" % lane)
 
-	for pair in range(2):
-		var left: Rect2 = rects[pair]
-		var right: Rect2 = rects[pair + 1]
-		_check(left.get_center().x < right.get_center().x,
-			prefix + " authentic left-to-right editor-authored ring order " + str(pair))
-		# Actual default adjacent PNGs leave ~14px between frames. The 44px
-		# pilot collision hitbox straddles BOTH despite a thin visual gap.
-		var boundary_x := (left.end.x + right.position.x) * 0.5
-		_place_hitbox_at_x(game, boundary_x)
-		_check(_overlap_count(boundary_x, hitbox.size.x, rects) == 2,
-			prefix + " actual narrow separation overlaps TWO ring frames at pair " + str(pair))
-		_check(int(game.call("_lane_hit_at_answer_line")) == -1,
-			prefix + " equal two-ring contact cannot prefer either ring " + str(pair))
-		var option_data := (game.get("round_data") as Dictionary).duplicate(true)
-		option_data["valid_indices"] = [pair, pair + 1]
-		game.set("round_data", option_data)
-		_check(int(game.call("_lane_hit_at_answer_line")) == -1,
-			prefix + " equal contact remains neutral even if TWO words are correct")
-		# A clear 80/20 majority receives the dominant lane whichever word
-		# is correct. A 52/48 near-tie remains a miss regardless of ordering.
-		for dominant in [pair, pair + 1]:
-			var strong_x := _paired_straddle_x(left, right, hitbox.size.x,
-				dominant == pair, 0.80)
-			_check(is_finite(strong_x), prefix + " real 80/20 two-ring overlap exists")
-			if is_finite(strong_x):
-				_place_hitbox_at_x(game, strong_x)
-				for correct_lane in [pair, pair + 1]:
-					option_data["valid_indices"] = [correct_lane]
-					game.set("round_data", option_data)
-					_check(int(game.call("_lane_hit_at_answer_line")) == dominant,
-						prefix + " 80/20 lane%d wins independently of word%d" % [dominant, correct_lane])
-		var tie_x := _paired_straddle_x(left, right, hitbox.size.x, true, 0.52)
-		_check(is_finite(tie_x), prefix + " real 52/48 two-ring overlap exists")
-		if is_finite(tie_x):
-			_place_hitbox_at_x(game, tie_x)
-			_check(int(game.call("_lane_hit_at_answer_line")) == -1,
-				prefix + " 52/48 near-tie remains neutral")
-
-	# Camera/body movement must still be pose-gated. A fresh but *very late*
-	# calibrated movement packet just before the line cannot jump from the
-	# boundary into a neighboring ring in a single physics step.
-	var between_x := (rects[0].end.x + rects[1].position.x) * 0.5
-	_place_hitbox_at_x(game, between_x)
-	game.set_airplane_pose_active(false)
-	var held := float(game.get("plane_x_norm"))
-	game.set_body_x(-1.0)
-	game.call("_update_plane_motion", 0.5)
-	_check(is_equal_approx(float(game.get("plane_x_norm")), held),
-		prefix + " no fresh locked student means no lateral movement or phantom hit")
 	game.set_airplane_pose_active(true)
-	game.set_body_x(-1.0)
-	game.call("_update_plane_motion", 0.001)
-	_check(float(game.get("plane_x_norm")) < held,
-		prefix + " fresh late pose input moves smoothly toward target, not teleport")
-	_check(int(game.call("_lane_hit_at_answer_line")) == -1,
-		prefix + " too-late pre-crossing pose sample stays in safe dead zone")
+	for lane in range(3):
+		game.plane_x_norm = norm[lane]
+		_check(int(renderer.call("physical_lane_at_answer_line")) == lane,
+			tag + " plane centered in physical hole %d chooses exactly that lane" % lane)
+		game.plane_x_norm = norm[lane] + 0.007
+		_check(int(renderer.call("physical_lane_at_answer_line")) == lane,
+			tag + " lane%d near-center full wing clearance is eligible" % lane)
+		game.plane_x_norm = norm[lane] + 0.03
+		_check(int(renderer.call("physical_lane_at_answer_line")) == -1,
+			tag + " lane%d wing contacting torus tube scores no portal" % lane)
+	for pair in range(2):
+		game.plane_x_norm = (norm[pair] + norm[pair + 1]) * 0.5
+		_check(int(renderer.call("physical_lane_at_answer_line")) == -1,
+			tag + " straddling adjacent tube exteriors %d/%d gives no free score" % [pair, pair + 1])
+
+	# Moving the center gate guides in the Godot editor must move the actual
+	# torus hitbox rather than leaving a stale pixel-sized scoring lane behind.
+	var start := game.get_node("FlightPaths/GateStartCenter") as Control
+	var finish := game.get_node("FlightPaths/GateEndCenter") as Control
+	var start_original := start.position
+	var finish_original := finish.position
+	start.position.x += 70.0
+	finish.position.x += 70.0
+	var shifted: PackedFloat32Array = game.call("_normalized_scoring_lane_centers",
+		float(game.call("_progress_for_answer_line")))
+	_check(shifted.size() == 3 and shifted[1] > norm[1] + 0.04,
+		tag + " editor moving center gate moves real physical target")
+	if shifted.size() == 3:
+		game.plane_x_norm = norm[1]
+		_check(int(renderer.call("physical_lane_at_answer_line")) != 1,
+			tag + " abandoned center position cannot score moved 3D torus")
+		game.plane_x_norm = shifted[1]
+		_check(int(renderer.call("physical_lane_at_answer_line")) == 1,
+			tag + " steering to moved torus recovers unique center passage")
+	start.position = start_original
+	finish.position = finish_original
+
+	# Two coincident hollow ring apertures are ambiguous; one plane cannot
+	# select both even if the question marks both words as correct.
+	var shift_x := float(game.call("_gate_visible_rect", 0,
+		float(game.call("_progress_for_answer_line"))).get_center().x) - \
+		float(game.call("_gate_visible_rect", 1,
+		float(game.call("_progress_for_answer_line"))).get_center().x)
+	start.position.x += shift_x
+	finish.position.x += shift_x
+	game.plane_x_norm = norm[0]
+	_check(int(renderer.call("physical_lane_at_answer_line")) == -1,
+		tag + " two perfectly overlapping physical rings are an ambiguous MISS")
+	start.position = start_original
+	finish.position = finish_original
+
+	# Losing pose lock or lowering a hand freezes movement and prevents a
+	# stale plane from rewarding a correct ring it can no longer steer toward.
+	game.plane_x_norm = norm[1]
 	game.set_airplane_pose_active(false)
+	var frozen: float = float(game.plane_x_norm)
+	game.set_body_x(-1.0)
+	game.call("_update_plane_motion", 0.6)
+	_check(is_equal_approx(game.plane_x_norm, frozen),
+		tag + " missing tracked pose freezes the last physical airplane position")
+	_check(int(renderer.call("physical_lane_at_answer_line")) == -1,
+		tag + " absent both-arm pose can never earn points while centered")
+	game.set_airplane_pose_active(true)
 
-	# Make an actual editor-authored widened gap, which overlaps neither ring.
-	var start_center := game.get_node("FlightPaths/GateStartCenter") as Control
-	var end_center := game.get_node("FlightPaths/GateEndCenter") as Control
-	var start_original := start_center.position
-	var end_original := end_center.position
-	start_center.position.x += 150.0
-	end_center.position.x += 150.0
-	progress = float(game.call("_progress_for_answer_line"))
-	var shifted := game.call("_gate_visible_rect", 1, progress) as Rect2
-	var wide_gap_x := (rects[0].end.x + shifted.position.x) * 0.5
-	_place_hitbox_at_x(game, wide_gap_x)
-	_check(shifted.position.x - rects[0].end.x > hitbox.size.x,
-		prefix + " moving native gate guides creates a physically empty gap")
-	_check(int(game.call("_lane_hit_at_answer_line")) == -1,
-		prefix + " fully empty gap cannot accidentally select a wrong ring")
-	start_center.position = start_original
-	end_center.position = end_original
-
-	# Move neighboring authored markers so two rendered rings OVERLAP at
-	# exactly the same location. A centered pilot then still gets a miss.
-	var shift_x := rects[0].get_center().x - rects[1].get_center().x
-	start_center.position.x += shift_x
-	end_center.position.x += shift_x
-	progress = float(game.call("_progress_for_answer_line"))
-	var moved_center := game.call("_gate_visible_rect", 1, progress) as Rect2
-	_place_hitbox_at_x(game, rects[0].get_center().x)
-	_check(absf(moved_center.get_center().x - rects[0].get_center().x) < 1.0,
-		prefix + " editor can deliberately overlap two ring centers")
-	_check(int(game.call("_lane_hit_at_answer_line")) == -1,
-		prefix + " perfectly centered in two overlapping rings is ambiguous MISS")
-	start_center.position = start_original
-	end_center.position = end_original
-
-	# Selection must remain based on 3D flight's one authoritative crossing;
-	# correct answer and speed are earned ONLY when unambiguously centered.
-	game.call("_start_wave")
-	var data: Dictionary = (game.get("round_data") as Dictionary).duplicate(true)
-	data["valid_indices"] = [0]  # Left correct, center wrong.
-	game.set("round_data", data)
-	_place_hitbox_at_x(game, rects[0].get_center().x)
-	game.call("_resolve_at_answer_line")
-	_check(int(game.get("selected_lane")) == 0 and bool(game.get("selected_was_correct")),
-		prefix + " centered left true correct answer scores once")
-	_check(int(game.get("score")) == 100 and int(game.get("correct_count")) == 1,
-		prefix + " one clear correct ring grants exactly +100")
-	_check(int(game.get("speed_boost_count")) == 1 and
-		is_equal_approx(float(game.get("speed_multiplier")), 1.14),
-		prefix + " +14% permanent speed is granted ONLY for genuine correct ring")
-	game.call("_resolve_at_answer_line")
-	_check(int(game.get("score")) == 100 and int(game.get("speed_boost_count")) == 1,
-		prefix + " repeated late answer crossing cannot double-score")
-
-	var boundary := (rects[0].end.x + rects[1].position.x) * 0.5
-	for correct_lane in [0, 1]:
+	# Three actual correct portal traversals award 100 each and boost speed
+	# by this tier's diminishing earned increments, with no double callback.
+	for lane in range(3):
 		game.call("_start_wave")
-		data = (game.get("round_data") as Dictionary).duplicate(true)
-		data["valid_indices"] = [correct_lane]  # Both answer orderings!
-		game.set("round_data", data)
-		_place_hitbox_at_x(game, boundary)
+		var wave: Dictionary = game.round_data.duplicate(true)
+		wave["valid_indices"] = [lane]
+		game.round_data = wave
+		game.plane_x_norm = norm[lane]
+		var before: int = int(game.score)
+		var before_attempts: int = int(game.attempts)
 		game.call("_resolve_at_answer_line")
-		_check(int(game.get("selected_lane")) == -1 and not bool(game.get("selected_was_correct")),
-			prefix + " wrong/correct ordering %d yields an unambiguous MISS" % correct_lane)
-		_check(int(game.get("score")) == 100 and int(game.get("speed_boost_count")) == 1,
-			prefix + " ambiguous miss never deducts points or grants speed")
-		_check(is_equal_approx(float(game.get("speed_multiplier")), 1.14),
-			prefix + " miss cannot remove previously earned speed")
-		# Changing pose position AFTER gate resolves can never rewrite the answer.
-		_place_hitbox_at_x(game, rects[correct_lane].get_center().x)
+		_check(game.selected_lane == lane and game.selected_was_correct and
+			game.score == before + 100 and game.attempts == before_attempts + 1,
+			tag + " lane%d correct 3D traversal awards +100 exactly once" % lane)
 		game.call("_resolve_at_answer_line")
-		_check(int(game.get("selected_lane")) == -1 and int(game.get("score")) == 100,
-			prefix + " late movement toward correct ring cannot retroactively score")
+		_check(game.score == before + 100 and game.attempts == before_attempts + 1,
+			tag + " lane%d second answer callback cannot double-pay" % lane)
+		_check(game.lives == 3 and game.speed_boost_count == lane + 1,
+			tag + " lane%d correct answer preserves lives and applies boost" % lane)
+	var earned: float = game.speed_multiplier
+	var expected_boost := 1.0 + 0.35 * (1.0 - pow(0.8, 3.0))
+	_check(absf(earned - expected_boost) < 0.0001 and game.score == 300,
+		tag + " Normal difficulty correct rings earn tier-correct diminishing boost and +300")
 
-	_check(int(game.get("lives")) == 1,
-		prefix + " two missed ambiguous rings use existing heart-loss policy")
-	game.call("_start_wave")
-	data = (game.get("round_data") as Dictionary).duplicate(true)
-	data["valid_indices"] = [0]
-	game.set("round_data", data)
-	_place_hitbox_at_x(game, rects[2].get_center().x)
-	game.call("_resolve_at_answer_line")
-	_check(int(game.get("selected_lane")) == 2 and not bool(game.get("selected_was_correct")),
-		prefix + " clearly centered wrong ring is counted as wrong, not an ambiguous miss")
-	_check(int(game.get("score")) == 100 and is_equal_approx(float(game.get("speed_multiplier")), 1.14),
-		prefix + " wrong ring loses neither score nor accumulated +14% speed")
+	for scenario in ["wrong", "miss"]:
+		game.call("_start_wave")
+		var wave: Dictionary = game.round_data.duplicate(true)
+		wave["valid_indices"] = [0]
+		game.round_data = wave
+		game.plane_x_norm = norm[2] if scenario == "wrong" else -10.0
+		var before: int = int(game.score)
+		game.call("_resolve_at_answer_line")
+		_check(game.score == before and not game.selected_was_correct and
+			game.selected_lane == (2 if scenario == "wrong" else -1),
+			tag + " %s grants +0 and records correct physical outcome" % scenario)
+		_check(is_equal_approx(game.speed_multiplier, earned),
+			tag + " %s cannot erase previously earned flight speed" % scenario)
+		_check(game.lives == (3 if mode == "Seconds" else (2 if scenario == "wrong" else 1)),
+			tag + " %s respects Seconds infinite hearts / Lives three hearts" % scenario)
+
 	game.queue_free()
 	await process_frame
 	await process_frame
 
 
-func _place_hitbox_at_x(game: Control, screen_x: float) -> void:
-	var left := game.get_node("FlightPaths/PlaneLeftLimit") as Control
-	var right := game.get_node("FlightPaths/PlaneRightLimit") as Control
-	var plane := game.get_node("PlaneRig") as Control
-	var hitbox := plane.get_node("Hitbox") as Control
-	var authored_offset := float(game.get("_plane_authored_offset_x"))
-	var hitbox_offset := hitbox.get_rect().get_center().x - plane.size.x * 0.5
-	var min_x := left.get_rect().get_center().x
-	var max_x := right.get_rect().get_center().x
-	game.set("plane_x_norm", (screen_x - min_x - authored_offset - hitbox_offset) / (max_x - min_x))
-	_check(absf(float(game.call("_plane_center_x")) + hitbox_offset - screen_x) < 1.0,
-		"actual authored Hitbox center matches requested screen-space X")
-
-
-func _overlap_count(center: float, body_width: float, rects: Array[Rect2]) -> int:
-	var touched := 0
-	for rect in rects:
-		if minf(center + body_width * 0.5, rect.end.x) > maxf(center - body_width * 0.5, rect.position.x):
-			touched += 1
-	return touched
-
-
-func _paired_straddle_x(left: Rect2, right: Rect2, width: float,
-		prefer_left: bool, desired_ratio: float) -> float:
-	var between := (left.end.x + right.position.x) * 0.5
-	var best_x := NAN
-	var best_delta := INF
-	for step in range(-240, 241):
-		var x := between + float(step) * 0.25
-		var left_touch := maxf(minf(x + width * 0.5, left.end.x) - maxf(x - width * 0.5, left.position.x), 0.0)
-		var right_touch := maxf(minf(x + width * 0.5, right.end.x) - maxf(x - width * 0.5, right.position.x), 0.0)
-		if left_touch <= 0.0 or right_touch <= 0.0:
-			continue
-		var preferred := left_touch if prefer_left else right_touch
-		var other := right_touch if prefer_left else left_touch
-		if desired_ratio > 0.55 and preferred < width * 0.5:
-			continue
-		var deviation := absf(preferred / (preferred + other) - desired_ratio)
-		if deviation < best_delta:
-			best_delta = deviation
-			best_x = x
-	return best_x if best_delta <= 0.045 else NAN
-
-
-func _check(condition: bool, label: String) -> void:
+func _check(ok: bool, reason: String) -> void:
 	checks += 1
-	if not condition:
-		failures.append(label)
-		printerr("COLLISION BOUNDARY FAIL: ", label)
+	if not ok:
+		failures.append(reason)
+		printerr("COLLISION BOUNDARY FAIL: ", reason)

@@ -38,6 +38,7 @@ func _exercise(size: Vector2i, mode: String) -> void:
 	for _frame in range(3):
 		await process_frame
 	game.set_process(false)
+	game.set_airplane_pose_active(true)
 	var hybrid := game.get_node("HybridFlight3D") as Node2D
 	var camera := hybrid.get_node("RenderViewport/FlightWorld3D/Camera") as Camera3D
 	var aircraft := hybrid.get_node("RenderViewport/FlightWorld3D/PlaneAnchor") as Node3D
@@ -86,13 +87,13 @@ func _exercise(size: Vector2i, mode: String) -> void:
 	game.set("gate_progress", 0.0)
 	game.call("_start_wave")
 	var correct: int = int((game.round_data.get("valid_indices", [0]) as Array)[0])
-	var achievable := false
-	for index in range(401):
-		game.set("plane_x_norm", float(index) / 400.0)
-		if int(game.call("_lane_hit_at_answer_line")) == correct:
-			achievable = true
-			break
-	_check(achievable, "%s/%s any correct lane reachable using original 2D hitbox" % [size, mode])
+	var centers: PackedFloat32Array = game.call("_normalized_scoring_lane_centers",
+		float(game.call("_progress_for_answer_line")))
+	var achievable := centers.size() == 3
+	if achievable:
+		game.set("plane_x_norm", centers[correct])
+		achievable = int(hybrid.call("physical_lane_at_answer_line")) == correct
+	_check(achievable, "%s/%s correct lane center clears actual 3D airplane and torus hitboxes" % [size, mode])
 	var score_start: int = game.score
 	game.call("_resolve_at_answer_line")
 	_check(game.score == score_start + 100 and floater.visible and floater.text == "+100"
@@ -133,13 +134,11 @@ func _exercise(size: Vector2i, mode: String) -> void:
 			_check(false, "endless wave %d generated no real answer" % cycle)
 			break
 		var lane := int(valid[0])
-		var reachable := false
-		for index in range(401):
-			game.plane_x_norm = float(index) / 400.0
-			if int(game.call("_lane_hit_at_answer_line")) == lane:
-				reachable = true
-				break
-		_check(reachable, "endless wave %d reachable three-lane physical ring" % cycle)
+		var reachable := centers.size() == 3
+		if reachable:
+			game.plane_x_norm = centers[lane]
+			reachable = int(hybrid.call("physical_lane_at_answer_line")) == lane
+		_check(reachable, "endless wave %d airplane genuinely fits physical hole" % cycle)
 		for tick in range(460):
 			game.call("_update_gate_wave", 1.0 / 60.0)
 			game.call("_sync_visuals")

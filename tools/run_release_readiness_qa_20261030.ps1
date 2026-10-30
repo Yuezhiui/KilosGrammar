@@ -85,7 +85,12 @@ $oldLocalAppData = $env:LOCALAPPDATA
 try {
     foreach ($scriptName in $chosen) {
         $caseId = [System.IO.Path]::GetFileNameWithoutExtension($scriptName)
-        $caseRoot = Join-Path $sandboxRoot $caseId
+        # The pause/restart safety fixture explicitly requires a distinctive
+        # disposable user:// root so it can never touch ordinary pupil data.
+        $safeCaseId = if ($caseId -eq 'test_pause_ready_escape_20261029') {
+            'kg_pause_worker21_' + $caseId
+        } else { $caseId }
+        $caseRoot = Join-Path $sandboxRoot $safeCaseId
         $stdout = Join-Path $reportDir ($caseId + '.stdout.log')
         $stderr = Join-Path $reportDir ($caseId + '.stderr.log')
         $env:APPDATA = Join-Path $caseRoot 'AppData'

@@ -34,6 +34,7 @@ func _check_viewport(dimensions: Vector2i) -> void:
 	await process_frame
 	await process_frame
 	game.set_process(false)
+	game.set_airplane_pose_active(true)
 	var current := game.get_node("MovingGates") as Control
 	var upcoming := game.get_node("UpcomingGates") as Control
 	var plane := game.get_node("PlaneRig") as Control
@@ -72,13 +73,12 @@ func _check_viewport(dimensions: Vector2i) -> void:
 	_check(current.visible and not upcoming.visible, tag + " begins with one visible set")
 	var initial: Array = (game.round_data.get("options", []) as Array).duplicate()
 	var correct_lane := int(game.round_data.get("valid_indices", [0])[0])
-	var selectable := false
-	for step in range(401):
-		game.plane_x_norm = float(step) / 400.0
-		if int(game._lane_hit_at_answer_line()) == correct_lane:
-			selectable = true
-			break
-	_check(selectable, tag + " real answer-line collision remains selectable for correct gate")
+	var centers: PackedFloat32Array = game._normalized_scoring_lane_centers(float(game._progress_for_answer_line()))
+	var selectable := centers.size() == 3
+	if selectable:
+		game.plane_x_norm = centers[correct_lane]
+		selectable = int(hybrid.call("physical_lane_at_answer_line")) == correct_lane
+	_check(selectable, tag + " real airplane/torus collision remains selectable for correct gate")
 	var speed := float(game.DIFFICULTY_CONFIG[game.difficulty]["gate_speed"])
 	game._update_gate_wave((game.GATE_PREFETCH_AT + 0.025) / speed)
 	game._sync_visuals()
@@ -141,12 +141,10 @@ func _check_viewport(dimensions: Vector2i) -> void:
 		var previous_attempts: int = game.attempts
 		var previous_score: int = game.score
 		var correct: int = int(game.round_data.get("valid_indices", [0])[0])
-		var reached := false
-		for sample in range(401):
-			game.plane_x_norm = float(sample) / 400.0
-			if int(game._lane_hit_at_answer_line()) == correct:
-				reached = true
-				break
+		var reached := centers.size() == 3
+		if reached:
+			game.plane_x_norm = centers[correct]
+			reached = int(hybrid.call("physical_lane_at_answer_line")) == correct
 		_check(reached, tag + " wave %d authoritative answer remains reachable" % extra)
 		if not reached:
 			break

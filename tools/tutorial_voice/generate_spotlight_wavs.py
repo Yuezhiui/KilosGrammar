@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the 18 guided KILOS GRAMMAR narration WAVs with local OmniVoice.
+"""Generate the 19 guided KILOS GRAMMAR narration WAVs with local OmniVoice.
 
 Uses the user's existing, local OmniVoice voice sample. The source sample and
 the owner's /omni-voice/input.txt stay untouched; only named output WAVs and
@@ -30,7 +30,7 @@ DEFAULT_REF = Path(r"C:\Users\Yue\Documents\OMNI VOICE\input\Clone.wav")
 REPORT_PATH = ROOT / "tools" / "tutorial_voice" / "generation_report.json"
 GAMES = ("catch_word", "balloon_popping", "human_plane")
 STEPS = ("prompt", "movement", "seconds", "lives", "score", "pause")
-EXPECTED_KEYS = tuple(f"{game}_{step}" for game in GAMES for step in STEPS)
+EXPECTED_KEYS = tuple(f"{game}_{step}" for game in GAMES for step in STEPS) + ("human_plane_ring",)
 
 
 def load_lines(manifest: Path) -> dict[str, dict]:
@@ -73,7 +73,7 @@ def load_lines(manifest: Path) -> dict[str, dict]:
     missing = set(EXPECTED_KEYS) - set(result)
     extras = set(result) - set(EXPECTED_KEYS)
     if missing or extras:
-        raise ValueError(f"Expected exactly 18 keys. Missing: {sorted(missing)}, extra: {sorted(extras)}")
+        raise ValueError(f"Expected exactly {len(EXPECTED_KEYS)} keys. Missing: {sorted(missing)}, extra: {sorted(extras)}")
     return result
 
 

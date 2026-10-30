@@ -78,6 +78,10 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 	# Physical pose must be required for horizontal steering. The camera bridge
 	# calls set_airplane_pose_active(false) on arms-lowered or lost-tracking frames.
 	_test_pose_steering(game, label)
+	# The collision authority is now the physical airplane through an actual
+	# 3D TorusMesh hole. Re-arm a synthetic, fresh both-arms pose after checking
+	# the deliberate lost-tracking freeze above, before expecting real points.
+	game.call("set_airplane_pose_active", true)
 	var current_trio: Array[Control] = []
 	var next_trio: Array[Control] = []
 	for node in gate_nodes:
@@ -108,12 +112,10 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 	for tick in range(MAX_STEPS):
 		# Align the real plane hitbox with the correct image gate at its answer line.
 		if not caught_early and float(game.get("gate_progress")) < float(game.call("_progress_for_answer_line")):
-			var answer_rect: Rect2 = game.call("_gate_visible_rect", hit_lane, float(game.call("_progress_for_answer_line")))
-			var left_limit := (game.get_node("FlightPaths/PlaneLeftLimit") as Control).get_rect().get_center().x
-			var right_limit := (game.get_node("FlightPaths/PlaneRightLimit") as Control).get_rect().get_center().x
-			var corrected_center := answer_rect.get_center().x - float(game.get("_plane_authored_offset_x"))
-			game.set("plane_x_norm", clampf((corrected_center - left_limit) / maxf(right_limit - left_limit, 1.0), 0.055, 0.945))
-			# The selected lane is determined by the real PlaneRig + image geometry.
+			_aim_plane_at_lane(game, hit_lane)
+			# Confirm the whole physical aircraft clears the real torus opening.
+			_check(int((game.get_node("HybridFlight3D") as Node2D).call("physical_lane_at_answer_line")) == hit_lane,
+				label + " real airplane clears correct 3D portal at first crossing")
 			caught_early = true
 		game.call("_update_gate_wave", STEP)
 		game.call("_sync_visuals")
@@ -188,6 +190,10 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 	_check(_positions_unchanged(gate_nodes, before_positions), label + " pause freezes both gate trios")
 	game.call("_resume")
 	game.call("_process", 0.05)
+	# A real resume clears the old camera/arm observation. This isolated
+	# camera-free test must explicitly supply its next trusted BOTH-ARMS pose
+	# before simulating correct physical torus crossings in later waves.
+	game.call("set_airplane_pose_active", true)
 	_check(float(game.get("gate_progress")) > before_progress or int(game.get("waves_completed")) > 1, label + " resume continues forward flight")
 	if seconds_mode:
 		_check(float(game.get("time_remaining")) < before_time, label + " resume continues remaining seconds")
@@ -286,12 +292,10 @@ func _test_sustained_flight(game: Control, gates: Array[Control], label: String)
 
 
 func _aim_plane_at_lane(game: Control, answer_lane: int) -> void:
-	var answer_progress := float(game.call("_progress_for_answer_line"))
-	var rect: Rect2 = game.call("_gate_visible_rect", answer_lane, answer_progress)
-	var left := (game.get_node("FlightPaths/PlaneLeftLimit") as Control).get_rect().get_center().x
-	var right := (game.get_node("FlightPaths/PlaneRightLimit") as Control).get_rect().get_center().x
-	var goal := rect.get_center().x - float(game.get("_plane_authored_offset_x"))
-	game.set("plane_x_norm", clampf((goal - left) / maxf(right - left, 1.0), 0.055, 0.945))
+	var centers: PackedFloat32Array = game.call("_normalized_scoring_lane_centers",
+		float(game.call("_progress_for_answer_line")))
+	if centers.size() == 3:
+		game.set("plane_x_norm", centers[answer_lane])
 
 
 func _test_pose_steering(game: Control, label: String) -> void:

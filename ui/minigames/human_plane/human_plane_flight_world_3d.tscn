@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/cartoon_plane/cartoon_plane_1k.gltf" id="downloaded_plane"]
 
@@ -26,6 +26,13 @@ outer_radius = 1.0
 rings = 18
 ring_segments = 48
 
+[sub_resource type="SphereShape3D" id="PlaneCollisionSphere"]
+radius = 4.55
+
+[sub_resource type="CylinderShape3D" id="RingPassageCylinder"]
+height = 0.3
+radius = 0.82
+
 [sub_resource type="SphereMesh" id="CloudPuff"]
 radius = 1.0
 height = 2.0
@@ -37,7 +44,7 @@ albedo_color = Color(0.96, 0.99, 1, 1)
 roughness = 1.0
 
 [node name="FlightWorld3D" type="Node3D"]
-editor_description = "Native low-poly 3D flight world. Edit Camera, airplane meshes, torus gates and cloud groups in the 3D editor. The parent game's invisible 2D guide nodes remain authoritative for collisions and scores."
+editor_description = "Native low-poly 3D flight world. Edit Camera, airplane meshes, torus gates, independent airframe/pass-through collision shapes and clouds in the 3D editor. Hidden 2D guide nodes position the rings; the actual 3D shape clearance decides the selected answer."
 
 [node name="FlightEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("FlightEnvironment")
@@ -98,6 +105,16 @@ scale = Vector3(0.8, 0.8, 0.8)
 
 [node name="DownloadedCartoonPlane" parent="PlaneAnchor/PlaneModelPlacement" instance=ExtResource("downloaded_plane")]
 
+[node name="PlanePassageHitbox" type="Area3D" parent="PlaneAnchor"]
+editor_description = "Gameplay physical silhouette of all 22 painted airplane meshes. Radius 4.55 covers the farthest modeled wing/tail bounding corners at the current PlaneModelPlacement, with a small safety margin. Scale follows PlaneAnchor; preserve full airframe clearance within the torus hole."
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+
+[node name="HitShape" type="CollisionShape3D" parent="PlaneAnchor/PlanePassageHitbox"]
+shape = SubResource("PlaneCollisionSphere")
+
 [node name="Gates" type="Node3D" parent="."]
 editor_description = "Three real TorusMesh flight targets. LEFT purple, CENTER green, RIGHT blue. Positions and projected sizes are synchronized to the source 2D scoring guides."
 
@@ -107,14 +124,45 @@ editor_description = "Three real TorusMesh flight targets. LEFT purple, CENTER g
 rotation = Vector3(1.570796, 0, 0)
 mesh = SubResource("FlightRing")
 
+[node name="RingPassageHitbox" type="Area3D" parent="Gates/GateLeft"]
+editor_description = "Hollow passage aperture. This CylinderShape3D is centered in the torus hole, facing the approaching aircraft. Game scoring checks geometric clearance at the actual crossing moment."
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+
+[node name="HitShape" type="CollisionShape3D" parent="Gates/GateLeft/RingPassageHitbox"]
+rotation = Vector3(1.570796, 0, 0)
+shape = SubResource("RingPassageCylinder")
+
 [node name="GateCenter" type="Node3D" parent="Gates"]
 
 [node name="Ring" type="MeshInstance3D" parent="Gates/GateCenter"]
 rotation = Vector3(1.570796, 0, 0)
 mesh = SubResource("FlightRing")
 
+[node name="RingPassageHitbox" type="Area3D" parent="Gates/GateCenter"]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+
+[node name="HitShape" type="CollisionShape3D" parent="Gates/GateCenter/RingPassageHitbox"]
+rotation = Vector3(1.570796, 0, 0)
+shape = SubResource("RingPassageCylinder")
+
 [node name="GateRight" type="Node3D" parent="Gates"]
 
 [node name="Ring" type="MeshInstance3D" parent="Gates/GateRight"]
 rotation = Vector3(1.570796, 0, 0)
 mesh = SubResource("FlightRing")
+
+[node name="RingPassageHitbox" type="Area3D" parent="Gates/GateRight"]
+collision_layer = 0
+collision_mask = 0
+monitoring = false
+monitorable = false
+
+[node name="HitShape" type="CollisionShape3D" parent="Gates/GateRight/RingPassageHitbox"]
+rotation = Vector3(1.570796, 0, 0)
+shape = SubResource("RingPassageCylinder")

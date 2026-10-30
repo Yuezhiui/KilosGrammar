@@ -1,14 +1,14 @@
 extends SceneTree
 
-## Independent inventory and audio-format QA for 18 preserved English WAVs.
-## This deliberately tests the files themselves. Tutorial Spotlight was
-## retired and these files are intentionally kept for possible later reuse.
+## Independent inventory and audio-format QA for 19 English WAVs.
+## These are now used by the minigames' embedded narrated tutorial spotlight.
 ## Godot 4.7.2 (after import):
 ##   --headless --path . --script res://tools/test_tutorial_voice_assets_20261029.gd
 
 const AUDIO_ROOT := "res://assets/audio/tutorial_spotlight/"
 const GAMES := ["catch_word", "balloon_popping", "human_plane"]
 const STEPS := ["prompt", "movement", "seconds", "lives", "score", "pause"]
+const ADDITIONAL_KEYS := ["human_plane_ring"]
 # Hashes from the removed bilingual batch, recorded prior to the full-English
 # regeneration. Any surviving old recording is a genuine regression.
 const RETIRED_BILINGUAL_SHA256 := {
@@ -54,7 +54,7 @@ func _run() -> void:
 	for filename in DirAccess.get_files_at(AUDIO_ROOT):
 		if String(filename).to_lower().ends_with(".wav"):
 			found.append(String(filename))
-	_check(found.size() == 18, "exactly 18 preserved WAVs (found %d)" % found.size())
+	_check(found.size() == 19, "exactly 19 tutorial WAVs (found %d)" % found.size())
 	for game in GAMES:
 		for step in STEPS:
 			var id: String = game + "_" + step
@@ -64,7 +64,12 @@ func _run() -> void:
 			if not FileAccess.file_exists(path):
 				continue
 			_check_file(id, path)
-	_check(found_clips == 18, "all 18 WAVs were readable and inspected")
+	for key in ADDITIONAL_KEYS:
+		var filename: String = key + ".wav"
+		_check(found.has(filename), "additional tutorial narration exists: " + filename)
+		if FileAccess.file_exists(AUDIO_ROOT + filename):
+			_check_file(key, AUDIO_ROOT + filename)
+	_check(found_clips == 19, "all 19 WAVs were readable and inspected")
 	if found_clips > 0:
 		print("ENGLISH WAV inventory: found=", found_clips,
 			" duration_range=", snappedf(min_duration, 0.01), "-",
@@ -215,5 +220,5 @@ func _check(ok: bool, name: String) -> bool:
 func _finish() -> void:
 	print("TUTORIAL ENGLISH WAV ASSETS: %s (%d checks, %d failures; %d/%d expected files)" %
 		["PASS" if failures.is_empty() else "FAIL", checks, failures.size(),
-			found_clips, GAMES.size() * STEPS.size()])
+			found_clips, GAMES.size() * STEPS.size() + ADDITIONAL_KEYS.size()])
 	quit(0 if failures.is_empty() else 1)

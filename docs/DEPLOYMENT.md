@@ -6,10 +6,10 @@ This document is the **release gate** for an offline Windows school deployment. 
 
 | Item | Status / interpretation |
 | --- | --- |
-| Source beta | Prior `v0.3.0-beta.1` source tag is published; `v0.3.0-beta.2` with new gameplay fixes is being prepared. Release assets are not yet published. |
-| Local checkout metadata | `VERSION` and `project.godot` are aligned to `0.3.0-beta.2`. [Older build notes](BUILD_VERSION.md) are historical. |
-| Windows EXE version resource | [`export_presets.cfg`](../export_presets.cfg) now specifies `0.3.0.2` file/product metadata. |
-| Build outputs | The earlier beta.1 native release EXE/PCK and full manifests have been built and SHA-256-verified locally. A **new** build is required to include the beta.2 gameplay fixes. |
+| Source beta | `v0.3.0-beta.2` source is published; `v0.3.0-beta.3` adds embedded guided tutorials, physical airplane/ring collision and leaderboard column improvements. |
+| Local checkout metadata | `VERSION` and `project.godot` are aligned to `0.3.0-beta.3`. [Older build notes](BUILD_VERSION.md) are historical. |
+| Windows EXE version resource | [`export_presets.cfg`](../export_presets.cfg) specifies `0.3.0.3` file/product metadata for the next Windows build. |
+| Build outputs | The beta.2 native EXE/PCK, complete ZIP and unsigned Inno Setup installer were built and SHA-256-verified locally. Beta.3 needs a fresh EXE/PCK, ZIP and installer from its finalized source commit. |
 | Offline prerequisites | The real 47-file `release/windows/offline/manifest.json`, signed Python/PostgreSQL installers and all 44 Windows wheels exist locally; offline pip install/import and model CPU synthetic inference passed. |
 | External acceptance | Successful automated/mock tests are not proof of webcam behavior, dependable pose FPS, classroom performance, or functioning installation on a second disconnected PC. |
 
@@ -123,10 +123,10 @@ All boxes are deliberately **unchecked** until validated on the release candidat
 
 ## 5. Known boundaries and troubleshooting
 
-- **Installer readiness:** Locally built beta.1 native EXE, full offline ZIP and an unsigned Inno Setup installer candidate passed integrity checks and a separate QA installation/uninstallation. These are excluded from source Git history and do **not** prove success on a clean disconnected school computer. Rebuild for beta.2 and perform target-PC acceptance before publishing a school-ready release.
+- **Installer readiness:** Locally built beta.2 native EXE, complete offline ZIP and unsigned Inno Setup installer passed SHA-256 integrity and a separate QA installation/uninstallation. These are excluded from source Git history and do **not** prove success on a clean disconnected school computer. Rebuild for beta.3 and test the target-PC workflow.
 - **Leaderboard empty after restart:** Confirm the local PostgreSQL service, the API's `/health`, correct Windows account/DPAPI credentials and the current minigame-aware schema. Empty UI does **not** prove rows were deleted. Inspect read-only before migration; see [database/README.md](../database/README.md).
 - **Camera unavailable:** Verify physical webcam permission, approved model file, Python interpreter and all installed imports; use the actual target PC for performance assessment. No real-device reliability guarantee is provided by mock frames.
-- **Version consistency:** `VERSION`, `project.godot`, and Windows metadata are aligned for source beta 0.3.0-beta.2. The earlier beta.1 installer candidate is not a beta.2 gameplay build. Metadata alone does not establish disconnected-PC acceptance.
+- **Version consistency:** `VERSION`, `project.godot`, and Windows metadata are aligned for source beta 0.3.0-beta.3. The earlier beta.2 installer does not contain beta.3 integrated tutorials. Metadata alone does not establish disconnected-PC compatibility.
 - **Score integrity:** Keep the rule that registration is identity-safe and **only completed normal Play rounds** update durable scores. Do not reset databases, bypass confirmation, or confuse a tutorial/aborted run with a valid completion.
 - **Scope:** No automatic cloud synchronization, account federation, universal device support, automated pedagogy assessment, or independent classroom research claim is made.
 

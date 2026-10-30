@@ -51,7 +51,7 @@
   {
     "id": "balloon_popping_movement",
     "filename": "balloon_popping_movement.wav",
-    "text": "Move your body to aim. Raise either hand to shoot once. Lower your hand, wait one and a half seconds, then raise it again!",
+    "text": "Move your body left, center, or right to aim. Start with your hands lowered, then raise either hand to shoot. Keep your hand raised to fire again after a short cooldown!",
     "game": "balloon_popping",
     "step": "movement"
   },
@@ -96,6 +96,13 @@
     "text": "Spread both arms wide like airplane wings. Step left, center, or right to steer. Lower either arm to freeze your plane. Spread both arms again to keep flying!",
     "game": "human_plane",
     "step": "movement"
+  },
+  {
+    "id": "human_plane_ring",
+    "filename": "human_plane_ring.wav",
+    "text": "Look at the colored rings ahead. Fly through the ring with the correct grammar answer to earn points. Aim for the middle of the opening!",
+    "game": "human_plane",
+    "step": "ring"
   },
   {
     "id": "human_plane_seconds",
