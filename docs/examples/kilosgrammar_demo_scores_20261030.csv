@@ -1,0 +1,20 @@
+student_id,student_name,grade_section,minigame,game_style,game_mode,difficulty,score
+DEMO-KG-20261030-A,Demo Learner Alpha,Grade 3 - DEMO,Catch the Word,Noun,Seconds,Easy,400
+DEMO-KG-20261030-A,Demo Learner Alpha,Grade 3 - DEMO,Balloon Popping,Verb,Lives,Normal,200
+DEMO-KG-20261030-A,Demo Learner Alpha,Grade 3 - DEMO,Human Plane,Adjective,Seconds,Hard,300
+DEMO-KG-20261030-B,Demo Learner Bravo,Grade 4 - DEMO,Catch the Word,Pronoun,Lives,Normal,300
+DEMO-KG-20261030-B,Demo Learner Bravo,Grade 4 - DEMO,Balloon Popping,Adjective,Seconds,Hard,100
+DEMO-KG-20261030-B,Demo Learner Bravo,Grade 4 - DEMO,Human Plane,Verb,Lives,Easy,500
+DEMO-KG-20261030-C,Demo Learner Charlie,Grade 5 - DEMO,Catch the Word,Verb,Seconds,Hard,600
+DEMO-KG-20261030-C,Demo Learner Charlie,Grade 5 - DEMO,Balloon Popping,Adverb,Lives,Easy,200
+DEMO-KG-20261030-C,Demo Learner Charlie,Grade 5 - DEMO,Human Plane,Noun,Seconds,Normal,200
+DEMO-KG-20261030-D,Demo Learner Delta,Grade 2 - DEMO,Catch the Word,Adjective,Lives,Easy,100
+DEMO-KG-20261030-D,Demo Learner Delta,Grade 2 - DEMO,Balloon Popping,Pronoun,Seconds,Normal,400
+DEMO-KG-20261030-D,Demo Learner Delta,Grade 2 - DEMO,Human Plane,Adverb,Lives,Hard,300
+DEMO-KG-20261030-E,Demo Learner Echo,Grade 6 - DEMO,Catch the Word,Adverb,Seconds,Normal,500
+DEMO-KG-20261030-E,Demo Learner Echo,Grade 6 - DEMO,Balloon Popping,Noun,Lives,Hard,300
+DEMO-KG-20261030-E,Demo Learner Echo,Grade 6 - DEMO,Human Plane,Pronoun,Seconds,Easy,100
+DEMO-KG-20261030-F,Demo Learner Foxtrot,Grade 1 - DEMO,Catch the Word,Noun,Lives,Hard,0
+DEMO-KG-20261030-F,Demo Learner Foxtrot,Grade 1 - DEMO,Balloon Popping,Verb,Seconds,Easy,400
+DEMO-KG-20261030-F,Demo Learner Foxtrot,Grade 1 - DEMO,Human Plane,Adjective,Lives,Normal,200
+DEMO-KG-20261030-P,Demo Profile Only,Grade 3 - DEMO,,,,,

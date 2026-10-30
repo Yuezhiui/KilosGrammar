@@ -1,6 +1,6 @@
 ﻿extends SceneTree
 
-# Pixel/geometry and native-interaction checks for the user's 24 Oct asset set.
+# Pixel/geometry and native-interaction checks for the current approved art.
 # No camera, PostgreSQL connection, import, file-dialog writing or student data.
 const BOARD := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const ASSETS := "res://Components/Leaderboard/"
@@ -36,7 +36,9 @@ func _run() -> void:
         var prefix := str(viewport) + " "
         var full := Rect2(Vector2.ZERO, Vector2(viewport))
         var backdrop := scene.get_node("Background") as TextureRect
-        _check(_leaderboard_asset(backdrop.texture.resource_path, "BACKGROUND.png"), prefix + " original user background")
+        _check(backdrop.texture != null and backdrop.texture.resource_path ==
+            "res://Components/Credits/Redesign/background1.png",
+            prefix + " current editor-authored background remains the approved Credits artwork")
         _check(backdrop.get_global_rect().is_equal_approx(full), prefix + " background fills viewport")
         var board := scene.get_node("BoardArtwork") as NinePatchRect
         _check(board.texture.resource_path.begins_with("res://Components/")
@@ -100,12 +102,22 @@ func _run() -> void:
             prefix + " reference keeps one clean filter row above the table")
         var main: Array[Control] = []
         for pair in [
-                ["BackButton", "BACK.png"], ["ImportCsvButton", "IMPORT.png"],
+                ["BackButton", "HOME.png"], ["ImportCsvButton", "IMPORT.png"],
                 ["ExportCsvButton", "EXPORT.png"], ["DeleteAllButton", "DELETE.png"]]:
             var button := scene.get_node("%" + pair[0]) as Button
             var image_style := button.get_theme_stylebox("normal") as StyleBoxTexture
-            _check(image_style != null and _leaderboard_asset(_atlas_source(image_style.texture), pair[1]),
-                prefix + pair[0] + " uses user provided transparent PNG")
+            if pair[0] == "BackButton":
+                # The approved HOME artwork is a separately draggable child;
+                # the native button uses an intentionally transparent skin.
+                var art := button.get_node_or_null("Artwork") as TextureRect
+                _check(button.get_theme_stylebox("normal") is StyleBoxEmpty
+                    and art != null and art.texture != null
+                    and art.texture.resource_path == "res://Components/Credits/Redesign/HOME.png"
+                    and art.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+                    prefix + " BackButton uses the editor-adjustable HOME artwork with a transparent hit target")
+            else:
+                _check(image_style != null and _leaderboard_asset(_atlas_source(image_style.texture), pair[1]),
+                    prefix + pair[0] + " uses user provided transparent PNG")
             if image_style != null and image_style.texture != null and pair[0] != "BackButton":
                 var img := image_style.texture.get_image()
                 var corners := [Vector2i(0, 0), Vector2i(img.get_width() - 1, 0),

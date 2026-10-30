@@ -717,10 +717,10 @@ expand_mode = 1
 
 [node name="ScorePlaque" type="TextureRect" parent="HUDLayer/HUD" unique_id=1188822547]
 layout_mode = 0
-offset_left = 1002.0
-offset_top = 537.0
-offset_right = 1276.0
-offset_bottom = 713.0
+offset_left = 15.0
+offset_top = 160.0
+offset_right = 289.0
+offset_bottom = 336.0
 mouse_filter = 2
 texture = ExtResource("r_score")
 expand_mode = 1
@@ -766,10 +766,10 @@ flat = true
 
 [node name="ScoreBottomContainer" type="VBoxContainer" parent="HUDLayer/HUD" unique_id=1426763398]
 layout_mode = 0
-offset_left = 1066.0
-offset_top = 609.0
-offset_right = 1240.0
-offset_bottom = 669.0
+offset_left = 79.0
+offset_top = 232.0
+offset_right = 253.0
+offset_bottom = 292.0
 mouse_filter = 2
 theme_override_constants/separation = -4
 

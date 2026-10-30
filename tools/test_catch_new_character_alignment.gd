@@ -1,14 +1,15 @@
 extends SceneTree
 
-# All five editor-authored animal pairs must retain their intended bust crop,
-# visible face/torso and fully visible basket, on every gameplay background.
-# Collected fruit is now original APPLE HALF.png with NO word labels.
+# All five editor-authored animal pairs retain their intended lower-body bust
+# crop. Faces, hands, wicker opening and collision must remain visible.
+# The current seamless half-apples have no labels and use a wicker-lip shader.
 const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const CHARACTERS := ["Bear", "Cat", "Dog", "Lion", "Panda"]
 const MAPS := ["Forest", "City", "Mountain"]
-const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1920, 1080)]
+const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const EPS := 1.5
-const HALF_APPLE := "res://Components/Gameplay/Catch the Word/Items/APPLE HALF.png"
+const HALF_APPLE := "res://Components/Gameplay/Catch the Word/Items/APPLE HALF SEAMLESS.png"
+const FRONT_CLIP := "res://ui/minigames/catch_the_word/caught_apple_above_rim.gdshader"
 
 var errors: Array[String] = []
 
@@ -76,14 +77,15 @@ func _check_game(viewport: SubViewport, resolution: Vector2i, character: String,
 	var basket_rect := _screen_rect(basket)
 	var bounds := Rect2(Vector2.ZERO, Vector2(resolution))
 	check(_avatar_framed(bounds, body_rect), tag + " face/torso clipped or wrong authored bust framing: " + str(body_rect))
-	check(_inside(bounds, basket_rect), tag + " basket clipped: " + str(basket_rect))
-	check(body_rect.size.y >= float(resolution.y) * 0.25, tag + " body too small to see completely")
+	check(_basket_top_visible(bounds, basket_rect),
+		tag + " wicker opening/hands clipped outside intended bottom-only crop: " + str(basket_rect))
+	check(body_rect.size.y >= float(resolution.y) * 0.25, tag + " body too small to display recognizable head/torso")
 	check(body_rect.end.y >= float(resolution.y) * 0.67, tag + " body floats above the playfield")
 	check(basket_rect.intersects(body_rect), tag + " basket misses selected body")
 	check(absf(basket_rect.get_center().x - body_rect.get_center().x) <= body_rect.size.x * 0.24, tag + " basket not centered on selected body")
 	check(basket_rect.get_center().y > body_rect.position.y + body_rect.size.y * 0.38 and basket_rect.get_center().y < body_rect.end.y, tag + " basket is not held around torso")
-	check(body.z_index + group.z_index == 0 and basket.z_index + group.z_index == 1 and layer.z_index == 2,
-		tag + " incorrect approved Body 0 / Basket 1 / Collected Apples 2 draw order")
+	check(body.z_index + group.z_index == 0 and layer.z_index == 1 and basket.z_index + group.z_index == 2,
+		tag + " current editor Body 0 / CollectedWords 1 / Basket 2 layers changed")
 	var title := game.get_node("HUDLayer/HUD/TitlePlaque") as TextureRect
 	var pause := game.get_node("HUDLayer/HUD/PausePlaque") as TextureRect
 	check(not body_rect.intersects(title.get_global_rect()) and not basket_rect.intersects(title.get_global_rect()), tag + " character obscures title")
@@ -104,9 +106,12 @@ func _check_game(viewport: SubViewport, resolution: Vector2i, character: String,
 		check(apple_rect.position.y < basket_rect.end.y + 10 and apple_rect.end.y > basket_rect.position.y - 80, tag + " collected fruit not in basket zone")
 		check(apple_rect.position.x >= basket_rect.position.x - 45 and apple_rect.end.x <= basket_rect.end.x + 45, tag + " collected fruit misses basket horizontally")
 		check(apple.texture != null and apple.texture.resource_path == HALF_APPLE,
-			tag + " collected fruit does not use actual APPLE HALF.png")
-		check(apple.get_child_count() == 0 and apple.material == null,
-			tag + " collected half-apple has a prohibited word label or old clipping shader")
+			tag + " collected fruit does not use the current SEAMLESS half-apple")
+		var lip := apple.material as ShaderMaterial
+		check(apple.get_child_count() == 0 and lip != null
+			and lip.shader != null and lip.shader.resource_path == FRONT_CLIP
+			and apple.z_index + layer.z_index > basket.z_index + group.z_index,
+			tag + " collected half-apple must remain unlabelled with front lip-shader composite")
 		check(apple_rect.size.x >= basket_rect.size.x * 0.12
 			and apple_rect.size.x <= basket_rect.size.x * 0.30,
 			tag + " collected half-apple is not small relative to basket")
@@ -133,8 +138,16 @@ func _screen_rect(sprite: Sprite2D) -> Rect2:
 	return Rect2(minimum, maximum - minimum)
 
 
-func _inside(frame: Rect2, value: Rect2) -> bool:
-	return value.size.x > 0.0 and value.size.y > 0.0 and value.position.x >= frame.position.x - EPS and value.position.y >= frame.position.y - EPS and value.end.x <= frame.end.x + EPS and value.end.y <= frame.end.y + EPS
+func _basket_top_visible(frame: Rect2, value: Rect2) -> bool:
+	# Exact opaque alpha bounds are checked in test_catch_alpha_framing.gd.
+	# Here the scene's region rect includes transparent crop padding, so allow
+	# only a bottom sliver (up to 1.2% of height) while protecting the lip,
+	# hands, and horizontal clipping at all 3 supported resolutions.
+	var displayed := (minf(value.end.y, frame.end.y) - maxf(value.position.y, frame.position.y)) / maxf(value.size.y, 1.0)
+	return value.has_area() and value.position.x >= frame.position.x - EPS \
+		and value.end.x <= frame.end.x + EPS and value.position.y >= frame.size.y * 0.60 \
+		and value.position.y < frame.end.y - value.size.y * 0.20 \
+		and value.end.y <= frame.end.y + frame.size.y * 0.012 and displayed >= 0.93
 
 
 func _avatar_framed(frame: Rect2, value: Rect2) -> bool:

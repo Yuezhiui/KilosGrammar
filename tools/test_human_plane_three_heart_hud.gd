@@ -1,8 +1,10 @@
 extends SceneTree
 
 # Godot 4.7.2 --headless --path . --script res://tools/test_human_plane_three_heart_hud.gd
-# Verify the HUMAN PLANE HUD is a genuine scene-authored clone of Catch the
-# Word, with original editable coordinates and precisely three life states.
+# Verify Human Plane's own editor-authored HUD retains real Catch-compatible
+# shared artwork, three life states and its independently positioned controls.
+# Current Catch has direct HUD/ScoreNumber; Plane deliberately owns a
+# ScoreBottomContainer. Do not force old cross-game positions or title art.
 const SCENE := preload("res://ui/minigames/human_plane/human_plane.tscn")
 const CATCH_SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const LIVES_STATE_3 := preload("res://Components/Gameplay/Catch the Word/HUD/generated/replacement/lives_state_3.png")
@@ -73,33 +75,38 @@ func _exercise(catch: Control, screen: Vector2i, mode: String, difficulty: Strin
     var source_nodes := {}
     for path in HUD_PARTS:
         var item := game.get_node_or_null(path) as Control
-        var source := catch.get_node_or_null(path) as Control
         _check(item != null and item.owner == game, tag + " scene-authored HUD control " + path)
-        _check(source != null, "Catch reference control " + path)
-        if item == null or source == null:
+        if item == null:
             continue
-        _check(item.get_class() == source.get_class(), tag + " matches Catch node type " + path)
-        _check(_coordinates(item) == _coordinates(source), tag + " exact original Catch inspector layout " + path)
-        if item is TextureRect and source is TextureRect:
+        var authored_size := item.size.max(item.custom_minimum_size)
+        _check(authored_size.x >= 10.0 and authored_size.y >= 10.0,
+            tag + " editor-defined visible sized area " + path)
+        if item is TextureRect:
+            _check((item as TextureRect).texture != null,
+                tag + " editor-authored texture retained " + path)
+        if path in ["HUDLayer/HUD/TimerPlaque", "HUDLayer/HUD/LivesPlaque",
+                "HUDLayer/HUD/PausePlaque", "HUDLayer/HUD/ScorePlaque"]:
+            var source := catch.get_node_or_null(path) as TextureRect
             var picture := item as TextureRect
-            var ref_picture := source as TextureRect
-            _check(picture.texture != null and ref_picture.texture != null
-                and picture.texture.resource_path == ref_picture.texture.resource_path,
-                tag + " identical source artwork " + path)
-        if item is Label and source is Label:
-            var label_node := item as Label
-            var ref_label := source as Label
-            _check(label_node.get_theme_font("font") == ref_label.get_theme_font("font"),
-                tag + " original Catch font " + path)
+            _check(source != null and picture != null and picture.texture == source.texture,
+                tag + " shared Catch original badge artwork " + path)
+        if item is Label:
+            _check((item as Label).get_theme_font("font") != null,
+                tag + " intended original readable font " + path)
         source_nodes[path] = item.get_instance_id()
+    _check(catch.get_node_or_null("HUDLayer/HUD/ScoreNumber") is Label
+        and catch.get_node_or_null("HUDLayer/HUD/ScoreBottomContainer") == null,
+        "Latest Catch uses its own direct HUD ScoreNumber layout; Plane owns a separate container")
     var score := game.get_node("HUDLayer/HUD/ScoreBottomContainer/ScoreNumber") as Label
     var timer_plaque := game.get_node("HUDLayer/HUD/TimerPlaque") as TextureRect
     var timer := game.get_node("HUDLayer/HUD/TimeLabel") as Label
     var lives_art := game.get_node("HUDLayer/HUD/LivesPlaque") as TextureRect
     _check(lives_art.texture == LIVES_STATE_3, tag + " initial three-heart native Catch plaque")
-    _check(game.get_node_or_null("SceneBackground/SkyBackdrop") is TextureRect and
-        game.get_node_or_null("PlaneRig/PlaneArtwork") is TextureRect,
-        tag + " original game background and airplane remain intact")
+    var hybrid := game.get_node_or_null("HybridFlight3D") as Node2D
+    _check(hybrid != null and hybrid.get_node_or_null("RenderViewport/FlightWorld3D/Camera") is Camera3D
+        and hybrid.get_node_or_null("OverlayTexture") is TextureRect
+        and game.get_node_or_null("PlaneRig/PlaneArtwork") is TextureRect,
+        tag + " current true-3D authored sky and airplane artwork remain intact")
 
     game.set_context({"activity": "Human Plane", "difficulty": difficulty,
         "topic": "Adjective", "game_mode": mode, "lives": 5, "score": 48})
@@ -132,8 +139,10 @@ func _exercise(catch: Control, screen: Vector2i, mode: String, difficulty: Strin
     var original_gate := game.call("_gate_rect", 1, 0.85) as Rect2
     game.set("plane_x_norm", -0.2)
     game.call("_resolve_at_answer_line")
-    _check(int(game.get("lives")) == 2, tag + " missing the visible gate deducts precisely one chance")
-    _check(lives_art.texture == LIVES_STATE_2, tag + " LivesPlaque moves to original two-heart artwork")
+    _check(int(game.get("lives")) == (3 if mode == "Seconds" else 2),
+        tag + " missed gate deducts exactly one chance ONLY in Lives mode")
+    _check(lives_art.texture == (LIVES_STATE_3 if mode == "Seconds" else LIVES_STATE_2),
+        tag + " plaque retains three hearts in Seconds, decrements to two in Lives")
     game.call("_sync_visuals")
     _check(score.text == str(game.get("score")), tag + " ScoreNumber follows score changes")
     for remaining in [1, 0, 3]:
@@ -145,7 +154,8 @@ func _exercise(catch: Control, screen: Vector2i, mode: String, difficulty: Strin
         and game.get_node_or_null("HUD/StatsBar/WaveLabel") == null, tag + " no WAVE in runtime tree")
     for path in HUD_PARTS:
         var control := game.get_node(path) as Control
-        _check(control.get_instance_id() == source_nodes[path], tag + " no HUD ghost replacements " + path)
+        _check(source_nodes.has(path) and control.get_instance_id() == int(source_nodes.get(path, -1)),
+            tag + " no HUD ghost replacements " + path)
         _check(control.get_rect().is_equal_approx(initial_rects[path]),
             tag + " update does not hardcode/move inspector rect " + path)
     _check((game.call("_gate_rect", 1, 0.85) as Rect2).is_equal_approx(original_gate),

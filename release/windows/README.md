@@ -271,6 +271,23 @@ score-persistence/camera tests on a second machine. No Inno Setup, NSIS or WiX
 compiler was found in the inspected build environment, so no conventional
 `Setup.exe` is claimed to exist.
 
+## 6. Verified developer-preview ZIP (not the school release)
+
+`Build-ReviewedZip.ps1 -AllowPreview` creates a real ZIP in the ignored
+`release/windows/out/` location **only** from a complete, checksum-verified
+developer-preview folder. `Test-ReviewedZip.ps1` reads every archive entry
+and compares the SHA-256 of its actual bytes with the canonical preview
+inventory; it also checks the ZIP's separate `.sha256.txt` checksum sidecar.
+ZIP extraction and safe install/uninstall were tested under Windows paths
+with spaces. The archive is explicitly named `EDITOR-PREVIEW-NOT-DEPLOYABLE`
+and contains `NOT-DEPLOYABLE.txt` and `PREVIEW-STATUS.json`. It is NOT an
+offline, independently launchable package or conventional installer.
+
+For the exact packaged preview SHA-256, the current blocker matrix, and the
+clean-second-laptop release checklist, see `RELEASE-UPLOAD-CHECKLIST.md`.
+Publishing any build from this task to GitHub Releases was intentionally not
+performed; no Git, repository remote or GitHub release upload was used.
+
 Reference sources: [Godot Windows export](https://docs.godotengine.org/en/4.7/tutorials/export/exporting_for_windows.html),
 [Godot command-line export](https://docs.godotengine.org/en/4.7/tutorials/export/exporting_projects.html),
 [PostgreSQL Windows installers](https://www.postgresql.org/download/windows/),

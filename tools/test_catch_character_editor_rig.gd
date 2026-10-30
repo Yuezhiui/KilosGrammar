@@ -12,6 +12,8 @@ const EDIT_BODY_DELTA := Vector2(7.0, -8.0)
 const EDIT_BASKET_DELTA := Vector2(13.0, -6.0)
 const EDIT_RIG_DELTA := Vector2(23.0, -12.0)
 const EPSILON := 1.5
+const CAUGHT_APPLE := "res://Components/Gameplay/Catch the Word/Items/APPLE HALF SEAMLESS.png"
+const RIM_CLIP_SHADER := "res://ui/minigames/catch_the_word/caught_apple_above_rim.gdshader"
 
 var failures: Array[String] = []
 var checks := 0
@@ -209,12 +211,16 @@ func _check_collected_apples(game: Control, rig: Node2D, layer: Node2D,
 			tag + ": collected apple overlaps the selected Basket, not legacy Boy")
 		_check(viewport.grow(2.0).encloses(rect),
 			tag + ": collected apple remains inside viewport after editor moves")
-		# Collected APPLE HALF inventory is decorative and deliberately unlabelled.
-		# Falling grammar apples (a separate layer) still carry vocabulary text.
+		# Collected seamless half-apples are deliberately unlabelled. The rim
+		# shader joins the painted bottom to the basket without moving its rig.
 		_check(item.texture != null and item.texture.resource_path ==
-			"res://Components/Gameplay/Catch the Word/Items/APPLE HALF.png"
-			and item.get_child_count() == 0,
-			tag + ": collected apple uses unlabelled original APPLE HALF art")
+			CAUGHT_APPLE and item.get_child_count() == 0,
+			tag + ": collected apple uses seamless unlabelled half-apple art")
+		var rim_shader := item.material as ShaderMaterial
+		_check(rim_shader != null and rim_shader.shader != null
+			and rim_shader.shader.resource_path == RIM_CLIP_SHADER
+			and item.z_index + layer.z_index > basket.z_index + rig.z_index,
+			tag + ": current lip shader and foreground fruit overlay remain active")
 	_check(count == 3, tag + ": exactly three caught apples render, none duplicated")
 
 
@@ -234,15 +240,30 @@ func _check_steering_edges(game: Control, body: Sprite2D, basket: Sprite2D,
 
 
 func _check_clipping(body: Sprite2D, basket: Sprite2D, size: Vector2i, tag: String) -> void:
-	# Region crop defines the intended visible artwork; do not assert on the
-	# full uncropped source texture's transparent padding. User explicitly
-	# requires the head, hands, basket and feet inside the game viewport.
+	# The artist explicitly positions the animals as busts: their lower body
+	# extends below the screen. Do not shift the scene or force the whole
+	# Body sprite into the viewport. Keep face/upper torso, hands and most of
+	# the basket visible; a bottom-only sliver of basket may be cut away.
+	# This test perturbs editor coordinates, so allow that movement in bounds.
 	var screen := Rect2(Vector2.ZERO, Vector2(size))
-	for part in [{"name": "body", "sprite": body}, {"name": "basket", "sprite": basket}]:
-		var rect := _global_sprite_rect(part["sprite"] as Sprite2D)
-		_check(rect.has_area(), tag + ": %s has nonzero visual bounds" % part["name"])
-		_check(screen.grow(EPSILON).encloses(rect),
-			"%s: %s image is not clipped at any edge; rect %s vs screen %s" % [tag, part["name"], rect, screen])
+	var body_rect := _global_sprite_rect(body)
+	var basket_rect := _global_sprite_rect(basket)
+	var body_fraction := (minf(body_rect.end.y, screen.end.y) - maxf(body_rect.position.y, screen.position.y)) / maxf(body_rect.size.y, 1.0)
+	var basket_fraction := (minf(basket_rect.end.y, screen.end.y) - maxf(basket_rect.position.y, screen.position.y)) / maxf(basket_rect.size.y, 1.0)
+	_check(body_rect.has_area() and body_rect.position.y >= -EPSILON
+		and body_rect.position.y < screen.size.y * 0.65
+		and body_rect.end.y >= screen.end.y - EPSILON
+		and body_rect.end.y <= screen.end.y + screen.size.y * 0.22
+		and body_fraction >= 0.72 and body_rect.position.x >= -EPSILON
+		and body_rect.end.x <= screen.end.x + EPSILON,
+		"%s: visible face/torso preserved with artist-authored bottom BODY crop: %s (visible %.1f%%)" %
+		[tag, body_rect, body_fraction * 100.0])
+	_check(basket_rect.has_area() and basket_rect.position.y > screen.size.y * 0.60
+		and basket_rect.position.y < screen.end.y - basket_rect.size.y * 0.15
+		and basket_fraction >= 0.82 and basket_rect.position.x >= -EPSILON
+		and basket_rect.end.x <= screen.end.x + EPSILON,
+		"%s: basket opening/hands remain visible above bottom crop: %s (visible %.1f%%)" %
+		[tag, basket_rect, basket_fraction * 100.0])
 
 
 func _global_sprite_rect(sprite: Sprite2D) -> Rect2:

@@ -92,9 +92,10 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 
 	# Drive the scene deterministically via a fixed delta. The older
 	# single-trio implementation leaves this entire pre-crossing view empty.
-	# The next wave is intentionally dim and delayed; showing six bright
-	# options at the scoring instant was the user's visual regression.
-	var quiet_preview_seen := false
+	# The current approved hybrid renders BOTH depth-separated gate trios
+	# at full opacity. Require actual readable labels and separated projected
+	# rings; merely lowering alpha could conceal a genuine overlap.
+	var readable_preview_seen := false
 	var next_seen_before_handoff := false
 	var resolved := false
 	var pre_handoff_next_positions: Dictionary = {}
@@ -122,7 +123,7 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 			shown_blank = true
 		if int(game.get("waves_completed")) == last_waves and not showing_next.is_empty():
 			next_seen_before_handoff = true
-			quiet_preview_seen = quiet_preview_seen or (next_trio[1] as Control).modulate.a <= 0.641
+			readable_preview_seen = readable_preview_seen or _separated_readable_preview(game)
 		if int(game.get("attempts")) > attempts_on_first:
 			resolved = true
 			# Resolve collisions are idempotent even while next gates are already visible.
@@ -143,7 +144,7 @@ func _test_continuous_round(mode: String, difficulty: String, resolution: Vector
 			break
 	_check(resolved, label + " first trio reaches the answer plane")
 	_check(next_seen_before_handoff, label + " preloaded gate set is visible before previous wave completes")
-	_check(quiet_preview_seen, label + " incoming trio remains dim and non-distracting until handoff")
+	_check(readable_preview_seen, label + " incoming fully opaque trio is legible and depth-separated before handoff")
 	_check(handoff_occurred, label + " first wave finishes without waiting for another spawn")
 	_check(not shown_blank, label + " never renders a blank gate corridor")
 	_check(int(game.get("attempts")) == 1, label + " one scored attempt per completed gate wave")
@@ -219,7 +220,7 @@ func _test_sustained_flight(game: Control, gates: Array[Control], label: String)
 		if active_words.size() != 3:
 			return
 		var answer_lane := int((active_data["valid_indices"] as Array)[0])
-		var saw_quiet_preview := false
+		var saw_readable_preview := false
 		var saw_reserved := false
 		var saw_blank := false
 		var handed_off := false
@@ -239,7 +240,7 @@ func _test_sustained_flight(game: Control, gates: Array[Control], label: String)
 			if not next_data.is_empty() and int(game.get("waves_completed")) == completed:
 				var pending_nodes: Array = game.get("_upcoming_gate_nodes")
 				if pending_nodes.size() == 3 and (pending_nodes[1] as Control).visible:
-					saw_quiet_preview = saw_quiet_preview or (pending_nodes[1] as Control).modulate.a <= 0.641
+					saw_readable_preview = saw_readable_preview or _separated_readable_preview(game)
 				var future_words := _word_set(next_data)
 				var overlaps := false
 				for word in future_words:
@@ -258,7 +259,7 @@ func _test_sustained_flight(game: Control, gates: Array[Control], label: String)
 				break
 			if bool(game.get("finished")):
 				break
-		_check(saw_quiet_preview, label + " cycle %d preloads a dim upcoming trio without clutter" % cycle)
+		_check(saw_readable_preview, label + " cycle %d preloads readable fully opaque depth-separated gates" % cycle)
 		_check(saw_reserved, label + " cycle %d has three unique incoming words" % cycle)
 		_check(not saw_blank, label + " cycle %d never has an empty gate corridor" % cycle)
 		_check(handed_off, label + " cycle %d promotes prefetched trio without delay" % cycle)
@@ -328,6 +329,33 @@ func _gate_controls(game: Control) -> Array[Control]:
 		for child in item.get_children():
 			queue.append(child)
 	return found
+
+
+func _separated_readable_preview(game: Control) -> bool:
+	var front: Array[Control] = game.get("_gate_nodes")
+	var incoming: Array[Control] = game.get("_upcoming_gate_nodes")
+	if front.size() != 3 or incoming.size() != 3 or not incoming[0].get_parent().visible:
+		return false
+	for i in range(3):
+		var label := incoming[i].get_node("WordLabel") as Label
+		var plate := incoming[i].get_node("WordPlate") as Control
+		if not incoming[i].is_visible_in_tree() or not label.visible or not plate.visible \
+				or label.text.strip_edges().is_empty() or label.get_theme_font_size("font_size") < 20 \
+				or incoming[i].modulate.a < 0.999:
+			return false
+		# Require separate projected depth planes, not two opaque sets
+		# occupying the same ring position in a busy classroom view.
+		var near_rect: Rect2 = game.call("_gate_visible_rect", i, float(game.gate_progress))
+		var far_rect: Rect2 = game.call("_gate_visible_rect_with_offsets", i,
+			float(game.next_gate_progress), game.get("_upcoming_rect_offsets"), incoming)
+		if not near_rect.has_area() or not far_rect.has_area() \
+				or far_rect.get_center().y >= near_rect.get_center().y - 10.0:
+			return false
+		for other in range(i + 1, 3):
+			var other_plate := incoming[other].get_node("WordPlate") as Control
+			if plate.get_global_rect().intersects(other_plate.get_global_rect()):
+				return false
+	return true
 
 
 func _visible_gates(nodes: Array[Control]) -> Array[Control]:

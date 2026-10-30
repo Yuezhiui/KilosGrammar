@@ -41,9 +41,11 @@ func _check_viewport(dimensions: Vector2i) -> void:
 	var original_time: float = float(game.time_remaining)
 	_check(game.started and game.running and game.lives == 3 and game.time_remaining > 59.0,
 		tag + " starts with unchanged 60 seconds and three hearts")
-	_check(game.get_node_or_null("WorldView3D") == null and
-		game.get_node("FlightBackground") is TextureRect,
-		tag + " uses editable native 2D gates and original background")
+	var hybrid := game.get_node_or_null("HybridFlight3D") as Node2D
+	_check(hybrid != null and bool(hybrid.get("hybrid_enabled"))
+		and hybrid.get_node_or_null("RenderViewport/FlightWorld3D/Camera") is Camera3D
+		and hybrid.get_node_or_null("OverlayTexture") is TextureRect,
+		tag + " uses current native 3D sky/torus and independently editable 2D gate words")
 	for group in [current, upcoming]:
 		for lane in LANES:
 			var gate := group.get_node("Gate" + lane) as Control
@@ -85,8 +87,10 @@ func _check_viewport(dimensions: Vector2i) -> void:
 		tag + " prefetch keeps three queued answers")
 	for word in prefetched:
 		_check(word not in initial, tag + " prefetch reserves unique answer " + str(word))
-	_check(current.visible and not upcoming.visible,
-		tag + " upcoming words prefetch without visible second trio or ghost")
+	_check(current.visible and upcoming.visible and _opaque_trio(game._upcoming_gate_nodes),
+		tag + " upcoming readable gate words appear in the distant second trio")
+	_check(_incoming_depth_separation(game),
+		tag + " preloaded ring centers remain distinctly behind the active ring centers")
 	_check(_opaque_trio(game._gate_nodes) and current.modulate.a >= 0.999,
 		tag + " active gate PNGs and word plaques stay fully opaque while approaching")
 	var line_p: float = game._progress_for_answer_line()
@@ -94,8 +98,9 @@ func _check_viewport(dimensions: Vector2i) -> void:
 	game._sync_visuals()
 	_check(_opaque_trio(game._gate_nodes),
 		tag + " current gates do not dissolve immediately after scoring line")
-	_check(not upcoming.visible,
-		tag + " prefetched gates remain hidden even after score crossing")
+	_check(upcoming.visible and _opaque_trio(game._upcoming_gate_nodes)
+		and _incoming_depth_separation(game),
+		tag + " approaching next trio stays readable and behind the scored gate")
 
 	# The same next trio becomes the active scene without a third ghost copy.
 	var old_group := game._gate_nodes[0].get_parent() as Control
@@ -170,6 +175,27 @@ func _opaque_trio(nodes: Array[Control]) -> bool:
 	for gate in nodes:
 		if gate.modulate.a < 0.999 or not gate.visible or not gate.get_node("WordLabel").visible:
 			return false
+	return true
+
+
+func _incoming_depth_separation(game: Control) -> bool:
+	var front: Array[Control] = game._gate_nodes
+	var next: Array[Control] = game._upcoming_gate_nodes
+	for i in range(3):
+		var near_rect: Rect2 = game._gate_visible_rect(i, float(game.gate_progress))
+		var far_rect: Rect2 = game._gate_visible_rect_with_offsets(i, float(game.next_gate_progress),
+			game._upcoming_rect_offsets, next)
+		var word := next[i].get_node("WordLabel") as Label
+		var plate := next[i].get_node("WordPlate") as Control
+		if not near_rect.has_area() or not far_rect.has_area() or \
+				far_rect.get_center().y >= near_rect.get_center().y - 10.0 \
+				or not word.visible or word.text.strip_edges().is_empty() \
+				or word.get_theme_font_size("font_size") < 20 or not plate.visible:
+			return false
+		for other in range(i + 1, 3):
+			var neighbor := next[other].get_node("WordPlate") as Control
+			if plate.get_global_rect().intersects(neighbor.get_global_rect()):
+				return false
 	return true
 
 
