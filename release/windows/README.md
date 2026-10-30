@@ -1,5 +1,29 @@
 # KilosGrammar: reproducible offline Windows release
 
+> Build update, 30 October 2026: A genuine Godot 4.7.2 Windows
+> release-template EXE/PCK and complete offline Python/YOLO/PostgreSQL input
+> package were built under release/windows/out/KilosGrammar-win-x64.
+> Test-ReleasePackage.ps1 confirms 82 SHA-256-matched shipped files; the
+> separate offline-candidate ZIP has 83 SHA-256-matched entries. This is not
+> yet a classroom-approved release: a clean second-PC acceptance test,
+> redistribution permission review, and final publishing remain outstanding.
+> The earlier editor-based preview described below is historical.
+
+In an isolated local QA virtual environment, all 44 staged wheels installed
+with no-index successfully; imports of Torch, TorchVision, Ultralytics, OpenCV,
+LAP and Psycopg passed. The packaged yolo26n-pose.pt checkpoint loaded and
+completed one CPU-only inference on a synthetic frame. Webcam calibration
+and the classroom device remain untested by these checks.
+
+To verify the candidate ZIP use Test-VerifiedOfflineZip.ps1, and to reproduce
+it from a verified native release folder use Build-VerifiedOfflineZip.ps1.
+The KilosGrammar-OfflineCandidate.iss Inno Setup script produces a per-user
+installation candidate. Its installer does NOT silently install Python or
+PostgreSQL: a teacher must follow RELEASE-INSTRUCTIONS.md, use the signed
+prerequisite installers and then run Setup Offline.cmd. No student records,
+credentials, PostgreSQL cluster, or developer Python virtual environment are
+included in the release package.
+
 This folder prepares a **Windows x64 Godot 4.7.2 desktop EXE** and the accompanying
 offline Python/YOLO and PostgreSQL prerequisites. A school computer runs the
 exported EXE **without a Godot editor or Internet connection**. This is a
@@ -193,18 +217,18 @@ after a real PC reboot. The EXE can be launched directly, but the supplied
 for reliable camera execution until the game's native Python discovery also
 supports that release location automatically.
 
-Release status remains **NOT READY** until export templates, full offline
-wheelhouse/installers, redistribution review and another-computer acceptance
-have been verified. Python package versions, CUDA support and operating system
-compatibility must match the accepted target machine.
+Release status remains **NOT READY for public classroom distribution** until
+redistribution review and another-computer acceptance are verified. The
+exact export templates, 44 Windows wheels, signed offline installers, native
+EXE/PCK and hashed package are now locally available. CPU-only PyTorch
+is provided; GPU/CUDA performance is not guaranteed.
 
 ## 5. Safe partial build when export templates/offline dependencies are missing
 
-**Do not publish a partial build as the classroom installer.** On the current
-development PC, the exact 4.7.2 Windows export templates have not yet been
-installed, and neither the portable CPython 3.11 wheelhouse nor the offline
-Python/PostgreSQL installers have been staged. `Build-OfflineRelease.ps1`
-intentionally refuses to make up an `offline/manifest.json` or a real release.
+**Do not publish a partial build as the classroom installer.** The paragraph
+below describes the historical editor-preview workaround. The missing
+templates, Python wheels and installers have now been acquired and a native
+release was built. The builder still refuses to fabricate any missing input.
 
 For developer inspection only, `Build-PreviewExe.ps1` can make a *real PCK*
 via Godot `--export-pack` **without export templates**, then copy the matching
@@ -263,13 +287,11 @@ database/API. It also never creates PostgreSQL roles, runs migrations or
 launches camera capture. A passing local simulation is NOT a real clean-PC
 offline acceptance test.
 
-The preferred full offline release still requires approved original installers,
-a fully compatible Windows CPython 3.11 wheelhouse (Torch, TorchVision,
-Ultralytics, OpenCV, LAP, Psycopg and dependencies), confirmed YOLO checkpoint
-redistribution terms, Godot/third-party notices, and classroom install/restart/
-score-persistence/camera tests on a second machine. No Inno Setup, NSIS or WiX
-compiler was found in the inspected build environment, so no conventional
-`Setup.exe` is claimed to exist.
+The remaining blockers for public distribution are YOLO checkpoint and
+artwork redistribution permissions, third-party notices, and classroom
+install/restart/score-persistence/camera acceptance on a second offline
+machine. An official Inno Setup 6 compiler is now available in ignored
+release staging, rather than absent as in the earlier pre-build audit.
 
 ## 6. Verified developer-preview ZIP (not the school release)
 

@@ -1,5 +1,18 @@
 # KilosGrammar release-readiness QA — 30 October 2026
 
+**Later build update, 30 October:** The packaging-input deficiencies described
+below have been resolved locally after this audit. Exact official Godot 4.7.2
+templates were SHA-512-verified; signed Python 3.11.9 and EnterpriseDB
+PostgreSQL 18.6 installers and 44 Windows CPython 3.11 wheels were staged.
+The native Windows EXE/PCK export passed 82-file SHA-256 manifest verification.
+The beta offline-candidate ZIP passed independent 83-entry verification, has
+974,927,095 bytes and SHA-256
+E7ADC2BCC0B25F7116D44EB1D388078D414BCBB31BFEBC4237C804C43162B399.
+Earlier references below to missing export templates, offline inputs,
+EXE/PCK and manifests are historical pre-build findings. The genuine clean
+offline second-laptop test, model/artwork rights review, and public GitHub
+Release assets remain outstanding. See release/windows/RELEASE-UPLOAD-CHECKLIST.md.
+
 **Updated 30 October 2026 — latest Godot regression batch: 36/36 PASS (0 FAIL).** The nine previously nonzero historical Catch/Human Plane/Leaderboard art fixtures have been updated to assert the current approved artwork and behavior. The user's intentional partially offscreen animal bodies have not been repositioned. Catch opaque basket-bottom cropping remains explicitly bounded and measured (Lion up to 7.78 px at 1920×1080); Human Plane score/gate visual clearance has a separate native graphics acceptance test. Run `tools/run_release_readiness_qa_20261030.ps1 -Group all` to reproduce the full 36/36 result. The table and nine-failure analysis **below document the earlier pre-fix audit**, not the latest status.
 
 **Windows offline deployment remains BLOCKED independently of the passing Godot tests.** Official Windows export templates, complete verified offline Python/YOLO and PostgreSQL installers/wheels, a real installation package, and a clean second-PC disconnected acceptance test are still missing. A 228 MB explicitly marked *developer-preview-only* ZIP has been built locally and integrity-tested; it is not a classroom installer. No production webcam verification is claimed.
