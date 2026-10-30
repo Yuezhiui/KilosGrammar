@@ -74,6 +74,7 @@ var _filter_historical_minigame_only := false
 var _delete_first_confirmed := false
 var _transfer_pending := false
 var _pending_import_path := ""
+var _last_management_action := ""
 var _queued_transfer_notice := ""
 var _queued_transfer_success := false
 var _last_transfer_notice_text := ""
@@ -82,6 +83,13 @@ var _authored_ui_transforms: Dictionary = {}
 
 func _ready() -> void:
 	_capture_editor_layout()
+	# The inherited secondary theme's muted purple text is hard to read on
+	# Godot's gray AcceptDialog panel. Keep the existing real modal and its OK
+	# button, but give its label an accessible high-contrast foreground.
+	var notice_label := empty_dialog.get_label()
+	notice_label.add_theme_color_override("font_color", Color(0.055, 0.065, 0.12, 1.0))
+	notice_label.add_theme_font_size_override("font_size", 19)
+	notice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	resized.connect(_apply_viewport_layout)
 	call_deferred("_apply_viewport_layout")
 	back_button.pressed.connect(_request_main)
@@ -473,6 +481,7 @@ func _choose_import_csv() -> void:
 	if _transfer_pending:
 		_show_status("Finish the pending database transfer before importing another file.")
 		return
+	_last_management_action = "import"
 	if not _teacher_authorized():
 		set_transfer_status("Teacher authorization required to import student records.")
 		return
@@ -484,6 +493,7 @@ func _choose_database_export_csv() -> void:
 	if _transfer_pending:
 		_show_status("A database transfer is already pending. Please finish it first.")
 		return
+	_last_management_action = "export"
 	_open_csv_dialog(database_export_dialog, "kilosgrammar_student_scores.csv")
 
 
@@ -492,6 +502,7 @@ func _on_import_file_selected(path: String) -> void:
 	if _transfer_pending:
 		_show_status("Another database transfer is still pending.")
 		return
+	_last_management_action = "import"
 	if not _teacher_authorized():
 		set_transfer_status("Teacher authorization expired. Import canceled.")
 		return
@@ -519,6 +530,7 @@ func _confirm_import_csv() -> void:
 	if _transfer_pending:
 		_show_status("CSV import canceled because another database operation is pending.")
 		return
+	_last_management_action = "import"
 	if not _teacher_authorized() or path.is_empty():
 		set_transfer_status("CSV import canceled: teacher authorization required.")
 		return
@@ -542,6 +554,7 @@ func _on_export_file_selected(path: String) -> void:
 	if _transfer_pending:
 		_show_status("Another database transfer is still pending.")
 		return
+	_last_management_action = "export"
 	if not _is_csv_path(path):
 		set_transfer_status("Choose a .csv filename for the full database export.")
 		return
@@ -553,6 +566,7 @@ func _begin_delete_all() -> void:
 	if _transfer_pending:
 		_show_status("Finish the pending database operation before deleting records.")
 		return
+	_last_management_action = "delete"
 	if not _teacher_authorized():
 		set_transfer_status("Teacher authorization required before deleting ALL students and scores.")
 		return
@@ -756,11 +770,31 @@ func set_transfer_status(message: String, success: bool = false) -> void:
 	## Main menu should call this when the backend acknowledges an operation.
 	## A failed call keeps database state unchanged; show the actual server error.
 	_set_transfer_pending_state(false)
-	_queue_or_show_transfer_notice(message, success)
+	_queue_or_show_transfer_notice(_explain_management_authorization(message), success)
+	_last_management_action = ""
 	# A successful *unrelated* export must not close a teacher's active delete
 	# challenge or make its queued notice cover the custom warning artwork.
 	# Any fresh backend context is applied through set_context(), which already
 	# revokes a challenge when database/authorization state actually changes.
+
+
+func _explain_management_authorization(message: String) -> String:
+	# The backend enforces administrator authorization for EVERY /data/ route.
+	# Preserve that security rule and translate its 403 text into the action the
+	# teacher actually attempted. Never imply that a protected operation ran.
+	var status := message.strip_edges().to_lower()
+	if not status.contains("local administrator authorization required") \
+			and not status.contains("admin_authorization_required"):
+		return message
+	match _last_management_action:
+		"delete":
+			return "DELETE ALL DATA was blocked. Local administrator authorization is required. No student profiles or scores were deleted. Ask the local administrator to authorize database management."
+		"import":
+			return "CSV import was blocked. Local administrator authorization is required to import student records. No records were imported. Ask the local administrator to authorize database management."
+		"export":
+			return "Full database CSV export was blocked. Local administrator authorization is required for database-wide exports. No CSV file was created. Ask the local administrator to authorize database management."
+		_:
+			return "Database administration was blocked. Local administrator authorization is required for import, full export, and permanent deletion. No database change was confirmed."
 
 
 func _queue_or_show_transfer_notice(message: String, success: bool) -> void:

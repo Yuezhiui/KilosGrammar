@@ -12,8 +12,8 @@ import json
 import os
 import re
 import secrets
+import socket
 import stat
-import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -132,30 +132,63 @@ def _csv_import(source: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]]
         raise ApiError(400, "invalid_csv", "CSV is malformed") from None
 
 
-def _create_admin_token() -> str:
-    """Make a per-server local capability file for the signed-in Windows user.
-
-    The value is not a database credential. The OS user's profile directory
-    provides the access boundary. Never expose this token through HTTP, logs,
-    argv, or a repository file.
-    """
+def _admin_token_path() -> Path:
+    """Keep the local teacher capability scoped to the signed-in OS user."""
     appdata = os.getenv("LOCALAPPDATA") or os.getenv("XDG_DATA_HOME")
     if not appdata:
         raise RuntimeError("User-local profile path is required for administrative operations")
     folder = Path(appdata) / "KilosGrammar"
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
-    token = secrets.token_urlsafe(32)
-    fd, temp_path = tempfile.mkstemp(prefix="admin-api-", suffix=".tmp", dir=folder)
+    return folder / "admin_api_token.txt"
+
+
+def _read_admin_token_file(path: Path) -> str | None:
+    """Read only a regular, valid local capability; never accept a symlink."""
+    try:
+        if path.is_symlink() or not path.is_file():
+            return None
+        token = path.read_text(encoding="ascii").strip()
+        if not 32 <= len(token) <= 256 or any(ord(char) <= 32 or ord(char) >= 127 or char == ":" for char in token):
+            return None
+        return token
+    except (OSError, UnicodeError):
+        return None
+
+
+def _create_admin_token() -> str:
+    """Reuse the signed-in user's capability instead of rotating it per API.
+
+    The value is not a database credential. The OS user's profile directory
+    provides the access boundary. Never expose this token through HTTP, logs,
+    argv, or a repository file. An independent test/server on a DIFFERENT HTTP
+    port must not invalidate the teacher's existing live leaderboard controls.
+    """
+    path = _admin_token_path()
+    existing = _read_admin_token_file(path)
+    if existing is not None:
+        return existing
+    if path.exists() or path.is_symlink():
+        raise RuntimeError("Existing local admin capability is unreadable; preserve it for owner review")
+    proposed = secrets.token_urlsafe(32)
+    try:
+        # O_EXCL prevents simultaneous API startups from racing to replace the
+        # same user capability. Permissions are owner-only where supported.
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        concurrent = _read_admin_token_file(path)
+        if concurrent is None:
+            raise RuntimeError("Local capability initialization is incomplete") from None
+        return concurrent
     try:
         with os.fdopen(fd, "w", encoding="ascii") as file:
-            file.write(token)
+            file.write(proposed)
             file.flush()
-        os.chmod(temp_path, stat.S_IREAD | stat.S_IWRITE)
-        os.replace(temp_path, folder / "admin_api_token.txt")
-    finally:
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
-    return token
+            os.fsync(file.fileno())
+        os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+    except Exception:
+        path.unlink(missing_ok=True)
+        raise
+    return proposed
 
 
 class Store(Protocol):
@@ -258,6 +291,9 @@ class API:
     def __init__(self, store: Store, admin_token: str | None = None) -> None:
         self.store = store
         self._admin_token = admin_token
+        # Enabled only by the real localhost server. MemoryStore unit tests
+        # using an explicit injected capability retain isolated semantics.
+        self._admin_token_file: Path | None = None
         self._challenge_lock = threading.Lock()
         self._delete_challenge: tuple[str, float] | None = None
 
@@ -267,6 +303,11 @@ class API:
         try:
             parsed = urlsplit(target)
             if parsed.path.startswith("/data/"):
+                if self._admin_token_file is not None:
+                    # Legacy API processes may predate a second API startup
+                    # that rotated the shared file. Synchronize only with a
+                    # valid OS-user-scoped token; never weaken the 403 guard.
+                    self._admin_token = _read_admin_token_file(self._admin_token_file)
                 if not self._admin_token or not isinstance(admin_token, str) or not hmac.compare_digest(
                     self._admin_token, admin_token
                 ):
@@ -585,14 +626,36 @@ def make_handler(api: API) -> type[BaseHTTPRequestHandler]:
     return Handler
 
 
+class ExclusiveLoopbackHTTPServer(ThreadingHTTPServer):
+    """Bind one local API per port, including on Windows.
+
+    The default HTTPServer reuse-address option permits two concurrent
+    listeners on Windows. Both could then rotate the user's admin token and
+    randomly service requests, making legitimate leaderboard transfers fail
+    with 403. SO_EXCLUSIVEADDRUSE rejects a second listener before any token
+    file is opened; ordinary score records are entirely unaffected.
+    """
+
+    allow_reuse_address = False
+
+    def server_bind(self) -> None:
+        if os.name == "nt":
+            flag = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+            if flag is None:
+                raise RuntimeError("Safe exclusive Windows loopback binding is unavailable")
+            self.socket.setsockopt(socket.SOL_SOCKET, flag, 1)
+        super().server_bind()
+
+
 def main() -> None:
     config = Config.from_env()
     recovery = RecoveryStore(PostgreSQLStore(config))
     api = API(recovery)
-    with ThreadingHTTPServer(("127.0.0.1", config.http_port), make_handler(api)) as server:
-        # Bind the port BEFORE replacing the token file. A second accidental
-        # launch must not rotate the credential used by an already-live API.
+    with ExclusiveLoopbackHTTPServer(("127.0.0.1", config.http_port), make_handler(api)) as server:
+        # Exclusive bind BEFORE reading/creating the token file. A second
+        # accidental startup on the same Windows port cannot start serving.
         api._admin_token = _create_admin_token()
+        api._admin_token_file = _admin_token_path()
         print(f"KILOS GRAMMAR database API listening at http://127.0.0.1:{config.http_port}")
         stop_retry = threading.Event()
 

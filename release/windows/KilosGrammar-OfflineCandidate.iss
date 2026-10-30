@@ -2,7 +2,7 @@
 ; release folder. This installs files, NOT PostgreSQL/Python services silently.
 ; A teacher must run the bundled installers and Setup Offline.cmd afterwards.
 #ifndef AppVersion
-  #define AppVersion "0.3.0-beta.5"
+  #define AppVersion "0.3.0-beta.6"
 #endif
 #ifndef ReleaseSource
   #define ReleaseSource "out\KilosGrammar-win-x64-v" + AppVersion
@@ -49,4 +49,9 @@ Name: "{group}\KilosGrammar"; Filename: "{app}\Play KilosGrammar.cmd"; WorkingDi
 Name: "{group}\KilosGrammar Offline Setup"; Filename: "{app}\Setup Offline.cmd"; WorkingDir: "{app}"
 
 [Run]
+; Give the teacher the one-time OFFLINE application dependency setup directly
+; after copying files. This does not silently install a PostgreSQL Windows
+; service, modify existing scores, or bypass required administrator approval.
+; The bundled CMD retains its own error messages and interactive pause.
+Filename: "{cmd}"; Parameters: "/C ""{app}\Setup Offline.cmd"""; WorkingDir: "{app}"; Description: "Set up offline Python and camera dependencies for this Windows account"; Flags: postinstall skipifsilent
 Filename: "{sys}\notepad.exe"; Parameters: """{app}\RELEASE-INSTRUCTIONS.md"""; Description: "Read the required offline setup instructions"; Flags: postinstall skipifsilent

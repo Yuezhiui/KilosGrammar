@@ -182,6 +182,18 @@ region = Rect2(500, 150, 1160, 460)
 [sub_resource type="StyleBoxTexture" id="DeleteSuccessOkayStyle"]
 texture = SubResource("DeleteSuccessOkayCrop")
 
+[sub_resource type="StyleBoxFlat" id="LeaderboardNoticePanel"]
+bg_color = Color(0.976, 0.966, 0.937, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.17, 0.27, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
 [node name="Leaderboard" type="Control" unique_id=502061973]
 layout_mode = 3
 anchors_preset = 15
@@ -461,6 +473,9 @@ theme_override_styles/disabled = SubResource("DeleteActionStyle")
 unique_name_in_owner = true
 editor_description = "Runtime empty/storage notice. Hidden until requested by leaderboard.gd; this is live behavior, NOT obsolete artwork."
 title = "Leaderboard"
+size = Vector2i(760, 240)
+min_size = Vector2i(600, 190)
+theme_override_styles/panel = SubResource("LeaderboardNoticePanel")
 ok_button_text = "OK"
 dialog_text = "No saved scores yet. Local score storage is not connected."
 

@@ -4,6 +4,8 @@
 [CmdletBinding()]
 param(
     [switch]$CheckOnly,
+    [switch]$PythonOnly,
+    [switch]$AutoInstallPython,
     [string]$PythonPath = ''
 )
 
@@ -17,6 +19,9 @@ $modelSource = Join-Path $offlineDir 'models\yolo26n-pose.pt'
 $modelDestination = Join-Path (Join-Path $env:APPDATA 'Godot\app_userdata\KilosGrammar') 'pose_models\yolo26n-pose.pt'
 $marker = Join-Path $dbFolder '.venv\kilos-offline-manifest.sha256'
 $manifest = Join-Path $offlineDir 'manifest.json'
+if ($CheckOnly -and $AutoInstallPython) {
+    throw 'CheckOnly must never install Python.'
+}
 
 # A fresh classroom deployment must be writable by the current school-user
 # account: this setup intentionally creates database/.venv beside the EXE.
@@ -35,14 +40,25 @@ if (-not $CheckOnly) {
 if (-not (Test-Path -LiteralPath (Join-Path $folder 'KilosGrammar.exe') -PathType Leaf)) {
     throw 'KilosGrammar.exe missing. Copy the complete exported release folder before running setup.'
 }
-$pg = Join-Path ${env:ProgramFiles} 'PostgreSQL\18\bin\postgres.exe'
-if (-not (Test-Path -LiteralPath $pg -PathType Leaf)) {
-    $pgInstaller = Get-ChildItem -LiteralPath (Join-Path $offlineDir 'installers') -Filter 'postgresql-18*-windows-x64.exe' -File | Select-Object -First 1
-    throw "Local PostgreSQL 18 x64 is missing. A teacher/administrator must use the supplied offline installer first (or select an approved existing PostgreSQL service): $($pgInstaller.FullName). No database installer has been run."
-}
-$pgService = Get-Service -Name 'postgresql-x64-18' -ErrorAction SilentlyContinue
-if ($null -eq $pgService -or $pgService.Status -ne 'Running') {
-    throw 'PostgreSQL 18 is installed but its standard service is not running. Ask the school administrator to inspect/start it before setup.'
+if (-not $PythonOnly) {
+    $pgService = Get-Service -Name 'postgresql-x64-18' -ErrorAction SilentlyContinue
+    if ($null -eq $pgService) {
+        $pgInstaller = Get-ChildItem -LiteralPath (Join-Path $offlineDir 'installers') -Filter 'postgresql-18*-windows-x64.exe' -File | Select-Object -First 1
+        throw "Local PostgreSQL 18 service is missing. Ask a school administrator to install and configure the bundled offline PostgreSQL installer: $($pgInstaller.FullName). No PostgreSQL installer has been run."
+    }
+    if ($pgService.Status -ne 'Running') {
+        if ($CheckOnly) {
+            throw 'PostgreSQL 18 is installed but stopped. Start the approved postgresql-x64-18 service before checking setup.'
+        }
+        # Only a previously installed standard service may be started, without
+        # elevation. Never install, repair, reconfigure or reset PostgreSQL.
+        try {
+            Start-Service -Name 'postgresql-x64-18' -ErrorAction Stop
+            $pgService.WaitForStatus('Running', [TimeSpan]::FromSeconds(8))
+        } catch {
+            throw 'PostgreSQL 18 is installed but cannot be started with this Windows account. Ask the school administrator to start the existing postgresql-x64-18 service; student records and database configuration were not modified.'
+        }
+    }
 }
 
 $candidates = @()
@@ -51,6 +67,7 @@ if ($PythonPath) {
 } else {
     $py = Get-Command py.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($null -ne $py) { $candidates += @{ exe=$py.Source; args=@('-3.11') } }
+    $candidates += @{ exe=(Join-Path $env:LOCALAPPDATA 'Programs\KilosGrammar-Python311\python.exe'); args=@() }
     $candidates += @{ exe=(Join-Path $env:LOCALAPPDATA 'Programs\Python\Python311\python.exe'); args=@() }
     $candidates += @{ exe=(Join-Path ${env:ProgramFiles} 'Python311\python.exe'); args=@() }
 }
@@ -65,13 +82,40 @@ foreach ($candidate in $candidates) {
 }
 if ($null -eq $chosen) {
     $installer = Get-ChildItem -LiteralPath (Join-Path $offlineDir 'installers') -Filter 'python-3.11*-amd64.exe' -File | Select-Object -First 1
-    throw "64-bit CPython 3.11 with venv/ensurepip is missing. Install it interactively from the staged offline installer: $($installer.FullName), then rerun Setup Offline.cmd. This script has not executed an installer."
+    if (-not $AutoInstallPython) {
+        throw "64-bit CPython 3.11 with venv/ensurepip is missing. Use the bundled offline installer: $($installer.FullName), then rerun Setup Offline.cmd. No installer has been run."
+    }
+    if ($null -eq $installer) { throw 'Bundled CPython 3.11 x64 installer is missing.' }
+    $signature = Get-AuthenticodeSignature -LiteralPath $installer.FullName
+    if ($signature.Status -ne 'Valid' -or $null -eq $signature.SignerCertificate -or
+        $signature.SignerCertificate.Subject -notmatch 'O=Python Software Foundation') {
+        throw 'Bundled Python installer signature is not a valid Python Software Foundation signature; refusing automatic installation.'
+    }
+    if (-not $env:LOCALAPPDATA) { throw 'LOCALAPPDATA must be present for per-user Python installation.' }
+    $target = Join-Path $env:LOCALAPPDATA 'Programs\KilosGrammar-Python311'
+    $targetPython = Join-Path $target 'python.exe'
+    if (Test-Path -LiteralPath $target) {
+        throw "An existing or incomplete Python installation at $target must be inspected by a technician; refusing overwrite."
+    }
+    Write-Host 'Installing the SHA256-verified, officially signed bundled Python 3.11 under the current Windows account (no Internet or administrator privileges).'
+    # Test-OfflinePayload checked SHA256 before this installer may run. Isolate
+    # its TargetDir from the application, system Python and existing installs.
+    $arguments = @('/quiet', 'InstallAllUsers=0', 'Include_launcher=0',
+        'Include_pip=1', 'Include_venv=1', 'Include_test=0',
+        ('TargetDir="' + $target + '"'))
+    $installProcess = Start-Process -FilePath $installer.FullName -ArgumentList $arguments -Wait -PassThru -ErrorAction Stop
+    if ($installProcess.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $targetPython -PathType Leaf)) {
+        throw "Bundled Python per-user install did not complete (exit code $($installProcess.ExitCode)). Existing files were preserved; do not rerun until the destination is inspected."
+    }
+    & $targetPython -c 'import sys,venv,ensurepip; sys.exit(0 if sys.version_info[:2]==(3,11) and sys.maxsize>2**32 else 1)'
+    if ($LASTEXITCODE -ne 0) { throw 'Per-user Python failed Python 3.11 x64 validation.' }
+    $chosen = @{ exe=$targetPython; args=@() }
 }
 $expectedHash = (Get-FileHash -LiteralPath $manifest -Algorithm SHA256).Hash
 $installed = (Test-Path -LiteralPath $pythonVenv -PathType Leaf) -and (Test-Path -LiteralPath $marker -PathType Leaf) -and
     ((Get-Content -LiteralPath $marker -Raw).Trim() -eq $expectedHash)
 if ($CheckOnly) {
-    Write-Host ("Offline prerequisites valid; PostgreSQL service running; Python: {0}; virtual environment installed: {1}" -f $chosen.exe,$installed)
+    Write-Host ("Offline prerequisites valid; Python: {0}; virtual environment installed: {1}" -f $chosen.exe,$installed)
     if (-not $installed) { throw 'Target local Python dependencies have not been installed; run Setup Offline.cmd (without -CheckOnly).' }
     if (-not (Test-Path -LiteralPath $modelDestination -PathType Leaf)) { throw 'Target local pose model is missing; run Setup Offline.cmd.' }
     if ((Get-FileHash $modelDestination -Algorithm SHA256).Hash -ne (Get-FileHash $modelSource -Algorithm SHA256).Hash) {
@@ -110,5 +154,8 @@ if (Test-Path -LiteralPath $modelDestination -PathType Leaf) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $modelDestination) -Force | Out-Null
     Copy-Item -LiteralPath $modelSource -Destination $modelDestination
 }
-Write-Host 'Offline Python and YOLO prerequisites ready. Launch Play KilosGrammar.cmd.'
-Write-Host 'The game launches the one-time database setup wizard if DPAPI credentials/schema are not yet configured.'
+Write-Host 'Offline Python and YOLO prerequisites ready (no download).'
+if (-not $PythonOnly) {
+    Write-Host 'PostgreSQL 18 service running. Launch Play KilosGrammar.cmd.'
+    Write-Host 'The game offers its existing database wizard if DPAPI credentials/schema are not yet configured.'
+}

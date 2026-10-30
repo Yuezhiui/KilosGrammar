@@ -275,7 +275,8 @@ class AdminHttpTests(unittest.TestCase):
             file = Path(directory) / "KilosGrammar" / "admin_api_token.txt"
             self.assertTrue(file.is_file())
             self.assertEqual(file.read_text(encoding="ascii"), token)
-            self.assertNotEqual(token, _create_admin_token())
+            # Keep existing live teacher controls valid across service starts.
+            self.assertEqual(token, _create_admin_token())
 
     def test_colliding_service_start_cannot_replace_running_api_token(self):
         from database.server import main

@@ -18,9 +18,13 @@ and the classroom device remain untested by these checks.
 To verify the candidate ZIP use Test-VerifiedOfflineZip.ps1, and to reproduce
 it from a verified native release folder use Build-VerifiedOfflineZip.ps1.
 The KilosGrammar-OfflineCandidate.iss Inno Setup script produces a per-user
-installation candidate. Its installer does NOT silently install Python or
-PostgreSQL: a teacher must follow RELEASE-INSTRUCTIONS.md, use the signed
-prerequisite installers and then run Setup Offline.cmd. No student records,
+installation candidate. The installed shortcut invokes Play KilosGrammar.cmd.
+On launch it can set up the SHA256-verified, officially signed bundled Python
+3.11 in the current user's profile, install its offline wheels and camera model,
+and start an already-configured PostgreSQL 18 service if permitted. It NEVER
+silently installs PostgreSQL or creates/resets any database. A teacher or
+administrator must first install/configure PostgreSQL and explicitly approve
+any new database role or schema through the existing setup wizard. No student records,
 credentials, PostgreSQL cluster, or developer Python virtual environment are
 included in the release package.
 
@@ -175,19 +179,27 @@ Do not run from inside a ZIP archive. No Godot editor is required on that PC.
    store/administer its admin password privately. The release installer does
    **not** claim PostgreSQL is a portable copy, does not edit `pg_hba.conf`,
    and never runs the EDB installer without an administrator choosing it.
-2. Run the reviewed CPython 3.11 x64 full installer if Python 3.11 is not yet
-   installed. Select an install mode with `venv` / `ensurepip`. Offline mode
-   requires no external package repository after staging.
-3. Double-click **Setup Offline.cmd**. It verifies PostgreSQL's service,
+2. Launch the installed **KilosGrammar** Start Menu shortcut or double-click
+   **Play KilosGrammar.cmd**. It detects and safely prepares the local Python
+   runtime on first launch: if Python 3.11 x64 is missing, it installs the
+   validated bundled installer per user to the distinct KilosGrammar-Python311
+   profile directory, never over an existing folder or system Python. It uses
+   only local packages and the packaged model (no downloads). The launcher
+   starts an already-configured standard PostgreSQL service when permitted,
+   but never installs PostgreSQL or changes the database itself.
+3. Optionally double-click **Setup Offline.cmd** to prepare dependencies.
+   It verifies PostgreSQL's service,
    verifies EVERY staged SHA-256, creates only the release-folder-local
    `database/.venv`, installs packages with `pip --no-index --no-cache-dir`,
    verifies key Python imports, and copies the model into the current Windows
    user's Godot model cache. If an unknown `.venv` or conflicting model exists,
    setup stops and preserves it. A failed dependency install must be diagnosed
    by the technician before retrying; never copy another computer's `.venv`.
-4. Double-click **Play KilosGrammar.cmd**. This launches the Godot desktop
+4. **Play KilosGrammar.cmd** launches the Godot desktop
    EXE with `KILOSGRAMMAR_PYTHON` pointing to this computer's local `.venv`.
-   The application has an existing database auto-start / one-time setup
+   The launcher first requests the existing local Python API startup when
+   encrypted credentials are already configured. The application has an
+   existing database auto-start / one-time setup
    wizard (`database/start_auto.ps1`, `setup_from_game.ps1`). It can open the
    visible, private **DPAPI** credentials wizard. For a new dedicated database
    the teacher must approve `CREATE` and `MIGRATE` after reviewing its proposed
@@ -215,7 +227,10 @@ driver/hardware, Windows privacy settings, display resolution, and startup
 after a real PC reboot. The EXE can be launched directly, but the supplied
 `Play KilosGrammar.cmd` is required to select the packaged Python environment
 for reliable camera execution until the game's native Python discovery also
-supports that release location automatically.
+supports that release location automatically. **Double-clicking the bare
+KilosGrammar.exe bypasses the launcher and cannot automatically prepare the
+Python environment or start PostgreSQL**. The installed Start Menu shortcut
+uses Play KilosGrammar.cmd, which is the supported first-run entrypoint.
 
 Release status remains **NOT READY for public classroom distribution** until
 redistribution review and another-computer acceptance are verified. The
