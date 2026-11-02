@@ -5,8 +5,8 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/test_student_continue_gate_20261029.gd
 ##   godot --rendering-driver opengl3 --path . --script res://tools/test_student_continue_gate_20261029.gd
 const SCENE_PATH := "res://ui/student/setup/student_setup.tscn"
-const GRAY_ART := "res://Components/Student Setup/Redesign/btn_uncontinue.png"
-const GREEN_ART := "res://Components/Student Setup/Redesign/btn_continue.png"
+const GRAY_ART := "res://Components/StudentSetup/Original20261102/continue_gray.png"
+const GREEN_ART := "res://Components/StudentSetup/Original20261102/continue_green.png"
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const RECT_PATHS := [
     "SetupStage/StudentProfileCard",
@@ -45,7 +45,8 @@ func _run() -> void:
     if packed == null:
         _finish()
         return
-    _check(FileAccess.file_exists(GRAY_ART), "user-supplied gray artwork exists")
+    _check(FileAccess.file_exists(GRAY_ART), "approved original gray artwork exists")
+    _check(FileAccess.file_exists(GREEN_ART), "approved original green artwork exists")
     for screen_size in SIZES:
         root.size = screen_size
         root.content_scale_size = screen_size
@@ -111,17 +112,17 @@ func _check_art_sources(form: Control, label: String) -> void:
     if enabled_art == null or gray_art == null:
         return
     _check(enabled_art.texture != null and enabled_art.texture.resource_path == GREEN_ART,
-        label + " enabled art remains designed green image")
+        label + " enabled art uses approved original continue_green.png")
     _check(gray_art.texture != null and gray_art.texture.resource_path == GRAY_ART,
-        label + " disabled art uses NEW btn_uncontinue.png source")
-    # The artist-authored clickable button is 246px wide, while BOTH matched
-    # PNG layers are 244px wide. Preserve that intentional 2px hit-area margin.
+        label + " disabled art uses approved original continue_gray.png")
+    # The two approved PNG layers share the authored Continue hit area and
+    # must stay aligned when teachers adjust the button in the editor.
     _check(enabled_art.position == Vector2.ZERO and gray_art.position == Vector2.ZERO
         and enabled_art.size == gray_art.size
         and is_equal_approx(enabled_art.size.y, next.size.y)
         and enabled_art.size.x <= next.size.x
         and next.size.x - enabled_art.size.x <= 2.0,
-        label + " matched artwork aligns with authored ContinueButton, including 2px hit-area margin")
+        label + " both original artwork layers align with the authored ContinueButton")
 
 
 func _gate(form: Control, enabled: bool, label: String) -> void:

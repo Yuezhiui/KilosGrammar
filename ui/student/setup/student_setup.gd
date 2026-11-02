@@ -47,6 +47,13 @@ var _continue_button: Button
 var _profile_status: Label
 var _player_one_summary: Label
 var _player_two_panel: Panel
+var _profile_board: TextureRect
+var _game_board: TextureRect
+var _game_heading: TextureRect
+var _player_two_backdrop: ColorRect
+var _player_two_done_button: Button
+var _player_two_back_button: Button
+var _player_two_form_open := false
 var _player_two_status: Label
 var _player_two_id_edit: LineEdit
 var _player_two_name_edit: LineEdit
@@ -242,6 +249,9 @@ func _clear_setup_context() -> void:
 func _build_ui() -> void:
 	# All permanent layout, PNGs, buttons and fields are authored in the .tscn.
 	_setup_stage = get_node("SetupStage") as Control
+	_profile_board = _setup_stage.get_node("WoodenSetupBoard") as TextureRect
+	_game_board = _setup_stage.get_node("GameWoodenSetupBoard") as TextureRect
+	_game_heading = _setup_stage.get_node("MainHeading") as TextureRect
 	_student_card = _setup_stage.get_node("StudentProfileCard") as Control
 	_game_card = _setup_stage.get_node("GameSetupCard") as Control
 	_student_id_edit = _student_card.get_node("StudentIdGroup/StudentIdEdit") as LineEdit
@@ -254,6 +264,11 @@ func _build_ui() -> void:
 	_validation_label = game.get_node("ValidationPanel/ValidationLabel") as Label
 	_player_one_summary = _game_card.get_node("PlayerOneSummary") as Label
 	_player_two_panel = _game_card.get_node("PlayerTwoPanel") as Panel
+	_player_two_backdrop = _game_card.get_node("PlayerTwoBackdrop") as ColorRect
+	_player_two_done_button = _player_two_panel.get_node("Player2DoneButton") as Button
+	_player_two_back_button = _player_two_panel.get_node("Player2BackButton") as Button
+	_player_two_done_button.pressed.connect(_close_player_two_form)
+	_player_two_back_button.pressed.connect(_close_player_two_form)
 	_player_two_status = _player_two_panel.get_node("Player2Status") as Label
 	_player_two_id_edit = _player_two_panel.get_node("Player2IdEdit") as LineEdit
 	_player_two_name_edit = _player_two_panel.get_node("Player2NameEdit") as LineEdit
@@ -270,6 +285,11 @@ func _build_ui() -> void:
 		edit.text_changed.connect(_on_player_two_changed)
 	_player_two_id_edit.text_submitted.connect(func(_value: String) -> void: _player_two_name_edit.grab_focus())
 	_player_two_name_edit.text_submitted.connect(func(_value: String) -> void: _player_two_grade_edit.grab_focus())
+	_player_two_grade_edit.text_submitted.connect(func(_value: String) -> void:
+		if _player_two_complete():
+			_close_player_two_form()
+		else:
+			_player_two_grade_edit.grab_focus())
 	_style_buttons.clear()
 	_mode_buttons.clear()
 	_difficulty_buttons.clear()
@@ -390,17 +410,21 @@ func _sync_selection_buttons() -> void:
 	for player_mode in _player_mode_buttons:
 		var button := _player_mode_buttons[player_mode] as Button
 		button.set_pressed_no_signal(player_mode == _selected_player_mode)
-	_player_two_panel.visible = _selected_player_mode == "Multiplayer" and _setup_phase == "game"
+	_refresh_player_two_form()
 
 
 func _show_setup_phase() -> void:
 	var profile_active := _setup_phase == "profile"
 	_student_card.visible = profile_active
 	_game_card.visible = not profile_active
+	_profile_board.visible = profile_active
+	_game_board.visible = not profile_active
+	_game_heading.visible = not profile_active
+	if profile_active:
+		_player_two_form_open = false
 	if is_instance_valid(_player_one_summary):
 		_player_one_summary.text = "PLAYER ONE: " + _name_edit.text.strip_edges()
-	if is_instance_valid(_player_two_panel):
-		_player_two_panel.visible = not profile_active and _selected_player_mode == "Multiplayer"
+	_refresh_player_two_form()
 	_update_validation()
 
 
@@ -408,8 +432,31 @@ func _select_player_mode(mode: String) -> void:
 	if mode not in PLAYER_MODES:
 		return
 	_selected_player_mode = mode
+	_player_two_form_open = mode == "Multiplayer"
 	_sync_selection_buttons()
 	_update_validation()
+	if _player_two_form_open:
+		call_deferred("_focus_player_two")
+
+
+func _refresh_player_two_form() -> void:
+	if not is_instance_valid(_player_two_panel):
+		return
+	var visible_form := _setup_phase == "game" and _selected_player_mode == "Multiplayer" and _player_two_form_open
+	_player_two_panel.visible = visible_form
+	_player_two_backdrop.visible = visible_form
+
+
+func _close_player_two_form() -> void:
+	_player_two_form_open = false
+	_refresh_player_two_form()
+	_update_validation()
+	call_deferred("_focus_first_style")
+
+
+func _focus_player_two() -> void:
+	if _player_two_form_open and is_instance_valid(_player_two_id_edit):
+		_player_two_id_edit.grab_focus()
 
 
 func _on_player_two_changed(_value: String) -> void:
@@ -611,6 +658,8 @@ func _update_validation() -> void:
 			second_message = "PLAYER TWO MUST HAVE A DIFFERENT STUDENT ID"
 	_player_two_status.text = second_message
 	_player_two_status.visible = not second_message.is_empty() and _player_two_panel.visible
+	if is_instance_valid(_player_two_done_button):
+		_player_two_done_button.disabled = not _player_two_complete()
 	_validation_label.add_theme_color_override("font_color", STATUS_TEXT_COLOR)
 	_student_id_edit.add_theme_color_override("font_color",
 		CONFLICT_ID_TEXT_COLOR if invalid_student_id or not _registration_error.is_empty() else _default_id_text_color)

@@ -4,6 +4,9 @@ extends SceneTree
 # The authoring check happens BEFORE _ready(): nodes added from GDScript are
 # never mistaken for editable nodes saved in student_setup.tscn.
 const SCENE_PATH := "res://ui/student/setup/student_setup.tscn"
+const PROFILE_BOARD_ART := "res://Components/StudentSetup/Original20261102/profile_board.png"
+const GAME_BOARD_ART := "res://Components/StudentSetup/Original20261102/game_board.png"
+const LEGACY_DOUBLE_BOARD := "res://Components/StudentSetup/Redesign/background.png"
 const REQUIRED_FIELDS := {
 	"_student_id_edit": "Student ID",
 	"_name_edit": "Student Name",
@@ -118,6 +121,25 @@ func _check_flow(packed: PackedScene, guided: bool) -> void:
 	_check(stage != null and authored_ids.has(stage.get_instance_id())
 		and stage.size.is_equal_approx(Vector2(1280, 720)),
 		label + " teacher-edited SetupStage remains an authored 1280x720 stage")
+	var profile_board := panel.get_node_or_null("SetupStage/WoodenSetupBoard") as TextureRect
+	var game_board := panel.get_node_or_null("SetupStage/GameWoodenSetupBoard") as TextureRect
+	_check(profile_board != null and game_board != null and
+		authored_ids.has(profile_board.get_instance_id()) and authored_ids.has(game_board.get_instance_id()),
+		label + " independent profile/game wood boards are scene-authored")
+	if profile_board != null and game_board != null:
+		_check(profile_board.texture != null and profile_board.texture.resource_path == PROFILE_BOARD_ART,
+			label + " Student Profile uses approved original single-panel PNG")
+		_check(game_board.texture != null and game_board.texture.resource_path == GAME_BOARD_ART,
+			label + " Game Setup uses approved original single-panel PNG")
+		_check(profile_board.texture != null and game_board.texture != null and
+			profile_board.texture.resource_path != LEGACY_DOUBLE_BOARD and
+			game_board.texture.resource_path != LEGACY_DOUBLE_BOARD,
+			label + " legacy double-panel artwork is no longer used")
+		_check(profile_board.size.x >= 1000.0 and game_board.size.x >= 1000.0 and
+			student_card.size.x >= 1000.0 and game_card.size.x >= 1000.0,
+			label + " both stages and their original boards are wide enough for the approved layout")
+		_check(profile_board.visible and not game_board.visible and student_card.visible and not game_card.visible,
+			label + " initial Student Profile board and fields appear alone")
 	var style_grid := panel.get_node_or_null("SetupStage/GameSetupCard/GameContent/GameStyleGrid") as Control
 	_check(style_grid != null and style_grid.get_child_count() == 5,
 		label + " only five authored grammar topic buttons survive")
@@ -145,12 +167,36 @@ func _check_flow(packed: PackedScene, guided: bool) -> void:
 		id_edit.text = "QA-GUIDED" if guided else "QA-PLAY"
 		name_edit.text = "Editor QA Student"
 		grade_edit.text = "Grade 2 Apple"
+		panel.call("_continue")
+		_check(requested.is_empty(), label + " first Continue advances within setup without starting a game")
+		_check(String(panel.get("_setup_phase")) == "game" and not student_card.visible and game_card.visible,
+			label + " first Continue switches from Student Profile to Game Setup")
+		if profile_board != null and game_board != null:
+			_check(not profile_board.visible and game_board.visible,
+				label + " first Continue switches from profile wood to game wood")
+		_check(continue_button != null and continue_button.disabled,
+			label + " Game Setup Continue stays disabled until selections are made")
+		panel.call("_go_back")
+		_check(requested.is_empty() and String(panel.get("_setup_phase")) == "profile" and
+			student_card.visible and not game_card.visible,
+			label + " second-stage Back returns to Student Profile without routing away")
+		if profile_board != null and game_board != null:
+			_check(profile_board.visible and not game_board.visible,
+				label + " second-stage Back restores profile board")
+		panel.call("_continue")
+		_check(requested.is_empty() and String(panel.get("_setup_phase")) == "game",
+			label + " reentering Game Setup still requires final Continue")
 		panel.call("_select_style", "Noun")
 		panel.call("_select_mode", "Lives" if guided else "Seconds")
 		panel.call("_select_difficulty", "Hard" if guided else "Easy")
+		_check(continue_button != null and continue_button.disabled,
+			label + " Game Setup requires a player-mode selection")
+		panel.call("_select_player_mode", "Single Player")
+		_check(continue_button != null and not continue_button.disabled,
+			label + " completed Game Setup enables final Continue")
 		panel.call("_continue")
 		var expected_route := "calibration" if guided else "play_activity"
-		_check(requested.size() == 1 and String(requested[0]["route"]) == expected_route, label + " Continue routes to " + expected_route)
+		_check(requested.size() == 1 and String(requested[0]["route"]) == expected_route, label + " second Continue routes to " + expected_route)
 		if requested.size() == 1:
 			var payload: Dictionary = requested[0]["payload"]
 			_check(String(payload.get("student_id", "")) == id_edit.text, label + " student ID survives Continue")
