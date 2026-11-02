@@ -1104,10 +1104,12 @@ func _returning_student_matches(existing: Dictionary, requested: Dictionary) -> 
 	var requested_id := String(requested.get("student_id", "")).strip_edges()
 	var registered_name := _normalized_student_name(String(existing.get("student_name", "")))
 	var requested_name := _normalized_student_name(String(requested.get("student_name", "")))
+	var registered_grade := String(existing.get("grade_section", "")).strip_edges().to_lower()
+	var requested_grade := String(requested.get("grade_section", "")).strip_edges().to_lower()
 	return not registered_id.is_empty() and not requested_id.is_empty() \
 		and registered_id.to_lower() == requested_id.to_lower() \
 		and not registered_name.is_empty() and registered_name == requested_name \
-		and not String(existing.get("grade_section", "")).strip_edges().is_empty()
+		and not registered_grade.is_empty() and registered_grade == requested_grade
 
 
 func _clear_pending_database_registration(cancel_request: bool = false) -> void:

@@ -18,6 +18,49 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 
+func _complete_setup(form: Control, student_id: String, student_name: String,
+		grade: String, topic: String, mode: String, difficulty: String) -> void:
+	# Student Profile -> Game Setup are separate user-confirmed steps.
+	# First Continue does NOT navigate or enroll a student. Only the second,
+	# fully valid Continue can request a backend identity lookup or Play route.
+	var starting_route := String(app.get("current_route"))
+	var baseline_journal_size := JOURNAL.pending().size()
+	var baseline_registration_count := int(mock.call("count", "register_student"))
+	_check(String(form.get("_setup_phase")) == "profile"
+		and (form.get_node("SetupStage/StudentProfileCard") as Control).visible
+		and not (form.get_node("SetupStage/GameSetupCard") as Control).visible,
+		"new or retried teacher entry starts on Student Profile")
+	var continue_button := form.get("_continue_button") as Button
+	_check(continue_button.disabled, "empty Student Profile starts with gray Continue")
+	(form.get("_student_id_edit") as LineEdit).text = student_id
+	(form.get("_name_edit") as LineEdit).text = student_name
+	(form.get("_grade_edit") as LineEdit).text = grade
+	form.call("_update_validation")
+	_check(not continue_button.disabled, "complete Student Profile enables green first Continue")
+	continue_button.pressed.emit()
+	_check(String(app.get("current_route")) == starting_route
+		and String(form.get("_setup_phase")) == "game"
+		and not (form.get_node("SetupStage/StudentProfileCard") as Control).visible
+		and (form.get_node("SetupStage/GameSetupCard") as Control).visible,
+		"first Continue reveals Game Setup only; no premature route to Play")
+	_check(JOURNAL.pending().size() == baseline_journal_size
+		and int(mock.call("count", "register_student")) == baseline_registration_count,
+		"first Continue never creates profile, score, or database registration")
+	# Student Setup defers focus on the first grammar topic. Give its real
+	# editor-authored Game Setup a frame before the second Continue and route
+	# replacement, so a freed scene cannot receive that queued focus callback.
+	await process_frame
+	_check(continue_button.disabled, "Game Setup Continue starts gray without mode/topic/difficulty/player mode")
+	form.call("_select_style", topic)
+	form.call("_select_mode", mode)
+	form.call("_select_difficulty", difficulty)
+	_check(continue_button.disabled, "game selections alone cannot skip required player mode")
+	form.call("_select_player_mode", "Single Player")
+	form.call("_update_validation")
+	_check(not continue_button.disabled, "complete Game Setup enables second green Continue")
+	continue_button.pressed.emit()
+
+
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
 	storage_prefix = "user://test_recovery_defense_" + str(Time.get_ticks_usec())
@@ -46,15 +89,7 @@ func _run() -> void:
 		return
 	var student_id := "QA-DEFS-" + str(Time.get_ticks_usec())
 	var student_name := "Recovery Safety Student"
-	(form.get("_student_id_edit") as LineEdit).text = student_id
-	(form.get("_name_edit") as LineEdit).text = student_name
-	(form.get("_grade_edit") as LineEdit).text = "Grade 4 - Rose"
-	form.call("_select_style", "Noun")
-	form.call("_select_mode", "Seconds")
-	form.call("_select_difficulty", "Easy")
-	form.call("_update_validation")
-	_check(not (form.get("_continue_button") as Button).disabled, "complete new setup enables Continue")
-	(form.get("_continue_button") as Button).pressed.emit()
+	await _complete_setup(form, student_id, student_name, "Grade 4 - Rose", "Noun", "Seconds", "Easy")
 	await process_frame
 	_check(String(app.get("current_route")) == "play_activity",
 		"offline storage allows game setup to continue")
@@ -86,14 +121,7 @@ func _run() -> void:
 	play.pressed.emit()
 	await process_frame
 	form = app.get("active_panel") as Control
-	(form.get("_student_id_edit") as LineEdit).text = student_id
-	(form.get("_name_edit") as LineEdit).text = student_name
-	(form.get("_grade_edit") as LineEdit).text = "Grade 4 - Rose"
-	form.call("_select_style", "Noun")
-	form.call("_select_mode", "Seconds")
-	form.call("_select_difficulty", "Easy")
-	form.call("_update_validation")
-	(form.get("_continue_button") as Button).pressed.emit()
+	await _complete_setup(form, student_id, student_name, "Grade 4 - Rose", "Noun", "Seconds", "Easy")
 	await process_frame
 	session = app.get("session_state")
 	_check(JOURNAL.pending().is_empty(), "restarting unfinished student writes no profile during setup")
@@ -206,19 +234,49 @@ func _run() -> void:
 	await process_frame
 	_check(mock.call("count", "register_student") == before_orphan_replay,
 		"legacy unfinished profile never registers after reconnection")
+	# The real Results screen must identify the same pupil whose completed
+	# round is in the recovery journal. Retry must restore their profile on
+	# stage one, without reusing the finished points or saving a new record.
+	_check(String(app.get("current_route")) == "results",
+		"completed offline round remains on the actual Results screen")
+	var completed_results := app.get("active_panel") as Control
+	_check(completed_results != null and
+		(completed_results.get_node("%StudentIdValue") as Label).text == student_id
+		and (completed_results.get_node("%StudentNameValue") as Label).text == student_name
+		and (completed_results.get_node("%ScoreValue") as Label).text == "407",
+		"Results shows the exact completed student's name, ID, and saved round score")
+	(completed_results.get_node("%RetryButton") as Button).pressed.emit()
+	await process_frame
+	_check(String(app.get("current_route")) == "student_setup",
+		"Results Retry opens the real two-stage Student Setup")
+	var retry_form := app.get("active_panel") as Control
+	_check(String(retry_form.get("_setup_phase")) == "profile"
+		and (retry_form.get("_student_id_edit") as LineEdit).text == student_id
+		and (retry_form.get("_name_edit") as LineEdit).text == student_name
+		and (retry_form.get("_grade_edit") as LineEdit).text == "Grade 4 - Rose",
+		"Results Retry restores exact Student Profile identity before Game Setup")
+	_check(not (retry_form.get("_continue_button") as Button).disabled,
+		"Results Retry presents a complete green Student Profile Continue")
+	(retry_form.get("_continue_button") as Button).pressed.emit()
+	await process_frame
+	_check(String(retry_form.get("_setup_phase")) == "game"
+		and String(app.get("current_route")) == "student_setup",
+		"retry profile Continue cannot jump directly into Play")
+	_check(not (retry_form.get("_continue_button") as Button).disabled
+		and String(retry_form.get("_selected_style")) == "Noun"
+		and String(retry_form.get("_selected_mode")) == "Seconds"
+		and String(retry_form.get("_selected_difficulty")) == "Easy"
+		and String(retry_form.get("_selected_player_mode")) == "Single Player",
+		"retry restores exact topic, mode, difficulty, and Single Player; green Game Setup Continue")
+	_check(JOURNAL.pending().size() == 1
+		and int(mock.call("count", "register_student")) == before_orphan_replay,
+		"retry navigation cannot enqueue score or register legacy orphan")
 	app.call("_return_to_main")
 	play.pressed.emit()
 	await process_frame
 	form = app.get("active_panel") as Control
 	var lives_id := "QA-LIVES-" + str(Time.get_ticks_usec())
-	(form.get("_student_id_edit") as LineEdit).text = lives_id
-	(form.get("_name_edit") as LineEdit).text = "Finished Lives Student"
-	(form.get("_grade_edit") as LineEdit).text = "Grade 3 - Blue"
-	form.call("_select_style", "Verb")
-	form.call("_select_mode", "Lives")
-	form.call("_select_difficulty", "Normal")
-	form.call("_update_validation")
-	(form.get("_continue_button") as Button).pressed.emit()
+	await _complete_setup(form, lives_id, "Finished Lives Student", "Grade 3 - Blue", "Verb", "Lives", "Normal")
 	var lookup: Dictionary = mock.call("find_pending", "find_student", "registration_lookup")
 	_check(not lookup.is_empty(), "online Continue uses read-only find_student lookup")
 	_check(mock.call("count", "register_student") == before_orphan_replay,
@@ -271,15 +329,8 @@ func _run() -> void:
 	play.pressed.emit()
 	await process_frame
 	form = app.get("active_panel") as Control
-	(form.get("_student_id_edit") as LineEdit).text = lives_id
-	(form.get("_name_edit") as LineEdit).text = "Conflicting Name"
-	(form.get("_grade_edit") as LineEdit).text = "Grade 3 - Blue"
-	form.call("_select_style", "Noun")
-	form.call("_select_mode", "Seconds")
-	form.call("_select_difficulty", "Easy")
-	form.call("_update_validation")
 	var writes_before_conflict: int = mock.call("count", "register_student")
-	(form.get("_continue_button") as Button).pressed.emit()
+	await _complete_setup(form, lives_id, "Conflicting Name", "Grade 3 - Blue", "Noun", "Seconds", "Easy")
 	_check(bool(mock.call("reply", "find_student", {
 		"ok": true, "data": {"student": {"student_id": lives_id,
 			"student_name": "Finished Lives Student", "grade_section": "Grade 3 - Blue"}},

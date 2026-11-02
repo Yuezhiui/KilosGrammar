@@ -13,9 +13,11 @@ const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const APPLE_TEXTURE := "res://Components/Gameplay/Catch the Word/Characters/Generated/word_apple.png"
 const COLLECTED_TEXTURE := "res://Components/Gameplay/Catch the Word/Items/APPLE HALF SEAMLESS.png"
 const STATES := {
-    "Easy": {"speed": 105.0},
-    "Normal": {"speed": 185.0},
-    "Hard": {"speed": 245.0}
+    # Classroom readability release: Normal and Hard remain only moderately
+    # faster than Easy, rather than the obsolete 105/185/245 px/s tiers.
+    "Easy": {"speed": 96.0},
+    "Normal": {"speed": 102.0},
+    "Hard": {"speed": 109.0}
 }
 const TICK := 0.025
 const IMMEDIATE_TICK := 0.05

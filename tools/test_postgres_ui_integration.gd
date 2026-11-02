@@ -103,11 +103,16 @@ func _test_verified_student_and_idempotent_registration() -> void:
 	_assert(bool(form.get("context").get("student_lookup_connected", false)),
 		"Verified identity is marked confirmed without a visible lookup action")
 	var next := form.get("_continue_button") as Button
-	_assert(not next.disabled, "Verified student can continue with selected activity")
+	_assert(not next.disabled, "Verified student can advance from Student Profile")
 	next.pressed.emit()
-	_assert(_route() == "play_activity", "Verified database lookup proceeds directly to Game Selection")
+	_assert(_route() == "student_setup" and String(form.get("_setup_phase")) == "game",
+		"First Continue opens Game Setup without routing or writing")
 	_assert(_client.call("count", "register_student") == 0,
 		"Already verified profile is not redundantly registered again")
+	_choose_game(form)
+	_assert(not next.disabled, "Valid single-player game choices enable second Continue")
+	next.pressed.emit()
+	_assert(_route() == "play_activity", "Verified student proceeds to Game Selection after game choices")
 	var saved: Dictionary = _app.get("session_state") as Dictionary
 	_assert(String(saved.get("student_name", "")) == "Verified Student"
 		and String(saved.get("grade_section", "")) == "Grade 5",
@@ -131,6 +136,12 @@ func _test_conflict_and_offline_play() -> void:
 	_fill(form, "S-002", "Conflicting Name", "Grade 6")
 	var continue_button := form.get("_continue_button") as Button
 	continue_button.pressed.emit()
+	_assert(_route() == "student_setup" and String(form.get("_setup_phase")) == "game",
+		"Profile Continue only opens Game Setup")
+	_assert((_client.call("find_pending", "find_student", "registration_lookup") as Dictionary).is_empty(),
+		"Profile Continue never starts registration lookup")
+	_choose_game(form)
+	continue_button.pressed.emit()
 	_assert(not (_client.call("find_pending", "find_student", "registration_lookup") as Dictionary).is_empty(),
 		"Continue requests a read-only student ID lookup before navigation")
 	_assert(_client.call("count", "register_student") == 0 and RECOVERY.pending().is_empty(),
@@ -145,7 +156,7 @@ func _test_conflict_and_offline_play() -> void:
 	_assert(form.find_child("DatabaseStatus", true, false) == null
 		and (form.get("_student_id_edit") as LineEdit).text == "S-002",
 		"Identity conflict retains form for correction without internal database warnings")
-	var feedback := form.get_node("SetupStage/GameSetupCard/GameContent/ValidationPanel/ValidationLabel") as Label
+	var feedback := form.get("_validation_label") as Label
 	_assert(continue_button.disabled
 		and String(form.get("_registration_error")) == "PLEASE CHECK STUDENT ID AND NAME",
 		"Existing-ID/full-name mismatch blocks Continue with a real identity hold")
@@ -160,6 +171,7 @@ func _test_conflict_and_offline_play() -> void:
 	var name_field := form.get("_name_edit") as LineEdit
 	name_field.text = "Registered Other"
 	name_field.text_changed.emit(name_field.text)
+	form.call("_update_validation")
 	_assert(not continue_button.disabled,
 		"Editing disputed identity clears the hold for a new verification attempt")
 	continue_button.pressed.emit()
@@ -212,6 +224,10 @@ func _test_unwritable_local_recovery_blocks_new_student() -> void:
 	var request_before: int = _client.call("count", "register_student")
 	ProjectSettings.set_setting("kilos/recovery_test_directory", blocked_path)
 	_assert(RECOVERY._directory() == blocked_path, "Failure injection remains under test_recovery_* isolation")
+	(form.get("_continue_button") as Button).pressed.emit()
+	_assert(_route() == "student_setup" and String(form.get("_setup_phase")) == "game",
+		"Offline first Continue enters Game Setup with no write")
+	_choose_game(form)
 	(form.get("_continue_button") as Button).pressed.emit()
 	_assert(_route() == "play_activity", "Offline Continue can open game without storing a premature profile")
 	_assert(RECOVERY.pending().is_empty(), "Storage remains untouched before any completed round")
@@ -439,8 +455,14 @@ func _test_stale_registration_response() -> void:
 	_client.call("reply", "health", _healthy(), "student_setup_health")
 	_fill(form, "BACK-001", "Student Returning Home", "Grade 5")
 	(form.get("_continue_button") as Button).pressed.emit()
+	_choose_game(form)
+	(form.get("_continue_button") as Button).pressed.emit()
 	_assert(not (_client.call("find_pending", "find_student", "registration_lookup") as Dictionary).is_empty(),
 		"Read-only ID validation remains pending until async server reply")
+	# Game Setup Back returns to Profile; a second Back leaves the flow.
+	(form.get("_back_button") as Button).pressed.emit()
+	_assert(_route() == "student_setup" and String(form.get("_setup_phase")) == "profile",
+		"Game Setup Back returns to Student Profile")
 	(form.get("_back_button") as Button).pressed.emit()
 	await process_frame
 	_assert(_route() == "main", "Teacher can return Main while ID lookup is pending")
@@ -458,6 +480,8 @@ func _test_stale_registration_response() -> void:
 	form = _app.get("active_panel") as Control
 	_client.call("reply", "health", _healthy(), "student_setup_health")
 	_fill(form, "EDIT-001", "First Spelling", "Grade 3")
+	(form.get("_continue_button") as Button).pressed.emit()
+	_choose_game(form)
 	(form.get("_continue_button") as Button).pressed.emit()
 	(form.get("_name_edit") as LineEdit).text = "Corrected Spelling"
 	_assert(_client.call("reply", "find_student", {
@@ -477,9 +501,15 @@ func _fill(form: Control, student_id: String, student_name: String, grade: Strin
 	(form.get("_student_id_edit") as LineEdit).text = student_id
 	(form.get("_name_edit") as LineEdit).text = student_name
 	(form.get("_grade_edit") as LineEdit).text = grade
+	form.call("_update_validation")
+
+
+func _choose_game(form: Control) -> void:
+	_assert(String(form.get("_setup_phase")) == "game", "Game options are selected in Game Setup stage")
 	form.call("_select_style", "Noun")
 	form.call("_select_mode", "Seconds")
 	form.call("_select_difficulty", "Easy")
+	form.call("_select_player_mode", "Single Player")
 	form.call("_update_validation")
 
 

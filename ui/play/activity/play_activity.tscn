@@ -18,6 +18,18 @@
 atlas = ExtResource("10_next_disabled")
 region = Rect2(72, 144, 2028, 435)
 
+[sub_resource type="StyleBoxFlat" id="ActivityInstructionOverlay"]
+bg_color = Color(0.14, 0.3, 0.24, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.94, 0.78, 0.43, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
 [node name="PlayActivity" type="Control" unique_id=1501776927]
 layout_mode = 3
 anchors_preset = 15
@@ -83,6 +95,34 @@ mouse_filter = 2
 texture = ExtResource("4_subtitle")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="ActivityInstructionPanel" type="Panel" parent="LayoutMargins/Content/Header"]
+editor_description = "Small editor-authored English instruction strip below the original wooden heading. This never opens a popup or blocks the three game buttons, preview, Back, or Next."
+z_index = 2
+layout_mode = 0
+offset_left = 849.0
+offset_top = 113.0
+offset_right = 1253.0
+offset_bottom = 150.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("ActivityInstructionOverlay")
+
+[node name="ActivityInstructionHeading" type="Label" parent="LayoutMargins/Content/Header/ActivityInstructionPanel"]
+unique_name_in_owner = true
+editor_description = "Editable on-screen instruction: SELECT AN ACTIVITY TO PLAY. Always visible while choosing the game; no animated/fullscreen instructions."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.98, 0.87, 1)
+theme_override_font_sizes/font_size = 18
+text = "SELECT AN ACTIVITY TO PLAY"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
 
 [node name="GameRow" type="Control" parent="LayoutMargins/Content" unique_id=1930276749]
 layout_mode = 1

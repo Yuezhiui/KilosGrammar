@@ -2,13 +2,11 @@ extends SceneTree
 
 # Godot 4.7.2 headless synthetic-source regression; NO camera, UDP, DB or Git.
 # Run: Godot --headless --path . --script res://tools/test_calibration_success_no_loop_20261028.gd
-# RED assertions deliberately preserve actual 3-second intro, three 3-second
-# measured solo holds, and 3-second success before Play/Tutorial GO.
+# Preserves a 3-second intro, ONE source-measured 3-second neutral standing
+# hold, and a 3-second latched success screen before Play/Tutorial GO.
 
 const CALIBRATION_PATH := "res://ui/vision/calibration/calibration.tscn"
 const GAMEPLAY_PATH := "res://ui/play/gameplay/gameplay.tscn"
-const ZONES := [0.50, 0.80, 0.20]
-const STAGES := ["CENTER", "RIGHT", "LEFT"]
 const INTRO := 3.0
 const HOLD := 3.0
 const SUCCESS := 3.0
@@ -102,21 +100,21 @@ func _case(name: String, guided: bool, interruption: String) -> void:
 	screen._process(0.03)
 	_check(not screen.intro_running and screen.live_step == 0,
 		name + ": intro completes independently of actual pose holds")
-	# Preserve authentic source samples and physical hold time. 33 * 0.10s
-	# supplies >8 strictly monotonic packets for each measured 3-second hold.
-	for zone in range(3):
-		for i in range(29):
-			_frame(screen, ZONES[zone], 0.10)
-		_check(screen.live_step == zone, "%s: %s does not pass before 3 seconds" % [name, STAGES[zone]])
-		for i in range(4):
-			_frame(screen, ZONES[zone], 0.10)
-		_check(screen.live_step == zone + 1,
-			"%s: %s passes only with 3 seconds and 8+ source packets" % [name, STAGES[zone]])
+	# One 3-second neutral torso hold. The raw wrist state is deliberately
+	# unavailable, and 8+ strictly increasing source frames are still required.
+	for i in range(29):
+		_frame(screen, 0.50, 0.10, false)
+	_check(screen.live_step == 0, name + ": 2.8 seconds cannot complete the neutral hold")
+	for i in range(4):
+		_frame(screen, 0.50, 0.10, false)
+	_check(screen.live_step == 1, name + ": 3s plus live samples completes ONE neutral hold")
 	var points := (screen.measured_points as Dictionary).duplicate(true)
-	_check(points.has("center") and points.has("right") and points.has("left"),
-		name + ": all three REAL measured positions survive final hold")
-	_check(bool(pose.calibration.get("valid", false)) and screen.live_step == 3,
-		name + ": genuine bounds are saved once, after LEFT")
+	_check(points.has("center") and points.has("neutral_noise")
+		and not points.has("right") and not points.has("left"),
+		name + ": only measured neutral center/noise survive final hold")
+	_check(bool(pose.calibration.get("valid", false)) and screen.live_step == 1
+		and String(pose.calibration.get("mode", "")) == "neutral_body",
+		name + ": genuine one-hold neutral body is saved without fake boundaries")
 	_check(bool(screen.success_running) and overlay.visible and routes.is_empty(),
 		name + ": CALIBRATION SUCCESS shows before any route")
 	_check(not screen.passing_to_ready and screen.success_elapsed < SUCCESS,
@@ -125,7 +123,7 @@ func _case(name: String, guided: bool, interruption: String) -> void:
 	# depend on staying in CENTER, nor on a new LEFT/RIGHT stationary hold.
 	for i in range(12):
 		_frame(screen, 0.45 if i % 2 else 0.65, 0.10)
-	_check(screen.live_step == 3 and routes.is_empty(),
+	_check(screen.live_step == 1 and routes.is_empty(),
 		name + ": moving to play position does not restart calibration")
 	# Deliver a _genuine_ new inference observation with either solo wrist
 	# occlusion, low torso confidence, zero/two people, expired source or camera
@@ -150,13 +148,19 @@ func _case(name: String, guided: bool, interruption: String) -> void:
 			screen._process(0.15)
 		"session":
 			pose.set("session_token", "no-loop-reconnected-" + name)
+			# A new physical camera worker supplies a new lock epoch. The test
+			# substitutes that handshake without starting an actual worker;
+			# keeping the old epoch/session token would reject ALL genuine
+			# replacement-session poses even after the camera is reconnected.
+			pose.set("_bound_player_epoch", -1)
+			pose.set("_bound_player_session", "")
 			screen._process(0.15)
-	_check(screen.live_step == 3 and screen.measured_points == points,
-		"%s: RED: authenticated CENTER/RIGHT/LEFT must NEVER reset after success on %s" % [name, interruption])
+	_check(screen.live_step == 1 and screen.measured_points == points,
+		"%s: RED: authenticated neutral measurement must NEVER reset after success on %s" % [name, interruption])
 	_check(bool(pose.calibration.get("valid", false)),
 		"%s: RED: completed calibration remains valid after %s" % [name, interruption])
 	_check(screen.success_running and overlay.visible,
-		"%s: RED: success remains latched (can pause), never returns to CENTER" % name)
+		"%s: RED: success remains latched (can pause), never restarts neutral hold" % name)
 	var live_texture := stage.get_node("CameraArea/LiveCameraInset") as TextureRect
 	_check(live_texture != null and live_texture.texture == camera_texture,
 		name + ": fresh-camera preview cache survives moving, missing joints or worker recovery")
@@ -166,7 +170,7 @@ func _case(name: String, guided: bool, interruption: String) -> void:
 	if interruption not in ["wrists", "low_conf"]:
 		screen._process(SUCCESS + 0.2)
 		_check(routes.is_empty(), name + ": never GO without fresh, unambiguous solo pose")
-		_check(screen.live_step == 3 and screen.measured_points == points,
+		_check(screen.live_step == 1 and screen.measured_points == points,
 			name + ": long invalid-source delay freezes success instead of recapturing")
 	# A recovering source earns only verified fresh packets, never time during
 	# absence. At most a single route may be emitted by any repeated _process.
@@ -186,10 +190,10 @@ func _case(name: String, guided: bool, interruption: String) -> void:
 		_check(not bool(payload.get("keyboard_mode", true)) and
 			not bool(payload.get("calibration_skipped", true)),
 			name + ": never bypass physical calibration with keyboard/demo")
-		_check(is_equal_approx(float(payload.get("calibration_left", -1.0)), 0.20)
+		_check(bool(payload.get("calibration_neutral_only", false))
 			and is_equal_approx(float(payload.get("calibration_center", -1.0)), 0.50)
-			and is_equal_approx(float(payload.get("calibration_right", -1.0)), 0.80),
-			name + ": payload holds measured physical boundaries, not guessed values")
+			and not payload.has("calibration_left") and not payload.has("calibration_right"),
+			name + ": payload carries measured neutral center without guessed floor bounds")
 		await _assert_wrapper_route(name, guided, payload)
 	for i in range(8):
 		_frame(screen, 0.5, 0.10)
@@ -221,9 +225,25 @@ func _assert_wrapper_route(tag: String, guided: bool, payload: Dictionary) -> vo
 	_check(not _has_legacy_spotlight_field(wrapper)
 		and wrapper.get_node_or_null("GuidedSpotlight") == null,
 		tag + ": removed Spotlight feature is not instantiated")
+	var game_phase: String = String(wrapper.get("guided_stage"))
+	if guided:
+		_check(game_phase == "tutorial"
+			and bool(mini.call("is_tutorial_active"))
+			and not is_instance_valid(wrapper.get("countdown_panel")),
+			tag + ": Guided Tutorial renders interactive minigame explanation BEFORE 3-2-1")
+		wrapper.call("_complete_countdown_start")
+		_check(String(wrapper.get("guided_stage")) == "tutorial"
+			and mini.process_mode == Node.PROCESS_MODE_DISABLED,
+			tag + ": no GO or countdown bypass while guided explanation is active")
+		mini.call("skip_guided_tutorial")
+		await process_frame
+		await process_frame
+	else:
+		_check(game_phase == "countdown",
+			tag + ": ordinary Play starts from verified calibration at countdown")
 	_check(String(wrapper.get("guided_stage")) == "countdown" and
 		is_instance_valid(wrapper.get("countdown_panel")),
-		tag + ": Guided/Play routes DIRECTLY to one on-screen countdown stage")
+		tag + ": explanation ends before countdown; normal Play enters countdown directly")
 	# Before GO artificially expire source; with no newly observed solo student
 	# it MUST hold at 1, despite old success/round measurements.
 	pose.set("current_status", {"state": "tracking", "pose": false, "camera": true,
@@ -262,7 +282,9 @@ func _frame(calibration: Control, x: float, delta: float, wrists: bool = true) -
 func _packet(x: float, wrists: bool, delta: float = 0.10) -> void:
 	pose.set("active", true)
 	var fresh := {"state": "tracking", "pose": true, "camera": true,
-		"camera_phase": "tracking", "people": 1, "lock_state": "locked",
+		"camera_phase": "tracking", "people": 1, "foreground_people": 1,
+		"foreground_ambiguous": false, "occupancy_verified": true,
+		"player_lock_epoch": 1, "lock_state": "locked",
 		"token": String(pose.session_token), "kind": "pose", "when": source_clock + delta,
 		"camera_frame_age_ms": 20, "fps": 10.0, "x": x, "pose_conf": 0.98,
 		"hand_observation_valid": wrists, "hand_up": false}
@@ -276,7 +298,9 @@ func _packet(x: float, wrists: bool, delta: float = 0.10) -> void:
 func _invalid_frame(calibration: Control, people: int, camera: bool,
 		pose_ok: bool, source_age: int, delta: float) -> void:
 	var bad := {"state": "tracking", "pose": pose_ok, "camera": camera,
-		"camera_phase": "tracking", "people": people,
+		"camera_phase": "tracking", "people": people, "foreground_people": people,
+		"foreground_ambiguous": people != 1,
+		"occupancy_verified": people == 1, "player_lock_epoch": 1,
 		"token": String(pose.session_token), "kind": "pose", "when": source_clock + delta,
 		"lock_state": "locked" if people == 1 else "lost",
 		"camera_frame_age_ms": source_age, "fps": 10.0,

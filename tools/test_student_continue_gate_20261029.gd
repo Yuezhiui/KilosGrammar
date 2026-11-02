@@ -138,17 +138,45 @@ func _gate(form: Control, enabled: bool, label: String) -> void:
     _check(green.visible == enabled, label + " green visible iff valid")
     _check(gray.visible == not enabled, label + " gray visible iff invalid")
     _check(next.modulate == Color.WHITE, label + " no dimming contaminates authored artwork")
-    var feedback := form.get_node("SetupStage/GameSetupCard/GameContent/ValidationPanel/ValidationLabel") as Label
+    # Two-stage UX: profile issues belong to Student Profile, while Game
+    # Setup's separate label is visible only on the second page.
+    var phase := String(form.get("_setup_phase"))
+    var profile_feedback := form.get_node("SetupStage/StudentProfileCard/ProfileStatus") as Label
+    var game_feedback := form.get_node("SetupStage/GameSetupCard/GameContent/ValidationPanel/ValidationLabel") as Label
+    var feedback := profile_feedback if phase == "profile" else game_feedback
     var checking: bool = bool(form.get("_lookup_pending"))
     var conflict: bool = not String(form.get("_registration_error")).is_empty()
     _check(feedback.visible == (checking or conflict),
         label + " neutral lookup status appears only during pending or conflict")
+    _check(not (game_feedback if phase == "profile" else profile_feedback).visible,
+        label + " inactive setup step never shows a duplicate status")
     _check((not checking and not conflict and feedback.text.is_empty())
         or (checking and feedback.text == "CHECKING STUDENT ID...")
         or (conflict and feedback.text in [
             "CHECK STUDENT ID AND NAME", "STUDENT ID CHECK FAILED • TRY AGAIN"
         ]),
         label + " status accurately describes progress without old red banner")
+
+
+func _phase(form: Control, expected: String, label: String) -> void:
+    _check(String(form.get("_setup_phase")) == expected, label + " correct setup phase")
+    _check((form.get_node("SetupStage/StudentProfileCard") as Control).visible == (expected == "profile"),
+        label + " Student Profile visibility matches phase")
+    _check((form.get_node("SetupStage/GameSetupCard") as Control).visible == (expected == "game"),
+        label + " Game Setup visibility matches phase")
+
+
+func _enter_game(form: Control, label: String) -> void:
+    _phase(form, "profile", label + " before Continue")
+    _gate(form, true, label + " complete profile enables first Continue")
+    form.call("_continue")
+    _phase(form, "game", label + " after first Continue")
+
+
+func _back_to_profile(form: Control, label: String) -> void:
+    _phase(form, "game", label + " before Back")
+    form.call("_go_back")
+    _phase(form, "profile", label + " after Back")
 
 
 func _check_no_default_selection(form: Control, label: String) -> void:
@@ -187,18 +215,25 @@ func _functional_cases(form: Control) -> void:
     var routes: Array[Dictionary] = []
     form.requested.connect(func(target: String, payload: Dictionary) -> void:
         routes.append({"target": target, "payload": payload.duplicate(true)}))
+    _phase(form, "profile", "new Play always starts on Student Profile")
     _edit(id, "QA-127")
     _gate(form, false, "ID only")
     _edit(name, "Sample Learner")
     _gate(form, false, "ID and name, grade missing")
     _edit(grade, "Grade 4 - Jade")
-    _gate(form, false, "all profile fields, all selections missing")
+    _gate(form, true, "all profile fields: first Continue green even before game selections")
+    _check(routes.is_empty(), "filling complete profile does not navigate before teacher clicks Continue")
+    _enter_game(form, "valid Student Profile advances to Game Setup")
+    _check(routes.is_empty(), "first Continue only reveals Game Setup, never emits play/calibration")
+    _gate(form, false, "Game Setup first opens with no topic, mode, difficulty, or player count")
     _choose(form, "_style_buttons", "Noun")
     _gate(form, false, "topic only; mode and difficulty missing")
     _choose(form, "_difficulty_buttons", "Easy")
     _gate(form, false, "difficulty selected but mode missing")
     _choose(form, "_mode_buttons", "Seconds")
-    _gate(form, true, "all six fields selected")
+    _gate(form, false, "topic/mode/difficulty ready but Player Mode must still be chosen")
+    _choose(form, "_player_mode_buttons", "Single Player")
+    _gate(form, true, "all profile/game fields and Single Player selected")
     _check((form.get("_style_buttons") as Dictionary)["Noun"].button_pressed
         and (form.get("_mode_buttons") as Dictionary)["Seconds"].button_pressed
         and (form.get("_difficulty_buttons") as Dictionary)["Easy"].button_pressed,
@@ -239,7 +274,7 @@ func _functional_cases(form: Control) -> void:
     _edit(grade, "Grade 4 - Jade")
     form.call("_continue")
     _check(routes.size() == 1 and String(routes[0].get("target", "")) == "play_activity",
-        "complete valid setup emits exactly one play route")
+        "second Continue on complete Game Setup emits exactly one play route")
     if routes.size() == 1:
         var data: Dictionary = routes[0]["payload"]
         _check(data.get("student_id") == "QA-127"
@@ -247,8 +282,18 @@ func _functional_cases(form: Control) -> void:
             and data.get("grade_section") == "Grade 4 - Jade"
             and data.get("game_style") == "Noun"
             and data.get("game_mode") == "Seconds"
-            and data.get("difficulty") == "Easy",
+            and data.get("difficulty") == "Easy"
+            and data.get("player_mode") == "Single Player",
             "game route carries only exact current identity and selections")
+    _back_to_profile(form, "game Back returns to Student Profile without routing")
+    _check(routes.size() == 1, "Back inside two-step form has no external navigation or enrollment")
+    _gate(form, true, "Back keeps complete Student Profile editable/green")
+    _check(id.text == "QA-127" and name.text == "Sample Learner"
+        and grade.text == "Grade 4 - Jade", "Back retains teacher-entered identity")
+    form.call("_continue")
+    _phase(form, "game", "returning from Profile to Game Setup retains selections")
+    _gate(form, true, "all Game Setup selections remain green after reversible Back")
+    _check(routes.size() == 1, "re-entering Game Setup alone does not trigger another route")
 
     # A complete profile still cannot proceed with a missing topic or difficulty.
     form.set_context({"entry_source": "play", "student_id": "STALE",
@@ -259,15 +304,19 @@ func _functional_cases(form: Control) -> void:
         "fresh Play does not inherit old identity")
     _check_no_default_selection(form, "fresh Play after completed route")
     _fill_profile(form)
+    _enter_game(form, "fresh Play with filled profile and no old selections")
     _choose(form, "_mode_buttons", "Lives")
     _choose(form, "_difficulty_buttons", "Hard")
-    _gate(form, false, "only grammar topic missing")
+    _choose(form, "_player_mode_buttons", "Single Player")
+    _gate(form, false, "game step only grammar topic missing")
     _choose(form, "_style_buttons", "Verb")
     _gate(form, true, "topic added after mode and difficulty")
     form.set_context({"entry_source": "play"})
     _fill_profile(form)
+    _enter_game(form, "another fresh Play requires its own profile step")
     _choose(form, "_style_buttons", "Adjective")
     _choose(form, "_mode_buttons", "Seconds")
+    _choose(form, "_player_mode_buttons", "Single Player")
     _gate(form, false, "only difficulty missing")
     _choose(form, "_difficulty_buttons", "Normal")
     _gate(form, true, "difficulty added")
@@ -275,18 +324,24 @@ func _functional_cases(form: Control) -> void:
     # Explicit retry is the one route permitted to restore complete prior data.
     form.set_context({"entry_source": "retry", "student_id": "QA-777",
         "student_name": "Retry Learner", "grade_section": "Grade 5 - Pearl",
-        "game_style": "Pronoun", "game_mode": "Lives", "difficulty": "Normal"})
-    _gate(form, true, "authorized retry prefill with complete fields")
+        "game_style": "Pronoun", "game_mode": "Lives", "difficulty": "Normal",
+        "player_mode": "Single Player"})
+    _phase(form, "profile", "retry always presents Student Profile first")
+    _gate(form, true, "authorized retry prefill enables only profile Continue")
     _check(id.text == "QA-777" and name.text == "Retry Learner"
         and grade.text == "Grade 5 - Pearl"
         and (form.get("_style_buttons") as Dictionary)["Pronoun"].button_pressed
         and (form.get("_mode_buttons") as Dictionary)["Lives"].button_pressed
         and (form.get("_difficulty_buttons") as Dictionary)["Normal"].button_pressed,
         "retry prefill visibly restores the correct exact profile and options")
+    _enter_game(form, "retry proceeds to previously selected Game Setup")
+    _gate(form, true, "retry Game Setup green because every choice was restored")
     form.set_context({"entry_source": "retry", "student_id": "QA-777",
         "student_name": "Retry Learner", "grade_section": "Grade 5 - Pearl",
-        "game_style": "Pronoun", "game_mode": "Lives"})
-    _gate(form, false, "partial retry prefill omits difficulty")
+        "game_style": "Pronoun", "game_mode": "Lives", "player_mode": "Single Player"})
+    _gate(form, true, "partial retry profile is complete and first Continue green")
+    _enter_game(form, "partial retry still goes to Game Setup")
+    _gate(form, false, "partial retry Game Setup still gray until difficulty is chosen")
     form.set_context({"entry_source": "retry", "student_setup_prefill": false,
         "student_id": "SHOULD-NOT-APPEAR", "student_name": "Old Retry Learner",
         "grade_section": "Grade 6", "game_style": "Verb",
@@ -315,6 +370,7 @@ func _functional_cases(form: Control) -> void:
     # this safeguard, such a response could populate the missing profile
     # field and unlock Continue without the teacher approving the lookup.
     form.set_context({"entry_source": "play"})
+    _phase(form, "profile", "stale lookup tests start on Student Profile")
     _choose(form, "_style_buttons", "Noun")
     _choose(form, "_mode_buttons", "Lives")
     _choose(form, "_difficulty_buttons", "Easy")
@@ -332,6 +388,7 @@ func _functional_cases(form: Control) -> void:
         "stale ID reply does not fill missing name or replace teacher's grade")
     _gate(form, false, "late ID reply cannot falsely unlock green")
     form.set_context({"entry_source": "play"})
+    _phase(form, "profile", "second stale lookup remains on Student Profile")
     _choose(form, "_style_buttons", "Noun")
     _choose(form, "_mode_buttons", "Lives")
     _choose(form, "_difficulty_buttons", "Easy")
@@ -354,9 +411,11 @@ func _functional_cases(form: Control) -> void:
     # confirmed lookup with matching ID, name and grade may release it.
     form.set_context({"entry_source": "play"})
     _fill_profile(form)
+    _enter_game(form, "returning student profile before game selections")
     _choose(form, "_style_buttons", "Noun")
     _choose(form, "_mode_buttons", "Lives")
     _choose(form, "_difficulty_buttons", "Easy")
+    _choose(form, "_player_mode_buttons", "Single Player")
     _edit(id, "QA-127")
     var returning_epoch := int(form.get("_autofill_epoch"))
     form.show_registration_error("ID ALREADY REGISTERED • CHECK STUDENT DETAILS")

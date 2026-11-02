@@ -5,8 +5,7 @@ extends SceneTree
 # Godot --headless --path . --script res://tools/test_pose_calibration.gd
 const SCENE := "res://ui/vision/calibration/calibration.tscn"
 const DT := 0.10
-const ZONES := [0.50, 0.80, 0.20]
-const STAGES := ["CENTER", "RIGHT", "LEFT"]
+const NEUTRAL_X := 0.50
 
 var pose: Node
 var packed: PackedScene
@@ -80,10 +79,9 @@ func _exercise(guided: bool) -> void:
 	var stage := screen.get_node_or_null("TutorialStage") as Control
 	var intro := stage.get_node_or_null("IntroOverlay") as Control if stage != null else null
 	var success := stage.get_node_or_null("SuccessOverlay") as Control if stage != null else null
-	var center_guide := stage.get_node_or_null("PoseGuides/PoseGuideDefault") as TextureRect if stage != null else null
-	_check(intro != null and success != null and center_guide != null
-		and center_guide.texture != null,
-		mode + ": editor-authored intro/success/default PNG guides exist")
+	var neutral_guide := stage.get_node_or_null("NeutralInstruction") as Label if stage != null else null
+	_check(intro != null and success != null and neutral_guide != null,
+		mode + ": editor-authored intro/success/neutral instruction exist")
 	_check(stage != null and stage.get_node_or_null("ContinueButton") == null
 		and stage.get_node_or_null("CenterCalibrationLane") == null
 		and stage.get_node_or_null("CheckStatusButton") == null,
@@ -94,26 +92,28 @@ func _exercise(guided: bool) -> void:
 	_check(screen.intro_running and screen.live_step == 0 and is_zero_approx(screen.live_timer),
 		mode + ": no hold credited at 2.99 seconds of the real 3-second intro")
 	screen._process(0.01)
-	_check(not screen.intro_running and center_guide.visible,
-		mode + ": intro ends only at 3.00 seconds and CENTER PNG appears")
+	_check(not screen.intro_running and neutral_guide.visible
+		and not (stage.get_node("PoseGuides/PoseGuideDefault") as Control).visible,
+		mode + ": 3.00s intro gives way to neutral prompt, not old CENTER guide")
 	# Absent/crowded raw population may not create a source-valid station.
 	for people in [0, 2, 3]:
 		_packet(screen, 0.50, people, true)
 		_check(screen.live_step == 0 and is_zero_approx(screen.live_timer)
 			and routes.is_empty(), mode + ": raw people=%d cannot fake CENTER" % people)
-	for zone in range(ZONES.size()):
-		for _i in range(29):
-			_packet(screen, ZONES[zone], 1, true)
-		_check(screen.live_step == zone,
-			"%s: %s rejects <3 seconds despite fresh monotonic source samples" % [mode, STAGES[zone]])
-		for _i in range(4):
-			_packet(screen, ZONES[zone], 1, true)
-		_check(screen.live_step == zone + 1,
-			"%s: %s advances after at least 3s and 8 genuine SOLO packets" % [mode, STAGES[zone]])
-	_check(screen.live_step == 3 and bool(pose.calibration.get("valid", false))
-		and screen.measured_points.has("center") and screen.measured_points.has("right")
-		and screen.measured_points.has("left"),
-		mode + ": 3 genuinely recorded physical floor positions calibrate")
+	for _i in range(29):
+		_packet(screen, NEUTRAL_X, 1, true, false)
+	_check(screen.live_step == 0,
+		mode + ": 2.8s of 8+ monotonic SOLO torso samples cannot complete neutral hold")
+	for _i in range(4):
+		_packet(screen, NEUTRAL_X, 1, true, false)
+	_check(screen.live_step == 1,
+		mode + ": one genuine 3s neutral hold completes without wrist evidence")
+	_check(bool(pose.calibration.get("valid", false))
+		and String(pose.calibration.get("mode", "")) == "neutral_body"
+		and screen.measured_points.has("center")
+		and screen.measured_points.has("neutral_noise")
+		and not screen.measured_points.has("right") and not screen.measured_points.has("left"),
+		mode + ": single real neutral center/noise, no invented side measurements")
 	_check(bool(screen.success_running) and success != null and success.visible
 		and bool(screen.transition_queued) and routes.is_empty(),
 		mode + ": separate CALIBRATION SUCCESS appears before any GO")
@@ -122,29 +122,29 @@ func _exercise(guided: bool) -> void:
 	_check(routes.is_empty(), mode + ": manual Continue/Skip cannot bypass full 3s success")
 	var original_measurements: Dictionary = screen.measured_points.duplicate(true)
 	for _i in range(10):
-		_packet(screen, 0.67, 1, false) # Fresh YOLO SOLO without green pose joints.
-	_check(screen.success_running and screen.live_step == 3
+		_packet(screen, 0.67, 1, true, false) # Fresh SOLO torso, no wrist evidence.
+	_check(screen.success_running and screen.live_step == 1
 		and screen.measured_points == original_measurements and routes.is_empty(),
 		mode + ": moving student with missing wrists cannot restart successful calibration")
 	var elapsed_saved: float = screen.success_elapsed
 	for people in [2, 0]:
 		_packet(screen, 0.5, people, false)
-		_check(screen.success_running and screen.live_step == 3
+		_check(screen.success_running and screen.live_step == 1
 			and screen.measured_points == original_measurements and routes.is_empty()
 			and is_equal_approx(float(screen.success_elapsed), elapsed_saved),
 			mode + ": %d people freeze GO but do not erase measured holds" % people)
 	pose._last_occupancy_packet_ms = Time.get_ticks_msec() - int(pose.OCCUPANCY_STALE_MS) - 200
 	screen._process(6.0)
-	_check(routes.is_empty() and screen.success_running and screen.live_step == 3
+	_check(routes.is_empty() and screen.success_running and screen.live_step == 1
 		and is_equal_approx(float(screen.success_elapsed), elapsed_saved),
 		mode + ": long source disconnection cannot GO or restart calibration")
 	var before_route := maxi(0, floori((3.0 - screen.success_elapsed - 0.15) / DT))
 	for _i in range(before_route):
-		_packet(screen, 0.67, 1, false)
+		_packet(screen, 0.67, 1, true, false)
 	_check(routes.is_empty() and screen.success_elapsed < 3.0,
 		mode + ": no GO before full 3s authenticated SOLO success")
 	for _i in range(4):
-		_packet(screen, 0.67, 1, false)
+		_packet(screen, 0.67, 1, true, false)
 	_check(routes.size() == 1 and routes[0].get("target", "") == "gameplay",
 		mode + ": exactly one automatic gameplay request with genuine raw SOLO")
 	if routes.size() == 1:
@@ -156,10 +156,10 @@ func _exercise(guided: bool) -> void:
 			and not bool(payload.get("keyboard_mode", true))
 			and not bool(payload.get("calibration_skipped", true)),
 			mode + ": correct Play countdown or Tutorial Spotlight flag, no keyboard bypass")
-		_check(is_equal_approx(float(payload.get("calibration_left", -1.0)), 0.20)
-			and is_equal_approx(float(payload.get("calibration_center", -1.0)), 0.50)
-			and is_equal_approx(float(payload.get("calibration_right", -1.0)), 0.80),
-			mode + ": the outgoing payload contains true physical measurements")
+		_check(bool(payload.get("calibration_neutral_only", false))
+			and is_equal_approx(float(payload.get("calibration_center", -1.0)), NEUTRAL_X)
+			and not payload.has("calibration_left") and not payload.has("calibration_right"),
+			mode + ": outgoing payload carries neutral-only measurement without fake bounds")
 	for _i in range(6):
 		_packet(screen, 0.5, 1, false)
 		screen._continue_flow(false)
@@ -171,14 +171,17 @@ func _exercise(guided: bool) -> void:
 	pose.stop_camera()
 
 
-func _packet(screen: Control, x: float, people: int, has_pose: bool) -> void:
+func _packet(screen: Control, x: float, people: int, has_pose: bool, wrist_valid: bool = true) -> void:
 	source_when += DT
 	var valid := people == 1 and has_pose
 	var packet: Dictionary = {"token": pose.session_token, "kind": "pose",
 		"state": "tracking", "camera": true, "camera_phase": "tracking",
-		"people": people, "pose": has_pose, "lock_state": "locked" if valid else "pending",
+		"people": people, "foreground_people": people,
+		"foreground_ambiguous": people != 1, "occupancy_verified": people == 1,
+		"player_lock_epoch": 1,
+		"pose": has_pose, "lock_state": "locked" if valid else "pending",
 		"camera_frame_age_ms": 20, "fps": 10.0,
-		"x": x if has_pose else -1.0, "hand_observation_valid": valid,
+		"x": x if has_pose else -1.0, "hand_observation_valid": valid and wrist_valid,
 		"hand_up": false, "pose_conf": 0.98 if valid else 0.03}
 	pose._apply_pose_packet(packet, Time.get_ticks_msec())
 	if valid:

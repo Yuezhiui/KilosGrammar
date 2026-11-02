@@ -8,9 +8,12 @@ const SCENE := preload("res://ui/minigames/catch_the_word/catch_word.tscn")
 const TOPICS := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
 const MODES := ["Seconds", "Lives"]
-const BASE_SPEED := {"Easy": 105.0, "Normal": 185.0, "Hard": 245.0}
-const FIRST_GAIN := {"Easy": 0.05, "Normal": 0.07, "Hard": 0.09}
-const CAPS := {"Easy": 1.25, "Normal": 1.35, "Hard": 1.45}
+# User-approved classroom pacing: the first answer closes 20% of the
+# remaining cap gap, and subsequent correct answers taper toward the cap.
+# 1 + (cap - 1) * (1 - 0.8^1) => +2.4% / +2.6% / +2.8%.
+const BASE_SPEED := {"Easy": 96.0, "Normal": 102.0, "Hard": 109.0}
+const FIRST_GAIN := {"Easy": 0.024, "Normal": 0.026, "Hard": 0.028}
+const CAPS := {"Easy": 1.12, "Normal": 1.13, "Hard": 1.14}
 const EPS := 0.025
 
 var failures: Array[String] = []
@@ -91,8 +94,8 @@ func _scenario(topic: String, difficulty: String, mode: String) -> void:
 		_check(next_speed < float(BASE_SPEED[difficulty]) * float(CAPS[difficulty]) + EPS,
 			tag + ": correct answer exceeded difficulty speed cap")
 		if answer_index == 0:
-			_check(absf(next_speed / float(BASE_SPEED[difficulty]) - (1.0 + float(FIRST_GAIN[difficulty]))) < 0.0001,
-				tag + ": first correct boost must be 5/7/9 percent")
+				_check(absf(next_speed / float(BASE_SPEED[difficulty]) - (1.0 + float(FIRST_GAIN[difficulty]))) < 0.0001,
+					tag + ": first correct boost must be 2.4/2.6/2.8 percent")
 		previous_speed = next_speed
 	# Pause is the actual saved-game path. Its snapshot must preserve score,
 	# correct count, mode clock/hearts and the accumulated speed progression.

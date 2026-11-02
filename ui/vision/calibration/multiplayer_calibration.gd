@@ -180,11 +180,20 @@ func _on_preview(texture: Texture2D) -> void:
 		var left := clampi(roundi(preview_center_x[index] * width) - roi_width / 2, 0, width - roi_width)
 		var top := clampi(roundi(.5 * height) - roi_height / 2, 0, height - roi_height)
 		var crop: Image = picture.get_region(Rect2i(left, top, roi_width, roi_height))
-		var output := ImageTexture.create_from_image(crop)
 		if index == 0:
-			video1.texture = output
+			if video1.texture is ImageTexture \
+					and video1.texture.get_width() == roi_width \
+					and video1.texture.get_height() == roi_height:
+				(video1.texture as ImageTexture).update(crop)
+			else:
+				video1.texture = ImageTexture.create_from_image(crop)
 		else:
-			video2.texture = output
+			if video2.texture is ImageTexture \
+					and video2.texture.get_width() == roi_width \
+					and video2.texture.get_height() == roi_height:
+				(video2.texture as ImageTexture).update(crop)
+			else:
+				video2.texture = ImageTexture.create_from_image(crop)
 
 
 func _back() -> void:

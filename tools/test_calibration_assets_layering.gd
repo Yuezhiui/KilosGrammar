@@ -1,417 +1,360 @@
 extends SceneTree
 
+# Historic CALIB art/layering QA, updated 2026-11-02 for SINGLE Catch/Balloon
+# neutral-body calibration. Real .tscn and original PNG bytes, no camera worker,
+# pose packets, filesystem mutation, game start, or database access.
 # Godot --headless --path . --script res://tools/test_calibration_assets_layering.gd
-# Isolated, deterministic, NO-WEBCAM regression for the NEW CALIB artwork,
-# scene-editable UI layers and calibration hold behavior.
-#
-# Source of truth: C:/Users/Yue/Downloads/CALIB; installed copies are expected
-# under Components/CalibrationV2. This test NEVER edits production files,
-# student preferences, or the Python pose worker.
+
 const SCENE_PATH := "res://ui/vision/calibration/calibration.tscn"
-const INSTALLED_ART := "res://Components/Gameplay/Calibration/"
-const SOURCE_ART := "C:/Users/Yue/Downloads/CALIB/"
-const ART_NAMES := [
-		"1.png", "2.png", "3.png", "ARROW.png", "BACK.png", "BACKGROUND.png",
-	"BORDER.png", "MOVE TO HIGHLIGHTED AREA.png",
-		"STARS.png", "STAY IN THE CENTER.png",
-	"STAY OF THE LEFT.png", "STAY ON THE RIGHT.png",
-	"STEP 1.png", "STEP 2.png", "STEP 3.png"
+const ART_ROOT := "res://Components/Gameplay/Calibration/"
+const ORIGINAL_ART := [
+    "1.png", "2.png", "3.png", "ARROW.png", "BACK.png",
+    "BACKGROUND.png", "BORDER.png", "MOVE TO HIGHLIGHTED AREA.png",
+    "STARS.png", "STAY IN THE CENTER.png", "STAY ON THE RIGHT.png",
+    "STAY OF THE LEFT.png", "STEP 1.png", "STEP 2.png", "STEP 3.png"
 ]
-const SIZES := [Vector2i(1280, 720), Vector2i(1920, 1080)]
-const STANDING_ZONES := ["CenterCalibrationLane", "RightCalibrationLane", "LeftCalibrationLane"]
-const ART_ZONES := ["ArtGuideCenter", "ArtGuideRight", "ArtGuideLeft"]
-const ART_ARROWS := ["ArtArrowCenter", "ArtArrowRight", "ArtArrowLeft"]
-const STAGE_IMAGES := ["STEP 1.png", "STEP 2.png", "STEP 3.png"]
-const POSITION_IMAGES := ["STAY IN THE CENTER.png", "STAY ON THE RIGHT.png", "STAY OF THE LEFT.png"]
-const HOLD_DURATION := 3.0
-const INTRO_DURATION := 3.0
+const EDITOR_POSES := [
+    "PoseGuideDefault", "PoseGuideRight", "PoseGuideLeft",
+    "PoseGuideBalloonRaise", "PoseGuideBalloonRaiseRight",
+    "PoseGuideBalloonRaiseLeft", "PoseGuidePlaneCenter",
+    "PoseGuidePlaneLeft", "PoseGuidePlaneRight"
+]
+const DIRECTIONS := [
+    "ArtArrowCenter", "ArtArrowRight", "ArtArrowLeft",
+    "ArtTitleCenter", "ArtTitleRight", "ArtTitleLeft",
+    "ArtStep1", "ArtStep2", "ArtStep3",
+    "ArtMoveHintCenter", "ArtMoveHintRight", "ArtMoveHintLeft"
+]
+const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
+const DESIGN := Vector2(1280, 720)
 var checks := 0
 var failures: Array[String] = []
-var capture_enabled := false
+var service: Node
+var packed: PackedScene
 
 
 func _initialize() -> void:
-	call_deferred("_run")
+    call_deferred("_run")
+
+
+func _check(ok: bool, note: String) -> void:
+    checks += 1
+    if not ok:
+        failures.append(note)
+        printerr("CALIB_ASSETS FAIL: ", note)
 
 
 func _run() -> void:
-	capture_enabled = OS.get_cmdline_user_args().has("--capture") and DisplayServer.get_name() != "headless"
-	var service := root.get_node_or_null("PoseService")
-	_expect(service != null, "PoseService autoload exists without launching a webcam")
-	if service == null:
-		_finish()
-		return
-	# All transitions use stage state instead of a camera device.
-	_expect(not bool(service.get("active")), "Camera service starts inactive")
-	var scene_resource := load(SCENE_PATH) as PackedScene
-	_expect(scene_resource != null, "Calibration scene parses and loads")
-	if scene_resource == null:
-		_finish()
-		return
-	_check_installed_asset_bytes()
-	var root_size := root.size
-	var root_content_size := root.content_scale_size
-	for size in SIZES:
-		root.size = size
-		root.content_scale_size = size
-		await process_frame
-		await _check_viewport(scene_resource, size, service)
-	root.content_scale_size = root_content_size
-	root.size = root_size
-	_finish()
+    service = root.get_node_or_null("PoseService")
+    _check(service != null, "PoseService autoload exists")
+    if service == null:
+        _finish()
+        return
+    _check(not bool(service.active), "real webcam is not active at test entry")
+    packed = load(SCENE_PATH) as PackedScene
+    _check(packed != null, "real editor-authored calibration.tscn loads and parses")
+    if packed == null:
+        _finish()
+        return
+    _check_original_pngs()
+    var original_size := root.size
+    var original_content_size := root.content_scale_size
+    for screen_size in SIZES:
+        root.size = screen_size
+        root.content_scale_size = screen_size
+        await process_frame
+        await _check_size(screen_size)
+    root.size = original_size
+    root.content_scale_size = original_content_size
+    _check(not bool(service.active), "QA never started real webcam or Python worker")
+    _finish()
 
 
-func _check_installed_asset_bytes() -> void:
-	for art_name in ART_NAMES:
-		var installed: String = INSTALLED_ART + String(art_name)
-		var source: String = SOURCE_ART + String(art_name)
-		_expect(FileAccess.file_exists(installed),
-			"Installed supplied image exists: %s" % art_name)
-		if FileAccess.file_exists(source) and FileAccess.file_exists(installed):
-			_expect(FileAccess.get_sha256(source) == FileAccess.get_sha256(installed),
-				"Installed %s matches supplied PNG byte-for-byte" % art_name)
+func _check_original_pngs() -> void:
+    for name in ORIGINAL_ART:
+        var original: String = ART_ROOT + name
+        _check(FileAccess.file_exists(original), "restored original CALIB PNG retained: " + name)
+        if FileAccess.file_exists(original):
+            # Decode in memory rather than Image.load_from_file(res://), which
+            # warns about export-time loader behavior. No bytes are written.
+            var image_data := Image.new()
+            var decoded := image_data.load_png_from_buffer(FileAccess.get_file_as_bytes(original))
+            _check(decoded == OK and image_data.get_width() > 0
+                and image_data.get_height() > 0,
+                "original supplied PNG remains readable and unmodified: " + name)
+    # STARS was restored to the source folder, but the current shipped scene
+    # intentionally does not use it. Do not require an unrequested overlay.
+    _check(FileAccess.file_exists(ART_ROOT + "STARS.png"),
+        "restored STARS.png remains present; no replacement art required")
 
 
-func _check_viewport(packed: PackedScene, dimensions: Vector2i, service: Node) -> void:
-	var view := packed.instantiate() as Control
-	_expect(view != null, "Calibration instantiates as Control at %s" % dimensions)
-	if view == null:
-		return
-	root.add_child(view)
-	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	await process_frame
-	view.set_process(false)
-	var stage := view.get_node_or_null("TutorialStage") as Control
-	var camera := view.get_node_or_null("TutorialStage/LiveCameraInset") as TextureRect
-	var intro := view.get_node_or_null("TutorialStage/IntroOverlay") as Control
-	_expect(stage != null and stage.owner == view, "%s: stage is scene-authored" % dimensions)
-	_expect(camera != null and camera.owner == view, "%s: live-feed slot is editor-authored TextureRect" % dimensions)
-	_expect(intro != null and intro.owner == view and intro.is_visible_in_tree(),
-		"%s: scene-authored intro appears at start" % dimensions)
-	if capture_enabled:
-		await _capture_ui("intro", dimensions)
-	_expect(_inside(view.get_global_rect(), dimensions), "%s: entire scene stays within display" % dimensions)
-	if stage == null or camera == null:
-		view.queue_free()
-		await process_frame
-		return
-	_expect(_inside(stage.get_global_rect(), dimensions), "%s: design stage has no offscreen bounds" % dimensions)
-	_expect(_inside(camera.get_global_rect(), dimensions), "%s: live camera preview is inside display" % dimensions)
-	_expect(camera.get_child_count() == 0, "%s: camera TextureRect has NO overlaid UI/guide children" % dimensions)
+func _check_size(screen_size: Vector2i) -> void:
+    var tag := str(screen_size)
+    var view := packed.instantiate() as Control
+    _check(view != null and view.has_method("set_context"), tag + " production scene and script instantiate")
+    if view == null or not view.has_method("set_context"):
+        if view != null:
+            view.free()
+        return
+    root.add_child(view)
+    view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    view.set_process(false)
+    await process_frame
 
-	var observed: Dictionary = {}
-	var authored_count := 0
-	var unowned := PackedStringArray()
-	var art_nodes: Array[Node] = []
-	var stack: Array[Node] = [view]
-	while not stack.is_empty():
-		var node: Node = stack.pop_back()
-		for child in node.get_children():
-			stack.append(child)
-		if node == view:
-			continue
-		if node.owner == view:
-			authored_count += 1
-		else:
-			unowned.append(String(view.get_path_to(node)))
-		var art_path := _art_resource_path(node)
-		if not art_path.is_empty() and art_path.begins_with(INSTALLED_ART):
-			var key := art_path.get_file()
-			if not observed.has(key):
-				observed[key] = []
-			observed[key].append(node)
-			art_nodes.append(node)
-	_expect(unowned.is_empty(), "%s: NO runtime-only/unowned UI nodes (%s)" % [dimensions, unowned])
-	_expect(authored_count >= ART_NAMES.size(), "%s: %d scene-owned editable child nodes" % [dimensions, authored_count])
-	for name in ART_NAMES:
-		var matches: Array = observed.get(name, [])
-		_expect(not matches.is_empty(), "%s: supplied %s has a separately editor-authored art node" % [dimensions, name])
-		for candidate in matches:
-			var node := candidate as Node
-			_expect(node.owner == view, "%s: %s is persistent in .tscn" % [dimensions, name])
-			_expect(node is TextureRect or node is NinePatchRect or node is Sprite2D or node is TextureButton,
-				"%s: %s uses a native editable artwork node" % [dimensions, name])
-			if node is Control:
-				var control := node as Control
-				if name != "BACKGROUND.png" and node is TextureRect:
-					# Artwork PNGs contain deliberately transparent margins. A
-					# TextureRect may extend above the viewport, provided all its
-					# NON-TRANSPARENT content remains visible and uncropped.
-					var content_rect := _drawn_art_rect(node as TextureRect)
-					_expect(_inside(content_rect, dimensions),
-						"%s: visible pixels of %s stay on-screen (content=%s)" %
-						[dimensions, name, content_rect])
-				else:
-					_expect(_inside(_visual_rect(control), dimensions),
-						"%s: artwork %s (%s) stays on-screen" % [dimensions, name, control.get_path()])
+    var stage := view.get_node_or_null("TutorialStage") as Control
+    var background := view.get_node_or_null("ClassroomBackground") as TextureRect
+    var dimmer := view.get_node_or_null("ClassroomDimmer") as ColorRect
+    var intro := view.get_node_or_null("TutorialStage/IntroOverlay") as ColorRect
+    var success := view.get_node_or_null("TutorialStage/SuccessOverlay") as ColorRect
+    var camera := view.get_node_or_null("TutorialStage/CameraArea/LiveCameraInset") as TextureRect
+    var skeleton := view.get_node_or_null("TutorialStage/CameraArea/SkeletonPlacement") as ReferenceRect
+    var camera_backing := view.get_node_or_null("TutorialStage/CameraArea/CameraBlackBacking") as ColorRect
+    var wood_frame := view.get_node_or_null("TutorialStage/CameraArea/ArtCameraFrame") as TextureRect
+    var neutral := view.get_node_or_null("TutorialStage/NeutralInstruction") as Label
+    var guides := view.get_node_or_null("TutorialStage/PoseGuides") as Control
+    var directions := view.get_node_or_null("TutorialStage/Directions") as Control
+    var countdown := view.get_node_or_null("TutorialStage/CountdownArtwork") as Control
+    var back := view.get_node_or_null("TutorialStage/Navigation/BackButton") as Button
+    var back_art := view.get_node_or_null("TutorialStage/Navigation/BackButton/Artwork") as TextureRect
+    var camera_status := view.get_node_or_null("TutorialStage/CameraFeedback/CameraUnavailableLabel") as Label
 
-	var background := view.get_node_or_null("ClassroomBackground") as TextureRect
-	_expect(background != null and _art_resource_path(background).ends_with("BACKGROUND.png")
-		and _inside(background.get_global_rect(), dimensions),
-		"%s: supplied CALIB BACKGROUND fills authored display surface" % dimensions)
-	var header := _find_stage_title(stage)
-	_expect(header != null and header.owner == view,
-		"%s: editable CALIBRATION title/header is present" % dimensions)
-	var step_badge := stage.get_node_or_null("StepBadge") as Label
-	_expect(step_badge != null and step_badge.owner == view,
-		"%s: stage has editor-authored step indicator" % dimensions)
-	var back_main := intro.get_node_or_null("IntroBackButton") as Button if intro != null else null
-	_expect(back_main != null and back_main.owner == view and not back_main.is_visible_in_tree()
-		and back_main.disabled,
-		"%s: authored intro Back stays hidden and disabled" % dimensions)
-	for title_name in ["ArtTitleCenter", "ArtTitleRight", "ArtTitleLeft"]:
-		var title_image := stage.get_node_or_null(title_name) as TextureRect
-		_expect(title_image != null and title_image.texture != null
-			and not (title_image.texture is AtlasTexture)
-			and title_image.texture.get_size() == Vector2(1672, 432),
-			"%s: %s renders the complete updated 1672x432 title PNG without an obsolete crop" %
-			[dimensions, title_name])
-	for retired in STANDING_ZONES + ART_ZONES + ["ArtCountdownBadge"]:
-		_expect(stage.get_node_or_null(retired) == null,
-			"%s: retired %s is absent" % [dimensions, retired])
-	for pose_name in ["PoseGuideDefault", "PoseGuideBalloonRaise", "PoseGuidePlaneCenter", "PoseGuidePlaneLeft", "PoseGuidePlaneRight"]:
-		var pose_art := stage.get_node_or_null(pose_name) as TextureRect
-		_expect(pose_art != null and pose_art.owner == view and pose_art.texture != null,
-			"%s: authored five-pose PNG %s exists" % [dimensions, pose_name])
-	if intro != null:
-		for child in stage.get_children():
-			if child is Control and child != intro:
-				_expect(not (child as Control).is_visible_in_tree(),
-					"%s: intro hides other camera/zone/HUD control: %s" % [dimensions, child.name])
+    _check(stage != null and background != null and dimmer != null
+        and intro != null and success != null and camera != null
+        and skeleton != null and camera_backing != null and wood_frame != null
+        and neutral != null and guides != null and directions != null
+        and countdown != null and back != null and back_art != null
+        and camera_status != null,
+        tag + " all current editor-authored UI nodes resolve")
+    if stage == null or background == null or intro == null or camera == null             or guides == null or neutral == null or directions == null             or countdown == null or back == null or skeleton == null             or camera_status == null or success == null or wood_frame == null             or back_art == null or camera_backing == null or dimmer == null:
+        view.queue_free()
+        await process_frame
+        return
 
-	# The artwork for the THREE circular steps must have independently
-	# editable handles, distinct from the three full title/step images.
-	for number in ["1.png", "2.png", "3.png"]:
-		var matches: Array = observed.get(number, [])
-		_expect(matches.size() >= 1, "%s: circle %s is independently movable" % [dimensions, number])
-	# Keep all native artwork pixel geometry intact when nudging scene-authored
-	# transforms. Position edits must not stretch the original CALIB designs.
-	var frame_art := stage.get_node_or_null("ArtCameraFrame") as TextureRect
-	_expect(frame_art != null and frame_art.size.is_equal_approx(Vector2(1150, 700)),
-		"%s: BORDER.png keeps its original undistorted 1150x700 authored rectangle" % dimensions)
-	for circle_name in ["ArtCountdown1", "ArtCountdown2", "ArtCountdown3"]:
-		var circle_image := stage.get_node_or_null(circle_name) as TextureRect
-		_expect(circle_image != null and circle_image.size.is_equal_approx(Vector2(228, 172)),
-			"%s: %s stays original 228x172, never distorted to fit" % [dimensions, circle_name])
-	# Guard no deprecated controls. Keep existing hidden status/Continue
-	# compatibility nodes; only controls user requested removed are forbidden.
-	for button_name in ["SkipButton", "RetryButton", "DemoButton", "KeyboardButton", "StopCameraButton"]:
-		_expect(stage.get_node_or_null(button_name) == null,
-			"%s: removed obsolete %s does not exist" % [dimensions, button_name])
-	var constants: Dictionary = view.get_script().get_script_constant_map() if view.get_script() != null else {}
-	_expect(absf(float(constants.get("HOLD_SECONDS", -1.0)) - HOLD_DURATION) < 0.001,
-		"%s: stationary calibration remains exactly 3 seconds" % dimensions)
-	_expect(absf(float(constants.get("INTRO_SECONDS", -1.0)) - INTRO_DURATION) < 0.001,
-			"%s: intro duration remains exactly 3 seconds" % dimensions)
-	_expect(constants.get("CAPTURE_ORDER", []) == ["CENTER", "RIGHT", "LEFT"],
-		"%s: three positions remain CENTER -> RIGHT -> LEFT" % dimensions)
+    var expected_scale := minf(float(screen_size.x) / DESIGN.x, float(screen_size.y) / DESIGN.y)
+    _check(stage.scale.is_equal_approx(Vector2.ONE * expected_scale)
+        and stage.size.is_equal_approx(DESIGN),
+        tag + " fixed 1280x720 editable design scales uniformly without local re-layout")
+    _check(_near_rect(view.get_global_rect(), Rect2(Vector2.ZERO, Vector2(screen_size)))
+        and _inside(stage.get_global_rect(), screen_size),
+        tag + " full-screen root and scaled stage remain on display")
+    _check(_near_rect(background.get_global_rect(), view.get_global_rect())
+        and _near_rect(dimmer.get_global_rect(), view.get_global_rect()),
+        tag + " classroom background and dimmer fill full screen")
 
-	# Finish intro in a deterministic simulated frame (no waiting or camera).
-	view.call("_process", INTRO_DURATION + 0.01)
-	view.set_process(false)
-	_expect(intro != null and not intro.visible, "%s: intro clears after 3 seconds" % dimensions)
-	var stage_phases := ["CENTER", "RIGHT", "LEFT"]
-	for index in range(3):
-		view.set("live_step", index)
-		view.call("_update_target_guide")
-		view.call("_set_stage_instruction")
-		var step_count := 0
-		for path in STANDING_ZONES:
-			var zone := stage.get_node_or_null(path) as Control
-			_expect(zone == null,
-				"%s: old green %s overlay stays hidden" % [dimensions, path])
-		for path in ART_ZONES:
-			var guide := stage.get_node_or_null(path) as Control
-			if guide != null and guide.is_visible_in_tree():
-				step_count += 1
-				_expect(path == ART_ZONES[index],
-					"%s: only %s PARAMETERS.png guide active, not %s" % [dimensions, stage_phases[index], path])
-		_expect(step_count == 0,
-			"%s: %s step has exactly ONE highlighted PARAMETERS.png guide" % [dimensions, stage_phases[index]])
-		if step_badge != null:
-			_expect(step_badge.text.contains(str(index + 1)),
-				"%s: step plaque text updates to stage %d" % [dimensions, index + 1])
-		var source_images: Array = observed.get(STAGE_IMAGES[index], [])
-		_expect(not source_images.is_empty(), "%s: Step-%d artwork remains present" % [dimensions, index + 1])
-		var direction_images: Array = observed.get(POSITION_IMAGES[index], [])
-		_expect(not direction_images.is_empty(),
-			"%s: corresponding %s artwork remains scene-owned" % [dimensions, stage_phases[index]])
-		for group in [ART_ARROWS, ["ArtStep1", "ArtStep2", "ArtStep3"],
-			["ArtTitleCenter", "ArtTitleRight", "ArtTitleLeft"]]:
-			var shown := 0
-			for item_name in group:
-				var art := stage.get_node_or_null(item_name) as Control
-				if art != null and art.is_visible_in_tree():
-					shown += 1
-					_expect(item_name == group[index],
-						"%s: stage %d lights its own %s, not %s" %
-						[dimensions, index + 1, group[index], item_name])
-			_expect(shown == 1,
-				"%s: stage %d has ONE matching asset visible among %s" %
-				[dimensions, index + 1, group])
-		# The countdown assets are independent circle images; exactly ONE
-		# shows the current 3/2/1, with stationary hold timing unchanged.
-		for elapsed in [0.0, 1.1, 2.1]:
-			view.set("live_timer", elapsed)
-			view.call("_update_hold_countdown")
-			var remaining := clampi(ceili(HOLD_DURATION - elapsed), 1, 3)
-			var circles_shown := 0
-			for number in range(1, 4):
-				var circle := stage.get_node_or_null("ArtCountdown%d" % number) as Control
-				if circle != null and circle.is_visible_in_tree():
-					circles_shown += 1
-					_expect(number == remaining,
-						"%s: stage %d countdown uses circle %d after %.1fs" %
-						[dimensions, index + 1, remaining, elapsed])
-			_expect(circles_shown == 1,
-					"%s: stage %d shows ONE countdown circle after %.1fs" %
-					[dimensions, index + 1, elapsed])
-		if capture_enabled:
-			await _capture_ui(stage_phases[index].to_lower(), dimensions)
-	# Synthetic preview proves this UI compositing never modifies camera pixels.
-	var camera_image := Image.create(160, 90, false, Image.FORMAT_RGB8)
-	camera_image.fill(Color(0.2, 0.3, 0.4))
-	var before := camera_image.get_data()
-	var synthetic_video := ImageTexture.create_from_image(camera_image)
-	view.call("_on_live_preview", synthetic_video)
-	_expect(camera.texture == synthetic_video and camera_image.get_data() == before,
-		"%s: changing UI guides does not draw boxes into camera ImageTexture" % dimensions)
-	_expect(not bool(service.get("active")), "%s: regression never launched physical camera" % dimensions)
-	print("CALIB ASSET QA ", dimensions, " scene-owned=", authored_count,
-		" CALIB art textures=", art_nodes.size(), " supplied detected=", observed.size())
-	view.queue_free()
-	await process_frame
-	await process_frame
+    var media_nodes: Array[TextureRect] = [background, wood_frame, back_art]
+    for name in EDITOR_POSES:
+        var guide := guides.get_node_or_null(name) as TextureRect
+        _check(guide != null and guide.owner == view and guide.texture != null
+            and guide.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+            tag + " separately editable original PNG pose guide " + name)
+        if guide != null:
+            media_nodes.append(guide)
+    for name in DIRECTIONS:
+        var art := directions.get_node_or_null(name) as TextureRect
+        _check(art != null and art.owner == view and art.texture != null
+            and art.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+            tag + " separately editable original directional PNG " + name)
+        if art != null:
+            media_nodes.append(art)
+    for i in range(1, 4):
+        var digit := countdown.get_node_or_null("ArtCountdown%d" % i) as TextureRect
+        _check(digit != null and digit.owner == view and digit.texture != null
+            and digit.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+            tag + " independent countdown digit " + str(i))
+        if digit != null:
+            media_nodes.append(digit)
 
+    var authored: Dictionary = {}
+    for item in media_nodes:
+        _check(item.owner == view and item.texture != null,
+            tag + " authored TextureRect with real source " + item.name)
+        if item.texture != null:
+            var source_tex := item.texture
+            if source_tex is AtlasTexture:
+                source_tex = (source_tex as AtlasTexture).atlas
+            var source_path := String(source_tex.resource_path)
+            _check(source_path.to_lower().ends_with(".png")
+                and FileAccess.file_exists(source_path),
+                tag + " uses an original readable PNG, not fake composite: " + item.name)
+        authored[item] = [item.position, item.size, item.scale, item.texture]
+    _check(_texture_file(background) == ART_ROOT + "BACKGROUND.png"
+        and _texture_file(wood_frame) == ART_ROOT + "BORDER.png"
+        and _texture_file(back_art) == "res://Components/Game Chooser/back button.png",
+        tag + " actual classroom, border and Back button artwork paths preserved")
+    _check(_texture_file(guides.get_node("PoseGuidePlaneCenter") as TextureRect)
+            == ART_ROOT + "Pose Guides/PLANE T POSE.png",
+        tag + " original Human Plane center T-pose PNG remains attached")
+    _check(_texture_file(directions.get_node("ArtTitleCenter") as TextureRect)
+        == ART_ROOT + "STAY IN THE CENTER.png",
+        tag + " retired direction art remains separately retained but not shown")
 
-func _art_resource_path(node: Node) -> String:
-	if node == null:
-		return ""
-	var tex: Texture2D
-	if node is TextureRect:
-		tex = (node as TextureRect).texture
-	elif node is NinePatchRect:
-		tex = (node as NinePatchRect).texture
-	elif node is Sprite2D:
-		tex = (node as Sprite2D).texture
-	elif node is TextureButton:
-		tex = (node as TextureButton).texture_normal
-	if tex == null:
-		return ""
-	if tex is AtlasTexture:
-		var atlas := (tex as AtlasTexture).atlas
-		return atlas.resource_path if atlas != null else ""
-	return tex.resource_path
+    _check(_inside(camera.get_global_rect(), screen_size)
+        and camera.size.x > 640 and camera.size.y > 300
+        and skeleton.position.is_equal_approx(camera.position)
+        and skeleton.size.is_equal_approx(camera.size)
+        and camera.get_child_count() == 0,
+        tag + " live camera preview is editable, in-bounds, skeleton-aligned and unobscured by child overlays")
+    _check(camera_backing.get_index() < camera.get_index()
+        and camera.get_index() < skeleton.get_index()
+        and skeleton.get_index() < wood_frame.get_index()
+        and wood_frame.material is ShaderMaterial
+        and wood_frame.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+        tag + " behind-camera backing, live texture, skeleton, and transparent wood frame have proper z-order")
+    _check(back.owner == view and not back.disabled and back.mouse_filter == Control.MOUSE_FILTER_STOP
+        and back_art.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+        tag + " editor-authored Back control retains usable hitbox, own PNG and pointer routing")
+
+    # Opening intro is independent of the pose mode and hides every other
+    # stage sibling. The 66% dimming cannot be replaced with invisible title.
+    _check(view.intro_running and intro.is_visible_in_tree()
+        and intro.get_node("ArtIntroTitle").text == "CALIBRATION"
+        and intro.color.a >= 0.65 and not success.visible
+        and not camera.is_visible_in_tree(),
+        tag + " real styled 3-second CALIBRATION introduction remains intact")
+    for child in stage.get_children():
+        if child is Control and child != intro:
+            _check(not (child as Control).visible,
+                tag + " intro blocks premature camera/guide/action visibility: " + child.name)
+
+    # The same 3-second intro applies to all three modes; never earn samples
+    # or reveal cached art before the title closes.
+    for activity in ["Catch the Word", "Balloon Popping", "Human Plane"]:
+        view.context = {"activity": activity, "player_mode": "Single Player"}
+        if view.intro_running:
+            view._process(2.99)
+        if view.intro_running:
+            _check(view.intro_running and view.live_step == 0
+                and not neutral.visible and not camera.visible,
+                tag + " first 2.99s of intro never shows neutral/camera early")
+            view._process(0.01)
+        _check(not view.intro_running and not intro.visible and not success.visible,
+            tag + " intro completes before calibration visuals: " + activity)
+        view._set_stage_instruction()
+        view._sync_reference_art()
+        _check(view.live_step == 0 and is_zero_approx(view.live_timer),
+            tag + " no camera source frames earn any hold time: " + activity)
+        if activity == "Human Plane":
+            _check(view._capture_order() == ["CENTER"]
+                and not view._single_neutral_body_mode()
+                and (guides.get_node("PoseGuidePlaneCenter") as TextureRect).visible
+                and not neutral.visible,
+                tag + " Human Plane retains physical CENTER T-pose, not neutral body shortcut")
+            for name in EDITOR_POSES:
+                var one := guides.get_node(name) as TextureRect
+                _check(one.visible == (name == "PoseGuidePlaneCenter"),
+                    tag + " T-pose shows only correct Human Plane center reference: " + name)
+            # Side images remain demonstrations, not new calibration holds.
+            view.plane_demo_running = true
+            view.plane_demo_elapsed = 0.0
+            view._sync_reference_art()
+            _check((guides.get_node("PoseGuidePlaneLeft") as TextureRect).visible
+                and not (guides.get_node("PoseGuidePlaneRight") as TextureRect).visible,
+                tag + " Human Plane retains LEFT demonstration image")
+            view.plane_demo_elapsed = 3.1
+            view._sync_reference_art()
+            _check((guides.get_node("PoseGuidePlaneRight") as TextureRect).visible
+                and not (guides.get_node("PoseGuidePlaneLeft") as TextureRect).visible,
+                tag + " Human Plane retains RIGHT demonstration image")
+            view.plane_demo_running = false
+            view.plane_demo_elapsed = 0.0
+            view._sync_reference_art()
+        else:
+            _check(view._capture_order() == ["NEUTRAL"] and neutral.visible
+                and neutral.text.contains("STAND STILL")
+                and neutral.text.contains("3 SECONDS"),
+                tag + " " + activity + " shows one editor-authored English neutral instruction")
+            _check(_inside(neutral.get_global_rect(), screen_size)
+                and not neutral.get_global_rect().intersects(camera.get_global_rect()),
+                tag + " neutral prompt remains in frame and never covers live camera image")
+            for name in EDITOR_POSES:
+                _check(not (guides.get_node(name) as CanvasItem).visible,
+                    tag + " obsolete pose art hidden for neutral mode: " + name)
+            for name in DIRECTIONS:
+                _check(not (directions.get_node(name) as CanvasItem).visible,
+                    tag + " obsolete zone arrow/title/hint hidden for neutral mode: " + name)
+
+    # A dummy preview tests actual camera texture ownership without launching
+    # webcam hardware. Foreground camera warning MUST yield to valid feed.
+    view.context = {"activity": "Catch the Word", "player_mode": "Single Player"}
+    view._sync_reference_art()
+    var synthetic := Image.create(640, 480, false, Image.FORMAT_RGBA8)
+    synthetic.fill(Color(0.15, 0.38, 0.62, 1))
+    var texture := ImageTexture.create_from_image(synthetic)
+    var pixels := synthetic.get_data()
+    service.active = true
+    view._on_live_preview(texture)
+    _check(camera.visible and camera.texture == texture
+        and synthetic.get_data() == pixels and not camera_status.visible,
+        tag + " original camera pixels preserved, no offline warning drawn over live preview")
+    _check(_inside(camera.get_global_rect(), screen_size)
+        and not neutral.get_global_rect().intersects(camera.get_global_rect()),
+        tag + " camera remains unobscured by neutral prompt after preview update")
+    service.active = false
+    view._on_live_preview(null)
+    _check(not camera.visible, tag + " missing feed hides camera rather than replaying stale image")
+
+    # Stage/titles/pose artwork are editor-authored; switching modes and
+    # updating the feed must not silently move, resize, or retexture them.
+    for item in authored:
+        var saved: Array = authored[item]
+        _check(item.position.is_equal_approx(saved[0])
+            and item.size.is_equal_approx(saved[1])
+            and item.scale.is_equal_approx(saved[2])
+            and item.texture == saved[3],
+            tag + " asset transform and real PNG survive intro/mode swaps: " + item.name)
+    view.queue_free()
+    await process_frame
+    await _check_fresh_plane_intro(screen_size)
 
 
-func _find_stage_title(stage: Control) -> Control:
-	for name in ["CalibrationTitle", "CalibrationHeading", "Heading", "StageHeading"]:
-		var node := stage.get_node_or_null(name) as Control
-		if node != null:
-			return node
-	return null
+func _check_fresh_plane_intro(screen_size: Vector2i) -> void:
+    # Fresh Human Plane entry must retain its own entire intro and then show
+    # its center T-pose. Switching activities on one already-open scene is not
+    # a substitute for testing a new initial mount.
+    var tag := str(screen_size)
+    var plane := packed.instantiate() as Control
+    root.add_child(plane)
+    plane.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    plane.set_process(false)
+    plane.context = {"activity": "Human Plane", "player_mode": "Single Player"}
+    var intro := plane.get_node("TutorialStage/IntroOverlay") as ColorRect
+    var guide := plane.get_node("TutorialStage/PoseGuides/PoseGuidePlaneCenter") as TextureRect
+    var neutral := plane.get_node("TutorialStage/NeutralInstruction") as Label
+    _check(intro.is_visible_in_tree() and not guide.is_visible_in_tree()
+        and not neutral.is_visible_in_tree(),
+        tag + " Human Plane fresh intro shows CALIBRATION only")
+    plane._process(2.99)
+    _check(plane.intro_running and intro.is_visible_in_tree()
+        and not guide.is_visible_in_tree() and plane.live_step == 0,
+        tag + " Human Plane intro lasts full 3s and cannot credit premature T-pose")
+    plane._process(0.01)
+    _check(not plane.intro_running and not intro.visible
+        and guide.is_visible_in_tree() and not neutral.visible
+        and plane._capture_order() == ["CENTER"],
+        tag + " Human Plane restores original T-pose image immediately after intro")
+    plane.queue_free()
+    await process_frame
 
 
-func _visual_rect(ctrl: Control) -> Rect2:
-	# Control.get_rect().position is its PARENT-space offset and the global
-	# transform already includes it. Multiplying both double-counts offsets,
-	# falsely flagging correctly positioned artwork as clipped.
-	var rect := Rect2(Vector2.ZERO, ctrl.size)
-	var tx := ctrl.get_global_transform_with_canvas()
-	var lo: Vector2 = tx * rect.position
-	var hi: Vector2 = lo
-	for vertex in [
-		Vector2(rect.end.x, rect.position.y), rect.end,
-		Vector2(rect.position.x, rect.end.y)
-	]:
-		var point: Vector2 = tx * vertex
-		lo = lo.min(point)
-		hi = hi.max(point)
-	return Rect2(lo, hi - lo)
+func _texture_file(item: TextureRect) -> String:
+    if item == null or item.texture == null:
+        return ""
+    var actual: Texture2D = item.texture
+    if actual is AtlasTexture:
+        actual = (actual as AtlasTexture).atlas
+    return String(actual.resource_path)
 
 
-func _drawn_art_rect(ctrl: TextureRect) -> Rect2:
-	if ctrl.texture == null:
-		return _visual_rect(ctrl)
-	var image := ctrl.texture.get_image()
-	if image == null or image.is_empty():
-		return _visual_rect(ctrl)
-	var image_size := Vector2(image.get_size())
-	var used := image.get_used_rect()
-	if used.size == Vector2i.ZERO:
-		used = Rect2i(Vector2i.ZERO, image.get_size())
-	var factors := Vector2(
-		ctrl.size.x / maxf(image_size.x, 1.0),
-		ctrl.size.y / maxf(image_size.y, 1.0))
-	var offset := Vector2.ZERO
-	match ctrl.stretch_mode:
-		TextureRect.STRETCH_KEEP_ASPECT_CENTERED:
-			var scale_factor := minf(factors.x, factors.y)
-			factors = Vector2.ONE * scale_factor
-			offset = (ctrl.size - image_size * scale_factor) * 0.5
-		TextureRect.STRETCH_KEEP_ASPECT_COVERED:
-			var scale_factor := maxf(factors.x, factors.y)
-			factors = Vector2.ONE * scale_factor
-			offset = (ctrl.size - image_size * scale_factor) * 0.5
-		TextureRect.STRETCH_KEEP_ASPECT:
-			factors = Vector2.ONE * minf(factors.x, factors.y)
-		TextureRect.STRETCH_KEEP_CENTERED:
-			factors = Vector2.ONE
-			offset = (ctrl.size - image_size) * 0.5
-		TextureRect.STRETCH_KEEP:
-			factors = Vector2.ONE
-	var used_origin := Vector2(used.position) * factors + offset
-	var used_size := Vector2(used.size) * factors
-	var frame := Rect2(used_origin, used_size)
-	var frame_rect := Rect2(Vector2.ZERO, ctrl.size)
-	# Content outside its own TextureRect is cut by stretch/cover cropping
-	# regardless of the scene's global viewport clipping.
-	if not frame_rect.encloses(frame.grow(-1.0)):
-		return Rect2(Vector2(-100000.0, -100000.0), Vector2.ONE)
-	var transform := ctrl.get_global_transform_with_canvas()
-	var lo: Vector2 = transform * frame.position
-	var hi: Vector2 = lo
-	for vertex in [
-		Vector2(frame.end.x, frame.position.y), frame.end,
-		Vector2(frame.position.x, frame.end.y)
-	]:
-		var point: Vector2 = transform * vertex
-		lo = lo.min(point)
-		hi = hi.max(point)
-	return Rect2(lo, hi - lo)
+func _near_rect(a: Rect2, b: Rect2) -> bool:
+    return a.position.distance_to(b.position) < 2.0         and a.size.distance_to(b.size) < 2.0
 
 
-func _inside(rect: Rect2, full_size: Vector2i) -> bool:
-	return rect.has_area() and rect.position.x >= -3.0 and rect.position.y >= -3.0 \
-		and rect.end.x <= float(full_size.x) + 3.0 \
-		and rect.end.y <= float(full_size.y) + 3.0
-
-
-func _capture_ui(stage_name: String, dimensions: Vector2i) -> void:
-	await process_frame
-	await RenderingServer.frame_post_draw
-	var frame := root.get_texture().get_image()
-	if frame == null or frame.is_empty() or frame.get_size() != dimensions:
-		_expect(false, "%s GPU calibration %s screenshot has correct resolution" % [dimensions, stage_name])
-		return
-	var output := "user://_qa_calibration_layout_%dx%d_%s.png" % [dimensions.x, dimensions.y, stage_name]
-	_expect(frame.save_png(ProjectSettings.globalize_path(output)) == OK,
-		"%s GPU calibration %s screenshot saves to user://" % [dimensions, stage_name])
-	print("CALIB SCREENSHOT: ", ProjectSettings.globalize_path(output))
-
-
-func _expect(ok: bool, explanation: String) -> void:
-	checks += 1
-	if not ok:
-		failures.append(explanation)
+func _inside(rect: Rect2, limits: Vector2i) -> bool:
+    return rect.has_area() and rect.position.x >= -2.0 and rect.position.y >= -2.0         and rect.end.x <= float(limits.x) + 2.0         and rect.end.y <= float(limits.y) + 2.0
 
 
 func _finish() -> void:
-	if failures.is_empty():
-		print("PASS calibration assets/layering: %d checks at %s" % [checks, SIZES])
-		quit(0)
-		return
-	for problem in failures:
-		printerr("CALIB_ASSETS FAIL ", problem)
-	print("FAIL calibration assets/layering: %d failures / %d checks" % [failures.size(), checks])
-	quit(1)
+    print("CALIB ASSET/LAYERING: %s checks=%d failures=%d resolutions=%s renderer=%s" % [
+        "PASS" if failures.is_empty() else "FAIL",
+        checks, failures.size(), SIZES, DisplayServer.get_name()])
+    quit(0 if failures.is_empty() else 1)

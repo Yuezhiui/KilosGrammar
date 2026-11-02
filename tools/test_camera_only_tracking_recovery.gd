@@ -1,7 +1,8 @@
 extends SceneTree
 
-# No physical webcam is opened. Uses authenticated synthetic camera packets,
-# a localhost UDP receiver and mock PID for gameplay freeze/resume feedback.
+# No physical webcam is opened. Use source-fresh, epoch-bound foreground
+# packets and a localhost mock transport to prove that spectators/pose loss
+# NEVER globally pause a live round, while invalid inputs cannot steer.
 const WRAPPER := "res://ui/play/gameplay/gameplay.tscn"
 const SELECTION := "res://ui/play/activity/play_activity.tscn"
 const GAMES := ["Catch the Word", "Balloon Popping", "Human Plane"]
@@ -56,23 +57,21 @@ func _check_game(activity: String, service: Node) -> void:
 	var student_id := 71
 	_send(service, activity, 1, true, student_id, 0.5)
 	if activity == "Human Plane":
-		# The current Human Plane contract is ONE neutral, same locked student,
-		# with fresh torso steering and one observed wrist. It no longer uses
-		# old synthetic LEFT/CENTER/RIGHT side calibration for flight.
-		var neutral := {"valid": true, "mode": "plane_stationary", "center": 0.5,
-			"camera_center_x": 0.5, "locked_id": student_id,
-			"sensitivity": 0.18, "deadzone": 0.018,
-			"steering_mode": "centered_torso_x_one_wrist"}
-		service.set("plane_calibration", neutral.duplicate(true))
-		service.set("calibration", neutral.duplicate(true))
+		# Human Plane now uses ONE neutral hold + fresh two-wrist bank input;
+		# a historical torso-only packet cannot authorize steering.
+		_check(bool(service.set_stationary_plane_calibration(0.5, -1, 0.5, 0.01)),
+			activity + ": authentic stationary neutral calibration accepted")
 	else:
-		service.set("plane_calibration", {})
-		service.set("calibration", {"valid": true, "left": 0.2, "center": 0.5, "right": 0.8})
+		_check(bool(service.set_calibration(0.2, 0.5, 0.8)),
+			activity + ": measured body calibration accepted")
+	var saved_calibration: Dictionary = service.calibration.duplicate(true)
 	var wrapper := (load(WRAPPER) as PackedScene).instantiate() as Control
 	root.add_child(wrapper)
+	wrapper.set_process(false) # Tick the wrapper manually for deterministic QA.
 	wrapper.set_context({
 		"activity": activity, "camera_live": true, "keyboard_mode": false,
-		"topic": "Noun", "game_mode": "Seconds", "difficulty": "Easy"
+		"topic": "Noun", "game_mode": "Seconds", "difficulty": "Easy",
+		"calibration_measured": true, "start_countdown": true
 	})
 	await process_frame
 	await process_frame
@@ -89,42 +88,76 @@ func _check_game(activity: String, service: Node) -> void:
 	_check(notice_rect.position.x >= 0.0 and notice_rect.position.y >= 0.0
 		and notice_rect.end.x <= root.size.x and notice_rect.end.y <= root.size.y,
 		activity + ": tracking instruction stays inside the viewport")
+	# A camera Play must complete its 3-2-1 with a VERIFIED measured pose
+	# before these runtime presence rules apply. Do not inspect a frozen
+	# pre-GO game as if a spectator had automatically paused it.
+	for _count in range(3):
+		wrapper.call("_on_countdown_tick")
+	_check(String(wrapper.guided_stage) == "" and game.process_mode == Node.PROCESS_MODE_INHERIT,
+		activity + ": authenticated camera GO starts actual gameplay")
+	game.set_process(false)
 	wrapper.call("_process", 0.02)
-	_check(bool(wrapper.get("last_pose_valid")), activity + ": accepts valid calibrated pose")
+	_check(bool(wrapper.get("last_pose_valid")), activity + ": accepts verified fresh calibrated pose")
+	_check(_has_steering_authority(game, activity),
+		activity + ": verified foreground player has active camera input")
+	var initial_scene_id: int = game.get_instance_id()
+	var original_time: float = float(game.get("time_remaining"))
+	var original_score: int = int(game.get("score"))
 
-	# First real zero-person inference freezes the minigame immediately and
-	# displays COME BACK without a grace delay.
+	# An actual empty source frame immediately revokes that player's input,
+	# but never freezes the shared game, changes screens or shows an
+	# obstructing ONE PLAYER notice.
 	_send(service, activity, 0, false, -1)
-	wrapper.call("_process", 0.71)
-	_check(notice.visible and (notice.get_node("Title") as Label).text == "COME BACK INTO THE CAMERA!",
-		activity + ": first fresh empty frame immediately shows Come Back")
-	_check(game.process_mode == Node.PROCESS_MODE_DISABLED,
-		activity + ": gameplay freezes instead of unfairly consuming time/lives")
-	_check(bool((service.get("calibration") as Dictionary).get("valid", false)),
-		activity + ": valid calibration survives loss of pose")
-	# Subsequent fresh empty-camera observations keep the warning visible.
+	wrapper.call("_process", 0.02)
+	_check(_no_global_pause(wrapper, game, notice),
+		activity + ": empty frame does not pause/interrupt live gameplay")
+	_check(not bool(wrapper.get("last_pose_valid")) and _input_revoked(game, activity),
+		activity + ": lost player immediately loses steering/gesture authority")
+	_check(service.calibration == saved_calibration,
+		activity + ": saved calibration survives genuine empty frame")
+	# Simulate real ticking of the still-enabled minigame rather than
+	# trusting process_mode or a hidden pause widget alone.
+	game.call("_process", 0.10)
+	_check(float(game.get("time_remaining")) < original_time and
+		int(game.get("score")) == original_score,
+		activity + ": game clock advances without ghost points while pose absent")
 	_send(service, activity, 0, false, -1)
-	wrapper.call("_process", 0.60)
-	_check(notice.visible, activity + ": repeated fresh empty-camera observations show return instruction")
+	wrapper.call("_process", 0.02)
+	_check(_no_global_pause(wrapper, game, notice) and _input_revoked(game, activity),
+		activity + ": repeated missing frames keep game running without stale movement")
+
 	_send(service, activity, 1, false, -1)
-	wrapper.call("_process", 0.80)
-	_check(not notice.visible and game.process_mode != Node.PROCESS_MODE_DISABLED \
-		and not bool(wrapper.get("last_pose_valid")),
-		activity + ": a single bystander with no usable pose keeps game playing without stale motion")
-	_send(service, activity, 2, false, -1)
-	wrapper.call("_process", 0.01)
-	_check(notice.visible and (notice.get_node("Title") as Label).text == "ONLY ONE PLAYER!"
-		and game.process_mode == Node.PROCESS_MODE_DISABLED,
-		activity + ": two detected players display one-player-only instruction")
+	wrapper.call("_process", 0.02)
+	_check(_no_global_pause(wrapper, game, notice) and _input_revoked(game, activity),
+		activity + ": one unverified bystander cannot steer or pause game")
+	# Two raw people are normal when one is a distant spectator: one
+	# epoch-bound foreground child remains eligible for steering.
+	_send(service, activity, 2, true, student_id, 0.65, 1)
+	wrapper.call("_process", 0.02)
+	_check(_no_global_pause(wrapper, game, notice) and
+		bool(wrapper.get("last_pose_valid")) and _has_steering_authority(game, activity),
+		activity + ": remote spectator does not interrupt verified foreground child")
+	# Two similarly near people are ambiguous. Neither a visitor's raw
+	# pose nor a retained steering command may control the student.
+	_send(service, activity, 2, false, -1, 0.65, 2, true)
+	wrapper.call("_process", 0.02)
+	_check(_no_global_pause(wrapper, game, notice) and _input_revoked(game, activity),
+		activity + ": ambiguous extra person causes NO global pause and NO ghost steering")
+	_check(not bool(wrapper.get("last_pose_valid")) and not service.has_valid_pose(),
+		activity + ": two overlapping people revoke authoritative motion")
 
 	_send(service, activity, 1, true, student_id, 0.65)
 	wrapper.call("_process", 0.02)
-	_check(not notice.visible, activity + ": notice disappears when player returns")
-	_check(game.process_mode == Node.PROCESS_MODE_INHERIT,
-		activity + ": gameplay automatically resumes without another calibration")
-	_check(bool(wrapper.get("last_pose_valid")), activity + ": fresh pose drives movement again")
-	_check(bool((service.get("calibration") as Dictionary).get("valid", false)),
-		activity + ": saved calibration remains valid")
+	_check(_no_global_pause(wrapper, game, notice) and
+		wrapper.active_game.get_instance_id() == initial_scene_id,
+		activity + ": same scene runs without replaying calibration after crowd exits")
+	_check(bool(wrapper.get("last_pose_valid")) and _has_steering_authority(game, activity),
+		activity + ": original epoch's fresh pose restores movement authority")
+	if activity == "Human Plane":
+		_check(absf(float(game._bank_input)) > 0.05,
+			activity + ": refreshed two-wrist bank data supplies actual signed steering")
+	_check(service.calibration == saved_calibration,
+		activity + ": saved calibration remains valid after crowd exits")
 	_check_no_keyboard_steering(game, activity)
 
 	service.worker_pid = -1 # Wrapper _exit_tree must not kill this Godot process.
@@ -136,24 +169,68 @@ func _check_game(activity: String, service: Node) -> void:
 
 
 func _send(service: Node, activity: String, people: int,
-		valid: bool, student_id: int, x: float = 0.5) -> void:
+		valid: bool, student_id: int, x: float = 0.5,
+		foreground: int = -1, ambiguous: bool = false) -> void:
+	var near_count := people if foreground < 0 else foreground
+	var eligible := valid and near_count == 1 and not ambiguous
 	var packet := _locked_status(activity, student_id)
 	packet.merge({"token": service.session_token, "kind": "pose",
-		"camera_phase": "tracking", "state": "tracking", "people": people,
-		"pose": valid, "lock_state": "locked" if valid and people == 1 else "waiting",
-		"x": x if valid and people == 1 else -1.0,
-		"plane_steering": x, "plane_steering_valid": valid and people == 1}, true)
+		"camera": true, "camera_phase": "tracking", "state": "tracking",
+		"camera_frame_age_ms": 20, "people": people,
+		"foreground_people": near_count, "foreground_ambiguous": ambiguous,
+		"occupancy_verified": eligible, "player_lock_epoch": 1,
+		"pose": eligible, "lock_state": "locked" if eligible else "ambiguous" if ambiguous else "waiting",
+		"x": x if eligible else -1.0,
+		"plane_bank": clampf((x - 0.5) * 4.0, -1.0, 1.0),
+		"plane_bank_valid": eligible, "plane_t_pose_valid": eligible,
+		"plane_steering_valid": eligible, "plane_neutral_valid": eligible,
+		"hand_observation_valid": eligible, "hand_up": false}, true)
 	service.call("_apply_pose_packet", packet, Time.get_ticks_msec())
 
 
 func _locked_status(activity: String, student_id: int) -> Dictionary:
 	var sample := {"state": "tracking", "camera": true, "pose": true,
-		"people": 1, "lock_state": "locked", "locked_id": student_id,
+		"people": 1, "foreground_people": 1, "foreground_ambiguous": false,
+		"occupancy_verified": true, "player_lock_epoch": 1,
+		"lock_state": "locked", "locked_id": student_id,
 		"camera_frame_age_ms": 20, "x": 0.5, "camera_phase": "tracking"}
 	if activity == "Human Plane":
-		sample["plane_steering"] = 0.5
-		sample["plane_steering_valid"] = true
+		sample["plane_bank"] = 0.0
+		sample["plane_bank_valid"] = true
 	return sample
+
+
+func _no_global_pause(wrapper: Control, game: Control, notice: Control) -> bool:
+	return not notice.visible and game.process_mode != Node.PROCESS_MODE_DISABLED \
+		and not bool(wrapper.tracking_suspended) and String(wrapper.guided_stage) == ""
+
+
+func _input_revoked(game: Control, activity: String) -> bool:
+	match activity:
+		"Catch the Word":
+			return not bool(game.body_input_active)
+		"Balloon Popping":
+			return not bool(game.hand_raise_tracking_valid) \
+				and is_zero_approx(float(game.body_target_timer)) \
+				and is_zero_approx(float(game.launcher_velocity))
+		"Human Plane":
+			return not bool(game.airplane_pose_active) \
+				and is_zero_approx(float(game._bank_input)) \
+				and is_zero_approx(float(game._bank_velocity))
+	return false
+
+
+func _has_steering_authority(game: Control, activity: String) -> bool:
+	match activity:
+		"Catch the Word":
+			return bool(game.body_input_active)
+		"Balloon Popping":
+			return float(game.body_target_timer) > 0.0
+		"Human Plane":
+			# Centered T-pose (bank=0) is still VERIFIED camera authority.
+			# Separate assertions check nonzero steering after tilted input.
+			return bool(game.airplane_pose_active)
+	return false
 
 
 func _check_no_keyboard_steering(game: Control, activity: String) -> void:
@@ -170,9 +247,11 @@ func _check_no_keyboard_steering(game: Control, activity: String) -> void:
 			game.set("launcher_velocity", 0.0)
 			initial = float(game.get("launcher_x"))
 		"Human Plane":
-			game.set("target_x_norm", 0.5)
-			game.set("plane_x_norm", 0.5)
-			initial = 0.5
+			# Keyboard must be isolated from previously requested camera bank.
+			# The prior live pose can leave a real velocity that would move the
+			# aircraft even without keyboard input; explicitly release it first.
+			game.call("set_airplane_pose_active", false)
+			initial = float(game.get("plane_x_norm"))
 	Input.action_press("ui_right")
 	match activity:
 		"Catch the Word":
