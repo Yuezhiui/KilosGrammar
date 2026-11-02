@@ -117,8 +117,8 @@ func _test_restore_and_queued_lookup() -> void:
 	# Emulate a previously completed OFFLINE registration persisted locally.
 	# Only exact-ID matches may fill from local recovery: the name roster is
 	# incomplete until the real PostgreSQL connection returns.
-	var durable: Dictionary = RECOVERY.enqueue_profile("R-001", "Recovered Student", "Grade 4")
-	_check(bool(durable.get("ok", false)), "Offline profile is durably stored in isolated user:// outbox")
+	var durable: Dictionary = RECOVERY.enqueue_completed_round("R-001", "Recovered Student", "Grade 4", "Noun", "Seconds", "Easy", "Balloon Popping", 9, "time_up")
+	_check(bool(durable.get("ok", false)), "Offline completed student+score is atomic in isolated user:// outbox")
 	field.text = "R-001"
 	field.text_changed.emit(field.text)
 	form.call("_autofill_if_unchanged")
@@ -140,12 +140,19 @@ func _test_restore_and_queued_lookup() -> void:
 		"Fake server restoration flips Main Menu to online at lifecycle event")
 	await process_frame
 	_check(not (_mock.call("find_pending", "register_student", "recovery_replay") as Dictionary).is_empty(),
-		"Recovered service begins replaying durable offline student registration")
+		"Recovered service begins atomic completed-round profile stage")
 	_check(_mock.call("reply", "register_student", {
 		"ok": true, "status": 201,
 		"data": {"student": {"student_id": "R-001", "student_name": "Recovered Student"}},
 	}, "recovery_replay"), "PostgreSQL accepts and acknowledges exact queued student profile")
-	_check(RECOVERY.pending().is_empty(), "Acknowledged recovery profile removed from isolated outbox")
+	_check(RECOVERY.pending().size() == 1 and RECOVERY.pending()[0].get("kind") == "completed_round",
+		"Profile acknowledgment alone must not delete atomic completed score")
+	_check(not (_mock.call("find_pending", "complete_round", "recovery_replay") as Dictionary).is_empty(),
+		"After profile acceptance composite event dispatches stored score")
+	_check(_mock.call("reply", "complete_round", {
+		"ok": true, "status": 201, "data": {"score": {"score": 9}, "recovery_pending": false},
+	}, "recovery_replay"), "Completed score acknowledgment follows profile in original order")
+	_check(RECOVERY.pending().is_empty(), "Both acknowledged writes remove atomic event")
 	field.text = "R-002"
 	field.text_changed.emit(field.text)
 	form.call("_autofill_if_unchanged")
@@ -293,8 +300,8 @@ func _test_results_save_truth() -> void:
 	var round := {"student_id": "R-001", "student_name": "Recovered Student",
 		"grade_section": "Grade 4", "game_style": "Noun",
 		"game_mode": "Seconds", "difficulty": "Easy",
-		"activity": "Balloon Popping", "round_completed": true, "score": 19,
-		"entry_source": "play", "student_lookup_connected": true}
+		"activity": "Balloon Popping", "round_completed": true, "completion_reason": "time_up", "time_remaining": 0.0, "score": 19,
+		"entry_source": "play", "student_lookup_connected": false}
 	_check(RECOVERY.pending().is_empty(), "No recovery event left from registration or leaderboard tests")
 	_app.set("current_route", "gameplay")
 	_app.call("_on_panel_requested", "results", round)
@@ -304,7 +311,7 @@ func _test_results_save_truth() -> void:
 	_check(_mock.call("count", "complete_round") == initial_saves,
 		"Offline completion creates no network call while service is disconnected")
 	var queued: Array[Dictionary] = RECOVERY.pending()
-	_check(queued.size() == 1 and queued[0].get("kind", "") == "score"
+	_check(queued.size() == 1 and queued[0].get("kind", "") == "completed_round"
 		and (queued[0].get("data", {}) as Dictionary).get("score", -1) == 19,
 		"Offline completed score is durably stored in test-only recovery journal")
 	_check(bool((_app.get("session_state") as Dictionary).get("recovery_pending", false)),
@@ -319,6 +326,13 @@ func _test_results_save_truth() -> void:
 	_mock.call("heartbeat")
 	_check(bool(_app.get("database_online")), "Restored fake server returns online before new completion")
 	await process_frame
+	var registration: Dictionary = _mock.call("find_pending", "register_student", "recovery_replay")
+	_check(registration.get("args", {}).get("student_id", "") == "R-001",
+		"New offline completed round registers exact identity first")
+	_check(_mock.call("reply", "register_student", {
+		"ok": true, "status": 201, "data": {"student": {"student_id": "R-001"}},
+	}, "recovery_replay"), "Composite profile accepted before replaying score")
+	_check(RECOVERY.pending().size() == 1, "Registration ack cannot drop unconfirmed score")
 	var oldest: Dictionary = _mock.call("find_pending", "complete_round", "recovery_replay")
 	_check(oldest.get("args", {}).get("score", -1) == 19
 		and oldest.get("args", {}).get("student_id", "") == "R-001",
@@ -334,11 +348,12 @@ func _test_results_save_truth() -> void:
 	await process_frame
 	var next_round := round.duplicate(true)
 	next_round["score"] = 20
+	next_round["student_lookup_connected"] = true
 	_app.set("current_route", "gameplay")
 	_app.call("_on_panel_requested", "results", next_round)
 	await process_frame
 	_check(_mock.call("count", "complete_round") == initial_saves + 2,
-		"Completed online round adds exactly one new replay request after first acknowledgement")
+		"Known existing student's next completed round sends exactly one score request")
 	results = _app.get("active_panel") as Control
 	_check(RECOVERY.pending().size() == 1
 		and (RECOVERY.pending()[0].get("data", {}) as Dictionary).get("score", -1) == 20,

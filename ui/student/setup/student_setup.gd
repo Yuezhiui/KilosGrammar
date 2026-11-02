@@ -3,6 +3,7 @@ extends Control
 signal requested(target: String, payload: Dictionary)
 signal student_autofill_requested(field: String, exact_value: String, edit_epoch: int)
 signal student_id_edited(student_id: String)
+signal database_setup_requested()
 
 const GAME_STYLES := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const GAME_MODES := ["Seconds", "Lives"]
@@ -45,6 +46,8 @@ var _autofill_value := ""
 var _validation_label: Label
 var _continue_button: Button
 var _profile_status: Label
+var _database_setup_button: Button
+var _database_setup_required := false
 var _player_one_summary: Label
 var _player_two_panel: Panel
 var _profile_board: TextureRect
@@ -89,6 +92,7 @@ func set_context(new_context: Dictionary) -> void:
 	_invalidate_autofill()
 	_registration_error = ""
 	_lookup_pending = false
+	_database_setup_required = false
 	context = new_context.duplicate(true)
 	if not _should_prefill(new_context):
 		_clear_setup_context()
@@ -152,11 +156,13 @@ func apply_autofill_result(profile: Dictionary, field: String, query: String, ed
 
 
 func show_database_status(message: String, connected: bool = false, setup_required: bool = false) -> void:
-	# The form intentionally contains no connection/lookup UI. Keep state for
-	# score persistence, but don't disclose internal database errors to pupils.
+	# Only expose the explicit, secure setup action when configuration is needed.
+	# Do not display raw connection errors, passwords or diagnostic details.
 	# The router sends a read-only ID check before Play can open Game Selection.
 	# Give a small, neutral status in the existing editor-authored label; an
 	# asynchronous check must not look like a dead green Continue button.
+	_database_setup_required = setup_required and not connected
+	_refresh_database_setup_button()
 	var upper := message.strip_edges().to_upper()
 	_lookup_pending = upper.begins_with("CHECKING STUDENT ID") or upper.begins_with("STILL CHECKING STUDENT ID")
 	# An absent ID is an ordinary first-time Play registration. A fresh
@@ -167,6 +173,18 @@ func show_database_status(message: String, connected: bool = false, setup_requir
 	if not _lookup_pending:
 		context["database_connected"] = connected
 	_update_validation()
+
+
+func _refresh_database_setup_button() -> void:
+	if is_instance_valid(_database_setup_button):
+		_database_setup_button.visible = _database_setup_required and _setup_phase == "profile"
+
+
+func _request_database_setup() -> void:
+	# The host launches its interactive secure wizard only on this real action.
+	# Never invoke a local process, database query or credential flow from here.
+	if _database_setup_required and _setup_phase == "profile" and is_inside_tree():
+		database_setup_requested.emit()
 
 
 func show_registration_error(message: String) -> void:
@@ -256,6 +274,8 @@ func _build_ui() -> void:
 	_game_card = _setup_stage.get_node("GameSetupCard") as Control
 	_student_id_edit = _student_card.get_node("StudentIdGroup/StudentIdEdit") as LineEdit
 	_profile_status = _student_card.get_node("ProfileStatus") as Label
+	_database_setup_button = _student_card.get_node("DatabaseSetupButton") as Button
+	_database_setup_button.pressed.connect(_request_database_setup)
 	_default_id_text_color = _student_id_edit.get_theme_color("font_color")
 	_name_edit = _student_card.get_node("StudentNameGroup/StudentNameEdit") as LineEdit
 	_grade_edit = _student_card.get_node("GradeSectionGroup/GradeSectionEdit") as LineEdit
@@ -420,6 +440,7 @@ func _show_setup_phase() -> void:
 	_profile_board.visible = profile_active
 	_game_board.visible = not profile_active
 	_game_heading.visible = not profile_active
+	_refresh_database_setup_button()
 	if profile_active:
 		_player_two_form_open = false
 	if is_instance_valid(_player_one_summary):

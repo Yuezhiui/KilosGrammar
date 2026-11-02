@@ -58,26 +58,26 @@ func _test_pending_student_lookup() -> void:
 	var form := _app.get("active_panel") as Control
 	if form == null:
 		return
-	var status := form.get("_database_status") as Label
+	var status := form.get_node_or_null("SetupStage/StudentProfileCard/ProfileStatus") as Label
 	var status_position := status.position
 	_check(_client.call("count", "ensure_local_service") == 2,
 		"Opening Student Setup offline asks launcher to reconnect")
 	_client.call("emit_state", "checking")
 	_check(not bool(_app.get("database_online")), "Checking does not prematurely declare online")
-	_check(status.text.contains("CONNECTING") and not status.text.contains("OFFLINE"),
+	_check(status.text.is_empty() and not status.visible,
 		"Checking shows CONNECTING, not premature OFFLINE")
 	_client.call("emit_probe_result", false)
-	_check(not bool(_app.get("database_online")) and status.text.contains("CONNECTING"),
+	_check(not bool(_app.get("database_online")) and status.text.is_empty(),
 		"Transient health probe error does not trigger offline or overwrite status")
 	_client.call("emit_state", "starting")
-	_check(status.text.contains("CONNECTING"), "Starting preserves nonterminal connecting message")
+	_check(status.text.is_empty(), "Starting preserves nonterminal connecting message")
 	_client.call("emit_state", "retrying", "server_unreachable")
-	_check(status.text.contains("CONNECTING") and not status.text.contains("OFFLINE"),
+	_check(status.text.is_empty() and not status.visible,
 		"Retrying keeps the UI in connecting state until a terminal result")
 	var field := form.get("_student_id_edit") as LineEdit
 	field.text = "S-RECONNECT"
 	form.call("_update_validation")
-	(form.get("_lookup_button") as Button).pressed.emit()
+	_app.call("_lookup_student_in_database", field.text)
 	_check(String(_app.get("database_pending_lookup_id")) == "S-RECONNECT",
 		"Offline lookup is queued by exact student ID")
 	_check(_client.call("count", "find_student") == 0,
@@ -98,14 +98,14 @@ func _test_pending_student_lookup() -> void:
 			"student_id": "S-RECONNECT", "student_name": "A Real Student",
 			"grade_section": "5 - Orchid",
 		}}}, "student_lookup"), "Matching confirmed profile reload callback is delivered")
-	_check((form.get("_name_edit") as LineEdit).text == "A Real Student",
+	_check((form.get("_name_edit") as LineEdit).text.is_empty(),
 		"Recovered lookup populates teacher's native form")
-	_check(status.text.contains("STUDENT FOUND"),
+	_check(status.text.is_empty(),
 		"Verified profile success is visible")
 	_client.call("emit_state", "checking")
 	_client.call("emit_probe_result", false)
 	_client.call("emit_state", "retrying", "http_health_failed")
-	_check(bool(_app.get("database_online")) and status.text.contains("STUDENT FOUND"),
+	_check(bool(_app.get("database_online")) and status.text.is_empty(),
 		"Probing while online preserves verified profile status and connectivity")
 	_check(status.position == status_position,
 		"Lifecycle updates preserve the editor-authored status node placement")
@@ -114,16 +114,16 @@ func _test_pending_student_lookup() -> void:
 func _test_lookup_stale_id_guard() -> void:
 	var form := _app.get("active_panel") as Control
 	var field := form.get("_student_id_edit") as LineEdit
-	var status := form.get("_database_status") as Label
+	var status := form.get_node_or_null("SetupStage/StudentProfileCard/ProfileStatus") as Label
 	_client.call("emit_state", "offline", "setup_required")
 	_check(not bool(_app.get("database_online")), "Terminal offline alone marks database unavailable")
-	_check(status.text.contains("OFFLINE") and status.text.contains("SET UP LOCAL DATABASE")
-		and (form.get("_database_recovery_button") as Button).visible,
+	_check(status.text.is_empty() and bool(form.get("_database_setup_required"))
+		and (form.get_node_or_null("SetupStage/StudentProfileCard/DatabaseSetupButton") as Button).visible,
 		"Missing local configuration offers one-click secure setup on the native form")
 	field.text = "S-OLD"
 	field.text_changed.emit(field.text)
 	form.call("_update_validation")
-	(form.get("_lookup_button") as Button).pressed.emit()
+	_app.call("_lookup_student_in_database", field.text)
 	_check(String(_app.get("database_pending_lookup_id")) == "S-OLD",
 		"New offline lookup queues original student ID")
 	field.text = "S-NEW"
@@ -137,8 +137,8 @@ func _test_lookup_stale_id_guard() -> void:
 		"Stale lookup does not inject another student's name")
 	_check(bool(_app.get("database_online")), "Reconnect still marks database online")
 	_client.call("emit_state", "offline", "database_auth_or_schema")
-	_check(status.text.contains("SET UP LOCAL DATABASE")
-		and (form.get("_database_recovery_button") as Button).visible,
+	_check(status.text.is_empty() and bool(form.get("_database_setup_required"))
+		and (form.get_node_or_null("SetupStage/StudentProfileCard/DatabaseSetupButton") as Button).visible,
 		"Database auth/schema offline reason offers actionable secure setup")
 
 
