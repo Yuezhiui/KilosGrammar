@@ -102,8 +102,8 @@ func _run() -> void:
             prefix + " reference keeps one clean filter row above the table")
         var main: Array[Control] = []
         for pair in [
-                ["BackButton", "HOME.png"], ["ImportCsvButton", "IMPORT.png"],
-                ["ExportCsvButton", "EXPORT.png"], ["DeleteAllButton", "DELETE.png"]]:
+                ["BackButton", "HOME.png"], ["ImportCsvButton", "IMPORT_transparent.png"],
+                ["ExportCsvButton", "EXPORT_transparent.png"], ["DeleteAllButton", "DELETE_transparent.png"]]:
             var button := scene.get_node("%" + pair[0]) as Button
             var image_style := button.get_theme_stylebox("normal") as StyleBoxTexture
             if pair[0] == "BackButton":

@@ -14,6 +14,14 @@
 [ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_3.png" id="NoticeHeader"]
 [ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_4.png" id="NoticeWoodBoard"]
 [ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_5.png" id="NoticeOkay"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/IMPORT_transparent.png" id="NewImportAction"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/EXPORT_transparent.png" id="NewExportAction"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/DELETE_transparent.png" id="NewDeleteAction"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/SCORE.png" id="NewScoreSort"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/HIGHEST SCORE.png" id="NewHighestSort"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/LOWEST SCORE.png" id="NewLowestSort"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/STUDENT ID.png" id="NewStudentIdSort"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/GRADE LEVEL.png" id="NewGradeSort"]
 [ext_resource type="Texture2D" uid="uid://c1hnw6023f15n" path="res://Components/Credits/Redesign/HOME.png" id="LeaderboardHomeArtwork"]
 [ext_resource type="Texture2D" uid="uid://chi18crtpcpah" path="res://Components/Leaderboard/Secondary/transparent_dropdown_arrow.png" id="NativeArrowHidden"]
 [ext_resource type="Texture2D" uid="uid://07j2oiaypxwm" path="res://Components/Leaderboard/NotifLeader/notif background.png" id="NotifBoard"]
@@ -112,21 +120,56 @@ atlas = ExtResource("Oct24_IMPORT")
 region = Rect2(54, 104, 2069, 510)
 
 [sub_resource type="StyleBoxTexture" id="ImportActionStyle"]
-texture = SubResource("Oct24ImportAtlas")
+texture = ExtResource("NewImportAction")
 
 [sub_resource type="AtlasTexture" id="Oct24ExportAtlas"]
 atlas = ExtResource("Oct24_EXPORT")
 region = Rect2(54, 103, 2073, 515)
 
 [sub_resource type="StyleBoxTexture" id="ExportActionStyle"]
-texture = SubResource("Oct24ExportAtlas")
+texture = ExtResource("NewExportAction")
 
 [sub_resource type="AtlasTexture" id="Oct24DeleteAtlas"]
 atlas = ExtResource("Oct24_DELETE")
 region = Rect2(59, 108, 2055, 510)
 
 [sub_resource type="StyleBoxTexture" id="DeleteActionStyle"]
-texture = SubResource("Oct24DeleteAtlas")
+texture = ExtResource("NewDeleteAction")
+
+[sub_resource type="AtlasTexture" id="ScoreSortBaseCrop"]
+atlas = ExtResource("NewScoreSort")
+region = Rect2(0, 142, 2170, 436)
+
+[sub_resource type="StyleBoxTexture" id="ScoreSortBaseStyle"]
+texture = SubResource("ScoreSortBaseCrop")
+
+[sub_resource type="AtlasTexture" id="HighestScoreSortCrop"]
+atlas = ExtResource("NewHighestSort")
+region = Rect2(0, 142, 2170, 436)
+
+[sub_resource type="StyleBoxTexture" id="HighestScoreSortStyle"]
+texture = SubResource("HighestScoreSortCrop")
+
+[sub_resource type="AtlasTexture" id="LowestScoreSortCrop"]
+atlas = ExtResource("NewLowestSort")
+region = Rect2(0, 142, 2170, 436)
+
+[sub_resource type="StyleBoxTexture" id="LowestScoreSortStyle"]
+texture = SubResource("LowestScoreSortCrop")
+
+[sub_resource type="AtlasTexture" id="StudentIdSortCrop"]
+atlas = ExtResource("NewStudentIdSort")
+region = Rect2(0, 142, 2170, 436)
+
+[sub_resource type="StyleBoxTexture" id="StudentIdSortStyle"]
+texture = SubResource("StudentIdSortCrop")
+
+[sub_resource type="AtlasTexture" id="GradeLevelSortCrop"]
+atlas = ExtResource("NewGradeSort")
+region = Rect2(0, 142, 2170, 436)
+
+[sub_resource type="StyleBoxTexture" id="GradeLevelSortStyle"]
+texture = SubResource("GradeLevelSortCrop")
 
 [sub_resource type="AtlasTexture" id="NotifBoardCrop"]
 atlas = ExtResource("NotifBoard")
@@ -241,6 +284,8 @@ script = ExtResource("1_script")
 style_filter_skins = Array[StyleBoxTexture]([SubResource("Oct24StyleDefault"), SubResource("SelectedNounStyle"), SubResource("SelectedPronounStyle"), SubResource("SelectedVerbStyle"), SubResource("SelectedAdjectiveStyle"), SubResource("SelectedAdverbStyle")])
 mode_filter_skins = Array[StyleBoxTexture]([SubResource("Oct24ModeDefault"), SubResource("SelectedSecondsStyle"), SubResource("SelectedLivesStyle")])
 difficulty_filter_skins = Array[StyleBoxTexture]([SubResource("Oct24DifficultyDefault"), SubResource("SelectedEasyStyle"), SubResource("SelectedNormalStyle"), SubResource("SelectedHardStyle")])
+sort_filter_skins = Array[StyleBoxTexture]([SubResource("ScoreSortBaseStyle"), SubResource("HighestScoreSortStyle"), SubResource("LowestScoreSortStyle"), SubResource("StudentIdSortStyle"), SubResource("GradeLevelSortStyle")])
+sort_student_name_skin = SubResource("TeacherFilterField")
 
 [node name="Background" type="TextureRect" parent="." unique_id=1181573477]
 layout_mode = 1
@@ -398,7 +443,8 @@ popup/item_3/id = 3
 
 [node name="GradeLevelFilter" type="OptionButton" parent="."]
 unique_name_in_owner = true
-editor_description = "Teacher Grade Level filter. Options reflect saved grade values from the local scoreboard."
+editor_description = "Retained for legacy data/QA compatibility; All Grades control intentionally hidden from visible Leaderboard."
+visible = false
 layout_mode = 0
 offset_left = 149.0
 offset_top = 235.0
@@ -418,7 +464,8 @@ popup/item_0/id = 0
 
 [node name="SectionFilter" type="OptionButton" parent="."]
 unique_name_in_owner = true
-editor_description = "Teacher Section filter, dynamically populated for the selected grade."
+editor_description = "Retained for legacy data/QA compatibility; All Sections control intentionally hidden from visible Leaderboard."
+visible = false
 layout_mode = 0
 offset_left = 321.0
 offset_top = 235.0
@@ -439,9 +486,9 @@ popup/item_0/id = 0
 unique_name_in_owner = true
 editor_description = "Teacher student name or ID search across the saved leaderboard."
 layout_mode = 0
-offset_left = 505.0
+offset_left = 149.0
 offset_top = 235.0
-offset_right = 809.0
+offset_right = 748.0
 offset_bottom = 274.0
 theme_override_colors/font_color = Color(0.19, 0.16, 0.13, 1)
 theme_override_colors/font_placeholder_color = Color(0.37, 0.33, 0.28, 1)
@@ -454,30 +501,36 @@ clear_button_enabled = true
 
 [node name="ScoreSort" type="OptionButton" parent="."]
 unique_name_in_owner = true
-editor_description = "Teacher sorting for score, name, student ID, or Grade Level and Section."
+editor_description = "One real responsive score sort dropdown. Five editor-authored image skins plus native-text Student Name A-Z fallback; underlying grade/section data remains sortable."
 layout_mode = 0
-offset_left = 818.0
-offset_top = 235.0
+offset_left = 760.0
+offset_top = 231.0
 offset_right = 1118.0
-offset_bottom = 274.0
+offset_bottom = 279.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.19, 0.16, 0.13, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
+theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
 theme_override_font_sizes/font_size = 15
-theme_override_styles/normal = SubResource("TeacherFilterField")
-theme_override_styles/hover = SubResource("TeacherFilterField")
-theme_override_styles/pressed = SubResource("TeacherFilterField")
+theme_override_styles/normal = SubResource("ScoreSortBaseStyle")
+theme_override_styles/hover = SubResource("ScoreSortBaseStyle")
+theme_override_styles/pressed = SubResource("ScoreSortBaseStyle")
+theme_override_icons/arrow = ExtResource("NativeArrowHidden")
 selected = 0
-item_count = 5
-popup/item_0/text = "Highest Score"
+item_count = 6
+popup/item_0/text = "SCORE"
 popup/item_0/id = 0
-popup/item_1/text = "Student Name A-Z"
+popup/item_1/text = "Highest Score"
 popup/item_1/id = 1
-popup/item_2/text = "Student ID A-Z"
+popup/item_2/text = "Lowest Score"
 popup/item_2/id = 2
-popup/item_3/text = "Grade Level / Section"
+popup/item_3/text = "Student ID A-Z"
 popup/item_3/id = 3
-popup/item_4/text = "Lowest Score"
+popup/item_4/text = "Grade Level"
 popup/item_4/id = 4
+popup/item_5/text = "Student Name A-Z"
+popup/item_5/id = 5
 
 [node name="TableHeaderArt" type="TextureRect" parent="." unique_id=1597921345]
 layout_mode = 0

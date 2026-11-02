@@ -61,17 +61,13 @@ func _check_filters(board: Control, size_key: String) -> void:
 	_check(grade.item_count == 4 and grade.get_item_text(1) == "Grade 4" and grade.get_item_text(2) == "Grade 5"
 		and grade.get_item_text(3) == "Grade 6" or grade.item_count == 5,
 		size_key + " grade options include saved grade values and unspecified")
-	_check(_select_text(grade, "Grade 4"), size_key + " Grade 4 exists")
+	_check(_select_text(grade, "Grade 4"), size_key + " parsed saved Grade 4 remains in hidden selector")
 	board.call("_on_grade_changed")
-	_check(_rows(board).size() == 3, size_key + " Grade 4 shows 3 matching score rows")
-	_check(_select_text(section, "Ruby"), size_key + " Ruby section selectable")
+	_check(_rows(board).size() == DATA.size(), size_key + " hidden grade is inactive and cannot unexpectedly filter")
+	_check(_select_text(section, "Ruby"), size_key + " section parsing still recognizes Ruby")
 	board.call("_on_filter_changed")
-	_check(_rows(board).size() == 2, size_key + " Grade 4 Ruby includes only Alice's two scores")
-	_check(_select_text(grade, "Grade 5"), size_key + " Grade 5 exists")
-	board.call("_on_grade_changed")
-	_check(section.selected == 0 and _rows(board).size() == 1,
-		size_key + " changing grade resets unavailable section and shows Carla")
-	_check(_select_text(grade, "All Grades"), size_key + " all-grades selectable")
+	_check(_rows(board).size() == DATA.size(), size_key + " hidden section is inactive and cannot unexpectedly filter")
+	_check(_select_text(grade, "All Grades"), size_key + " hidden grade reset supported for legacy context")
 	board.call("_on_grade_changed")
 	search.text = "sAnToS"
 	board.call("_on_filter_changed")
@@ -81,19 +77,15 @@ func _check_filters(board: Control, size_key: String) -> void:
 	_check(_rows(board).size() == 2, size_key + " exact ID substring searches 2 scores")
 	search.text = ""
 	board.call("_on_filter_changed")
-	sort.select(4)
+	_check(_select_text(sort, "LOWEST SCORE") or _select_text(sort, "Lowest Score"), size_key + " lowest score sort available")
 	board.call("_on_filter_changed")
-	_check(_rows(board).size() == 6 and str(_rows(board)[0].get("student_id")) == "ID-008",
-		size_key + " lowest-score sorting displays minimum first")
-	sort.select(0)
+	_check(_rows(board).size() == 6 and str(_rows(board)[0].get("student_id")) == "ID-008", size_key + " ascending score")
+	_check(_select_text(sort, "HIGHEST SCORE") or _select_text(sort, "Highest Score") or _select_text(sort, "SCORE"), size_key + " highest score sort available")
 	board.call("_on_filter_changed")
-	_check(str(_rows(board)[0].get("student_id")) == "ID-007",
-		size_key + " highest-score sorting restores maximum first")
-	sort.select(3)
+	_check(str(_rows(board)[0].get("student_id")) == "ID-007", size_key + " descending score")
+	_check(_select_text(sort, "GRADE LEVEL") or _select_text(sort, "Grade Level"), size_key + " grade sort available")
 	board.call("_on_filter_changed")
-	_check(str(_rows(board)[0].get("student_id")) == "ID-005"
-		and str(_rows(board)[2].get("student_id")) == "ID-004",
-		size_key + " grade-and-section sorting groups Grade 4 Jade before Ruby")
+	_check(str(_rows(board)[0].get("student_id")) == "ID-005" and str(_rows(board)[2].get("student_id")) == "ID-004", size_key + " grade-section ordering")
 
 
 func _check_signals(board: Control, size_key: String) -> void:
@@ -151,7 +143,7 @@ func _stress_filters(board: Control, size_key: String) -> void:
 		grade.select(0)
 		board.call("_on_grade_changed")
 		search.text = "id-004" if cycle % 2 == 0 else ""
-		sort.select(cycle % 5)
+		sort.select(cycle % sort.item_count)
 		board.call("_on_filter_changed")
 		_check(_rows(board).size() == (2 if cycle % 2 == 0 else 6),
 			size_key + " stress refresh cycle %d respects exact teacher search" % cycle)
@@ -173,8 +165,10 @@ func _test_viewport(viewport: Vector2i) -> void:
 		"teacher_authorized": true})
 	await process_frame
 	var key := str(viewport)
-	for name in ["GradeLevelFilter", "SectionFilter", "StudentSearch", "ScoreSort",
-		"ImportCsvButton", "ExportCsvButton", "DeleteAllButton"]:
+	for hidden in ["GradeLevelFilter", "SectionFilter"]:
+		var control := board.get_node_or_null("%" + hidden) as Control
+		_check(control != null and not control.is_visible_in_tree(), key + " hidden legacy filter " + hidden)
+	for name in ["StudentSearch", "ScoreSort", "ImportCsvButton", "ExportCsvButton", "DeleteAllButton"]:
 		var control := board.get_node_or_null("%" + name) as Control
 		_check(control != null and control.is_visible_in_tree(), key + " visible control " + name)
 		if control:
@@ -182,6 +176,9 @@ func _test_viewport(viewport: Vector2i) -> void:
 			_check(rect.position.x >= 0.0 and rect.position.y >= 0.0 and rect.end.x <= viewport.x
 				and rect.end.y <= viewport.y,
 				key + " layout control in viewport " + name)
+	var search_box := board.get_node("%StudentSearch") as Control
+	var sort_box := board.get_node("%ScoreSort") as Control
+	_check(search_box.size.x >= 220 and sort_box.size.x >= 180, key + " widened search and sort in freed row")
 	_check(_rows(board).size() == DATA.size(), key + " unfiltered all server rows displayed")
 	var first_row := (board.get_node("%ScoreRows") as VBoxContainer).get_child(0)
 	var name_cell := first_row.get_node("StudentName") as Label

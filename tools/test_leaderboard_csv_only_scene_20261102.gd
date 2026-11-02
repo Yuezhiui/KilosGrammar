@@ -66,10 +66,11 @@ func _run() -> void:
         _check(exports.size() == 1, key+" pending request cannot be duplicated")
         panel.call("_on_final_delete_pressed")
         _check(deletes.is_empty(),key+" Delete cannot bypass two-stage confirmation")
-        _check(panel.get_node_or_null("%GradeLevelFilter") is OptionButton and
-            panel.get_node_or_null("%SectionFilter") is OptionButton and
-            panel.get_node_or_null("%ScoreSort") != null,
-            key+" grade/section/sort remain active")
+        var grade := panel.get_node_or_null("%GradeLevelFilter") as OptionButton
+        var section := panel.get_node_or_null("%SectionFilter") as OptionButton
+        _check(grade != null and section != null and not grade.is_visible_in_tree()
+            and not section.is_visible_in_tree() and panel.get_node_or_null("%ScoreSort") != null,
+            key+" legacy grade/section selectors hidden, sort retained")
         panel.queue_free()
         await process_frame
     print("XLSX THREE BUTTON SCENE: %s checks=%d failures=%d" %

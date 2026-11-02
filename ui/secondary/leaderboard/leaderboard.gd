@@ -22,6 +22,11 @@ const FILTER_INVISIBLE_ARROW := preload("res://Components/Leaderboard/Secondary/
 @export var style_filter_skins: Array[StyleBoxTexture] = []
 @export var mode_filter_skins: Array[StyleBoxTexture] = []
 @export var difficulty_filter_skins: Array[StyleBoxTexture] = []
+## Art states correspond to Score, Highest, Lowest, Student ID, Grade Level.
+## Student Name retains its native readable label because no matching PNG
+## was supplied; all six options stay available in the popup.
+@export var sort_filter_skins: Array[StyleBoxTexture] = []
+@export var sort_student_name_skin: StyleBox
 # Each node keeps its independent editor-authored position. Only proportional
 # viewport scaling/centering happens at runtime, never per-button hardcoded XY.
 const RESPONSIVE_NODE_NAMES := [
@@ -225,6 +230,13 @@ func _request_main() -> void:
 func _on_filter_changed() -> void:
 	_update_filter_appearance()
 	_visible_rows.clear()
+	# All Grades / All Sections were removed from the visible interface.
+	# Keep their nodes for old read-only QA and grade-data sorting, but never
+	# let a stale invisible selection silently filter out student records.
+	if not grade_level_filter.visible and grade_level_filter.selected != 0:
+		grade_level_filter.select(0)
+	if not section_filter.visible and section_filter.selected != 0:
+		section_filter.select(0)
 	var selected_minigame := _selected_minigame
 	var selected_style := style_filter.get_item_text(style_filter.selected).to_upper()
 	var selected_mode := mode_filter.get_item_text(mode_filter.selected).to_upper()
@@ -257,6 +269,8 @@ func _on_filter_changed() -> void:
 
 
 func _on_grade_changed() -> void:
+	if not grade_level_filter.visible:
+		grade_level_filter.select(0)
 	_rebuild_section_options()
 	# A newly selected grade begins with ALL its sections; keeping an old
 	# similarly named section can silently hide other pupils in the new grade.
@@ -309,6 +323,8 @@ func _rebuild_grade_options() -> void:
 	for value in keys:
 		grade_level_filter.add_item(str(value))
 	_select_item_by_text(grade_level_filter, previous)
+	if not grade_level_filter.visible:
+		grade_level_filter.select(0)
 	_rebuild_section_options()
 
 
@@ -326,6 +342,8 @@ func _rebuild_section_options() -> void:
 	for name in names:
 		section_filter.add_item(str(name))
 	_select_item_by_text(section_filter, previous)
+	if not section_filter.visible:
+		section_filter.select(0)
 
 
 func _select_item_by_text(selector: OptionButton, title: String) -> void:
@@ -337,14 +355,14 @@ func _select_item_by_text(selector: OptionButton, title: String) -> void:
 
 
 func _sort_visible_rows() -> void:
-	var kind := score_sort.selected
+	var kind := score_sort.get_item_text(score_sort.selected).to_upper()
 	_visible_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		match kind:
-			1:
+			"STUDENT NAME A-Z":
 				return _record_text(a, 1).naturalnocasecmp_to(_record_text(b, 1)) < 0
-			2:
+			"STUDENT ID A-Z":
 				return _student_id(a).naturalnocasecmp_to(_student_id(b)) < 0
-			3:
+			"GRADE LEVEL":
 				var a_grade := _grade_level(a)
 				var b_grade := _grade_level(b)
 				if a_grade != b_grade:
@@ -353,8 +371,9 @@ func _sort_visible_rows() -> void:
 				var b_section := _section_name(b)
 				if a_section != b_section:
 					return a_section.naturalnocasecmp_to(b_section) < 0
-			4:
+			"LOWEST SCORE":
 				return float(a.get("score", 0)) < float(b.get("score", 0))
+			# SCORE and HIGHEST SCORE intentionally mean maximum score first.
 		return float(a.get("score", 0)) > float(b.get("score", 0))
 	)
 
@@ -378,6 +397,26 @@ func _update_filter_appearance() -> void:
 		for key in ["font_color", "font_hover_color", "font_pressed_color",
 			"font_hover_pressed_color", "font_focus_color"]:
 			selector.add_theme_color_override(key, Color.TRANSPARENT)
+	# The score sort is one real OptionButton with independently authored skins
+	# for the five supplied drop-down artwork states, not five dummy buttons.
+	var selection := score_sort.selected
+	var named_fallback := score_sort.get_item_text(selection).to_upper() == "STUDENT NAME A-Z"
+	var sort_style: StyleBox = null
+	if named_fallback:
+		sort_style = sort_student_name_skin
+	elif selection >= 0 and selection < sort_filter_skins.size():
+		sort_style = sort_filter_skins[selection]
+	if sort_style != null:
+		for state in ["normal", "hover", "pressed", "hover_pressed"]:
+			score_sort.add_theme_stylebox_override(state, sort_style)
+	if named_fallback:
+		score_sort.remove_theme_icon_override("arrow")
+	else:
+		score_sort.add_theme_icon_override("arrow", FILTER_INVISIBLE_ARROW)
+	for key in ["font_color", "font_hover_color", "font_pressed_color",
+			"font_hover_pressed_color", "font_focus_color"]:
+		score_sort.add_theme_color_override(key,
+			Color(0.19, 0.16, 0.13, 1.0) if named_fallback else Color.TRANSPARENT)
 
 
 func _redraw_rows() -> void:
@@ -965,3 +1004,6 @@ func _set_transfer_pending_state(pending: bool) -> void:
 	for button in [import_button, export_button, delete_button]:
 		if is_instance_valid(button):
 			button.disabled = pending
+			var artwork := button.get_node_or_null("Artwork") as CanvasItem
+			if is_instance_valid(artwork):
+				artwork.modulate.a = 0.54 if pending else 1.0

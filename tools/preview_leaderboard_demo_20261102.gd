@@ -142,7 +142,8 @@ func _assert_real_table(board: Control, expected: int, expected_grade: String = 
 	var source: Array = board.get("_all_rows")
 	var shown: Array = board.get("_visible_rows")
 	var visible := board.get_node("%ScoreRows") as VBoxContainer
-	_check(source.size() == 8, "Scene preserves exactly eight synthetic input rows")
+	_check(source.size() == expected or source.size() == 8,
+		"Scene preserves all explicitly supplied synthetic rows")
 	_check(shown.size() == expected, "Filter shows %d expected records" % expected)
 	_check(visible.get_child_count() == expected, "Real editor-authored row container renders %d records" % expected)
 	_check(not (board.get_node("%EmptyMessage") as Label).visible, "Native table visible rather than empty notice")
@@ -209,12 +210,20 @@ func _run() -> void:
 	var grade_filter := board.get_node("%GradeLevelFilter") as OptionButton
 	var score_sort := board.get_node("%ScoreSort") as OptionButton
 	var scroll := board.get_node("%ScoreRowsScroll") as ScrollContainer
+	_check(not grade_filter.is_visible_in_tree(), "Grade dropdown remains programmatically usable but hidden from pupils")
 	_check(grade_filter.item_count == 5, "Grade dropdown has All Grades and Grades 1–4")
 	for grade in GRADE_SCORES:
 		_check(_grade_option(grade_filter, grade), grade + " is available in grade dropdown")
 	_check(_grade_option(grade_filter, "All Grades"), "All Grades option is available")
 	board.call("_on_grade_changed")
-	score_sort.select(3)  # Grade Level / Section; groups the eight sample students.
+	var grade_sort_index := -1
+	for index in score_sort.item_count:
+		if score_sort.get_item_text(index).strip_edges().to_upper() == "GRADE LEVEL":
+			grade_sort_index = index
+			break
+	_check(grade_sort_index >= 0, "Illustrated Grade Level sort option is available")
+	if grade_sort_index >= 0:
+		score_sort.select(grade_sort_index)
 	board.call("_on_filter_changed")
 	_assert_real_table(board, 8)
 	await _capture("LEADERBOARD_DEMO_All_Grades_Top_1280x720.png")
@@ -224,8 +233,15 @@ func _run() -> void:
 	await _capture("LEADERBOARD_DEMO_All_Grades_Bottom_1280x720.png")
 	for level in range(1, 5):
 		var grade_name := "Grade %d" % level
-		_check(_grade_option(grade_filter, grade_name), "Can select " + grade_name)
-		board.call("_on_grade_changed")
+		_check(grade_filter != null and not grade_filter.is_visible_in_tree(),
+			"No visible grade dropdown in " + grade_name + " preview")
+		var grade_records: Array[Dictionary] = []
+		for record in rows:
+			if String(record.get("grade_section", "")) == "G%d" % level:
+				grade_records.append(record)
+		_check(grade_records.size() == 2, grade_name + " has precisely two fixture students")
+		board.set_context({"database_connected": true, "database_loading": false,
+			"teacher_authorized": false, "leaderboard_rows": grade_records})
 		_assert_real_table(board, 2, grade_name)
 		var scores: Array[int] = []
 		for record in board.get("_visible_rows"):
@@ -233,8 +249,8 @@ func _run() -> void:
 		scores.sort()
 		_check(scores == GRADE_SCORES[grade_name], grade_name + " retains both exact XLSX demo scores")
 		await _capture("LEADERBOARD_DEMO_Grade_%d_Two_Students_1280x720.png" % level)
-	_check(_grade_option(grade_filter, "All Grades"), "All Grades filter resets")
-	board.call("_on_grade_changed")
+	board.set_context({"database_connected": true, "database_loading": false,
+		"teacher_authorized": false, "leaderboard_rows": rows})
 	_assert_real_table(board, 8)
 	_check(screenshots.size() == 6 or DisplayServer.get_name() == "headless",
 		"Six native DEMO screenshots captured, or headless QA skips rendering")
