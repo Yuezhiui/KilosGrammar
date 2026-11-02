@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://ui/vision/calibration/multiplayer_calibration.gd" id="1"]
 [ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/BACKGROUND.png" id="2"]
@@ -8,7 +8,9 @@
 [ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/1.png" id="6"]
 [ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/2.png" id="7"]
 [ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/3.png" id="8"]
-[ext_resource type="Texture2D" path="res://Components/Gameplay/Balloon Popping/Art/reference/prompt_blank.png" id="9"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/Original UI/calibration.png" id="10_calibration_original"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/Original UI/Player1.png" id="11_player_one_original"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/Original UI/Player2.png" id="12_player_two_original"]
 
 [sub_resource type="Shader" id="WoodenFrameTransparentCenter"]
 code = "shader_type canvas_item;
@@ -65,50 +67,18 @@ offset_right = 1280.0
 offset_bottom = 720.0
 mouse_filter = 2
 
-[node name="WoodenHeaderBoard" type="NinePatchRect" parent="Stage"]
-editor_description = "Real blank gold-edged wooden-style plaque prompt_blank.png. The requested exact English-header PNG is absent, so editable Header and Subtitle labels overlay this original illustrated plaque."
+[node name="ArtCalibrationHeader" type="TextureRect" parent="Stage"]
+editor_description = "ORIGINAL calibration.png 2170x725 from Downloads/CALIBRATION. Contains exact title, subtitle, wood board and clovers in one PNG; independent in Godot editor. No recreated labels."
+z_index = 2
 layout_mode = 0
-offset_left = 340.0
-offset_top = 7.0
-offset_right = 940.0
-offset_bottom = 140.0
+offset_left = 370.0
+offset_top = -4.0
+offset_right = 910.0
+offset_bottom = 176.0
 mouse_filter = 2
-texture = ExtResource("9")
-patch_margin_left = 43
-patch_margin_top = 39
-patch_margin_right = 43
-patch_margin_bottom = 39
-
-[node name="Header" type="Label" parent="Stage"]
-editor_description = "Editable ENGLISH CALIBRATION title over the original illustrated blank plaque."
-layout_mode = 0
-offset_left = 365.0
-offset_top = 30.0
-offset_right = 915.0
-offset_bottom = 92.0
-theme_override_colors/font_color = Color(0.39, 0.18, 0.065, 1)
-theme_override_colors/font_outline_color = Color(1, 0.9, 0.68, 1)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = ExtResource("5")
-theme_override_font_sizes/font_size = 65
-text = "CALIBRATION"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Subtitle" type="Label" parent="Stage"]
-editor_description = "Exact requested English instruction on the gold-edged plaque, independent of the two camera previews."
-layout_mode = 0
-offset_left = 320.0
-offset_top = 87.0
-offset_right = 960.0
-offset_bottom = 122.0
-theme_override_colors/font_color = Color(0.38, 0.18, 0.07, 1)
-theme_override_colors/font_outline_color = Color(1, 0.9, 0.68, 1)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = ExtResource("5")
-theme_override_font_sizes/font_size = 29
-text = "STAY INSIDE THE SQUARE"
-horizontal_alignment = 1
+texture = ExtResource("10_calibration_original")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="PlayerOne" type="Control" parent="Stage"]
 editor_description = "Static left wood-framed view; its virtual crop follows Player One while inference remains FULL FRAME from a single shared webcam."
@@ -206,41 +176,25 @@ text = "READY"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="NamePlate" type="NinePatchRect" parent="Stage/PlayerOne"]
-editor_description = "Fixed independent wood/gold nameplate from genuine prompt_blank.png; the PLAYER ONE text remains editor authored."
+[node name="NamePlate" type="TextureRect" parent="Stage/PlayerOne"]
+editor_description = "ORIGINAL Player1.png 1527x564 from Downloads/CALIBRATION; contains player icon, decorative tape, gold pin and PLAYER ONE lettering. Native image preserved, displayed without stretching."
 layout_mode = 0
-offset_left = 143.0
-offset_top = 295.0
-offset_right = 442.0
-offset_bottom = 354.0
+offset_left = 145.0
+offset_top = 290.0
+offset_right = 429.0
+offset_bottom = 394.9
 mouse_filter = 2
-texture = ExtResource("9")
-patch_margin_left = 42
-patch_margin_top = 30
-patch_margin_right = 42
-patch_margin_bottom = 29
-
-[node name="Name" type="Label" parent="Stage/PlayerOne"]
-layout_mode = 0
-offset_left = 155.0
-offset_top = 303.0
-offset_right = 432.0
-offset_bottom = 344.0
-theme_override_colors/font_color = Color(0.34, 0.18, 0.075, 1)
-theme_override_colors/font_outline_color = Color(1, 0.93, 0.75, 1)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = ExtResource("5")
-theme_override_font_sizes/font_size = 34
-text = "PLAYER ONE"
-horizontal_alignment = 1
+texture = ExtResource("11_player_one_original")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Status" type="Label" parent="Stage/PlayerOne"]
 editor_description = "Readiness / camera instruction owned only by Player One; no global pause or other-player substitution."
 layout_mode = 0
 offset_left = 42.0
-offset_top = 352.0
+offset_top = 400.0
 offset_right = 545.0
-offset_bottom = 386.0
+offset_bottom = 434.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.13, 0.25, 0.24, 1)
 theme_override_constants/outline_size = 5
@@ -345,41 +299,25 @@ text = "READY"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="NamePlate" type="NinePatchRect" parent="Stage/PlayerTwo"]
-editor_description = "Independent fixed Player Two illustrated gold/wood nameplate, original prompt_blank.png art."
+[node name="NamePlate" type="TextureRect" parent="Stage/PlayerTwo"]
+editor_description = "ORIGINAL Player2.png 1527x564 from Downloads/CALIBRATION, no recreated label or distorted image; independent of Player One texture."
 layout_mode = 0
-offset_left = 143.0
-offset_top = 295.0
-offset_right = 442.0
-offset_bottom = 354.0
+offset_left = 145.0
+offset_top = 290.0
+offset_right = 429.0
+offset_bottom = 394.9
 mouse_filter = 2
-texture = ExtResource("9")
-patch_margin_left = 42
-patch_margin_top = 30
-patch_margin_right = 42
-patch_margin_bottom = 29
-
-[node name="Name" type="Label" parent="Stage/PlayerTwo"]
-layout_mode = 0
-offset_left = 155.0
-offset_top = 303.0
-offset_right = 432.0
-offset_bottom = 344.0
-theme_override_colors/font_color = Color(0.34, 0.18, 0.075, 1)
-theme_override_colors/font_outline_color = Color(1, 0.93, 0.75, 1)
-theme_override_constants/outline_size = 2
-theme_override_fonts/font = ExtResource("5")
-theme_override_font_sizes/font_size = 34
-text = "PLAYER TWO"
-horizontal_alignment = 1
+texture = ExtResource("12_player_two_original")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Status" type="Label" parent="Stage/PlayerTwo"]
 editor_description = "Readiness / camera instruction owned only by Player Two; unchanged full-frame AI detection."
 layout_mode = 0
 offset_left = 42.0
-offset_top = 352.0
+offset_top = 400.0
 offset_right = 545.0
-offset_bottom = 386.0
+offset_bottom = 434.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.13, 0.25, 0.24, 1)
 theme_override_constants/outline_size = 5
@@ -392,9 +330,9 @@ horizontal_alignment = 1
 editor_description = "Teacher-friendly physical floor markers only; a normal RGB webcam does not provide accurate meter measurements."
 layout_mode = 0
 offset_left = 145.0
-offset_top = 568.0
+offset_top = 624.0
 offset_right = 1135.0
-offset_bottom = 613.0
+offset_bottom = 671.0
 theme_override_colors/font_color = Color(1, 0.94, 0.73, 1)
 theme_override_colors/font_outline_color = Color(0.2, 0.13, 0.08, 1)
 theme_override_constants/outline_size = 6
