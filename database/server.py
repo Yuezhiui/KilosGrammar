@@ -27,6 +27,7 @@ from .recovery_store import (
     RecoveryStore, UnknownStudentForScore,
 )
 from .storage import MAX_BULK_ROWS, BulkLimitExceeded, PostgreSQLStore, SchemaNotReady, StudentIdentityConflict
+from .xlsx_export import encoded_workbook, grade_filter_number, selected_students, student_details
 
 LEGACY_MINIGAME = "Legacy"
 LEGACY_CSV_COLUMNS = ("student_id", "student_name", "grade_section", "game_style", "game_mode", "difficulty", "score")
@@ -327,11 +328,41 @@ class API:
     def _handle(self, method: str, target: str, body: Any) -> tuple[int, dict[str, Any]]:
         parsed = urlsplit(target)
         path = parsed.path.rstrip("/") or "/"
-        if path.startswith("/data/") and parsed.query:
+        reporting_routes = {"/data/export_xlsx", "/data/export/xlsx", "/data/students"}
+        if path.startswith("/data/") and parsed.query and path not in reporting_routes:
             raise ApiError(400, "invalid_input", "Unexpected query parameters")
         if method == "GET" and path == "/data/export":
             students, scores = self.store.export_snapshot()
             return 200, {"csv": _csv_export(students, scores), "students": len(students), "scores": len(scores)}
+        if method == "GET" and path in reporting_routes:
+            # Only teacher-authorized /data/ routes expose the full student
+            # roster, including profiles with no scores. Never use the 500-row
+            # public leaderboard as a source for an XLSX/data backup.
+            filters = query_params(parsed.query, set(), {"grade", "grade_section", "student_id"})
+            grade = filters.get("grade")
+            if grade is not None and grade_filter_number(grade) is None:
+                raise ApiError(400, "invalid_input", "grade must be Grade 1 through Grade 12")
+            section = filters.get("grade_section")
+            if section is not None:
+                section = text_field(section, "grade_section")
+            identifier = filters.get("student_id")
+            if identifier is not None:
+                identifier = student_id_field(identifier)
+            students, scores = self.store.export_snapshot()
+            students, scores = selected_students(
+                students, scores, grade=grade, grade_section=section, student_id=identifier,
+            )
+            if path == "/data/students":
+                return 200, {"students": student_details(students, scores),
+                             "count": len(students), "score_count": len(scores),
+                             "timestamp_semantics": (
+                                 "completed_at is the latest saved record per game selection, "
+                                 "not every round; a changed CSV import may reset this timestamp"
+                             )}
+            try:
+                return 200, encoded_workbook(students, scores)
+            except ValueError:
+                raise ApiError(413, "xlsx_too_large", "Complete XLSX report exceeds the supported size") from None
         if method == "POST" and path == "/data/import":
             request = object_body(body, {"csv"})
             students, scores = _csv_import(request["csv"])

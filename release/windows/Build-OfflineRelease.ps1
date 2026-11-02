@@ -96,12 +96,12 @@ function Copy-One([string]$relative) {
 # Only the backend and worker files needed by exported process launches.
 foreach ($relative in @(
     'database\__init__.py', 'database\config.py', 'database\storage.py', 'database\recovery_store.py',
-    'database\server.py', 'database\migrate.py', 'database\requirements.txt',
+    'database\server.py', 'database\xlsx_export.py', 'database\migrate.py', 'database\requirements.txt',
     'database\configure_local.ps1', 'database\setup_from_game.ps1',
     'database\setup_local.ps1', 'database\run_local.ps1',
     'database\start_auto.ps1', 'database\README.md',
     'database\migrations\001_initial.sql', 'database\migrations\002_add_minigame.sql',
-    'ui\vision\pose_worker.py', 'ui\vision\student_lock.py', 'ui\vision\gesture_detector.py',
+    'ui\vision\pose_worker.py', 'ui\vision\student_lock.py', 'ui\vision\two_player_lock.py', 'ui\vision\gesture_detector.py',
     'ui\vision\requirements-pose.txt'
 )) { Copy-One $relative }
 

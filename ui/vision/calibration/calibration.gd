@@ -27,15 +27,15 @@ const ZONE_RIGHT_START := 0.64
 const ZONE_LEFT_END := 0.36
 
 const STAGE_TEXT := {
-	"CENTER": ["STAY IN THE CENTER", "MANATILI SA GITNA"],
-	"RIGHT": ["MOVE TO THE RIGHT", "GUMALAW SA KANAN"],
-	"LEFT": ["MOVE TO THE LEFT", "GUMALAW SA KALIWA"]
+	"CENTER": ["STAY IN THE CENTER", "Stay in the center"],
+	"RIGHT": ["MOVE TO THE RIGHT", "Move to the right"],
+	"LEFT": ["MOVE TO THE LEFT", "Move to the left"]
 }
 const PLANE_STAGE_TEXT := {
-	"CENTER": ["HOLD A T-POSE IN CENTER", "Manatili sa gitna • Ituwid ang mga braso sa T-pose"]
+	"CENTER": ["HOLD A T-POSE IN CENTER", "Stand in the middle with both arms extended"]
 }
-const BALLOON_DEFAULT_TEXT := ["KEEP BOTH HANDS DOWN", "Ibaba ang dalawang kamay"]
-const BALLOON_RAISE_TEXT := ["RAISE BOTH HANDS TO SHOOT", "Itaas ang dalawang kamay para pumutok"]
+const BALLOON_DEFAULT_TEXT := ["KEEP BOTH HANDS DOWN", "Keep both hands lowered"]
+const BALLOON_RAISE_TEXT := ["RAISE BOTH HANDS TO SHOOT", "Raise both hands to shoot"]
 const PLANE_STEERING_STABILITY := 0.16
 const PLANE_NEUTRAL_MAX_SPREAD := 0.16
 
@@ -46,6 +46,8 @@ var status_label: Label
 var latest_instruction_text := "" # Status for diagnostics; no retired label is recreated.
 var intro_overlay: Control
 var success_overlay: Control
+var success_subtitle: Label
+var authored_success_subtitle := ""
 var back_main_button: Button
 var intro_stage_visibility: Dictionary = {}
 var success_stage_visibility: Dictionary = {}
@@ -75,6 +77,7 @@ var pose_guide_balloon_raise_right: Control
 var pose_guide_plane_center: Control
 var pose_guide_plane_left: Control
 var pose_guide_plane_right: Control
+var neutral_instruction: Label
 var pose_default_by_zone: Dictionary = {}
 var pose_raise_by_zone: Dictionary = {}
 
@@ -147,6 +150,7 @@ func _bind_scene_nodes(stage: Control) -> void:
 	pose_guide_plane_center = stage.get_node_or_null("PoseGuides/PoseGuidePlaneCenter") as Control
 	pose_guide_plane_left = stage.get_node_or_null("PoseGuides/PoseGuidePlaneLeft") as Control
 	pose_guide_plane_right = stage.get_node_or_null("PoseGuides/PoseGuidePlaneRight") as Control
+	neutral_instruction = stage.get_node_or_null("NeutralInstruction") as Label
 	# Explicit editor-authored per-zone guides, never runtime-translated.
 	# PoseGuideDefault remains the CENTER pose; Human Plane guides are separate.
 	pose_default_by_zone = {
@@ -168,6 +172,9 @@ func _bind_scene_nodes(stage: Control) -> void:
 		art_countdown_nodes.append(stage.get_node_or_null("CountdownArtwork/ArtCountdown%d" % index) as Control)
 	intro_overlay = stage.get_node_or_null("IntroOverlay") as Control
 	success_overlay = stage.get_node_or_null("SuccessOverlay") as Control
+	success_subtitle = stage.get_node_or_null("SuccessOverlay/SuccessSubtitle") as Label
+	if is_instance_valid(success_subtitle):
+		authored_success_subtitle = success_subtitle.text
 	back_main_button = stage.get_node_or_null("Navigation/BackButton") as Button
 	if back_main_button:
 		back_main_button.pressed.connect(_go_back)
@@ -283,6 +290,8 @@ func set_context(value: Dictionary) -> void:
 	var previous_activity := String(context.get("activity", ""))
 	camera_entry_requested = not value.is_empty()
 	context = value.duplicate(true)
+	if is_instance_valid(success_subtitle):
+		success_subtitle.text = "Ready to play!" if _single_neutral_body_mode() else authored_success_subtitle
 	# Stale settings from previous menu routes must not enable keyboard play.
 	context["keyboard_mode"] = false
 	# set_context normally arrives during the introduction. If an existing
@@ -316,6 +325,13 @@ func _is_balloon_popping() -> bool:
 	return String(context.get("activity", "")).strip_edges() == "Balloon Popping"
 
 
+func _single_neutral_body_mode() -> bool:
+	# The dedicated multiplayer camera scene and Human Plane retain their own
+	# genuine capture protocols; never enter this mode for either.
+	return String(context.get("player_mode", "Single Player")).to_lower() != "multiplayer" \
+		and String(context.get("activity", "")).strip_edges() in ["Catch the Word", "Balloon Popping"]
+
+
 func _sample_matches_pose_phase(sample: Dictionary) -> bool:
 	# Balloon must prove BOTH wrists on this SAME authenticated YOLO packet.
 	# hand_up is only an either-hand shooting gesture; hand_up=false alone
@@ -340,6 +356,8 @@ func _sample_matches_pose_phase(sample: Dictionary) -> bool:
 
 
 func _capture_order() -> Array:
+	if _single_neutral_body_mode():
+		return ["NEUTRAL"]
 	# Balloon's six hand holds and Catch both visit CENTER→RIGHT→LEFT.
 	# Human Plane retains its single physical CENTER T-pose reference.
 	if _is_human_plane():
@@ -377,7 +395,9 @@ func _refresh_camera_status() -> void:
 		var feed_is_visible := PoseService.active and is_instance_valid(camera_inset) and camera_inset.texture != null
 		camera_unavailable.visible = not feed_is_visible and not intro_running and not success_running
 		if not PoseService.active:
-			camera_unavailable.text = "CAMERA UNAVAILABLE\nAsk your teacher to check the camera.\nWalang camera • Tawagin ang guro."
+			camera_unavailable.text = ("CAMERA UNAVAILABLE\nAsk your teacher to check the camera."
+				if _single_neutral_body_mode() else
+				"CAMERA UNAVAILABLE\nAsk your teacher to check the camera.")
 		else:
 			camera_unavailable.text = "CONNECTING TO LIVE CAMERA\nPlease stand where the camera can see you."
 	if is_instance_valid(status_label):
@@ -427,10 +447,16 @@ func _process(delta: float) -> void:
 			# A reconnect must supply new authenticated SOLO occupancy, but it
 			# cannot discard that completed round or send them back to CENTER.
 			# _has_fresh_raw_solo_on_camera checks the new packet's session.
-			_set_live_instruction("CAMERA RECONNECTING • Waiting for one student.\nKumokonekta ang kamera • Maghintay ng isang tao.")
+			if _single_neutral_body_mode():
+				_set_live_instruction("CAMERA RECONNECTING • Waiting for one student.")
+			else:
+				_set_live_instruction("CAMERA RECONNECTING • Wait for one student.")
 			return
 		_clear_previous_calibration_for_reentry()
-		_set_live_instruction("CAMERA SESSION CHANGED • CALIBRATE AGAIN.\nBagong camera session • Ulitin ang calibration.")
+		if _single_neutral_body_mode():
+			_set_live_instruction("CAMERA SESSION CHANGED • START A NEW NEUTRAL HOLD.")
+		else:
+			_set_live_instruction("CAMERA SESSION CHANGED • CALIBRATE AGAIN.")
 		return
 	if success_running:
 		# A finished round is LATCHED. Green skeletons, a wrist or a stable
@@ -442,7 +468,7 @@ func _process(delta: float) -> void:
 		if not _has_fresh_raw_solo_on_camera() \
 				or not bool(PoseService.calibration.get("valid", false)) \
 				or (_is_human_plane() and not bool(PoseService.plane_calibration.get("valid", false))):
-			_set_live_instruction("WAIT FOR ONE PERSON IN CAMERA • Calibration is saved.\nMaghintay ng isang tao • Nakatala ang calibration.")
+			_set_live_instruction("WAIT FOR ONE PERSON IN CAMERA • Calibration is saved.")
 			return
 		success_elapsed += tracking_delta
 		if success_elapsed >= SUCCESS_SECONDS:
@@ -465,11 +491,14 @@ func _process(delta: float) -> void:
 	if _is_human_plane():
 		_process_stationary_plane(tracking_delta)
 		return
+	if _single_neutral_body_mode():
+		_process_single_neutral_body(tracking_delta)
+		return
 	if not PoseService.active:
 		_reset_current_hold()
-		_set_live_instruction("CAMERA UNAVAILABLE • Ask your teacher for assistance.\nWalang camera • Tawagin ang guro.")
+		_set_live_instruction("CAMERA UNAVAILABLE • Ask your teacher for assistance.")
 		if is_instance_valid(progress_label):
-			progress_label.text = "Walang camera • Tawagin ang guro."
+			progress_label.text = "Camera unavailable • Ask your teacher."
 		return
 	if not _has_fresh_solo_pose():
 		# Tracking loss interrupts the CURRENT hold, not previously measured
@@ -485,14 +514,14 @@ func _process(delta: float) -> void:
 		if is_instance_valid(status_label):
 			status_label.text = detail.left(78)
 		if is_instance_valid(progress_label):
-			progress_label.text = "Bumalik sa kamera at sa maliwanag na kahon."
-		_set_live_instruction("%s\nBumalik sa kamera at sa maliwanag na kahon." % detail)
+			progress_label.text = "Return to the camera's visible playing area."
+		_set_live_instruction("%s\nReturn to the visible playing area." % detail)
 		return
 	var x := PoseService.player_x
 	var target: String = capture_order[live_step]
 	if not _inside_zone(target, x):
 		_reset_current_hold()
-		_set_live_instruction("%s • %s\nPumuwesto sa maliwanag na kahon." % STAGE_TEXT[target])
+		_set_live_instruction("%s • %s\nStand inside the highlighted area." % STAGE_TEXT[target])
 		return
 	if anchor_x < 0.0:
 		anchor_x = x
@@ -501,7 +530,7 @@ func _process(delta: float) -> void:
 		packet_gap_seconds = 0.0
 	if absf(x - anchor_x) > MAX_SAMPLE_SPREAD:
 		_reset_current_hold()
-		_set_live_instruction("MOVEMENT DETECTED • Stop moving, then hold for 3 seconds.\nMay galaw • Huminto at manatili nang 3 segundo.")
+		_set_live_instruction("MOVEMENT DETECTED • Stop moving, then hold for 3 seconds.")
 		return
 	var fresh_samples: Array[Dictionary] = PoseService.get_pose_samples_after(last_fresh_sample_id)
 	var has_fresh_packet := not fresh_samples.is_empty()
@@ -510,7 +539,7 @@ func _process(delta: float) -> void:
 		# can keep rendering the guide, but never advance the countdown.
 		if packet_gap_seconds > _allowed_packet_gap_seconds():
 			_reset_current_hold()
-			_set_live_instruction("POSE FRAMES PAUSED • Hold will restart after tracking resumes.\nNawala ang tracking • Uulit ang bilang.")
+			_set_live_instruction("POSE FRAMES PAUSED • Hold will restart after tracking resumes.")
 			return
 		if not fresh_samples.is_empty():
 			# Every source packet has its own strictly increasing worker timestamp.
@@ -521,11 +550,11 @@ func _process(delta: float) -> void:
 				if int(sample.get("people", -1)) != 1 \
 						or not _inside_zone(target, sample_x) or absf(sample_x - anchor_x) > MAX_SAMPLE_SPREAD:
 					_reset_current_hold()
-					_set_live_instruction("ONE PERSON ONLY • Keep your position steady.\nIsang tao lamang • Panatilihin ang puwesto.")
+					_set_live_instruction("ONE PERSON ONLY • Keep your position steady.")
 					return
 				if not _sample_matches_pose_phase(sample):
 					if _keep_hold_for_brief_wrist_dropout(tracking_delta, sample):
-						_set_live_instruction("KEEP YOUR POSITION • Hold paused while wrists are briefly hidden.\nPanatilihin ang puwesto • Sandaling naka-pause ang bilang.")
+						_set_live_instruction("KEEP YOUR POSITION • Hold paused while wrists are briefly hidden.")
 						return
 					_reset_current_hold()
 					var prompt: Array = BALLOON_RAISE_TEXT if balloon_pose_phase == 1 else BALLOON_DEFAULT_TEXT
@@ -545,7 +574,7 @@ func _process(delta: float) -> void:
 		packet_gap_seconds += tracking_delta
 		if packet_gap_seconds > _allowed_packet_gap_seconds():
 			_reset_current_hold()
-			_set_live_instruction("POSE FRAMES PAUSED • Hold will restart after tracking resumes.\nNawala ang tracking • Uulit ang bilang.")
+			_set_live_instruction("POSE FRAMES PAUSED • Hold will restart after tracking resumes.")
 			return
 	var remaining := maxi(0, ceili(HOLD_SECONDS - live_timer))
 	_update_hold_countdown()
@@ -558,7 +587,7 @@ func _process(delta: float) -> void:
 		_set_live_instruction("%s • %s: %d seconds\n%s • %s." % [
 			STAGE_TEXT[target][0], pose_prompt[0], remaining, STAGE_TEXT[target][1], pose_prompt[1]])
 	else:
-		_set_live_instruction("%s • HOLD STILL: %d seconds\n%s • Huwag gumalaw." % [STAGE_TEXT[target][0], remaining, STAGE_TEXT[target][1]])
+		_set_live_instruction("%s • HOLD STILL: %d seconds\n%s." % [STAGE_TEXT[target][0], remaining, STAGE_TEXT[target][1]])
 	if live_timer < HOLD_SECONDS or live_samples.size() < REQUIRED_SAMPLES:
 		return
 	var sum := 0.0
@@ -591,11 +620,91 @@ func _process(delta: float) -> void:
 	if good:
 		if is_instance_valid(progress_label):
 			progress_label.text = "CALIBRATION SUCCESSFUL • 3 REAL POSITIONS MEASURED"
-		_set_live_instruction("CALIBRATION COMPLETE! Preparing the game.\nTapos na ang calibration! Magsisimula na ang laro.")
+		_set_live_instruction("CALIBRATION COMPLETE! Preparing the game.")
 		_begin_success()
 	else:
 		_reset_live_samples()
-		_set_live_instruction("POSITIONS TOO CLOSE • Please repeat with wider LEFT and RIGHT movements.\nUlitin gamit ang mas malawak na paggalaw.")
+		_set_live_instruction("POSITIONS TOO CLOSE • Please repeat with wider LEFT and RIGHT movements.")
+
+
+func _process_single_neutral_body(delta: float) -> void:
+	# Catch and Balloon share ONE fresh 3-second neutral standing observation.
+	# The student may stand ANYWHERE visible in camera space; never require
+	# CENTER/RIGHT/LEFT zones, raised hands, or made-up side measurements.
+	if not _has_fresh_solo_pose():
+		if _keep_hold_for_brief_solo_dropout(delta):
+			plane_hold_invalid_seconds += maxf(delta, 0.0)
+			return
+		_reset_current_hold()
+		_set_live_instruction("ONE STUDENT IN CAMERA • Stand still for 3 seconds.")
+		if is_instance_valid(progress_label):
+			progress_label.text = "STAND STILL • WAITING FOR LIVE POSE"
+		return
+	var samples: Array[Dictionary] = PoseService.get_pose_samples_after(last_fresh_sample_id)
+	if samples.is_empty():
+		packet_gap_seconds += delta
+		if packet_gap_seconds > _allowed_packet_gap_seconds():
+			_reset_current_hold()
+			_set_live_instruction("POSE FRAMES PAUSED • Hold will restart.")
+		return
+	for sample: Dictionary in samples:
+		var sample_id := int(sample.get("id", -1))
+		var source_x := float(sample.get("x", -1.0))
+		var packet_when := float(sample.get("when", -1.0))
+		if sample_id <= last_fresh_sample_id or int(sample.get("people", -1)) != 1 \
+				or not is_finite(source_x) or source_x < 0.0 or source_x > 1.0 \
+				or not is_finite(packet_when) or packet_when < 0.0:
+			_reset_current_hold()
+			_set_live_instruction("ONE VISIBLE STUDENT ONLY • Please stand still.")
+			return
+		if plane_hold_started_when < 0.0:
+			anchor_x = source_x
+			plane_hold_started_when = packet_when
+			plane_last_sample_when = packet_when
+		if absf(source_x - anchor_x) > MAX_SAMPLE_SPREAD \
+				or (not live_samples.is_empty() and packet_when <= plane_last_sample_when) \
+				or packet_when - plane_last_sample_when > _allowed_packet_gap_seconds():
+			_reset_current_hold()
+			_set_live_instruction("MOVEMENT DETECTED • Stand still and restart the 3-second hold.")
+			return
+		plane_last_sample_when = packet_when
+		live_samples.append(source_x)
+		last_fresh_sample_id = sample_id
+	plane_hold_invalid_seconds += brief_solo_invalid_seconds
+	brief_solo_invalid_seconds = 0.0
+	live_timer = maxf(0.0, plane_last_sample_when - plane_hold_started_when - plane_hold_invalid_seconds)
+	packet_gap_seconds = 0.0
+	_update_hold_countdown()
+	var remaining := maxi(0, ceili(HOLD_SECONDS - live_timer))
+	if is_instance_valid(progress_label):
+		progress_label.text = "STAND STILL • %d SECONDS • %d / %d LIVE POSES" % [
+			remaining, live_samples.size(), REQUIRED_SAMPLES]
+	_set_live_instruction("STAND COMFORTABLY WHERE THE CAMERA CAN SEE YOU • %d SECONDS" % remaining)
+	if live_timer < HOLD_SECONDS or live_samples.size() < REQUIRED_SAMPLES:
+		return
+	# Robust median of actual source packet X; median deviation measures
+	# natural body jitter without implying physical LEFT or RIGHT movement.
+	var ordered := live_samples.duplicate()
+	ordered.sort()
+	var center := _plane_median(ordered)
+	var deviations: Array[float] = []
+	for value in ordered:
+		deviations.append(absf(value - center))
+	deviations.sort()
+	var noise := _plane_median(deviations)
+	if noise > 0.12 or not PoseService.has_method("set_neutral_body_calibration") \
+			or not PoseService.set_neutral_body_calibration(center, noise):
+		_reset_live_samples()
+		_set_live_instruction("STAND FULLY IN CAMERA VIEW AND KEEP STILL FOR 3 SECONDS.")
+		return
+	measured_points["center"] = center
+	measured_points["neutral_noise"] = noise
+	live_step = 1
+	_reset_current_hold()
+	if is_instance_valid(progress_label):
+		progress_label.text = "CALIBRATION SUCCESSFUL • NEUTRAL STANCE MEASURED"
+	_set_live_instruction("NEUTRAL CALIBRATION COMPLETE! Preparing the game.")
+	_begin_success()
 
 
 func _process_stationary_plane(delta: float) -> void:
@@ -605,14 +714,14 @@ func _process_stationary_plane(delta: float) -> void:
 		if _keep_hold_for_brief_solo_dropout(delta):
 			return
 		_reset_current_hold()
-		_set_live_instruction("ONE PERSON IN CAMERA • Stand alone in center.\nDapat iisang tao ang makita sa kamera.")
+		_set_live_instruction("ONE PERSON IN CAMERA • Stand alone in center.")
 		return
 	var fresh_samples: Array[Dictionary] = PoseService.get_pose_samples_after(last_fresh_sample_id)
 	if fresh_samples.is_empty():
 		packet_gap_seconds += delta
 		if packet_gap_seconds > _allowed_packet_gap_seconds():
 			_reset_current_hold()
-			_set_live_instruction("TRACKING PAUSED • Hold restarts after new pose frames.\nNawala ang tracking • Uulit ang bilang.")
+			_set_live_instruction("TRACKING PAUSED • Hold restarts after new pose frames.")
 		return
 	for sample: Dictionary in fresh_samples:
 		var sample_id := int(sample.get("id", -1))
@@ -626,7 +735,7 @@ func _process_stationary_plane(delta: float) -> void:
 		var packet_when := float(sample.get("when", -1.0))
 		if not bool(sample.get("plane_t_pose_valid", false)) \
 				and _keep_hold_for_brief_wrist_dropout(delta, sample):
-			_set_live_instruction("HOLD YOUR CENTER POSITION • Wrist tracking paused briefly.\nManatili sa gitna • Sandaling naka-pause ang bilang.")
+			_set_live_instruction("HOLD YOUR CENTER POSITION • Wrist tracking paused briefly.")
 			return
 		if int(sample.get("people", -1)) != 1 \
 			or not bool(sample.get("plane_t_pose_valid", false)) \
@@ -634,7 +743,7 @@ func _process_stationary_plane(delta: float) -> void:
 			or not is_finite(float(raw)) or absf(float(raw)) > 1.0 \
 			or not is_finite(packet_when) or camera_x < 0.28 or camera_x > 0.72:
 			_reset_current_hold()
-			_set_live_instruction("ONE PERSON • HOLD A FULL T-POSE IN CENTER.\nIsang tao • Iunat ang magkabilang braso sa gitna.")
+			_set_live_instruction("ONE PERSON • HOLD A FULL T-POSE IN CENTER.")
 			return
 		var steering := float(raw)
 		if plane_hold_started_when < 0.0:
@@ -647,7 +756,7 @@ func _process_stationary_plane(delta: float) -> void:
 				or packet_when <= plane_last_sample_when and not live_samples.is_empty() \
 				or packet_when - plane_last_sample_when > _allowed_packet_gap_seconds():
 			_reset_current_hold()
-			_set_live_instruction("MOVED FROM CENTER • Hold still again.\nGumalaw mula sa gitna • Manatiling nakapirmi.")
+			_set_live_instruction("MOVED FROM CENTER • Hold still again.")
 			return
 		plane_last_sample_when = packet_when
 		plane_hold_invalid_seconds += brief_solo_invalid_seconds
@@ -661,7 +770,7 @@ func _process_stationary_plane(delta: float) -> void:
 	var remaining := maxi(0, ceili(PLANE_HOLD_SECONDS - live_timer))
 	if is_instance_valid(progress_label):
 		progress_label.text = "CENTER STEADY • %d SEC • %d / %d LIVE POSES" % [remaining, live_samples.size(), REQUIRED_SAMPLES]
-	_set_live_instruction("HOLD YOUR ARMS OUT IN A T-POSE • %d SECONDS\nManatili sa gitna • Iunat ang dalawang braso." % remaining)
+	_set_live_instruction("HOLD YOUR ARMS OUT IN A T-POSE • %d SECONDS" % remaining)
 	if live_timer < PLANE_HOLD_SECONDS or live_samples.size() < REQUIRED_SAMPLES:
 		return
 		# Median and median-absolute-deviation reject incidental arm jitter.
@@ -693,7 +802,7 @@ func _process_stationary_plane(delta: float) -> void:
 	)
 	if not accepted:
 		_reset_live_samples()
-		_set_live_instruction("STAND COMFORTABLY IN THE CAMERA'S CENTER, THEN HOLD STILL.\nTumayo sa gitna at panatilihing nakapirmi.")
+		_set_live_instruction("STAND COMFORTABLY IN THE CAMERA'S CENTER, THEN HOLD STILL.")
 		return
 	live_step = 1
 	_reset_current_hold()
@@ -703,7 +812,7 @@ func _process_stationary_plane(delta: float) -> void:
 	_update_target_guide()
 	if is_instance_valid(progress_label):
 		progress_label.text = "CENTER CALIBRATED • WATCH LEFT AND RIGHT TURN GUIDES"
-	_set_live_instruction("CENTER COMPLETE • Watch the LEFT and RIGHT arm movement guides.\nTapos na sa gitna • Panoorin ang galaw ng braso sa kaliwa at kanan.")
+	_set_live_instruction("CENTER COMPLETE • Watch the LEFT and RIGHT arm movement guides.")
 	_announce_plane_demo_side("left")
 
 
@@ -814,6 +923,14 @@ func _set_stage_instruction() -> void:
 	var capture_order := _capture_order()
 	if live_step >= capture_order.size():
 		return
+	if _single_neutral_body_mode():
+		if is_instance_valid(progress_label):
+			progress_label.text = "STAND STILL • ONE 3-SECOND HOLD"
+		_set_live_instruction("STAND WHERE THE CAMERA CAN SEE YOU • HOLD STILL FOR 3 SECONDS")
+		_sync_reference_art()
+		# Legacy movement/hand-pose audio says CENTER, RIGHT, LEFT or BOTH
+		# HANDS UP. It must not instruct children to perform removed stages.
+		return
 	var target: String = capture_order[live_step]
 	var messages: Array = PLANE_STAGE_TEXT[target] if _is_human_plane() else STAGE_TEXT[target]
 	if _is_balloon_popping():
@@ -891,7 +1008,12 @@ func _sync_reference_art() -> void:
 	var capture_order := _capture_order()
 	var active_zone: String = "DONE" if live_step >= capture_order.size() else String(capture_order[live_step])
 	var plane_mode := _is_human_plane()
-	var showing_pose := active_zone != "DONE"
+	var neutral_mode := _single_neutral_body_mode()
+	var showing_pose := active_zone != "DONE" and not neutral_mode
+	if is_instance_valid(neutral_instruction):
+		neutral_instruction.visible = neutral_mode and active_zone != "DONE"
+		if neutral_instruction.visible:
+			neutral_instruction.text = "STAND STILL WHERE THE CAMERA CAN SEE YOU\nHOLD FOR 3 SECONDS"
 	# Each zone now owns its OWN PNG TextureRect in calibration.tscn:
 	# CENTER=PoseGuideDefault, RIGHT=PoseGuideRight, LEFT=PoseGuideLeft.
 	# Teachers can independently drag/resize each guide in Godot. Runtime
@@ -917,18 +1039,18 @@ func _sync_reference_art() -> void:
 	for zone in art_title_nodes:
 		var title := art_title_nodes[zone] as Control
 		if is_instance_valid(title):
-			title.visible = not plane_mode and zone == active_zone
+			title.visible = not plane_mode and not neutral_mode and zone == active_zone
 	for zone in art_arrow_nodes:
 		var arrow := art_arrow_nodes[zone] as Control
 		if is_instance_valid(arrow):
-			arrow.visible = not plane_mode and zone == active_zone
+			arrow.visible = not plane_mode and not neutral_mode and zone == active_zone
 	for zone in art_hint_nodes:
 		var hint := art_hint_nodes[zone] as Control
 		if is_instance_valid(hint):
-			hint.visible = not plane_mode and zone == active_zone
+			hint.visible = not plane_mode and not neutral_mode and zone == active_zone
 	for index in range(art_step_nodes.size()):
 		if is_instance_valid(art_step_nodes[index]):
-			art_step_nodes[index].visible = not plane_mode and live_step == index
+			art_step_nodes[index].visible = not plane_mode and not neutral_mode and live_step == index
 	# The illustrated countdown starts at 3 even while we await the student;
 	# unlike the decoration, calibration time only advances on NEW valid
 	# stationary pose frames, as verified by the underlying hold timer.
@@ -1022,14 +1144,23 @@ func _continue_flow(skipped: bool = false) -> void:
 			and measured_points.has("center") \
 			and measured_points.has("neutral_noise") \
 			and bool(PoseService.plane_calibration.get("valid", false))
+	elif _single_neutral_body_mode():
+		live_measured = live_measured and live_step >= 1 \
+			and measured_points.has("center") and measured_points.has("neutral_noise") \
+			and String(PoseService.calibration.get("mode", "")) == "neutral_body" \
+			and bool(PoseService.calibration.get("neutral_only", false)) \
+			and not measured_points.has("left") and not measured_points.has("right")
 	else:
 		live_measured = live_measured and live_step >= CAPTURE_ORDER.size() \
 			and measured_points.has("center") and measured_points.has("right") \
 			and measured_points.has("left")
 	live_measured = live_measured and not bool(PoseService.calibration.get("center_only", false))
 	if not live_measured:
-		_set_live_instruction("COMPLETE THE SINGLE LIVE HAND-POSE HOLD FIRST.\nKumpletuhin ang isang pagkakakalibrate." if _is_human_plane() else
-			"COMPLETE ALL THREE LIVE POSITIONS FIRST.\nKumpletuhin muna ang tatlong posisyon.")
+		if _single_neutral_body_mode():
+			_set_live_instruction("COMPLETE ONE LIVE THREE-SECOND NEUTRAL STANDING HOLD FIRST.")
+		else:
+			_set_live_instruction("COMPLETE THE SINGLE LIVE HAND-POSE HOLD FIRST." if _is_human_plane() else
+				"COMPLETE ALL THREE LIVE POSITIONS FIRST.")
 		return
 	var payload := context.duplicate(true)
 	payload.merge({
@@ -1055,6 +1186,10 @@ func _continue_flow(skipped: bool = false) -> void:
 		payload["calibration_steering_sensitivity"] = PoseService.plane_calibration["sensitivity"]
 		payload["calibration_steering_deadzone"] = PoseService.plane_calibration["deadzone"]
 		payload["calibration_camera_center_x"] = PoseService.plane_calibration["camera_center_x"]
+	elif _single_neutral_body_mode():
+		payload.erase("calibration_left")
+		payload.erase("calibration_right")
+		payload["calibration_neutral_only"] = true
 	else:
 		payload["calibration_left"] = PoseService.calibration["left"]
 		payload["calibration_right"] = PoseService.calibration["right"]

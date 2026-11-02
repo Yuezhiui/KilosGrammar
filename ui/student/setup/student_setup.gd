@@ -7,6 +7,7 @@ signal student_id_edited(student_id: String)
 const GAME_STYLES := ["Noun", "Pronoun", "Verb", "Adjective", "Adverb"]
 const GAME_MODES := ["Seconds", "Lives"]
 const DIFFICULTIES := ["Easy", "Normal", "Hard"]
+const PLAYER_MODES := ["Single Player", "Multiplayer"]
 const AUTOFILL_IDLE_SECONDS := 2.5
 const CONFLICT_ID_TEXT_COLOR := Color(0.65, 0.26, 0.16, 1.0)
 const STATUS_TEXT_COLOR := Color(0.32, 0.29, 0.22, 1.0)
@@ -43,6 +44,16 @@ var _autofill_field := ""
 var _autofill_value := ""
 var _validation_label: Label
 var _continue_button: Button
+var _profile_status: Label
+var _player_one_summary: Label
+var _player_two_panel: Panel
+var _player_two_status: Label
+var _player_two_id_edit: LineEdit
+var _player_two_name_edit: LineEdit
+var _player_two_grade_edit: LineEdit
+var _player_mode_buttons: Dictionary = {}
+var _selected_player_mode := ""
+var _setup_phase := "profile"
 
 var _style_buttons: Dictionary = {}
 var _mode_buttons: Dictionary = {}
@@ -218,7 +229,10 @@ func _clear_setup_context() -> void:
 	for key in [
 		"student_id", "studentId", "id", "student_name", "name",
 		"grade_section", "grade", "section", "game_style", "style",
-		"game_mode", "mode", "difficulty", "topic", "student_lookup_connected"
+		"game_mode", "mode", "difficulty", "topic", "student_lookup_connected",
+		"player_mode", "player_count", "players", "player_1", "player_2",
+		"player2_student_id", "player2_student_name", "player2_grade_section",
+		"player_2_student_id", "player_2_student_name", "player_2_grade_section"
 	]:
 		context.erase(key)
 	context.erase("student_setup_prefill")
@@ -231,12 +245,31 @@ func _build_ui() -> void:
 	_student_card = _setup_stage.get_node("StudentProfileCard") as Control
 	_game_card = _setup_stage.get_node("GameSetupCard") as Control
 	_student_id_edit = _student_card.get_node("StudentIdGroup/StudentIdEdit") as LineEdit
+	_profile_status = _student_card.get_node("ProfileStatus") as Label
 	_default_id_text_color = _student_id_edit.get_theme_color("font_color")
 	_name_edit = _student_card.get_node("StudentNameGroup/StudentNameEdit") as LineEdit
 	_grade_edit = _student_card.get_node("GradeSectionGroup/GradeSectionEdit") as LineEdit
 	var game := _game_card.get_node("GameContent") as Control
 	_style_grid = game.get_node("GameStyleGrid") as Control
 	_validation_label = game.get_node("ValidationPanel/ValidationLabel") as Label
+	_player_one_summary = _game_card.get_node("PlayerOneSummary") as Label
+	_player_two_panel = _game_card.get_node("PlayerTwoPanel") as Panel
+	_player_two_status = _player_two_panel.get_node("Player2Status") as Label
+	_player_two_id_edit = _player_two_panel.get_node("Player2IdEdit") as LineEdit
+	_player_two_name_edit = _player_two_panel.get_node("Player2NameEdit") as LineEdit
+	_player_two_grade_edit = _player_two_panel.get_node("Player2GradeEdit") as LineEdit
+	var player_mode_row := _game_card.get_node("PlayerModeRow") as Control
+	var player_mode_group := ButtonGroup.new()
+	for item in PLAYER_MODES:
+		var name := "SinglePlayerButton" if item == "Single Player" else "MultiplayerButton"
+		var player_button := player_mode_row.get_node(name) as Button
+		player_button.button_group = player_mode_group
+		player_button.pressed.connect(_select_player_mode.bind(item))
+		_player_mode_buttons[item] = player_button
+	for edit in [_player_two_id_edit, _player_two_name_edit, _player_two_grade_edit]:
+		edit.text_changed.connect(_on_player_two_changed)
+	_player_two_id_edit.text_submitted.connect(func(_value: String) -> void: _player_two_name_edit.grab_focus())
+	_player_two_name_edit.text_submitted.connect(func(_value: String) -> void: _player_two_grade_edit.grab_focus())
 	_style_buttons.clear()
 	_mode_buttons.clear()
 	_difficulty_buttons.clear()
@@ -271,7 +304,9 @@ func _build_ui() -> void:
 	_grade_edit.text_changed.connect(_on_grade_changed)
 	_student_id_edit.text_submitted.connect(func(_value: String) -> void: _name_edit.grab_focus())
 	_name_edit.text_submitted.connect(func(_value: String) -> void: _grade_edit.grab_focus())
-	_grade_edit.text_submitted.connect(func(_value: String) -> void: _focus_first_style())
+	_grade_edit.text_submitted.connect(func(_value: String) -> void:
+		if _profile_complete():
+			_continue_button.grab_focus())
 	_footer = _setup_stage.get_node("SetupActions") as Control
 	_back_button = _footer.get_node("BackButton") as Button
 	_continue_button = _footer.get_node("ContinueButton") as Button
@@ -319,6 +354,11 @@ func _apply_context_to_ui() -> void:
 	_selected_style = _canonical_value(_first_text(context, ["game_style", "topic", "style"]), GAME_STYLES) if prefill else ""
 	_selected_mode = _canonical_value(_first_text(context, ["game_mode", "mode"]), GAME_MODES) if prefill else ""
 	_selected_difficulty = _canonical_value(_first_text(context, ["difficulty"]), DIFFICULTIES) if prefill else ""
+	_selected_player_mode = _canonical_value(_first_text(context, ["player_mode"]), PLAYER_MODES) if prefill else ""
+	var second: Dictionary = context.get("player_2", {}) if context.get("player_2", {}) is Dictionary else {}
+	_player_two_id_edit.text = String(second.get("student_id", context.get("player2_student_id", ""))) if prefill else ""
+	_player_two_name_edit.text = String(second.get("student_name", context.get("player2_student_name", ""))) if prefill else ""
+	_player_two_grade_edit.text = String(second.get("grade_section", context.get("player2_grade_section", ""))) if prefill else ""
 	_identity_student_id = _student_id_edit.text.strip_edges() if prefill and (not _name_edit.text.strip_edges().is_empty() or not _grade_edit.text.strip_edges().is_empty()) else ""
 	_verified_lookup_identity.clear()
 	if prefill and bool(context.get("student_lookup_connected", false)) and not _identity_student_id.is_empty():
@@ -328,6 +368,8 @@ func _apply_context_to_ui() -> void:
 			"grade_section": _grade_edit.text.strip_edges(),
 		}
 	_sync_selection_buttons()
+	_setup_phase = "profile"
+	_show_setup_phase()
 	_applying_context = false
 	_invalidate_autofill()
 
@@ -345,6 +387,65 @@ func _sync_selection_buttons() -> void:
 		var button := _difficulty_buttons[difficulty] as Button
 		button.set_pressed_no_signal(difficulty == _selected_difficulty)
 		button.modulate.a = 1.0 if _selected_difficulty.is_empty() or difficulty == _selected_difficulty else 0.78
+	for player_mode in _player_mode_buttons:
+		var button := _player_mode_buttons[player_mode] as Button
+		button.set_pressed_no_signal(player_mode == _selected_player_mode)
+	_player_two_panel.visible = _selected_player_mode == "Multiplayer" and _setup_phase == "game"
+
+
+func _show_setup_phase() -> void:
+	var profile_active := _setup_phase == "profile"
+	_student_card.visible = profile_active
+	_game_card.visible = not profile_active
+	if is_instance_valid(_player_one_summary):
+		_player_one_summary.text = "PLAYER ONE: " + _name_edit.text.strip_edges()
+	if is_instance_valid(_player_two_panel):
+		_player_two_panel.visible = not profile_active and _selected_player_mode == "Multiplayer"
+	_update_validation()
+
+
+func _select_player_mode(mode: String) -> void:
+	if mode not in PLAYER_MODES:
+		return
+	_selected_player_mode = mode
+	_sync_selection_buttons()
+	_update_validation()
+
+
+func _on_player_two_changed(_value: String) -> void:
+	if _applying_context:
+		return
+	_update_validation()
+
+
+func _profile_complete() -> bool:
+	return _valid_student_id(_student_id_edit.text) \
+		and not _name_edit.text.strip_edges().is_empty() \
+		and not _grade_edit.text.strip_edges().is_empty() \
+		and _registration_error.is_empty() and not _lookup_pending
+
+
+func _player_two_complete() -> bool:
+	if _selected_player_mode != "Multiplayer":
+		return true
+	return _valid_student_id(_player_two_id_edit.text) \
+		and not _player_two_name_edit.text.strip_edges().is_empty() \
+		and not _player_two_grade_edit.text.strip_edges().is_empty() \
+		and _player_two_id_edit.text.strip_edges().to_lower() != _student_id_edit.text.strip_edges().to_lower()
+
+
+func _multiplayer_activity_supported() -> bool:
+	if _selected_player_mode != "Multiplayer":
+		return true
+	var chosen_activity := String(context.get("activity", "")).strip_edges()
+	return chosen_activity.is_empty() or chosen_activity == "Catch the Word"
+
+
+func _game_complete() -> bool:
+	return _profile_complete() and GAME_STYLES.has(_selected_style) \
+		and GAME_MODES.has(_selected_mode) and DIFFICULTIES.has(_selected_difficulty) \
+		and PLAYER_MODES.has(_selected_player_mode) and _player_two_complete() \
+		and _multiplayer_activity_supported()
 
 
 func _on_student_id_changed(value: String) -> void:
@@ -482,37 +583,34 @@ func _update_validation() -> void:
 	if _continue_button == null or _validation_label == null:
 		return
 
-	var missing: Array[String] = []
-	if _student_id_edit.text.strip_edges().is_empty():
-		missing.append("Student ID")
 	var invalid_student_id := not _student_id_edit.text.strip_edges().is_empty() and not _valid_student_id(_student_id_edit.text)
-	if _name_edit.text.strip_edges().is_empty():
-		missing.append("Name")
-	if _grade_edit.text.strip_edges().is_empty():
-		missing.append("Grade & Section")
-	if not GAME_STYLES.has(_selected_style):
-		missing.append("Game Style")
-	if not GAME_MODES.has(_selected_mode):
-		missing.append("Game Mode")
-	if not DIFFICULTIES.has(_selected_difficulty):
-		missing.append("Difficulty")
-
-	_continue_button.disabled = not missing.is_empty() or invalid_student_id or not _registration_error.is_empty() or _lookup_pending
+	_continue_button.disabled = not (_profile_complete() if _setup_phase == "profile" else _game_complete())
 	_continue_button.modulate = Color.WHITE
-	# Retain the supplied art, position, font and stage geometry. Only a brief
-	# non-red actionable status appears when a database lookup pauses Play.
-	_validation_label.visible = invalid_student_id or _lookup_pending or not _registration_error.is_empty()
+	var profile_message := ""
 	if invalid_student_id:
-		_validation_label.text = INVALID_STUDENT_ID_MESSAGE
+		profile_message = INVALID_STUDENT_ID_MESSAGE
 	elif _lookup_pending:
-		_validation_label.text = "CHECKING STUDENT ID..."
+		profile_message = "CHECKING STUDENT ID..."
 	elif not _registration_error.is_empty():
 		if _is_existing_identity_conflict(_registration_error):
-			_validation_label.text = "CHECK STUDENT ID AND NAME"
+			profile_message = "CHECK STUDENT ID AND NAME"
 		else:
-			_validation_label.text = "STUDENT ID CHECK FAILED • TRY AGAIN"
-	else:
-		_validation_label.text = ""
+			profile_message = "STUDENT ID CHECK FAILED • TRY AGAIN"
+	_profile_status.text = profile_message
+	_profile_status.visible = _setup_phase == "profile" and not profile_message.is_empty()
+	_validation_label.text = profile_message
+	_validation_label.visible = _setup_phase == "game" and not profile_message.is_empty()
+	var second_message := ""
+	if _selected_player_mode == "Multiplayer":
+		if not _multiplayer_activity_supported():
+			second_message = "MULTIPLAYER IS AVAILABLE ONLY IN CATCH THE WORD"
+		elif not _player_two_id_edit.text.strip_edges().is_empty() and not _valid_student_id(_player_two_id_edit.text):
+			second_message = INVALID_STUDENT_ID_MESSAGE
+		elif not _player_two_id_edit.text.strip_edges().is_empty() \
+				and _player_two_id_edit.text.strip_edges().to_lower() == _student_id_edit.text.strip_edges().to_lower():
+			second_message = "PLAYER TWO MUST HAVE A DIFFERENT STUDENT ID"
+	_player_two_status.text = second_message
+	_player_two_status.visible = not second_message.is_empty() and _player_two_panel.visible
 	_validation_label.add_theme_color_override("font_color", STATUS_TEXT_COLOR)
 	_student_id_edit.add_theme_color_override("font_color",
 		CONFLICT_ID_TEXT_COLOR if invalid_student_id or not _registration_error.is_empty() else _default_id_text_color)
@@ -528,6 +626,11 @@ func _continue() -> void:
 	_update_validation()
 	if _continue_button.disabled:
 		return
+	if _setup_phase == "profile":
+		_setup_phase = "game"
+		_show_setup_phase()
+		call_deferred("_focus_first_style")
+		return
 
 	var payload := context.duplicate(true)
 	payload["student_id"] = _student_id_edit.text.strip_edges()
@@ -542,12 +645,28 @@ func _continue() -> void:
 	payload["setup_preview"] = true
 	payload["database_connected"] = bool(context.get("database_connected", false))
 	payload["student_lookup_connected"] = _lookup_matches_current_fields()
+	payload["player_mode"] = _selected_player_mode
+	payload["player_count"] = 2 if _selected_player_mode == "Multiplayer" else 1
+	if _selected_player_mode == "Multiplayer":
+		payload["player2_student_id"] = _player_two_id_edit.text.strip_edges()
+		payload["player2_student_name"] = _player_two_name_edit.text.strip_edges()
+		payload["player2_grade_section"] = _player_two_grade_edit.text.strip_edges()
+		payload["activity"] = "Catch the Word"
+	else:
+		for key in ["player2_student_id", "player2_student_name", "player2_grade_section"]:
+			payload.erase(key)
 	payload.erase("student_setup_prefill")
 	if bool(context.get("guided_tutorial", false)):
 		# The selected activity was carried from Guided Tutorial's first
 		# Game Selection panel. The teacher's choices now complete setup.
 		payload["keyboard_mode"] = false
 		payload["camera_requested"] = true
+		requested.emit("calibration", payload)
+	elif _selected_player_mode == "Multiplayer":
+		payload.erase("guided_tutorial")
+		payload["entry_source"] = "play"
+		payload["camera_requested"] = true
+		payload["keyboard_mode"] = false
 		requested.emit("calibration", payload)
 	else:
 		payload.erase("guided_tutorial")
@@ -556,6 +675,11 @@ func _continue() -> void:
 
 
 func _go_back() -> void:
+	if _setup_phase == "game":
+		_setup_phase = "profile"
+		_show_setup_phase()
+		call_deferred("_focus_first")
+		return
 	requested.emit("play_activity" if bool(context.get("guided_tutorial", false)) else "main", context.duplicate(true))
 
 

@@ -24,7 +24,7 @@ const MAX_IDENTIFIER_LENGTH := 128
 const MAX_NAME_LENGTH := 200
 const MAX_GRADE_LENGTH := 100
 const MAX_IMPORT_CSV_BYTES := 1_000_000
-const ADMIN_OPERATIONS := ["export_data_csv", "import_data_csv", "request_delete_all_challenge", "delete_all_data"]
+const ADMIN_OPERATIONS := ["export_data_csv", "export_data_xlsx", "import_data_csv", "request_delete_all_challenge", "delete_all_data"]
 
 var _next_request_id := 0
 var _inflight: Dictionary = {}
@@ -422,6 +422,19 @@ func export_data_csv(context: Dictionary = {}) -> int:
 	## Unlike get_leaderboard, this includes *all* student records (even those
 	## without scores), not just the first 500 ranked rows. Teacher-authorized.
 	return _send("export_data_csv", HTTPClient.METHOD_GET, "/data/export", {}, context)
+
+
+func export_data_xlsx(student_id: String = "", context: Dictionary = {}) -> int:
+	## Download a teacher-protected workbook with one Excel tab per grade.
+	## An individual Pull-Out specifies an exact student ID. No CSV contract,
+	## student record or score is modified by this GET.
+	var id := student_id.strip_edges()
+	if not id.is_empty() and not _valid_text(id, MAX_IDENTIFIER_LENGTH):
+		return _reject("export_data_xlsx", context, "invalid_student_id")
+	var route := "/data/export_xlsx"
+	if not id.is_empty():
+		route += "?student_id=" + id.uri_encode()
+	return _send("export_data_xlsx", HTTPClient.METHOD_GET, route, {}, context)
 
 
 func import_data_csv(csv_text: String, context: Dictionary = {}) -> int:

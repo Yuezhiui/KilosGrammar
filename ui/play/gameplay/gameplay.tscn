@@ -74,6 +74,6 @@ grow_horizontal = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("2")
 theme_override_font_sizes/font_size = 23
-text = "Step into view • Bumalik sa harap ng camera"
+text = "Step into camera view"
 horizontal_alignment = 1
 autowrap_mode = 3

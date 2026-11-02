@@ -446,6 +446,26 @@ texture = ExtResource("10_v2_move")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="NeutralInstruction" type="Label" parent="TutorialStage"]
+editor_description = "Single-player Catch/Balloon neutral standing prompt. Drag and resize this editor-authored label independently. No old center/side pose guide is required."
+visible = false
+layout_mode = 0
+offset_left = 215.0
+offset_top = 47.0
+offset_right = 1065.0
+offset_bottom = 142.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.98, 0.86, 1)
+theme_override_colors/font_outline_color = Color(0.14, 0.11, 0.1, 1)
+theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 37
+text = "STAND STILL WHERE THE CAMERA CAN SEE YOU
+HOLD FOR 3 SECONDS"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
 [node name="CountdownArtwork" type="Control" parent="TutorialStage" unique_id=1370989123]
 anchors_preset = 0
 offset_right = 1280.0
@@ -636,7 +656,7 @@ theme_override_colors/font_outline_color = Color(0.13, 0.08, 0.04, 0.95)
 theme_override_constants/outline_size = 5
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 33
-text = "Ready to play! • Handa ka nang maglaro!"
+text = "Ready to play!"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3

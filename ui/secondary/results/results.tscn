@@ -14,6 +14,32 @@
 
 [sub_resource type="StyleBoxEmpty" id="InvisibleButton"]
 
+[sub_resource type="StyleBoxFlat" id="CompetitiveBoardStyle"]
+bg_color = Color(0.956, 0.893, 0.724, 0.98)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.42, 0.26, 0.13, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(0.11, 0.07, 0.04, 0.24)
+shadow_size = 9
+
+[sub_resource type="StyleBoxFlat" id="CompetitivePlayerStyle"]
+bg_color = Color(1, 0.985, 0.933, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.6, 0.43, 0.23, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
 [node name="Results" type="Control" unique_id=1000382500]
 layout_mode = 3
 anchors_preset = 15
@@ -344,6 +370,272 @@ theme_override_fonts/font = ExtResource("10_font")
 theme_override_font_sizes/font_size = 15
 text = "Normal"
 horizontal_alignment = 2
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="MultiplayerResults" type="Panel" parent="ResultsStage"]
+unique_name_in_owner = true
+editor_description = "Competitive Catch two-player score summary. Editor-authored, hidden during all single-player games. Individual names, IDs, grades, scores, hearts, outcome, and save-confirmation notice are draggable labels."
+visible = false
+layout_mode = 0
+offset_left = 172.0
+offset_top = 196.0
+offset_right = 1124.0
+offset_bottom = 582.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("CompetitiveBoardStyle")
+
+[node name="CompetitiveTitle" type="Label" parent="ResultsStage/MultiplayerResults"]
+layout_mode = 0
+offset_left = 175.0
+offset_top = 10.0
+offset_right = 777.0
+offset_bottom = 47.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.25, 0.17, 0.12, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 24
+text = "TWO-PLAYER RESULTS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CompetitiveOutcome" type="Label" parent="ResultsStage/MultiplayerResults"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 70.0
+offset_top = 53.0
+offset_right = 882.0
+offset_bottom = 103.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.18, 0.4, 0.26, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 34
+text = "ROUND RESULT"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerOneCard" type="Panel" parent="ResultsStage/MultiplayerResults"]
+unique_name_in_owner = true
+editor_description = "Player One independent score card. Green tint means this student won, based strictly on completed-round numeric scores."
+layout_mode = 0
+offset_left = 21.0
+offset_top = 117.0
+offset_right = 466.0
+offset_bottom = 323.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("CompetitivePlayerStyle")
+
+[node name="PlayerOneTitle" type="Label" parent="ResultsStage/MultiplayerResults/PlayerOneCard"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 8.0
+offset_right = 429.0
+offset_bottom = 34.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.43, 0.23, 0.11, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 18
+text = "PLAYER 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayerOneName" type="Label" parent="ResultsStage/MultiplayerResults/PlayerOneCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 13.0
+offset_top = 35.0
+offset_right = 432.0
+offset_bottom = 70.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.15, 0.29, 0.27, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 21
+text = "Student One"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerOneId" type="Label" parent="ResultsStage/MultiplayerResults/PlayerOneCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 13.0
+offset_top = 71.0
+offset_right = 432.0
+offset_bottom = 94.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.3, 0.24, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "STUDENT ID"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerOneGrade" type="Label" parent="ResultsStage/MultiplayerResults/PlayerOneCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 13.0
+offset_top = 95.0
+offset_right = 432.0
+offset_bottom = 118.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.3, 0.24, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "GRADE AND SECTION"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerOneScore" type="Label" parent="ResultsStage/MultiplayerResults/PlayerOneCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 15.0
+offset_top = 121.0
+offset_right = 430.0
+offset_bottom = 171.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.12, 0.43, 0.24, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 40
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerOneLives" type="Label" parent="ResultsStage/MultiplayerResults/PlayerOneCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 15.0
+offset_top = 174.0
+offset_right = 430.0
+offset_bottom = 199.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.37, 0.22, 0.17, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 14
+text = "HEARTS: 3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayerTwoCard" type="Panel" parent="ResultsStage/MultiplayerResults"]
+unique_name_in_owner = true
+editor_description = "Player Two independent score card. It never shows a combined score."
+layout_mode = 0
+offset_left = 486.0
+offset_top = 117.0
+offset_right = 931.0
+offset_bottom = 323.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("CompetitivePlayerStyle")
+
+[node name="PlayerTwoTitle" type="Label" parent="ResultsStage/MultiplayerResults/PlayerTwoCard"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 8.0
+offset_right = 429.0
+offset_bottom = 34.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.43, 0.23, 0.11, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 18
+text = "PLAYER 2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayerTwoName" type="Label" parent="ResultsStage/MultiplayerResults/PlayerTwoCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 13.0
+offset_top = 35.0
+offset_right = 432.0
+offset_bottom = 70.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.15, 0.29, 0.27, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 21
+text = "Student Two"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerTwoId" type="Label" parent="ResultsStage/MultiplayerResults/PlayerTwoCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 13.0
+offset_top = 71.0
+offset_right = 432.0
+offset_bottom = 94.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.3, 0.24, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "STUDENT ID"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerTwoGrade" type="Label" parent="ResultsStage/MultiplayerResults/PlayerTwoCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 13.0
+offset_top = 95.0
+offset_right = 432.0
+offset_bottom = 118.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.3, 0.24, 0.2, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 13
+text = "GRADE AND SECTION"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerTwoScore" type="Label" parent="ResultsStage/MultiplayerResults/PlayerTwoCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 15.0
+offset_top = 121.0
+offset_right = 430.0
+offset_bottom = 171.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.12, 0.43, 0.24, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 40
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+text_overrun_behavior = 3
+
+[node name="PlayerTwoLives" type="Label" parent="ResultsStage/MultiplayerResults/PlayerTwoCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 15.0
+offset_top = 174.0
+offset_right = 430.0
+offset_bottom = 199.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.37, 0.22, 0.17, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 14
+text = "HEARTS: 3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CompetitiveSaveNotice" type="Label" parent="ResultsStage/MultiplayerResults"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 31.0
+offset_top = 330.0
+offset_right = 921.0
+offset_bottom = 369.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.38, 0.26, 0.21, 1)
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 15
+text = "Database saves not yet confirmed for both players"
+horizontal_alignment = 1
 vertical_alignment = 1
 text_overrun_behavior = 3
 

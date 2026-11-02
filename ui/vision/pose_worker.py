@@ -18,6 +18,7 @@ import threading
 import time
 
 from student_lock import StudentLock
+from two_player_lock import TwoPlayerLock
 from gesture_detector import GestureDetector, GestureState
 
 
@@ -949,7 +950,7 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
         bones_offset: tuple[float, float] = (0.0, 0.0),
         bones_scale: tuple[float, float] = (1.0, 1.0),
         prepared_model: tuple | None = None,
-        prepared_model_loader=None) -> int:
+        prepared_model_loader=None, players: int = 1) -> int:
     target = ("127.0.0.1", port)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     cap = None
@@ -1129,6 +1130,7 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
         pose_fps = 0.0
         previous_sequence = -1
         student = StudentLock()
+        two_player = TwoPlayerLock() if players == 2 else None
         gesture_detector = GestureDetector()
         plane_tracker = PlaneSteeringTracker()
         if recovery:
@@ -1206,6 +1208,38 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
             gesture = False
             people, visible_people = observed_pose_people(prediction, width, height)
             now = time.monotonic()
+            if two_player is not None:
+                # One full-frame YOLO inference, two anonymous *stable* slots.
+                # No independent camera, tracker ID, or split-frame inference.
+                # Missing players never inherit a remembered control skeleton.
+                tracked = two_player.update(people, now)
+                live_indices = {int(p["index"]) for p in tracked if p["active"]}
+                source_preview = [
+                    {**person, "preview_role": "active"}
+                    for person in visible_people
+                    if int(person.get("detection_index", -1)) in live_indices
+                ]
+                if live_preview is not None:
+                    live_preview.submit(frame, source_preview, captured_at=captured_at,
+                                        raw_person_count=number,
+                                        foreground_person_count=len(live_indices))
+                inferred_count += 1
+                if now - inferred_start >= 1.0:
+                    pose_fps = inferred_count / (now - inferred_start)
+                    inferred_count = 0
+                    inferred_start = now
+                send_status(sock, target, token, state="tracking", camera=True,
+                            mode="multiplayer", pose=any(p["active"] for p in tracked),
+                            people=number, foreground_people=len(live_indices),
+                            foreground_ambiguous=False, players=tracked,
+                            fps=round(pose_fps, 1),
+                            camera_fps=round(camera_reader.camera_fps, 1),
+                            camera_source_timestamp=captured_at,
+                            camera_frame_age_ms=round(source_frame_age * 1000),
+                            camera_phase="tracking", device="CUDA" if gpu else "CPU",
+                            detail="Two-player tracking; no automatic identity swap.",
+                            **camera_timings)
+                continue
             # Preserve truthful raw YOLO occupancy, including id-less boxes.
             # Ignore only unambiguously smaller, separated background bodies;
             # near or overlapping people always revoke foreground controls.
@@ -1325,7 +1359,7 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
 def prewarm_worker(port: int, token: str, camera_index: int, model_path: str,
                    preview: bool, recovery: bool,
                    bones_offset: tuple[float, float],
-                   bones_scale: tuple[float, float]) -> int:
+                   bones_scale: tuple[float, float], players: int = 1) -> int:
     """Prepare YOLO ahead of calibration without opening a camera prematurely.
 
     The worker accepts precisely one authenticated, loopback-only UDP
@@ -1438,6 +1472,8 @@ def prewarm_worker(port: int, token: str, camera_index: int, model_path: str,
             try:
                 raw_offset = command.get("bones_offset", bones_offset)
                 raw_scale = command.get("bones_scale", bones_scale)
+                if command.get("players") in (1, 2):
+                    players = int(command["players"])
                 if len(raw_offset) == 2 and len(raw_scale) == 2:
                     updated_offset = tuple(float(v) for v in raw_offset)
                     updated_scale = tuple(float(v) for v in raw_scale)
@@ -1475,10 +1511,12 @@ def prewarm_worker(port: int, token: str, camera_index: int, model_path: str,
     if model_ready.is_set() and "error" not in model_result:
         return run(port, token, camera_index, model_path, preview,
                    recovery=recovery, bones_offset=bones_offset,
-                   bones_scale=bones_scale, prepared_model=model_result["prepared"])
+                   bones_scale=bones_scale, prepared_model=model_result["prepared"],
+                   players=players)
     return run(port, token, camera_index, model_path, preview,
                recovery=recovery, bones_offset=bones_offset,
-               bones_scale=bones_scale, prepared_model_loader=wait_for_prepared_model)
+               bones_scale=bones_scale, prepared_model_loader=wait_for_prepared_model,
+               players=players)
 
 
 def main() -> int:
@@ -1489,6 +1527,7 @@ def main() -> int:
     parser.add_argument("--model", default="yolo26n-pose.pt")
     parser.add_argument("--weights-dir", default="")
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--players", type=int, choices=[1, 2], default=1)
     parser.add_argument("--prewarm", action="store_true",
                         help="Warm offline model now; open webcam only on token-authenticated UDP start_camera")
     parser.add_argument("--recovery", action="store_true",
@@ -1510,10 +1549,12 @@ def main() -> int:
     if arguments.prewarm:
         return prewarm_worker(arguments.port, arguments.token, arguments.camera,
                               arguments.model, not arguments.no_preview,
-                              arguments.recovery, components[:2], components[2:])
+                              arguments.recovery, components[:2], components[2:],
+                              arguments.players)
     return run(arguments.port, arguments.token, arguments.camera, arguments.model,
                not arguments.no_preview, recovery=arguments.recovery,
-               bones_offset=components[:2], bones_scale=components[2:])
+               bones_offset=components[:2], bones_scale=components[2:],
+               players=arguments.players)
 
 
 if __name__ == "__main__":

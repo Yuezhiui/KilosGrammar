@@ -34,9 +34,9 @@ var _countdown_requires_locked_pose := false
 var _countdown_waiting_for_pose := false
 var _paused_canvas_layer_visibility: Dictionary = {}
 const TRACKING_NOTICE_MISSING := "COME BACK INTO THE CAMERA!"
-const TRACKING_NOTICE_MISSING_DETAIL := "Step into view • Bumalik sa harap ng camera"
+const TRACKING_NOTICE_MISSING_DETAIL := "Step into camera view"
 const TRACKING_NOTICE_MULTIPLE := "ONE PLAYER IN FRONT!"
-const TRACKING_NOTICE_MULTIPLE_DETAIL := "Keep the play area clear • Lumayo muna sa harap ng camera"
+const TRACKING_NOTICE_MULTIPLE_DETAIL := "Keep the playing area clear"
 const COUNTDOWN_STANDING_HINT := "Stand in the center and watch for the first word!"
 
 
@@ -277,6 +277,11 @@ func _clear_countdown_ui() -> void:
 
 
 func _has_live_calibrated_player() -> bool:
+	if String(context.get("player_mode", "")) == "Multiplayer":
+		return bool(context.get("multiplayer_calibration", false)) \
+			and PoseService.has_multiplayer_calibration() \
+			and PoseService.has_multiplayer_pose(0) \
+			and PoseService.has_multiplayer_pose(1)
 	# PoseService validates a fresh, trusted YOLO observation of exactly one
 	# stable, enrolled student (not an ID or epoch recycled from a prior frame).
 	# The initial physical positions remain in calibration for the whole round.
@@ -362,6 +367,12 @@ func _process(delta: float) -> void:
 		return
 	if not is_instance_valid(active_game):
 		return
+	if String(context.get("player_mode", "")) == "Multiplayer":
+		# No GLOBAL PAUSE after countdown. If one child leaves, its control
+		# becomes inactive; the other child, falling words and game clock
+		# continue without opening the Pause menu.
+		_process_multiplayer(delta)
+		return
 	# An authenticated single FOREGROUND player may resume the calibrated round
 	# despite seated spectators further from the camera. Raw YOLO occupancy is
 	# retained for diagnostics. Nearby ambiguity or a different lock freezes
@@ -413,19 +424,16 @@ func _process(delta: float) -> void:
 			if active_game.has_method("clear_body_input"):
 				active_game.call("clear_body_input")
 		last_pose_valid = false
-		# Unknown foreground identity, nearby overlap or stale camera data freeze
-		# gameplay immediately. A spectator must never take over this student.
+		# Panel feedback: losing a body or seeing a passing classmate must
+		# never automatically PAUSE the whole round. The current student
+		# loses motion/gesture authority and cannot score ghost catches; game
+		# timers, music and visible falling words keep running. During GO's
+		# countdown we still require the one intended calibrated student.
 		if not countdown_active:
-			active_game.process_mode = Node.PROCESS_MODE_DISABLED
-			tracking_suspended = true
-			if is_instance_valid(_game_music):
-				_game_music.call("pause_music")
-		if not countdown_active and population == 0:
-			_show_tracking_problem("missing")
-		elif not countdown_active and (ambiguous_foreground or population >= 2):
-			_show_tracking_problem("multiple")
-		else:
-			tracking_notice.visible = false
+			tracking_suspended = false
+			if active_game.process_mode == Node.PROCESS_MODE_DISABLED:
+				active_game.process_mode = Node.PROCESS_MODE_INHERIT
+		tracking_notice.visible = false
 		return
 	missing_pose_seconds = 0.0
 	confirmed_missing_student_seconds = 0.0
@@ -477,6 +485,36 @@ func _process(delta: float) -> void:
 		smooth_x = lerpf(smooth_x, raw_x, 1.0 - exp(-maxf(delta, 0.0) * 14.0))
 	set_body_x(smooth_x)
 	last_pose_valid = true
+
+
+func _process_multiplayer(_delta: float) -> void:
+	var ready := PoseService.has_multiplayer_pose(0) and PoseService.has_multiplayer_pose(1) \
+		and PoseService.has_multiplayer_calibration()
+	if guided_stage == "countdown":
+		if is_instance_valid(countdown_timer):
+			if not ready:
+				countdown_timer.stop()
+			elif countdown_timer.is_stopped() and not _countdown_waiting_for_pose:
+				countdown_timer.start()
+		if _countdown_waiting_for_pose and ready:
+			_complete_countdown_start()
+		return
+	# _clear_countdown_ui() clears guided_stage after GO. An empty stage is
+	# the normal running game, not an inactive multiplayer controller.
+	if guided_stage in ["tutorial", "countdown"] or not is_instance_valid(active_game):
+		return
+	# Source-fresh and identity-associated controls only. A remembered
+	# position cannot keep collecting points after the player disappears.
+	for index in range(2):
+		if PoseService.has_multiplayer_pose(index):
+			var direction := PoseService.multiplayer_player_x(index)
+			if direction >= -1.0 and direction <= 1.0 \
+					and active_game.has_method("set_multiplayer_body_x"):
+				active_game.call("set_multiplayer_body_x", index, direction)
+			elif active_game.has_method("clear_multiplayer_body_input"):
+				active_game.call("clear_multiplayer_body_input", index)
+		elif active_game.has_method("clear_multiplayer_body_input"):
+			active_game.call("clear_multiplayer_body_input", index)
 
 
 func _clear_gesture_input() -> void:

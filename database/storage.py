@@ -203,13 +203,13 @@ def _export_snapshot(self: PostgreSQLStore) -> tuple[list[Record], list[Record]]
     with self._connect() as connection:
         connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
         students = connection.execute(
-            "SELECT student_id, student_name, grade_section FROM students "
+            "SELECT student_id, student_name, grade_section, created_at, updated_at FROM students "
             "ORDER BY student_id LIMIT %s", (MAX_BULK_ROWS + 1,)
         ).fetchall()
         if len(students) > MAX_BULK_ROWS:
             raise BulkLimitExceeded("CSV exceeds maximum rows")
         scores = connection.execute(
-            "SELECT student_id, minigame, game_style, game_mode, difficulty, score "
+            "SELECT score_id, student_id, minigame, game_style, game_mode, difficulty, score, completed_at, updated_at "
             "FROM student_scores ORDER BY student_id, minigame, game_style, game_mode, difficulty LIMIT %s",
             (MAX_BULK_ROWS + 1,),
         ).fetchall()

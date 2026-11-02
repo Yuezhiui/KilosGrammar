@@ -43,6 +43,14 @@ var latest_pose_sample_id := 0
 var _recent_pose_samples: Array[Dictionary] = []
 var player_x := -1.0  # [0, 1] mirrored camera position; -1 means NO pose.
 var calibration: Dictionary = {}
+var multiplayer_mode := false
+# Each slot has its own fresh YOLO X and neutral calibration. NEVER infer a
+# missing player's position from the other player or a spectator.
+var multiplayer_status: Array[Dictionary] = [
+	{"active": false, "x": -1.0, "last_ms": 0},
+	{"active": false, "x": -1.0, "last_ms": 0},
+]
+var multiplayer_calibration: Array[Dictionary] = [{}, {}]
 # Separate center-relative Human Plane steering; other games retain measured
 # left/center/right CAMERA positions and normalized_body_x().
 var plane_calibration: Dictionary = {}
@@ -92,6 +100,80 @@ var _prewarm_started_ms := 0
 
 func is_model_prestarting() -> bool:
 	return _model_prestarting and not active
+
+
+func set_multiplayer_mode(enabled: bool) -> void:
+	if multiplayer_mode == enabled:
+		return
+	# Mode can be selected during model prewarming. The authenticated camera
+	# start request chooses one or two players without reloading YOLO weights.
+	# Once the camera has started, changing modes requires a deliberate new
+	# session, never an in-place identity reassignment.
+	if active:
+		stop_camera()
+	multiplayer_mode = enabled
+	multiplayer_calibration = [{}, {}]
+	_clear_multiplayer_status()
+
+
+func _clear_multiplayer_status() -> void:
+	multiplayer_status = [
+		{"active": false, "x": -1.0, "last_ms": 0},
+		{"active": false, "x": -1.0, "last_ms": 0},
+	]
+
+
+func begin_new_multiplayer_calibration() -> void:
+	## Deliberate new round only, never a pose-loss or spectator event.
+	## The live camera/model can remain warm; old calibration must not let
+	## a new student bypass the fresh three-second standing measurement.
+	multiplayer_calibration = [{}, {}]
+	_clear_multiplayer_status()
+
+
+func has_multiplayer_pose(index: int) -> bool:
+	if not multiplayer_mode or not active or index < 0 or index > 1:
+		return false
+	var slot: Dictionary = multiplayer_status[index]
+	return bool(slot.get("active", false)) and int(slot.get("last_ms", 0)) > 0 \
+		and Time.get_ticks_msec() - int(slot["last_ms"]) <= GESTURE_STALE_MS
+
+
+func multiplayer_set_center(index: int, neutral_x: float, noise: float = 0.0) -> bool:
+	if not multiplayer_mode or index < 0 or index > 1 \
+			or not is_finite(neutral_x) or neutral_x < 0.04 or neutral_x > 0.96 \
+			or not is_finite(noise) or noise < 0.0 or noise > 0.12:
+		return false
+	# The neutral is fixed for the whole round. Preview auto-centering does
+	# not change the control origin whenever a child stops moving.
+	multiplayer_calibration[index] = {
+		"valid": true, "center": neutral_x,
+		"noise": noise,
+		"deadzone": clampf(0.018 + noise * 2.2, 0.018, 0.06),
+		"sensitivity": clampf(0.11 + noise * 2.5, 0.11, 0.22)
+	}
+	return true
+
+
+func has_multiplayer_calibration() -> bool:
+	return multiplayer_calibration.size() == 2 \
+		and bool(multiplayer_calibration[0].get("valid", false)) \
+		and bool(multiplayer_calibration[1].get("valid", false))
+
+
+func multiplayer_player_x(index: int) -> float:
+	## Signed velocity control [-1, 1]. -999 means no control authority.
+	if not has_multiplayer_pose(index) or not has_multiplayer_calibration() \
+			or index < 0 or index > 1:
+		return -999.0
+	var slot: Dictionary = multiplayer_status[index]
+	var cal: Dictionary = multiplayer_calibration[index]
+	var offset := float(slot["x"]) - float(cal["center"])
+	var deadzone := float(cal["deadzone"])
+	if absf(offset) <= deadzone:
+		return 0.0
+	var direction := signf(offset)
+	return direction * clampf((absf(offset) - deadzone) / float(cal["sensitivity"]), 0.0, 1.0)
 
 
 func prewarm_camera_model() -> bool:
@@ -186,6 +268,7 @@ func _launch_worker(recovering: bool = false, prewarm_only: bool = false) -> boo
 	var arguments := PackedStringArray([
 		"-u", worker, "--port", str(peer.get_local_port()),
 		"--token", session_token, "--camera", str(camera_index),
+		"--players", "2" if multiplayer_mode else "1",
 		"--model", model_path, "--weights-dir", model_dir,
 		"--bones-offset-x", str(skeleton_visual_offset.x),
 		"--bones-offset-y", str(skeleton_visual_offset.y),
@@ -246,6 +329,7 @@ func _request_warm_camera_start() -> void:
 	# warmed process does not keep the stale CLI transform from Student Setup.
 	var request := {
 		"command": "start_camera", "token": session_token,
+		"players": 2 if multiplayer_mode else 1,
 		"bones_offset": [skeleton_visual_offset.x, skeleton_visual_offset.y],
 		"bones_scale": [skeleton_visual_scale.x, skeleton_visual_scale.y],
 	}
@@ -484,10 +568,12 @@ func _process(_delta: float) -> void:
 				# tracking reports immediately revoke pose permission, even if
 				# they deceptively contain pose=true.
 				if bool(data.get("camera", false)) and String(data.get("state", "")) == "tracking" \
-						and bool(data.get("pose", false)) and not _trusted_live_tracking_packet(data):
+						and bool(data.get("pose", false)) and String(data.get("mode", "")) != "multiplayer" \
+						and not _trusted_live_tracking_packet(data):
 					data["pose"] = false
 					data["lock_state"] = "ambiguous"
-				_record_fresh_calibration_pose(data, packet_when)
+				if String(data.get("mode", "")) != "multiplayer":
+					_record_fresh_calibration_pose(data, packet_when)
 				latest_pose = data
 				newest_worker_time = packet_when
 	if camera_start_acknowledged and _model_prestarting and _camera_start_requested:
@@ -693,6 +779,34 @@ func get_pose_samples_after(last_id: int) -> Array[Dictionary]:
 
 func _apply_pose_packet(data: Dictionary, now: int) -> void:
 	if String(data.get("token", "")) != session_token or String(data.get("kind", "")) != "pose":
+		return
+	if String(data.get("mode", "")) == "multiplayer" and multiplayer_mode:
+		_last_packet_ms = now
+		_worker_was_streaming = bool(data.get("camera", false))
+		var observed: Variant = data.get("players", [])
+		if not (observed is Array) or observed.size() != 2:
+			_clear_multiplayer_status()
+			return
+		for index in range(2):
+			var person: Variant = observed[index]
+			if not (person is Dictionary):
+				multiplayer_status[index] = {"active": false, "x": -1.0, "last_ms": 0}
+				continue
+			var x_value: Variant = person.get("x", -1.0)
+			var valid := bool(person.get("active", false)) \
+				and (x_value is float or x_value is int) \
+				and is_finite(float(x_value)) and float(x_value) >= 0.0 \
+				and float(x_value) <= 1.0 and _has_fresh_source_frame(data)
+			multiplayer_status[index] = {
+				"active": valid,
+				"x": float(x_value) if valid else -1.0,
+				"last_ms": now if valid else 0,
+			}
+		current_status = data.duplicate()
+		if bool(data.get("camera", false)):
+			_worker_was_tracking = true
+			_ever_tracked = true
+		status_updated.emit(current_status.duplicate())
 		return
 	_last_packet_ms = now
 	# A real raw YOLO occupancy observation is accepted even if no keypoints
@@ -1125,6 +1239,25 @@ func set_calibration(left: float, center: float, right: float,
 	return true
 
 
+func set_neutral_body_calibration(center: float, neutral_noise: float = 0.0) -> bool:
+	## Real, fresh, single-person neutral hold; measured once for Catch and
+	## Balloon. Unlike the deprecated set_center_calibration(), this is NOT
+	## pretending left/right floor positions were physically measured. Each
+	## small torso displacement becomes signed velocity over the entire arena.
+	if not is_finite(center) or center < 0.05 or center > 0.95 \
+			or not is_finite(neutral_noise) or neutral_noise < 0.0 or neutral_noise > 0.12:
+		return false
+	calibration = {
+		"valid": true, "mode": "neutral_body",
+		"center": center, "noise": neutral_noise,
+		"neutral_only": true,
+		"deadzone": clampf(0.018 + neutral_noise * 2.2, 0.018, 0.06),
+		"sensitivity": clampf(0.11 + neutral_noise * 2.5, 0.11, 0.22)
+	}
+	plane_calibration.clear()
+	return true
+
+
 func set_center_calibration(center: float) -> bool:
 	## Deprecated compatibility helper for old test fixtures. It synthesizes
 	## floor side bounds and must NEVER be used for live gameplay. Normal
@@ -1142,6 +1275,13 @@ func normalized_body_x() -> float:
 	if not has_valid_pose() or not bool(calibration.get("valid", false)) \
 			or bool(calibration.get("mode", "") == "plane_stationary"):
 		return 0.0
+	if String(calibration.get("mode", "")) == "neutral_body":
+		var displacement := player_x - float(calibration["center"])
+		var deadzone := float(calibration["deadzone"])
+		if absf(displacement) <= deadzone:
+			return 0.0
+		return signf(displacement) * clampf(
+			(absf(displacement) - deadzone) / float(calibration["sensitivity"]), 0.0, 1.0)
 	var left := float(calibration["left"])
 	var center := float(calibration["center"])
 	var right := float(calibration["right"])

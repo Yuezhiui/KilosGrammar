@@ -8,6 +8,9 @@ signal requested(target: String, payload: Dictionary)
 signal database_import_csv_requested(path: String)
 signal database_export_csv_requested(path: String)
 signal database_delete_all_requested(confirmation: String)
+## Backend-authorized read-only extracts; no direct database access from UI.
+signal database_export_student_requested(student_id: String, path: String)
+signal database_export_grade_xlsx_requested(path: String)
 
 ## Local filtered Download CSV is a display-only extract, distinct from the
 ## backend's canonical 8-column import/export (underscore field identifiers).
@@ -34,9 +37,11 @@ const FILTER_INVISIBLE_ARROW := preload("res://Components/Leaderboard/Secondary/
 const RESPONSIVE_NODE_NAMES := [
 	"BoardArtwork", "TitleArt", "BackButton",
 	"StyleFilter", "ModeFilter", "DifficultyFilter",
+	"GradeLevelFilter", "SectionFilter", "StudentSearch", "ScoreSort",
 	"TableHeaderArt", "TableBodyArt",
 	"TableContent", "ImportCsvButton", "ExportCsvButton",
-	"DeleteAllButton"
+	"DeleteAllButton", "SelectedStudentLabel",
+	"PullOutStudentButton", "ExportGradeXlsxButton"
 ]
 
 var _context: Dictionary = {}
@@ -44,11 +49,24 @@ var _all_rows: Array[Dictionary] = []
 var _visible_rows: Array[Dictionary] = []
 var _selected_minigame := "ALL MINIGAMES"
 var _filter_historical_minigame_only := false
+var _selected_student_id := ""
+var _student_export_chooser_id := ""
+var _grade_regex: RegEx
+var _section_regex: RegEx
 
 @onready var back_button: Button = %BackButton
 @onready var style_filter: OptionButton = %StyleFilter
 @onready var mode_filter: OptionButton = %ModeFilter
 @onready var difficulty_filter: OptionButton = %DifficultyFilter
+@onready var grade_level_filter: OptionButton = %GradeLevelFilter
+@onready var section_filter: OptionButton = %SectionFilter
+@onready var student_search: LineEdit = %StudentSearch
+@onready var score_sort: OptionButton = %ScoreSort
+@onready var selected_student_label: Label = %SelectedStudentLabel
+@onready var pull_out_button: Button = %PullOutStudentButton
+@onready var export_grade_xlsx_button: Button = %ExportGradeXlsxButton
+@onready var student_export_dialog: FileDialog = %ExportStudentCsvDialog
+@onready var grade_xlsx_dialog: FileDialog = %ExportGradeXlsxDialog
 @onready var empty_message: Label = %EmptyMessage
 @onready var scroll: ScrollContainer = %ScoreRowsScroll
 @onready var rows_container: VBoxContainer = %ScoreRows
@@ -82,6 +100,8 @@ var _authored_ui_transforms: Dictionary = {}
 
 
 func _ready() -> void:
+	_grade_regex = RegEx.create_from_string("(?i)(?:^|[^a-z0-9])(?:grade\\s*|g\\s*)([0-9]{1,2})(?=$|[^0-9])")
+	_section_regex = RegEx.create_from_string("(?i)^(?:grade\\s*|g\\s*)?[0-9]{1,2}\\s*[-:,&/| ]*\\s*(?:section\\s*)?")
 	_capture_editor_layout()
 	# The inherited secondary theme's muted purple text is hard to read on
 	# Godot's gray AcceptDialog panel. Keep the existing real modal and its OK
@@ -97,11 +117,20 @@ func _ready() -> void:
 	# native controls. The three visible selection filters remain editor-authored.
 	for selector in [style_filter, mode_filter, difficulty_filter]:
 		selector.item_selected.connect(_on_filter_changed.unbind(1))
+	grade_level_filter.item_selected.connect(_on_grade_changed.unbind(1))
+	section_filter.item_selected.connect(_on_filter_changed.unbind(1))
+	student_search.text_changed.connect(_on_filter_changed.unbind(1))
+	score_sort.item_selected.connect(_on_filter_changed.unbind(1))
+	pull_out_button.pressed.connect(_choose_student_export)
+	export_grade_xlsx_button.pressed.connect(_choose_grade_xlsx_export)
+	student_export_dialog.file_selected.connect(_on_student_export_file_selected)
+	student_export_dialog.canceled.connect(func() -> void: _student_export_chooser_id = "")
+	grade_xlsx_dialog.file_selected.connect(_on_grade_xlsx_file_selected)
 	csv_dialog.file_selected.connect(_write_csv)
 	# Native Windows File Explorer dialogs use the actual Downloads folder,
 	# instead of Godot's default project directory. Do not change the CSV
 	# security/authorization callbacks or their selected absolute paths.
-	for dialog in [csv_dialog, import_dialog, database_export_dialog]:
+	for dialog in [csv_dialog, import_dialog, database_export_dialog, student_export_dialog, grade_xlsx_dialog]:
 		dialog.use_native_dialog = OS.get_name() == "Windows" and DisplayServer.get_name() != "headless"
 		_set_csv_start_directory(dialog)
 	import_button.pressed.connect(_choose_import_csv)
@@ -130,6 +159,7 @@ func _ready() -> void:
 	_on_typed_confirmation_changed("")
 	call_deferred("_focus_back")
 	_on_filter_changed()
+	_update_student_export_state()
 	if not _queued_transfer_notice.is_empty():
 		call_deferred("_flush_queued_transfer_notice")
 
@@ -210,6 +240,7 @@ func set_context(context: Dictionary) -> void:
 		return float(a.get("score", 0)) > float(b.get("score", 0))
 	)
 	if is_node_ready():
+		_rebuild_grade_options()
 		_on_filter_changed()
 
 
@@ -227,6 +258,9 @@ func _on_filter_changed() -> void:
 	var selected_style := style_filter.get_item_text(style_filter.selected).to_upper()
 	var selected_mode := mode_filter.get_item_text(mode_filter.selected).to_upper()
 	var selected_difficulty := difficulty_filter.get_item_text(difficulty_filter.selected).to_upper()
+	var selected_grade := grade_level_filter.get_item_text(grade_level_filter.selected)
+	var selected_section := section_filter.get_item_text(section_filter.selected)
+	var search_term := student_search.text.strip_edges().to_lower()
 	for record in _all_rows:
 		var actual_minigame := _minigame_name(record).to_upper()
 		if _filter_historical_minigame_only and actual_minigame != "LEGACY":
@@ -239,8 +273,122 @@ func _on_filter_changed() -> void:
 			continue
 		if selected_difficulty != "ALL DIFFICULTIES" and _record_text(record, 5).to_upper() != selected_difficulty:
 			continue
+		if selected_grade != "All Grades" and _grade_level(record) != selected_grade:
+			continue
+		if selected_section != "All Sections" and _section_name(record) != selected_section:
+			continue
+		if not search_term.is_empty() and not _student_id(record).to_lower().contains(search_term) \
+				and not _record_text(record, 1).to_lower().contains(search_term):
+			continue
 		_visible_rows.append(record)
+	_sort_visible_rows()
+	if not _visible_rows.any(func(row: Dictionary) -> bool: return _student_id(row) == _selected_student_id):
+		_selected_student_id = ""
 	_redraw_rows()
+	_update_student_export_state()
+
+
+func _on_grade_changed() -> void:
+	_rebuild_section_options()
+	# A newly selected grade begins with ALL its sections; keeping an old
+	# similarly named section can silently hide other pupils in the new grade.
+	section_filter.select(0)
+	_on_filter_changed()
+
+
+func _grade_level(record: Dictionary) -> String:
+	var raw := _record_text(record, 2).strip_edges()
+	var hit := _grade_regex.search(raw)
+	if hit != null:
+		return "Grade " + str(int(hit.get_string(1)))
+	# Historic rows may contain only "4 - Emerald" or "4".
+	var prefix := raw.split(" ", false)[0].trim_suffix("-").trim_suffix(":") if not raw.is_empty() else ""
+	if prefix.is_valid_int() and int(prefix) >= 1 and int(prefix) <= 12:
+		return "Grade " + str(int(prefix))
+	return "Unspecified Grade"
+
+
+func _section_name(record: Dictionary) -> String:
+	var raw := _record_text(record, 2).strip_edges()
+	if _grade_level(record) == "Unspecified Grade":
+		return raw if not raw.is_empty() else "Unspecified Section"
+	var stripped := _section_regex.sub(raw, "", true).strip_edges()
+	stripped = stripped.trim_prefix("-").trim_prefix(":").trim_prefix("&").trim_prefix(",").strip_edges()
+	if stripped.to_lower().begins_with("section "):
+		stripped = stripped.substr(8).strip_edges()
+	return stripped if not stripped.is_empty() else "Unspecified Section"
+
+
+func _student_id(record: Dictionary) -> String:
+	return str(record.get("student_id", "")).strip_edges()
+
+
+func _rebuild_grade_options() -> void:
+	var previous := grade_level_filter.get_item_text(grade_level_filter.selected) if grade_level_filter.selected >= 0 else "All Grades"
+	var unique: Dictionary = {}
+	for record in _all_rows:
+		unique[_grade_level(record)] = true
+	var keys := unique.keys()
+	keys.sort_custom(func(a: Variant, b: Variant) -> bool:
+		if str(a) == "Unspecified Grade":
+			return false
+		if str(b) == "Unspecified Grade":
+			return true
+		return int(str(a).trim_prefix("Grade ")) < int(str(b).trim_prefix("Grade "))
+	)
+	grade_level_filter.clear()
+	grade_level_filter.add_item("All Grades")
+	for value in keys:
+		grade_level_filter.add_item(str(value))
+	_select_item_by_text(grade_level_filter, previous)
+	_rebuild_section_options()
+
+
+func _rebuild_section_options() -> void:
+	var previous := section_filter.get_item_text(section_filter.selected) if section_filter.selected >= 0 else "All Sections"
+	var grade := grade_level_filter.get_item_text(grade_level_filter.selected)
+	var unique: Dictionary = {}
+	for record in _all_rows:
+		if grade == "All Grades" or _grade_level(record) == grade:
+			unique[_section_name(record)] = true
+	var names := unique.keys()
+	names.sort_custom(func(a: Variant, b: Variant) -> bool: return str(a).naturalnocasecmp_to(str(b)) < 0)
+	section_filter.clear()
+	section_filter.add_item("All Sections")
+	for name in names:
+		section_filter.add_item(str(name))
+	_select_item_by_text(section_filter, previous)
+
+
+func _select_item_by_text(selector: OptionButton, title: String) -> void:
+	selector.select(0)
+	for index in range(1, selector.item_count):
+		if selector.get_item_text(index) == title:
+			selector.select(index)
+			break
+
+
+func _sort_visible_rows() -> void:
+	var kind := score_sort.selected
+	_visible_rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		match kind:
+			1:
+				return _record_text(a, 1).naturalnocasecmp_to(_record_text(b, 1)) < 0
+			2:
+				return _student_id(a).naturalnocasecmp_to(_student_id(b)) < 0
+			3:
+				var a_grade := _grade_level(a)
+				var b_grade := _grade_level(b)
+				if a_grade != b_grade:
+					return a_grade.naturalnocasecmp_to(b_grade) < 0
+				var a_section := _section_name(a)
+				var b_section := _section_name(b)
+				if a_section != b_section:
+					return a_section.naturalnocasecmp_to(b_section) < 0
+			4:
+				return float(a.get("score", 0)) < float(b.get("score", 0))
+		return float(a.get("score", 0)) > float(b.get("score", 0))
+	)
 
 
 func _update_filter_appearance() -> void:
@@ -282,9 +430,17 @@ func _redraw_rows() -> void:
 	for record in _visible_rows:
 		var row: Control = ROW_SCENE.instantiate()
 		rows_container.add_child(row)
+		var sid := _student_id(record)
+		row.modulate = Color(0.72, 0.88, 0.75, 1.0) if not sid.is_empty() and sid == _selected_student_id else Color.WHITE
 		for col in range(FIELD_KEYS.size()):
 			var cell := row.get_node_or_null(ROW_LABELS[col]) as Label
 			if cell != null:
+				# Existing editor-authored cells pass input to the scoreboard. A
+				# click selects an exact student ID without creating fictitious
+				# profiles, editing rows or intercepting scroll-wheel input.
+				if not sid.is_empty():
+					cell.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+					cell.gui_input.connect(_on_student_row_input.bind(sid))
 				if FIELD_KEYS[col] == "game_style":
 					var topic := _record_text(record, col)
 					var minigame := _minigame_name(record)
@@ -302,6 +458,39 @@ func _redraw_rows() -> void:
 					# Keep the complete source text available when the row must ellipsize.
 					cell.tooltip_text = cell.text
 					_fit_row_cell_font(cell, col)
+
+
+func _on_student_row_input(event: InputEvent, student_id: String) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_select_student(student_id)
+
+
+func _select_student(student_id: String) -> void:
+	if student_id.is_empty():
+		_selected_student_id = ""
+	elif _visible_rows.any(func(row: Dictionary) -> bool: return _student_id(row) == student_id):
+		_selected_student_id = student_id
+	else:
+		_selected_student_id = ""
+	_redraw_rows()
+	_update_student_export_state()
+
+
+func _update_student_export_state() -> void:
+	if not is_instance_valid(selected_student_label):
+		return
+	var label := ""
+	for row in _visible_rows:
+		if _student_id(row) == _selected_student_id and not _selected_student_id.is_empty():
+			label = "%s (%s)" % [str(row.get("student_name", row.get("name", ""))), _selected_student_id]
+			break
+	selected_student_label.text = "Selected student: " + (label if not label.is_empty() else "Click a score row")
+	selected_student_label.tooltip_text = selected_student_label.text
+	pull_out_button.disabled = _transfer_pending or _selected_student_id.is_empty() or not _teacher_authorized()
+	# The protected backend export includes registered students who have not
+	# played yet; an empty *scoreboard* must not hide those roster records.
+	export_grade_xlsx_button.disabled = _transfer_pending or not _teacher_authorized() \
+		or not bool(_context.get("database_connected", false))
 
 
 func _fit_row_cell_font(cell: Label, column: int) -> void:
@@ -495,6 +684,87 @@ func _choose_database_export_csv() -> void:
 		return
 	_last_management_action = "export"
 	_open_csv_dialog(database_export_dialog, "kilosgrammar_student_scores.csv")
+
+
+func _choose_student_export() -> void:
+	if _transfer_pending:
+		_show_status("Another database transfer is already pending.")
+		return
+	if not _teacher_authorized():
+		_show_status("Teacher authorization is required to export a student's scores.")
+		return
+	if _selected_student_id.is_empty() or not _visible_rows.any(
+			func(record: Dictionary) -> bool: return _student_id(record) == _selected_student_id):
+		_show_status("Select a student by clicking a scoreboard row before exporting.")
+		return
+	_last_management_action = "student_export"
+	_student_export_chooser_id = _selected_student_id
+	_open_csv_dialog(student_export_dialog, "kilosgrammar_student_%s.xlsx" % _safe_filename_part(_selected_student_id))
+
+
+func _on_student_export_file_selected(path: String) -> void:
+	student_export_dialog.hide()
+	var requested_id := _student_export_chooser_id
+	_student_export_chooser_id = ""
+	if _transfer_pending:
+		_show_status("Another database transfer is still pending.")
+		return
+	if not _teacher_authorized():
+		set_transfer_status("Teacher authorization expired. Student export canceled.")
+		return
+	if not _is_xlsx_path(path):
+		set_transfer_status("Choose a .xlsx filename for the student Pull-Out export.")
+		return
+	if requested_id.is_empty() or requested_id != _selected_student_id or not _visible_rows.any(
+			func(record: Dictionary) -> bool: return _student_id(record) == requested_id):
+		set_transfer_status("Student selection changed. Select the student again.")
+		return
+	_last_management_action = "student_export"
+	set_transfer_pending("Requested XLSX Pull-Out for the selected student. Awaiting authorized database export.")
+	database_export_student_requested.emit(requested_id, path)
+
+
+func _choose_grade_xlsx_export() -> void:
+	if _transfer_pending:
+		_show_status("Another database transfer is already pending.")
+		return
+	if not _teacher_authorized():
+		_show_status("Teacher authorization is required for grade-grouped XLSX export.")
+		return
+	if not bool(_context.get("database_connected", false)):
+		_show_status("The local database is unavailable. Grade XLSX export was not started.")
+		return
+	_last_management_action = "grade_xlsx"
+	_open_csv_dialog(grade_xlsx_dialog, "kilosgrammar_scores_by_grade.xlsx")
+
+
+func _on_grade_xlsx_file_selected(path: String) -> void:
+	grade_xlsx_dialog.hide()
+	if _transfer_pending:
+		_show_status("Another database transfer is still pending.")
+		return
+	if not _teacher_authorized():
+		set_transfer_status("Teacher authorization expired. XLSX export canceled.")
+		return
+	if not _is_xlsx_path(path):
+		set_transfer_status("Choose a .xlsx filename. Grade worksheets require an XLSX workbook, not CSV.")
+		return
+	_last_management_action = "grade_xlsx"
+	set_transfer_pending("Requested full XLSX workbook with a separate worksheet for each grade.")
+	database_export_grade_xlsx_requested.emit(path)
+
+
+func _safe_filename_part(value: String) -> String:
+	var cleaned := ""
+	for index in range(value.length()):
+		var char := value[index]
+		if char.is_valid_identifier() or char.is_valid_int() or char in ["-", "_"]:
+			cleaned += char
+	return cleaned.left(48) if not cleaned.is_empty() else "selected"
+
+
+func _is_xlsx_path(path: String) -> bool:
+	return not path.is_empty() and path.to_lower().ends_with(".xlsx") and not path.contains("\n") and not path.contains("\r")
 
 
 func _on_import_file_selected(path: String) -> void:
@@ -793,6 +1063,10 @@ func _explain_management_authorization(message: String) -> String:
 			return "CSV import was blocked. Local administrator authorization is required to import student records. No records were imported. Ask the local administrator to authorize database management."
 		"export":
 			return "Full database CSV export was blocked. Local administrator authorization is required for database-wide exports. No CSV file was created. Ask the local administrator to authorize database management."
+		"student_export":
+			return "Student Pull-Out export was blocked. Local administrator authorization is required. No student workbook was created."
+		"grade_xlsx":
+			return "Grade-grouped XLSX export was blocked. Local administrator authorization is required. No workbook was created."
 		_:
 			return "Database administration was blocked. Local administrator authorization is required for import, full export, and permanent deletion. No database change was confirmed."
 
@@ -860,3 +1134,4 @@ func _set_transfer_pending_state(pending: bool) -> void:
 	for button in [import_button, export_button, delete_button]:
 		if is_instance_valid(button):
 			button.disabled = pending
+	_update_student_export_state()

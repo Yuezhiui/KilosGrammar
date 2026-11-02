@@ -71,9 +71,16 @@ const TILE_COLORS := [
 ]
 
 const TILE_SIZE := Vector2(106.0, 109.0)
-const APPLE_SIZE := Vector2(106.0, 109.0)
 const APPLE_SPACING_MARGIN := 12.0
 const BODY_FOLLOW_SPEED := 10.0
+const MULTIPLAYER_RUN_SPEED := 430.0 # pixels/second at 1280x720.
+# The three falling apples are generated dynamically, so these Inspector
+# controls define their rendered artwork/hitbox instead of moving any locked
+# character, basket, collected apple or HUD scene nodes.
+@export_group("Falling Apples - Classroom Readability")
+@export var APPLE_SIZE := Vector2(160.0, 164.0)
+@export_range(16, 34, 1) var falling_word_font_size := 26
+@export_range(18, 24, 1) var falling_word_min_font_size := 20
 # Each character is its own root-level editable group. Gameplay moves only the
 # selected group; the other groups keep their scene-authored transforms.
 const CHARACTER_NODES := ["Bear", "Cat", "Dog", "Lion", "Panda"]
@@ -113,26 +120,27 @@ var finish_reason := ""
 # Wave mode: exactly one correct answer and two distractors, on three lanes.
 const APPLES_PER_WAVE := 3
 const WAVE_CLEAR_SECONDS := 0.75
-# Each CORRECT answer permanently increases the following waves' fall speed.
-# The gap to the difficulty cap shrinks by 20% each correct answer. This yields
-# +5%/+7%/+9% on the first correct and smooth, bounded diminishing gains.
-const WAVE_SPEED_CAPS := {"Easy": 1.25, "Normal": 1.35, "Hard": 1.45}
+# Each correct answer provides subtle speed progression. Classrooms need time
+# to read and move; even at the cap Hard is only modestly quicker than Easy.
+const WAVE_SPEED_CAPS := {"Easy": 1.12, "Normal": 1.13, "Hard": 1.14}
 const WAVE_SPEED_REMAINING_FACTOR := 0.8
 # Difficulty affects how quickly the word apples fall, never how many points
-# a correct catch earns. Preserve the existing 105/185/245 px/s pacing.
-const BASE_EASY_FALL_SPEED := 105.0
+# a correct catch earns. Keep Normal/Hard only slightly above Easy for grades 1-6.
+const BASE_EASY_FALL_SPEED := 96.0
 const DIFFICULTY_SPEED_MULTIPLIER := {
 	"Easy": 1.0,
-	"Normal": 185.0 / 105.0,
-	"Hard": 245.0 / 105.0
+	"Normal": 102.0 / 96.0,
+	"Hard": 109.0 / 96.0
 }
 
 var spawn_interval := 0.0 # Waves now start moving immediately from above the screen.
-var base_fall_speed := 105.0
+var base_fall_speed := BASE_EASY_FALL_SPEED
 @export_range(1, 10) var default_lives: int = 3
 @export var default_duration: float = 60.0
-# The collision follows the selected Basket sprite's edited size and offset.
-@export_range(0.1, 1.0, 0.01) var basket_hitbox_width_ratio := 0.82
+# The larger words have wider visible apple bodies. Narrow the catch center
+# only (never touch the character/basket artwork) to keep adjacent answers
+# mutually exclusive while preserving each basket's editable sprite geometry.
+@export_range(0.1, 1.0, 0.01) var basket_hitbox_width_ratio := 0.55
 @export_range(0.1, 1.0, 0.01) var basket_hitbox_height_ratio := 0.52
 # Small, consistent half apples are composed from the original Basket sprite's
 # Inspector-authored width. Teachers can adjust the per-apple width and spacing
@@ -142,13 +150,28 @@ var base_fall_speed := 105.0
 var spawn_clock := 0.0
 var wave_phase := "idle" # idle, reading, falling, clearing
 var wave_index := 0
-var wave_speed := 105.0
+var wave_speed := BASE_EASY_FALL_SPEED
 var _kids_voice: RefCounted
 
 var basket_x := 640.0
 var basket_velocity := 0.0
 var body_input_active := false
 var body_target_normalized := 0.0
+# Competitive pilot: one shared falling wave, two independent, camera-driven
+# basket positions and score/lives. Keep all original solo fields unmodified.
+var multiplayer_enabled := false
+var player2_character := ""
+var player2_group: Node2D
+var player2_basket_sprite: Sprite2D
+var player2_basket_x := 900.0
+var player2_input_active := false
+var player2_direction := 0.0
+var player2_score := 0
+var player2_lives := LIVES_ROUND_HEARTS
+var player2_correct := 0
+var player2_attempts := 0
+var player2_streak := 0
+var player2_best_streak := 0
 
 var falling_tiles: Array[Dictionary] = []
 var collected_words: Array[String] = []
@@ -206,6 +229,9 @@ var tile_style_cache: Dictionary = {}
 
 var hearts_box: HBoxContainer
 @onready var score_bottom_number: Label = $HUDLayer/HUD/ScoreNumber
+@onready var multiplayer_board: Control = $HUDLayer/HUD/MultiplayerBoard
+@onready var player1_score_label: Label = $HUDLayer/HUD/MultiplayerBoard/Player1Score
+@onready var player2_score_label: Label = $HUDLayer/HUD/MultiplayerBoard/Player2Score
 var score_number_editor_position := Vector2.ZERO
 var score_number_editor_font_size := 35
 var score_plaque_editor_position := Vector2.ZERO
@@ -262,6 +288,13 @@ func set_context(value: Dictionary) -> void:
 	_stop_voice_feedback()
 	context = value.duplicate(true)
 	context["activity"] = "Catch the Word"
+	multiplayer_enabled = bool(context.get("multiplayer", false)) or String(context.get("player_mode", "")).to_lower() in ["multiplayer", "two", "2", "two players"]
+	# Multiplayer honors the teacher-selected round type. Seconds shares one
+	# 60-second clock; Lives starts both children with three hearts and ends
+	# ONLY when both have exhausted all hearts. Never silently replace Lives
+	# with Seconds, since results must match main_menu completion proof.
+	if multiplayer_enabled:
+		context["player_mode"] = "Multiplayer"
 	topic = _canonical_topic(String(context.get("topic", context.get("game_style", "Noun"))))
 	difficulty = _canonical_difficulty(String(context.get("difficulty", "Easy")))
 	_apply_difficulty()
@@ -275,7 +308,16 @@ func set_context(value: Dictionary) -> void:
 	best_streak = maxi(int(context.get("best_streak", streak)), streak) if is_resume else 0
 	correct_count = maxi(int(context.get("correct", 0)), 0) if is_resume else 0
 	attempts = maxi(int(context.get("attempts", 0)), 0) if is_resume else 0
-	lives = clampi(int(context.get("lives", LIVES_ROUND_HEARTS)), 0, LIVES_ROUND_HEARTS) if is_resume and is_lives_mode else LIVES_ROUND_HEARTS
+	# Competitive Catch uses independent hearts in BOTH Seconds and Lives
+	# modes. Restore P1 hearts on pause/recovery just like P2; resetting only
+	# P1 to three would grant extra catches after a pause in timed multiplayer.
+	lives = clampi(int(context.get("lives", LIVES_ROUND_HEARTS)), 0, LIVES_ROUND_HEARTS) if is_resume and (is_lives_mode or multiplayer_enabled) else LIVES_ROUND_HEARTS
+	player2_score = maxi(int(context.get("player2_score", 0)), 0) if is_resume and multiplayer_enabled else 0
+	player2_lives = clampi(int(context.get("player2_lives", LIVES_ROUND_HEARTS)), 0, LIVES_ROUND_HEARTS) if is_resume and multiplayer_enabled else LIVES_ROUND_HEARTS
+	player2_correct = maxi(int(context.get("player2_correct", 0)), 0) if is_resume and multiplayer_enabled else 0
+	player2_attempts = maxi(int(context.get("player2_attempts", 0)), 0) if is_resume and multiplayer_enabled else 0
+	player2_streak = maxi(int(context.get("player2_streak", 0)), 0) if is_resume and multiplayer_enabled else 0
+	player2_best_streak = maxi(int(context.get("player2_best_streak", 0)), 0) if is_resume and multiplayer_enabled else 0
 	# Lives has no countdown. Only a paused Seconds round restores its clock.
 	time_remaining = clampf(float(context.get("time_remaining", SECONDS_ROUND_DURATION)), 0.0, SECONDS_ROUND_DURATION) if is_resume and is_seconds_mode else default_duration
 	wave_speed = _correct_answer_wave_speed()
@@ -320,6 +362,8 @@ func set_context(value: Dictionary) -> void:
 				break
 			collected_words.append(String(word))
 	_reset_round_geometry()
+	body_input_active = false
+	player2_input_active = false
 	_refresh_collected_words()
 	_refresh_hud()
 	_spawn_wave()
@@ -338,12 +382,40 @@ func get_context() -> Dictionary:
 
 
 func set_body_x(normalized_x: float) -> void:
+	if multiplayer_enabled:
+		set_multiplayer_body_x(0, normalized_x)
+		return
 	body_target_normalized = clampf(normalized_x, -1.0, 1.0)
 	body_input_active = true
 
 
 func clear_body_input() -> void:
 	body_input_active = false
+	if multiplayer_enabled:
+		player2_input_active = false
+
+
+func set_multiplayer_body_x(index: int, value: float) -> void:
+	if not multiplayer_enabled or index < 0 or index > 1 or not is_finite(value):
+		return
+	# PoseService sends signed horizontal VELOCITY, not a screen destination.
+	# -999 (tracking lost) must never move/catch for that student.
+	if value < -1.0 or value > 1.0:
+		clear_multiplayer_body_input(index)
+		return
+	if index == 0:
+		body_target_normalized = clampf(value, -1.0, 1.0)
+		body_input_active = true
+	else:
+		player2_direction = clampf(value, -1.0, 1.0)
+		player2_input_active = true
+
+
+func clear_multiplayer_body_input(index: int) -> void:
+	if index == 0:
+		body_input_active = false
+	elif index == 1:
+		player2_input_active = false
 
 
 func _finish_round() -> void:
@@ -368,6 +440,8 @@ func _process(delta: float) -> void:
 
 	_update_basket(delta)
 	_sync_character_position()
+	if multiplayer_enabled:
+		_sync_player2_position()
 	_update_timer(delta)
 	if round_finished:
 		return
@@ -847,6 +921,19 @@ func _apply_art_selection() -> void:
 	# All five artwork groups are editable independently in catch_word.tscn.
 	# Selecting a character only changes visibility, never its sprite transforms
 	# or textures. This also preserves artist-adjusted basket/body alignment.
+	player2_character = ""
+	player2_group = null
+	player2_basket_sprite = null
+	if multiplayer_enabled:
+		var requested_p2 := String(context.get("player2_catch_character", context.get("catch_character_p2", "")))
+		if requested_p2 in CHARACTER_NODES and requested_p2 != selected_character:
+			player2_character = requested_p2
+		else:
+			# A second existing editor-authored animal, NEVER a duplicated sprite.
+			for candidate in CHARACTER_NODES:
+				if candidate != selected_character:
+					player2_character = candidate
+					break
 	for name in CHARACTER_NODES:
 		var group := get_node_or_null(name) as Node2D
 		if group == null:
@@ -857,7 +944,7 @@ func _apply_art_selection() -> void:
 			# A previous random/startup selection may have moved this group.
 			# Return inactive variants to their exact Inspector positions.
 			group.position = saved["position"]
-		group.visible = selected_character == name
+		group.visible = selected_character == name or (multiplayer_enabled and player2_character == name)
 		# Keep both parts individually editable in the scene Inspector.
 		if selected_character == name:
 			character_group = group
@@ -865,6 +952,15 @@ func _apply_art_selection() -> void:
 			basket_sprite = group.get_node("Basket") as Sprite2D
 			character_editor_origin = saved.get("position", group.position)
 			character_editor_scale = saved.get("scale", group.scale)
+		if multiplayer_enabled and player2_character == name:
+			player2_group = group
+			player2_basket_sprite = group.get_node("Basket") as Sprite2D
+	# The original wooden score plaque remains untouched in the editor. Only
+	# multiplayer hides it in favor of two unambiguous player score panels.
+	if is_instance_valid(score_draw_layer):
+		score_draw_layer.visible = not multiplayer_enabled
+	if is_instance_valid(multiplayer_board):
+		multiplayer_board.visible = multiplayer_enabled
 
 
 func _character_baseline_y() -> float:
@@ -939,8 +1035,13 @@ func _reset_round_geometry() -> void:
 	var half_basket_width := _basket_world_size().x * 0.5
 	var sprite_center_offset := _basket_world_offset().x
 	basket_x = clampf(basket_x, field.position.x + half_basket_width + 8.0 - sprite_center_offset, field.end.x - half_basket_width - 8.0 - sprite_center_offset)
+	if multiplayer_enabled:
+		basket_x = lerpf(field.position.x + half_basket_width, field.end.x - half_basket_width, 0.28)
 	basket_velocity = 0.0
 	_sync_character_position()
+	if multiplayer_enabled and is_instance_valid(player2_group):
+		player2_basket_x = lerpf(field.position.x + half_basket_width, field.end.x - half_basket_width, 0.72)
+		_sync_player2_position()
 
 
 func _sync_character_position() -> void:
@@ -949,6 +1050,27 @@ func _sync_character_position() -> void:
 	collected_word_layer.position = character_group.position + collected_editor_offset * Vector2(
 		view.x / HUD_DESIGN_SIZE.x, view.y / HUD_DESIGN_SIZE.y
 	)
+
+
+func _sync_player2_position() -> void:
+	if is_instance_valid(player2_group):
+		# Original animal sprite transforms (including intentional lower cropping)
+		# remain exactly those authored in catch_word.tscn.
+		player2_group.position = Vector2(player2_basket_x, _character_baseline_y())
+
+
+func _multiplayer_basket_rect(index: int) -> Rect2:
+	if index == 0:
+		return _basket_rect()
+	if not is_instance_valid(player2_group) or not is_instance_valid(player2_basket_sprite):
+		return Rect2()
+	var sprite := player2_basket_sprite
+	var image_size: Vector2 = sprite.region_rect.size if sprite.region_enabled else sprite.texture.get_size()
+	var world_size := image_size * Vector2(absf(sprite.global_scale.x), absf(sprite.global_scale.y))
+	var center := Vector2(player2_basket_x, _character_baseline_y()) + sprite.position * player2_group.scale
+	center.y -= world_size.y * 0.05
+	return Rect2(center - world_size * Vector2(basket_hitbox_width_ratio, basket_hitbox_height_ratio) * 0.5,
+		world_size * Vector2(basket_hitbox_width_ratio, basket_hitbox_height_ratio))
 
 
 func _update_basket(delta: float) -> void:
@@ -960,6 +1082,22 @@ func _update_basket(delta: float) -> void:
 	var min_x := field.position.x + visible_half_width + 8.0 - center_offset_x
 	var max_x := field.end.x - visible_half_width - 8.0 - center_offset_x
 	basket_velocity = 0.0
+	if multiplayer_enabled:
+		# Both children may travel the SAME field. Absent camera tracking freezes
+		# that child only: never move or collect on old/stale pose coordinates.
+		var run := MULTIPLAYER_RUN_SPEED * maxf(delta, 0.0) * (_view_size().x / HUD_DESIGN_SIZE.x)
+		if body_input_active and lives > 0:
+			basket_x += body_target_normalized * run
+		basket_x = clampf(basket_x, min_x, max_x)
+		if is_instance_valid(player2_group) and is_instance_valid(player2_basket_sprite):
+			var second_size := _multiplayer_basket_rect(1).size
+			var second_offset := player2_basket_sprite.position.x * player2_group.scale.x
+			var second_min := field.position.x + second_size.x * 0.5 + 8.0 - second_offset
+			var second_max := field.end.x - second_size.x * 0.5 - 8.0 - second_offset
+			if player2_input_active and player2_lives > 0:
+				player2_basket_x += player2_direction * run
+			player2_basket_x = clampf(player2_basket_x, second_min, second_max)
+		return
 	if body_input_active:
 		var body_target_x := lerpf(min_x, max_x, (body_target_normalized + 1.0) * 0.5)
 		basket_x = lerpf(basket_x, body_target_x, 1.0 - exp(-BODY_FOLLOW_SPEED * delta))
@@ -989,12 +1127,23 @@ func _update_tiles(delta: float) -> void:
 		tile["pos"] = pos
 		falling_tiles[index] = tile
 		_sync_tile_node(tile)
-		if wave_phase == "falling" and _tile_rect(tile).intersects(basket_rect):
-			_handle_catch(tile)
-			_free_tile_node(tile)
-			falling_tiles.remove_at(index)
-			_resolve_wave(true)
-			return
+		if wave_phase == "falling":
+			if multiplayer_enabled:
+				var winning_player := _multiplayer_catch_owner(tile)
+				if winning_player >= 0:
+					_handle_multiplayer_catch(tile, winning_player)
+					_free_tile_node(tile)
+					falling_tiles.remove_at(index)
+					_resolve_wave(true)
+					return
+			elif (not bool(context.get("camera_live", false)) or body_input_active) and _tile_rect(tile).intersects(basket_rect):
+				# A missing live pose must NEVER score via a stationary ghost
+				# basket, while ordinary non-camera QA/demo stays unchanged.
+				_handle_catch(tile)
+				_free_tile_node(tile)
+				falling_tiles.remove_at(index)
+				_resolve_wave(true)
+				return
 		if wave_phase == "clearing" and pos.y > bottom:
 			_free_tile_node(tile)
 			falling_tiles.remove_at(index)
@@ -1029,7 +1178,9 @@ func _wave_lane_positions() -> Array[float]:
 	var field := _game_rect()
 	# Shift the formation right from its old left-heavy position, while
 	# retaining enough room before the bottom-right SCORE plaque.
-	var left := field.position.x + APPLE_SIZE.x * 0.5 + 150.0
+	# Use the available width instead of leaving oversize apples crowded in
+	# the center. The right lane still clears the editor-authored score board.
+	var left := field.position.x + APPLE_SIZE.x * 0.5 + 140.0
 	var right := minf(field.end.x - APPLE_SIZE.x * 0.5 - 12.0,
 		score_plaque.position.x - APPLE_SIZE.x * 0.5 - APPLE_SPACING_MARGIN)
 	# Equal visual spacing and a gap greater than the basket catch width:
@@ -1039,7 +1190,8 @@ func _wave_lane_positions() -> Array[float]:
 
 func _correct_answer_wave_speed() -> float:
 	var cap: float = WAVE_SPEED_CAPS.get(difficulty, WAVE_SPEED_CAPS["Easy"])
-	var multiplier := 1.0 + (cap - 1.0) * (1.0 - pow(WAVE_SPEED_REMAINING_FACTOR, float(correct_count)))
+	var total_correct := correct_count + player2_correct if multiplayer_enabled else correct_count
+	var multiplier := 1.0 + (cap - 1.0) * (1.0 - pow(WAVE_SPEED_REMAINING_FACTOR, float(total_correct)))
 	return base_fall_speed * minf(multiplier, cap)
 
 
@@ -1118,15 +1270,19 @@ func _word_key(word: String) -> String:
 func _resolve_wave(caught: bool) -> void:
 	if wave_phase != "falling":
 		return
-	if not caught:
+	if not caught and not multiplayer_enabled:
 		for tile in falling_tiles:
 			if bool(tile["matching"]):
 				_handle_missed_correct(tile)
 				break
-	if is_lives_mode and lives <= 0:
-		finish_reason = "lives_empty"
-		_finish_round()
-		return
+	if is_lives_mode:
+		if (multiplayer_enabled and lives <= 0 and player2_lives <= 0) \
+				or (not multiplayer_enabled and lives <= 0):
+			# Main menu accepts Lives completion only with outer lives==0.
+			# In multi this can happen ONLY after BOTH children are depleted.
+			finish_reason = "lives_empty"
+			_finish_round()
+			return
 	wave_phase = "clearing"
 	spawn_clock = WAVE_CLEAR_SECONDS
 	# The two unchosen apples visibly fall away, without being collectible.
@@ -1136,6 +1292,64 @@ func _resolve_wave(caught: bool) -> void:
 		tile["speed"] = maxf(500.0, (out_y - Vector2(tile["pos"]).y) / WAVE_CLEAR_SECONDS)
 		tile["passed_line"] = true
 		falling_tiles[index] = tile
+
+
+func _multiplayer_catch_owner(tile: Dictionary) -> int:
+	# A single apple belongs to exactly ONE eligible, currently tracked
+	# basket. Nearest center wins simultaneous overlap; P1 wins exact ties.
+	# No pose means NO catch for that child, not an automatic game pause.
+	var apple := _tile_rect(tile)
+	var best := -1
+	var best_distance := INF
+	for index in range(2):
+		var active := body_input_active if index == 0 else player2_input_active
+		var health := lives if index == 0 else player2_lives
+		if not active or health <= 0:
+			continue
+		var basket := _multiplayer_basket_rect(index)
+		if not apple.intersects(basket):
+			continue
+		var dist := absf(Vector2(tile["pos"]).x - basket.get_center().x)
+		if dist < best_distance:
+			best = index
+			best_distance = dist
+	return best
+
+
+func _handle_multiplayer_catch(tile: Dictionary, index: int) -> void:
+	var correct := bool(tile["matching"])
+	var basket := _multiplayer_basket_rect(index)
+	var catch_pos := basket.get_center() + Vector2(0.0, -40.0)
+	if index == 0:
+		attempts += 1
+		if correct:
+			correct_count += 1
+			streak += 1
+			best_streak = maxi(best_streak, streak)
+			score += CORRECT_ANSWER_POINTS
+			if collected_words.size() < COLLECTED_WORD_LIMIT:
+				collected_words.append(String(tile["word"]))
+				_refresh_collected_words()
+		else:
+			streak = 0
+			lives = maxi(lives - 1, 0)
+	else:
+		player2_attempts += 1
+		if correct:
+			player2_correct += 1
+			player2_streak += 1
+			player2_best_streak = maxi(player2_best_streak, player2_streak)
+			player2_score += CORRECT_ANSWER_POINTS
+		else:
+			player2_streak = 0
+			player2_lives = maxi(player2_lives - 1, 0)
+	# Wave progress is based on both students' correct answers.
+	wave_speed = _correct_answer_wave_speed()
+	_spawn_confetti(catch_pos.x, catch_pos.y, not correct)
+	_show_floating_score(("P%d +100" % [index + 1]) if correct else
+		("P%d -1 HEART" % [index + 1]), catch_pos,
+		Color("#4EF082") if correct else Color("#FF6C8A"))
+	_speak_catch_feedback(correct)
 
 
 func _spawn_position_is_clear(candidate: Vector2, speed: float) -> bool:
@@ -1192,16 +1406,20 @@ func _create_tile_node(word: String, _color: Color) -> Control:
 	label.name = "WordLabel"
 	label.text = word.to_upper()
 	label.add_theme_font_override("font", TITLE_FONT)
-	# Hard vocabulary includes longer words. Fit the actual glyph width inside
-	# the original apple without resizing artwork or overlapping another lane.
-	var word_font_size := 16
-	while word_font_size > 7 and TITLE_FONT.get_string_size(
-			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, word_font_size).x > APPLE_SIZE.x - 14.0:
+	# Larger, outlined word labels remain inside the bigger falling apple.
+	# Normal words remain one line; long Grade 1-6 vocabulary wraps across
+	# readable lines instead of shrinking into tiny illegible print.
+	var word_font_size := falling_word_font_size
+	while word_font_size > falling_word_min_font_size and TITLE_FONT.get_string_size(
+			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, word_font_size).x > APPLE_SIZE.x - 20.0:
 		word_font_size -= 1
+	if TITLE_FONT.get_string_size(
+			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, word_font_size).x > APPLE_SIZE.x - 20.0:
+		label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 	label.add_theme_font_size_override("font_size", word_font_size)
 	label.add_theme_color_override("font_color", Color.WHITE)
 	label.add_theme_color_override("font_outline_color", Color(0.18, 0.1, 0.1, 0.95))
-	label.add_theme_constant_override("outline_size", 4)
+	label.add_theme_constant_override("outline_size", 5)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.clip_text = true
@@ -1456,6 +1674,25 @@ func _result_payload() -> Dictionary:
 	payload["game_mode"] = game_mode
 	payload["difficulty"] = difficulty
 	payload["score"] = score
+	if multiplayer_enabled:
+		# Explicitly attribute scores to students; never submit a fictitious
+		# combined score as if it belonged to either student. The results/backend
+		# router can persist P2 separately when its API contract is ready.
+		payload["player_mode"] = "Multiplayer"
+		payload["multiplayer"] = true
+		payload["player1_score"] = score
+		payload["player1_lives"] = lives
+		payload["player2_score"] = player2_score
+		payload["player2_lives"] = player2_lives
+		payload["player2_correct"] = player2_correct
+		payload["player2_attempts"] = player2_attempts
+		payload["player2_streak"] = player2_streak
+		payload["player2_best_streak"] = player2_best_streak
+		payload["player2_catch_character"] = player2_character
+		payload["player2_student_id"] = String(context.get("player2_student_id", ""))
+		payload["player2_student_name"] = String(context.get("player2_student_name", ""))
+		payload["player2_grade_section"] = String(context.get("player2_grade_section", ""))
+		payload["multiplayer_result_provisional"] = true
 	payload["lives"] = lives
 	payload["streak"] = streak
 	payload["best_streak"] = best_streak
@@ -1547,6 +1784,11 @@ func _refresh_hud() -> void:
 		while score_font_size > 16 and TITLE_FONT.get_string_size(score_bottom_number.text, HORIZONTAL_ALIGNMENT_LEFT, -1, score_font_size).x > score_bottom_number.size.x - 18.0:
 			score_font_size -= 2
 		score_bottom_number.add_theme_font_size_override("font_size", score_font_size)
+	if is_instance_valid(multiplayer_board):
+		multiplayer_board.visible = multiplayer_enabled
+		if multiplayer_enabled:
+			player1_score_label.text = "P1  %d  |  %d HEARTS" % [score, lives]
+			player2_score_label.text = "P2  %d  |  %d HEARTS" % [player2_score, player2_lives]
 
 	if is_seconds_mode:
 		timer_plaque.visible = true
@@ -1637,6 +1879,12 @@ func _on_resized() -> void:
 	var center_offset_x := _basket_world_offset().x
 	basket_x = clampf(basket_x, field.position.x + visible_half_width + 8.0 - center_offset_x, field.end.x - visible_half_width - 8.0 - center_offset_x)
 	_sync_character_position()
+	if multiplayer_enabled and is_instance_valid(player2_group):
+		var second_box := _multiplayer_basket_rect(1)
+		player2_basket_x = clampf(player2_basket_x,
+			field.position.x + second_box.size.x * 0.5 + 8.0,
+			field.end.x - second_box.size.x * 0.5 - 8.0)
+		_sync_player2_position()
 	_refresh_collected_words()
 	_refresh_hud()
 	_refresh_tutorial_focus()

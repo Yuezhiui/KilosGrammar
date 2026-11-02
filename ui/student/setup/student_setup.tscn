@@ -43,6 +43,42 @@ corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
 
+[sub_resource type="StyleBoxFlat" id="PlayerModeButton"]
+bg_color = Color(0.94, 0.84, 0.58, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45, 0.26, 0.11, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="PlayerModeSelected"]
+bg_color = Color(0.52, 0.81, 0.48, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.19, 0.42, 0.19, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="Player2Panel"]
+bg_color = Color(0.99, 0.95, 0.81, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.47, 0.27, 0.11, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
 [node name="StudentSetup" type="Control" unique_id=2135781869]
 layout_mode = 3
 anchors_preset = 15
@@ -104,9 +140,9 @@ expand_mode = 1
 
 [node name="StudentProfileCard" type="Control" parent="SetupStage" unique_id=1399405252]
 anchors_preset = 0
-offset_left = 105.0
+offset_left = 388.0
 offset_top = 180.0
-offset_right = 610.0
+offset_right = 893.0
 offset_bottom = 600.0
 mouse_filter = 1
 
@@ -216,11 +252,25 @@ theme_override_styles/focus = SubResource("FieldClear")
 placeholder_text = "Grade and section"
 max_length = 100
 
+[node name="ProfileStatus" type="Label" parent="SetupStage/StudentProfileCard"]
+layout_mode = 0
+offset_left = -40.0
+offset_top = 358.0
+offset_right = 546.0
+offset_bottom = 396.0
+theme_override_colors/font_color = Color(0.32, 0.25, 0.14, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
 [node name="GameSetupCard" type="Control" parent="SetupStage" unique_id=2009489831]
+visible = false
 anchors_preset = 0
-offset_left = 664.0
+offset_left = 176.0
 offset_top = 180.0
-offset_right = 1170.0
+offset_right = 1180.0
 offset_bottom = 600.0
 mouse_filter = 1
 
@@ -579,6 +629,175 @@ theme_override_colors/font_color = Color(0.65, 0.15, 0.1, 1)
 theme_override_fonts/font = ExtResource("font")
 theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
+
+[node name="PlayerModeTitle" type="Label" parent="SetupStage/GameSetupCard"]
+layout_mode = 0
+offset_left = 590.0
+offset_top = 0.0
+offset_right = 936.0
+offset_bottom = 45.0
+theme_override_colors/font_color = Color(0.36, 0.23, 0.12, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 24
+text = "PLAYER MODE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayerModeRow" type="Control" parent="SetupStage/GameSetupCard"]
+layout_mode = 0
+offset_left = 553.0
+offset_top = 51.0
+offset_right = 963.0
+offset_bottom = 114.0
+mouse_filter = 1
+
+[node name="SinglePlayerButton" type="Button" parent="SetupStage/GameSetupCard/PlayerModeRow"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 200.0
+offset_bottom = 53.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.3, 0.2, 0.1, 1)
+theme_override_colors/font_pressed_color = Color(0.2, 0.28, 0.13, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("PlayerModeButton")
+theme_override_styles/hover = SubResource("ChoiceHover")
+theme_override_styles/pressed = SubResource("PlayerModeSelected")
+theme_override_styles/focus = SubResource("ChoiceHover")
+toggle_mode = true
+text = "SINGLE PLAYER"
+
+[node name="MultiplayerButton" type="Button" parent="SetupStage/GameSetupCard/PlayerModeRow"]
+layout_mode = 0
+offset_left = 210.0
+offset_top = 0.0
+offset_right = 410.0
+offset_bottom = 53.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.3, 0.2, 0.1, 1)
+theme_override_colors/font_pressed_color = Color(0.2, 0.28, 0.13, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("PlayerModeButton")
+theme_override_styles/hover = SubResource("ChoiceHover")
+theme_override_styles/pressed = SubResource("PlayerModeSelected")
+theme_override_styles/focus = SubResource("ChoiceHover")
+toggle_mode = true
+text = "MULTIPLAYER"
+
+[node name="PlayerOneSummary" type="Label" parent="SetupStage/GameSetupCard"]
+layout_mode = 0
+offset_left = 563.0
+offset_top = 130.0
+offset_right = 947.0
+offset_bottom = 173.0
+theme_override_colors/font_color = Color(0.35, 0.21, 0.12, 1)
+theme_override_font_sizes/font_size = 18
+text = "PLAYER ONE"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="PlayerTwoPanel" type="Panel" parent="SetupStage/GameSetupCard"]
+visible = false
+layout_mode = 0
+offset_left = 551.0
+offset_top = 179.0
+offset_right = 968.0
+offset_bottom = 421.0
+theme_override_styles/panel = SubResource("Player2Panel")
+
+[node name="Title" type="Label" parent="SetupStage/GameSetupCard/PlayerTwoPanel"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 6.0
+offset_right = 407.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(0.38, 0.22, 0.11, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 21
+text = "PLAYER TWO PROFILE"
+horizontal_alignment = 1
+
+[node name="Player2IdLabel" type="Label" parent="SetupStage/GameSetupCard/PlayerTwoPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 45.0
+offset_right = 147.0
+offset_bottom = 83.0
+theme_override_colors/font_color = Color(0.3, 0.19, 0.1, 1)
+theme_override_font_sizes/font_size = 17
+text = "Student ID"
+vertical_alignment = 1
+
+[node name="Player2IdEdit" type="LineEdit" parent="SetupStage/GameSetupCard/PlayerTwoPanel"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 46.0
+offset_right = 400.0
+offset_bottom = 83.0
+theme_override_colors/font_color = Color(0.25, 0.17, 0.1, 1)
+theme_override_font_sizes/font_size = 16
+placeholder_text = "Player 2 ID"
+max_length = 64
+
+[node name="Player2NameLabel" type="Label" parent="SetupStage/GameSetupCard/PlayerTwoPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 97.0
+offset_right = 147.0
+offset_bottom = 135.0
+theme_override_colors/font_color = Color(0.3, 0.19, 0.1, 1)
+theme_override_font_sizes/font_size = 17
+text = "Name"
+vertical_alignment = 1
+
+[node name="Player2NameEdit" type="LineEdit" parent="SetupStage/GameSetupCard/PlayerTwoPanel"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 98.0
+offset_right = 400.0
+offset_bottom = 135.0
+theme_override_colors/font_color = Color(0.25, 0.17, 0.1, 1)
+theme_override_font_sizes/font_size = 16
+placeholder_text = "Player 2 name"
+max_length = 100
+
+[node name="Player2GradeLabel" type="Label" parent="SetupStage/GameSetupCard/PlayerTwoPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 149.0
+offset_right = 147.0
+offset_bottom = 190.0
+theme_override_colors/font_color = Color(0.3, 0.19, 0.1, 1)
+theme_override_font_sizes/font_size = 17
+text = "Grade / Section"
+vertical_alignment = 1
+
+[node name="Player2GradeEdit" type="LineEdit" parent="SetupStage/GameSetupCard/PlayerTwoPanel"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 150.0
+offset_right = 400.0
+offset_bottom = 187.0
+theme_override_colors/font_color = Color(0.25, 0.17, 0.1, 1)
+theme_override_font_sizes/font_size = 16
+placeholder_text = "Grade and section"
+max_length = 100
+
+[node name="Player2Status" type="Label" parent="SetupStage/GameSetupCard/PlayerTwoPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 195.0
+offset_right = 400.0
+offset_bottom = 236.0
+theme_override_colors/font_color = Color(0.67, 0.18, 0.12, 1)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
 
 [node name="SetupActions" type="Control" parent="SetupStage" unique_id=2019999969]
 anchors_preset = 0

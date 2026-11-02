@@ -685,6 +685,31 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 	if registration_gate_checked:
 		payload = payload.duplicate(true)
 		payload.erase("_registration_gate_checked")
+	# Multiplayer has TWO distinct student records. Verify the second ID
+	# read-only before launching calibration, just as we already do for P1.
+	# The verified marker lives only during this one setup navigation; never
+	# persist it into results or a later teacher's session.
+	var p2_gate_checked := bool(payload.get("_player_two_gate_checked", false))
+	if current_route == "student_setup" and route == "calibration" \
+			and String(payload.get("player_mode", "")) == "Multiplayer" \
+			and not p2_gate_checked and not registration_gate_checked \
+			and database_online and is_instance_valid(database_client):
+		if not database_registration_pending:
+			database_registration_pending = true
+			database_registration_ticket += 1
+			var p2_ticket := database_registration_ticket
+			database_pending_route = {
+				"route": route, "payload": payload.duplicate(true),
+				"ticket": p2_ticket, "stage": "p2"
+			}
+			_database_student_status("CHECKING PLAYER TWO STUDENT ID • No record will be changed.")
+			database_registration_request_id = int(database_client.call("find_student",
+				String(payload.get("player2_student_id", "")), {
+					"purpose": "multiplayer_player2_lookup",
+					"registration_ticket": p2_ticket
+				}))
+			call_deferred("_watch_database_registration_navigation", p2_ticket)
+		return
 	if current_route == "student_setup" and route in ["play_activity", "calibration"] and payload.has("student_id") \
 			and not bool(session_state.get("guided_tutorial", false)) \
 			and String(session_state.get("entry_source", "")) != "tutorial" \
@@ -710,6 +735,9 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 		payload["registration_deferred"] = true
 		payload.erase("recovery_profile_queued")
 		payload["database_connected"] = false
+	if p2_gate_checked:
+		payload = payload.duplicate(true)
+		payload.erase("_player_two_gate_checked")
 	# Normalize all pre-game starts through a single game-owned countdown.
 	# Students must calibrate with a real camera; never bypass into a
 	# keyboard/demo session through legacy setup routes.
@@ -718,6 +746,11 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 		# capture; keep the countdown contract independent of that signal name.
 		payload = payload.duplicate(true)
 		payload["start_countdown"] = true
+	if route == "calibration":
+		# Single-player keeps its proven physical calibration. The requested
+		# two-player pilot uses a separate scene and one shared YOLO stream.
+		PoseService.set_multiplayer_mode(String(payload.get("player_mode",
+			session_state.get("player_mode", "Single Player"))) == "Multiplayer")
 	if PoseService.active and route in ["student_setup", "play_activity", "play_topic", "play_difficulty", "results", "tutorial_home", "quit"]:
 		PoseService.stop_camera()
 	# The teacher has explicitly selected a camera game and is entering student
@@ -823,6 +856,7 @@ func _restart_setup_context(snapshot: Dictionary) -> Dictionary:
 	for key in [
 		"student_id", "student_name", "grade_section", "activity", "topic",
 		"game_style", "game_mode", "difficulty", "catch_character", "catch_map",
+		"player_mode", "player2_student_id", "player2_student_name", "player2_grade_section",
 			"entry_source", "guided_tutorial", "demo_mode", "database_connected",
 			"student_lookup_connected", "camera_live",
 		"camera_requested", "keyboard_mode", "calibration_valid",
@@ -1027,7 +1061,10 @@ func _expire_database_registration_navigation(ticket: int) -> void:
 	offline_payload.erase("recovery_profile_queued")
 	offline_payload["database_connected"] = false
 	offline_payload["student_lookup_connected"] = false
-	offline_payload["_registration_gate_checked"] = true
+	if String(pending.get("stage", "")) == "p2":
+		offline_payload["_player_two_gate_checked"] = true
+	else:
+		offline_payload["_registration_gate_checked"] = true
 	_database_student_status("DATABASE LOOKUP IS SLOW • Play may continue; only a completed round can be saved.")
 	_on_panel_requested(String(pending.get("route", "play_activity")), offline_payload)
 
@@ -1047,7 +1084,12 @@ func _registration_form_matches(expected: Dictionary) -> bool:
 		and grade_field.text.strip_edges() == String(expected.get("grade_section", "")) \
 		and String(active_panel.get("_selected_style")) == String(expected.get("game_style", "")) \
 		and String(active_panel.get("_selected_mode")) == String(expected.get("game_mode", "")) \
-		and String(active_panel.get("_selected_difficulty")) == String(expected.get("difficulty", ""))
+		and String(active_panel.get("_selected_difficulty")) == String(expected.get("difficulty", "")) \
+		and String(active_panel.get("_selected_player_mode")) == String(expected.get("player_mode", "Single Player")) \
+		and (String(expected.get("player_mode", "")) != "Multiplayer" \
+			or ((active_panel.get("_player_two_id_edit") as LineEdit).text.strip_edges().to_lower() == String(expected.get("player2_student_id", "")).to_lower() \
+			and _normalized_student_name((active_panel.get("_player_two_name_edit") as LineEdit).text) == _normalized_student_name(String(expected.get("player2_student_name", ""))) \
+			and (active_panel.get("_player_two_grade_edit") as LineEdit).text.strip_edges().to_lower() == String(expected.get("player2_grade_section", "")).to_lower()))
 
 
 func _normalized_student_name(value: String) -> String:
@@ -1236,6 +1278,34 @@ func _on_database_export_csv_requested(path: String) -> void:
 	database_client.call("export_data_csv", context)
 
 
+func _request_excel_workbook_export(path: String, student_id: String = "") -> void:
+	if not database_online or not is_instance_valid(database_client):
+		_leaderboard_management_status("Local database is offline. Nothing was exported.")
+		return
+	if path.strip_edges().is_empty() or path.get_extension().to_lower() != "xlsx":
+		_leaderboard_management_status("Choose an .xlsx workbook file. Nothing was exported.")
+		return
+	database_transfer_ticket += 1
+	_leaderboard_management_pending(
+		"Preparing individual student report..." if not student_id.is_empty() else
+		"Preparing grade-sorted Excel worksheets...")
+	var info := _leaderboard_management_context()
+	info["path"] = path
+	info["student_id"] = student_id
+	database_client.call("export_data_xlsx", student_id, info)
+
+
+func _on_database_export_student_requested(student_id: String, path: String) -> void:
+	if student_id.strip_edges().is_empty():
+		_leaderboard_management_status("Select a student before exporting.")
+		return
+	_request_excel_workbook_export(path, student_id)
+
+
+func _on_database_export_grade_xlsx_requested(path: String) -> void:
+	_request_excel_workbook_export(path)
+
+
 func _on_database_import_csv_requested(path: String) -> void:
 	if not database_online or not is_instance_valid(database_client):
 		_leaderboard_management_status("Local database is offline. Nothing was imported.")
@@ -1302,6 +1372,36 @@ func _handle_database_management_result(info: Dictionary, result: Dictionary) ->
 		else:
 			_leaderboard_management_status("Full CSV export saved: %d students, %d scores." % [
 				int(data.get("students", 0)), int(data.get("scores", 0))], true)
+		return
+	if operation == "export_data_xlsx":
+		var destination := String(info.get("path", ""))
+		var encoded := String(data.get("xlsx_base64", ""))
+		if destination.get_extension().to_lower() != "xlsx" or encoded.is_empty() \
+				or encoded.length() > 12_000_000:
+			_leaderboard_management_status("Workbook data was invalid. No file was written.")
+			return
+		var workbook := Marshalls.base64_to_raw(encoded)
+		# Validate the ZIP local-file signature and size before writing any
+		# teacher-selected file. The backend prevents XML formula injection.
+		if workbook.size() < 100 or workbook.size() > 8_000_000 \
+				or workbook[0] != 80 or workbook[1] != 75 \
+				or workbook[2] != 3 or workbook[3] != 4:
+			_leaderboard_management_status("Workbook was not a valid XLSX package. Nothing was written.")
+			return
+		var file := FileAccess.open(destination, FileAccess.WRITE)
+		if file == null:
+			_leaderboard_management_status("Cannot write the chosen XLSX file. Try another folder.")
+			return
+		file.store_buffer(workbook)
+		file.flush()
+		var failure := file.get_error()
+		file.close()
+		if failure != OK:
+			_leaderboard_management_status("Excel workbook could not be saved completely.")
+		else:
+			var kind := "individual student" if not String(info.get("student_id", "")).is_empty() else "grade-sorted"
+			_leaderboard_management_status("Exported %s Excel workbook: %d students, %d score records." % [
+				kind, int(data.get("students", 0)), int(data.get("scores", 0))], true)
 		return
 	if operation == "import_data_csv":
 		_leaderboard_management_status("CSV imported: %d new students, %d score records." % [
@@ -1393,6 +1493,34 @@ func _save_completed_round() -> void:
 			call_deferred("_flush_recovery_outbox")
 		else:
 			push_error("Local recovery storage is unavailable: " + String(saved.get("error", "unknown")))
+	if String(state.get("player_mode", "")) == "Multiplayer":
+		# A competitive round has two separately registered identities and
+		# must create two independent score records. The existing journal owns
+		# crash-safe profile-first replay; do not overwrite P1's receipt with
+		# P2's event ID, or persist the same score for both students.
+		var p2_id := String(state.get("player2_student_id", "")).strip_edges()
+		var p2_name := String(state.get("player2_student_name", "")).strip_edges()
+		var p2_grade := String(state.get("player2_grade_section", "")).strip_edges()
+		var p2_points: Variant = state.get("player2_score", null)
+		if p2_id.is_empty() or p2_id.to_lower() == student_id.to_lower() \
+				or p2_name.is_empty() or p2_grade.is_empty() \
+				or not (p2_points is int or p2_points is float) \
+				or not is_finite(float(p2_points)) or float(p2_points) < 0.0:
+			push_error("Multiplayer round: Player Two identity/score is incomplete; no P2 save attempted.")
+		else:
+			var p2_saved: Dictionary = RECOVERY_JOURNAL.enqueue_completed_round(
+				p2_id, p2_name, p2_grade,
+				String(state.get("game_style", state.get("topic", ""))),
+				String(state.get("game_mode", "")),
+				String(state.get("difficulty", "")),
+				String(state.get("activity", "")),
+				int(p2_points), String(state.get("completion_reason", "")))
+			if bool(p2_saved.get("ok", false)):
+				state["player2_recovery_pending"] = true
+				session_state["player2_recovery_pending"] = true
+				call_deferred("_flush_recovery_outbox")
+			else:
+				push_error("Player Two recovery storage unavailable: " + String(p2_saved.get("error", "unknown")))
 	active_panel.call("set_context", state)
 
 
@@ -1486,7 +1614,7 @@ func _on_database_request_finished(info: Dictionary, result: Dictionary) -> void
 				String(info.get("autofill_field", "")), String(info.get("autofill_value", "")),
 				int(info.get("autofill_epoch", -1)))
 		return
-	if operation in ["export_data_csv", "import_data_csv", "request_delete_all_challenge", "delete_all_data"]:
+	if operation in ["export_data_csv", "export_data_xlsx", "import_data_csv", "request_delete_all_challenge", "delete_all_data"]:
 		_handle_database_management_result(info, result)
 		return
 	if operation == "health":
@@ -1511,6 +1639,36 @@ func _on_database_request_finished(info: Dictionary, result: Dictionary) -> void
 				"LOCAL POSTGRESQL CONNECTED • Enter an ID to search, or continue to register."
 				if database_online else "LOCAL POSTGRESQL OFFLINE • You may play, but scores cannot be saved.",
 				database_online)
+		return
+	if operation == "find_student" and purpose == "multiplayer_player2_lookup":
+		if int(info.get("registration_ticket", -1)) != database_registration_ticket \
+				or not database_registration_pending or database_pending_route.is_empty() \
+				or String(database_pending_route.get("stage", "")) != "p2":
+			return
+		var p2_pending := database_pending_route.duplicate(true)
+		var original: Dictionary = p2_pending.get("payload", {})
+		_clear_pending_database_registration(false)
+		if not _registration_form_matches(original):
+			_show_student_registration_error("PLAYER TWO DETAILS CHANGED • PLEASE REVIEW AND CONTINUE.")
+			return
+		if successful and data.get("student", null) is Dictionary:
+			var registered: Dictionary = data["student"]
+			var p2_expected := {
+				"student_id": String(original.get("player2_student_id", "")),
+				"student_name": String(original.get("player2_student_name", "")),
+				"grade_section": String(original.get("player2_grade_section", "")),
+			}
+			if not _returning_student_matches(registered, p2_expected):
+				_show_student_registration_error("PLAYER TWO STUDENT ID ALREADY REGISTERED WITH DIFFERENT DETAILS.")
+				return
+			original["player2_student_id"] = String(registered["student_id"]).strip_edges()
+			original["player2_student_name"] = String(registered["student_name"]).strip_edges()
+			original["player2_grade_section"] = String(registered["grade_section"]).strip_edges()
+		elif String(result.get("error", "")) != "student_not_found":
+			_show_student_registration_error("COULD NOT VERIFY PLAYER TWO STUDENT ID. TRY AGAIN.")
+			return
+		original["_player_two_gate_checked"] = true
+		_on_panel_requested(String(p2_pending.get("route", "calibration")), original)
 		return
 	if operation == "find_student" and not purpose.begins_with("registration_lookup"):
 		if current_route != "student_setup" or not is_instance_valid(active_panel):
@@ -1690,6 +1848,8 @@ func _show_panel(route: String) -> void:
 		push_warning("Unknown KilosGrammar panel route: " + route)
 		return
 	var path: String = PANEL_SCENES[route]
+	if route == "calibration" and String(session_state.get("player_mode", "Single Player")) == "Multiplayer":
+		path = "res://ui/vision/calibration/multiplayer_calibration.tscn"
 	if not ResourceLoader.exists(path):
 		push_warning("Panel is not available yet: " + path)
 		return
@@ -1753,6 +1913,10 @@ func _show_panel(route: String) -> void:
 	if route == "leaderboard":
 		if active_panel.has_signal("database_export_csv_requested"):
 			active_panel.connect("database_export_csv_requested", Callable(self, "_on_database_export_csv_requested"))
+		if active_panel.has_signal("database_export_student_requested"):
+			active_panel.connect("database_export_student_requested", Callable(self, "_on_database_export_student_requested"))
+		if active_panel.has_signal("database_export_grade_xlsx_requested"):
+			active_panel.connect("database_export_grade_xlsx_requested", Callable(self, "_on_database_export_grade_xlsx_requested"))
 		if active_panel.has_signal("database_import_csv_requested"):
 			active_panel.connect("database_import_csv_requested", Callable(self, "_on_database_import_csv_requested"))
 		if active_panel.has_signal("database_delete_all_requested"):
