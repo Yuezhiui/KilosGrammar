@@ -5,22 +5,15 @@ extends Control
 ## Drag them in Godot's 2D editor; no script assigns node coordinates.
 signal requested(target: String, payload: Dictionary)
 ## Only the host/backend may execute these operations. Paths are user-selected.
-signal database_import_csv_requested(path: String)
-signal database_export_csv_requested(path: String)
+signal database_import_xlsx_requested(path: String)
+signal database_export_xlsx_requested(path: String)
 signal database_delete_all_requested(confirmation: String)
 
-## Local filtered Download CSV is a display-only extract, distinct from the
-## backend's canonical 8-column import/export (underscore field identifiers).
-const CSV_FIELDS := ["STUDENT ID", "NAME", "GRADE", "MINIGAME", "GAME STYLE", "GAME MODE", "DIFFICULTY", "SCORE"]
-const FILTERED_CSV_KEYS := ["student_id", "student_name", "grade", "minigame", "game_style", "game_mode", "difficulty", "score"]
 const FIELD_KEYS := ["student_id", "student_name", "grade", "game_style", "game_mode", "difficulty", "score"]
 const ROW_SCENE := preload("res://ui/secondary/leaderboard/leaderboard_row.tscn")
 const ROW_LABELS := ["StudentId", "StudentName", "Grade", "GameStyle", "GameMode", "Difficulty", "Score"]
 const DELETE_CONFIRMATION := "DELETE ALL DATA"
-const MAX_IMPORT_BYTES := 1000000
-const MAX_IMPORT_RECORDS := 5000
-const LEGACY_IMPORT_CSV_FIELDS := ["student_id", "student_name", "grade_section", "game_style", "game_mode", "difficulty", "score"]
-const IMPORT_CSV_FIELDS := ["student_id", "student_name", "grade_section", "minigame", "game_style", "game_mode", "difficulty", "score"]
+const MAX_IMPORT_XLSX_BYTES := 8000000
 const MINIGAME_FILTER_OPTIONS := ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE"]
 const EDITOR_CANVAS_SIZE := Vector2(1280, 720)
 const FILTER_INVISIBLE_ARROW := preload("res://Components/Leaderboard/Secondary/transparent_dropdown_arrow.png")
@@ -60,7 +53,6 @@ var _section_regex: RegEx
 @onready var scroll: ScrollContainer = %ScoreRowsScroll
 @onready var rows_container: VBoxContainer = %ScoreRows
 @onready var empty_dialog: AcceptDialog = %EmptyNotice
-@onready var csv_dialog: FileDialog = %SaveCsvDialog
 @onready var import_button: Button = %ImportCsvButton
 @onready var export_button: Button = %ExportCsvButton
 @onready var delete_button: Button = %DeleteAllButton
@@ -102,27 +94,26 @@ func _ready() -> void:
 	resized.connect(_apply_viewport_layout)
 	call_deferred("_apply_viewport_layout")
 	back_button.pressed.connect(_request_main)
-	# Filtered CSV and minigame filtering remain host-callable without hidden
-	# native controls. The three visible selection filters remain editor-authored.
+	# Minigame filtering remains host-callable without hidden controls.
+	# The three visible selection filters remain editor-authored.
 	for selector in [style_filter, mode_filter, difficulty_filter]:
 		selector.item_selected.connect(_on_filter_changed.unbind(1))
 	grade_level_filter.item_selected.connect(_on_grade_changed.unbind(1))
 	section_filter.item_selected.connect(_on_filter_changed.unbind(1))
 	student_search.text_changed.connect(_on_filter_changed.unbind(1))
 	score_sort.item_selected.connect(_on_filter_changed.unbind(1))
-	csv_dialog.file_selected.connect(_write_csv)
 	# Native Windows File Explorer dialogs use the actual Downloads folder,
-	# instead of Godot's default project directory. Do not change the CSV
+	# instead of Godot's default project directory. Do not change the XLSX
 	# security/authorization callbacks or their selected absolute paths.
-	for dialog in [csv_dialog, import_dialog, database_export_dialog]:
+	for dialog in [import_dialog, database_export_dialog]:
 		dialog.use_native_dialog = OS.get_name() == "Windows" and DisplayServer.get_name() != "headless"
-		_set_csv_start_directory(dialog)
-	import_button.pressed.connect(_choose_import_csv)
-	export_button.pressed.connect(_choose_database_export_csv)
+		_set_xlsx_start_directory(dialog)
+	import_button.pressed.connect(_choose_import_xlsx)
+	export_button.pressed.connect(_choose_database_export_xlsx)
 	delete_button.pressed.connect(_begin_delete_all)
 	import_dialog.file_selected.connect(_on_import_file_selected)
-	import_review_dialog.confirmed.connect(_confirm_import_csv)
-	import_review_dialog.canceled.connect(_cancel_import_csv)
+	import_review_dialog.confirmed.connect(_confirm_import_xlsx)
+	import_review_dialog.canceled.connect(_cancel_import_xlsx)
 	database_export_dialog.file_selected.connect(_on_export_file_selected)
 	first_cancel_button.pressed.connect(_cancel_delete_all)
 	first_continue_button.pressed.connect(_on_delete_first_confirmed)
@@ -166,11 +157,6 @@ func set_minigame_filter(minigame: String) -> bool:
 	return false
 
 
-func request_filtered_csv_export() -> void:
-	## Exports exactly the currently filtered rows through SaveCsvDialog.
-	_download_csv()
-
-
 func _capture_editor_layout() -> void:
 	for node_name in RESPONSIVE_NODE_NAMES:
 		var control := get_node_or_null(node_name) as Control
@@ -210,7 +196,7 @@ func set_context(context: Dictionary) -> void:
 	# A new database state must revoke a pending destructive confirmation.
 	_cancel_delete_all()
 	if not _teacher_authorized():
-		_cancel_import_csv()
+		_cancel_import_xlsx()
 	_all_rows.clear()
 	# Rows are supplied by the local PostgreSQL client. Never synthesize scores
 	# while the service is unavailable, and keep all scene-authored layout.
@@ -534,14 +520,7 @@ func _record_text(record: Dictionary, column: int) -> String:
 	return str(record.get(key, ""))
 
 
-func _download_csv() -> void:
-	if _visible_rows.is_empty():
-		empty_dialog.popup_centered()
-	else:
-		_open_csv_dialog(csv_dialog, "kilosgrammar_filtered_scores.csv")
-
-
-func _set_csv_start_directory(dialog: FileDialog) -> void:
+func _set_xlsx_start_directory(dialog: FileDialog) -> void:
 	# Windows' Known Folder API resolves Downloads even when the user moved it
 	# away from C:/Users/<account>/Downloads. FileDialog requires filesystem
 	# access for both Windows' native chooser and Godot's non-Windows fallback.
@@ -550,61 +529,19 @@ func _set_csv_start_directory(dialog: FileDialog) -> void:
 		dialog.current_dir = downloads
 
 
-func _open_csv_dialog(dialog: FileDialog, suggested_filename: String = "") -> void:
+func _open_xlsx_dialog(dialog: FileDialog, suggested_filename: String = "") -> void:
 	# Reset on EVERY open: the prior user-selected folder must not override the
 	# requested Downloads default for the next import or export.
-	_set_csv_start_directory(dialog)
+	_set_xlsx_start_directory(dialog)
 	dialog.current_file = suggested_filename
 	# The previous backend result must not remain an exclusive native window
-	# over a new CSV file chooser.
+	# over a new Excel workbook file chooser.
 	if empty_dialog.visible:
 		empty_dialog.hide()
 	dialog.popup_centered()
 
 
-func _write_csv(filepath: String) -> void:
-	# Godot's file_selected signal can arrive before the native save window is
-	# fully dismissed; close it before presenting an outcome notice.
-	csv_dialog.hide()
-	var file := FileAccess.open(filepath, FileAccess.WRITE)
-	if file == null:
-		empty_dialog.dialog_text = "Could not write CSV to the selected location."
-		empty_dialog.popup_centered()
-		return
-	file.store_string(",".join(CSV_FIELDS) + "\r\n")
-	for record in _visible_rows:
-		var cells: PackedStringArray = []
-		for key in FILTERED_CSV_KEYS:
-			var raw := _filtered_csv_text(record, key).replace("\r", " ").replace("\n", " ")
-			cells.append('"' + _protect_spreadsheet_cell(raw).replace('"', '""') + '"')
-		file.store_string(",".join(cells) + "\r\n")
-	file.close()
-	set_transfer_status("Filtered leaderboard CSV saved.", true)
-
-
-func _filtered_csv_text(record: Dictionary, key: String) -> String:
-	if key == "minigame":
-		return _minigame_name(record)
-	if key == "student_name":
-		return str(record.get("student_name", record.get("name", "")))
-	if key == "grade":
-		return str(record.get("grade", record.get("grade_section", "")))
-	if key == "game_style":
-		return str(record.get("game_style", record.get("topic", "")))
-	return str(record.get(key, ""))
-
-
-func _protect_spreadsheet_cell(value: String) -> String:
-	# Spreadsheet apps evaluate cells beginning with =, +, -, or @ as formulas.
-	# The optional filtered CSV API exports the visible rows on this device;
-	# database-wide Import/Export are handled by the server via signals.
-	var probe := value.strip_edges(true, false)
-	if probe.begins_with("=") or probe.begins_with("+") or probe.begins_with("-") or probe.begins_with("@"):
-		return "'" + value
-	return value
-
-
-func _choose_import_csv() -> void:
+func _choose_import_xlsx() -> void:
 	if _transfer_pending:
 		_show_status("Finish the pending database transfer before importing another file.")
 		return
@@ -612,16 +549,19 @@ func _choose_import_csv() -> void:
 	if not _teacher_authorized():
 		set_transfer_status("Teacher authorization required to import student records.")
 		return
-	_cancel_import_csv()
-	_open_csv_dialog(import_dialog)
+	_cancel_import_xlsx()
+	_open_xlsx_dialog(import_dialog)
 
 
-func _choose_database_export_csv() -> void:
+func _choose_database_export_xlsx() -> void:
 	if _transfer_pending:
 		_show_status("A database transfer is already pending. Please finish it first.")
 		return
 	_last_management_action = "export"
-	_open_csv_dialog(database_export_dialog, "kilosgrammar_student_scores.csv")
+	if not _teacher_authorized():
+		set_transfer_status("Teacher authorization required to export student records.")
+		return
+	_open_xlsx_dialog(database_export_dialog, "kilosgrammar_student_scores.xlsx")
 
 
 func _on_import_file_selected(path: String) -> void:
@@ -633,13 +573,13 @@ func _on_import_file_selected(path: String) -> void:
 	if not _teacher_authorized():
 		set_transfer_status("Teacher authorization expired. Import canceled.")
 		return
-	var validation := _validate_import_csv(path)
+	var validation := _validate_import_xlsx(path)
 	if not validation.is_empty():
 		set_transfer_status(validation)
 		return
 	_pending_import_path = path
 	import_review_dialog.dialog_text = (
-		"Selected CSV: %s\n\nThis may create or update student profiles and completed scores. "
+		"Selected Excel workbook: %s\n\nThis may create or update student profiles and completed scores. "
 		+ "The local database must validate each row before saving. Confirm only if "
 		+ "you recognize this file and intend to import its contents."
 	) % path.get_file()
@@ -650,27 +590,27 @@ func _on_import_file_selected(path: String) -> void:
 	import_review_dialog.popup_centered()
 
 
-func _confirm_import_csv() -> void:
+func _confirm_import_xlsx() -> void:
 	import_review_dialog.hide()
 	var path := _pending_import_path
 	_pending_import_path = ""
 	if _transfer_pending:
-		_show_status("CSV import canceled because another database operation is pending.")
+		_show_status("Excel import canceled because another database operation is pending.")
 		return
 	_last_management_action = "import"
 	if not _teacher_authorized() or path.is_empty():
-		set_transfer_status("CSV import canceled: teacher authorization required.")
+		set_transfer_status("Excel import canceled: teacher authorization required.")
 		return
 	# Recheck because the file could be replaced while the review window opens.
-	var validation := _validate_import_csv(path)
+	var validation := _validate_import_xlsx(path)
 	if not validation.is_empty():
 		set_transfer_status(validation)
 		return
 	set_transfer_pending("Import requested. The database must validate records before saving anything.")
-	database_import_csv_requested.emit(path)
+	database_import_xlsx_requested.emit(path)
 
 
-func _cancel_import_csv() -> void:
+func _cancel_import_xlsx() -> void:
 	_pending_import_path = ""
 	if is_instance_valid(import_review_dialog):
 		import_review_dialog.hide()
@@ -682,11 +622,14 @@ func _on_export_file_selected(path: String) -> void:
 		_show_status("Another database transfer is still pending.")
 		return
 	_last_management_action = "export"
-	if not _is_csv_path(path):
-		set_transfer_status("Choose a .csv filename for the full database export.")
+	if not _teacher_authorized():
+		set_transfer_status("Teacher authorization expired. Excel export canceled.")
 		return
-	set_transfer_pending("Full CSV export requested for ALL student profiles and completed scores.")
-	database_export_csv_requested.emit(path)
+	if not _is_xlsx_path(path):
+		set_transfer_status("Choose a .xlsx filename for the full database export.")
+		return
+	set_transfer_pending("Full Excel workbook export requested for ALL student profiles and completed scores.")
+	database_export_xlsx_requested.emit(path)
 
 
 func _begin_delete_all() -> void:
@@ -844,52 +787,46 @@ func _teacher_authorized() -> bool:
 	return bool(_context.get("teacher_authorized", false))
 
 
-func _is_csv_path(path: String) -> bool:
-	return not path.is_empty() and path.to_lower().ends_with(".csv") and not path.contains("\n") and not path.contains("\r")
+func _is_xlsx_path(path: String) -> bool:
+	return not path.is_empty() and path.to_lower().ends_with(".xlsx") and not path.contains("\n") and not path.contains("\r")
 
 
-func _validate_import_csv(path: String) -> String:
-	if not _is_csv_path(path):
-		return "Import requires a .csv file."
+func _validate_import_xlsx(path: String) -> String:
+	if not _is_xlsx_path(path):
+		return "Import requires an .xlsx Excel workbook."
 	if not FileAccess.file_exists(path):
-		return "Selected CSV file does not exist or cannot be read."
+		return "Selected Excel workbook does not exist or cannot be read."
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		return "Cannot open the selected CSV file."
-	if file.get_length() <= 0 or file.get_length() > MAX_IMPORT_BYTES:
-		return "Import CSV must be non-empty and no larger than 1,000,000 bytes."
-	var headings := file.get_csv_line()
-	var expected_fields: Array = IMPORT_CSV_FIELDS if headings.size() == IMPORT_CSV_FIELDS.size() else LEGACY_IMPORT_CSV_FIELDS
-	if headings.size() != expected_fields.size():
-		return "Import requires eight database columns (including minigame), or the original seven-column backup. Filtered Download CSV uses another format."
-	for index in range(expected_fields.size()):
-		var heading := str(headings[index]).trim_prefix("\uFEFF").strip_edges().to_lower()
-		if heading != expected_fields[index]:
-			return "CSV headers must be: " + ",".join(expected_fields)
-	var records := 0
-	while not file.eof_reached():
-		var columns := file.get_csv_line()
-		if columns.size() == 1 and str(columns[0]).strip_edges().is_empty():
-			continue
-		records += 1
-		if records > MAX_IMPORT_RECORDS:
-			return "CSV contains too many records. Import limit is 5,000 rows."
-		if columns.size() != headings.size():
-			return "CSV row %d has an unexpected number of columns." % records
-		for cell in columns:
-			var value := str(cell)
-			var probe := value.strip_edges(true, false)
-			if probe.begins_with("=") or probe.begins_with("+") or probe.begins_with("-") or probe.begins_with("@"):
-				return "CSV row %d contains a spreadsheet formula. Import canceled." % records
-			if value.to_utf8_buffer().has(0):
-				return "CSV row %d contains an invalid control character." % records
-	if records == 0:
-		return "CSV contains no student records."
+		return "Cannot open the selected Excel workbook."
+	var length := file.get_length()
+	if length < 4 or length > MAX_IMPORT_XLSX_BYTES:
+		return "Excel workbook must be non-empty and no larger than 8 MB."
+	var signature := file.get_buffer(4)
+	file.close()
+	if signature != PackedByteArray([80, 75, 3, 4]):
+		return "Selected file is not a valid .xlsx workbook (ZIP format required)."
+	# XLSX is an Office Open XML archive; check only structure on the client.
+	# Schema, row counts, data validity and spreadsheet formulas are rechecked
+	# by the authorized backend before any student data is written.
+	var workbook := ZIPReader.new()
+	if workbook.open(path) != OK:
+		return "Selected Excel workbook could not be opened."
+	var files := workbook.get_files()
+	var has_workbook := files.has("xl/workbook.xml")
+	var has_worksheet := false
+	for entry in files:
+		if entry.begins_with("xl/worksheets/") and entry.ends_with(".xml"):
+			has_worksheet = true
+			break
+	workbook.close()
+	if not files.has("[Content_Types].xml") or not has_workbook or not has_worksheet:
+		return "Selected Excel file is missing required workbook or worksheet entries."
 	return ""
 
 
 func _show_status(message: String) -> void:
-	# Deliberate CSV actions may need validation feedback. The in-table empty
+	# Deliberate Excel actions may need validation feedback. The in-table empty
 	# state already communicates routine offline health without a banner.
 	_queue_or_show_transfer_notice(message, false)
 
@@ -905,7 +842,7 @@ func set_transfer_status(message: String, success: bool = false) -> void:
 		# offline, even at startup with no import or delete in flight. Only a
 		# dispatched mutation can have an unknown write outcome.
 		if was_pending and action in ["import", "delete"]:
-			var operation := "CSV import" if action == "import" else "DELETE ALL DATA"
+			var operation := "Excel import" if action == "import" else "DELETE ALL DATA"
 			_queue_or_show_transfer_notice("Connection lost during %s. Its outcome is unknown. After reconnection, check saved records before attempting it again." % operation, false)
 		_last_management_action = ""
 		return
@@ -929,9 +866,9 @@ func _explain_management_authorization(message: String) -> String:
 		"delete":
 			return "DELETE ALL DATA was blocked. Local administrator authorization is required. No student profiles or scores were deleted. Ask the local administrator to authorize database management."
 		"import":
-			return "CSV import was blocked. Local administrator authorization is required to import student records. No records were imported. Ask the local administrator to authorize database management."
+			return "Excel import was blocked. Local administrator authorization is required to import student records. No records were imported. Ask the local administrator to authorize database management."
 		"export":
-			return "Full database CSV export was blocked. Local administrator authorization is required for database-wide exports. No CSV file was created. Ask the local administrator to authorize database management."
+			return "Full database Excel export was blocked. Local administrator authorization is required for database-wide exports. No workbook was created. Ask the local administrator to authorize database management."
 		_:
 			return "Database administration was blocked. Local administrator authorization is required for import, full export, and permanent deletion. No database change was confirmed."
 

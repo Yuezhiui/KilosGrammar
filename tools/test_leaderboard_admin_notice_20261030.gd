@@ -43,8 +43,8 @@ func _case(size: Vector2i) -> void:
 	_check(modal.get_ok_button() != null and not modal.get_ok_button().disabled,
 		tag + " original accessible OK control remains functional")
 	var signals := {"imports": 0, "exports": 0, "deletions": 0}
-	panel.database_import_csv_requested.connect(func(_path: String) -> void: signals["imports"] += 1)
-	panel.database_export_csv_requested.connect(func(_path: String) -> void: signals["exports"] += 1)
+	panel.database_import_xlsx_requested.connect(func(_path: String) -> void: signals["imports"] += 1)
+	panel.database_export_xlsx_requested.connect(func(_path: String) -> void: signals["exports"] += 1)
 	panel.database_delete_all_requested.connect(func(_phrase: String) -> void: signals["deletions"] += 1)
 
 	# Pressing each real action is sufficient to set the status context.
@@ -54,7 +54,7 @@ func _case(size: Vector2i) -> void:
 	# two simultaneous exclusive Windows dialogs are invalid UI state.
 	(panel.get_node("%ImportCsvDialog") as FileDialog).hide()
 	panel.set_transfer_status(BACKEND_ERROR, false)
-	_check(modal.dialog_text.contains("CSV import was blocked")
+	_check(modal.dialog_text.contains("Excel import was blocked")
 			and modal.dialog_text.contains("No records were imported")
 			and modal.dialog_text.contains("administrator authorization"),
 		tag + " rejected import explains authorization and zero import")
@@ -63,8 +63,8 @@ func _case(size: Vector2i) -> void:
 	(panel.get_node("%ExportCsvButton") as Button).pressed.emit()
 	(panel.get_node("%ExportDatabaseCsvDialog") as FileDialog).hide()
 	panel.set_transfer_status(BACKEND_ERROR, false)
-	_check(modal.dialog_text.contains("Full database CSV export was blocked")
-			and modal.dialog_text.contains("No CSV file was created"),
+	_check(modal.dialog_text.contains("Full database Excel export was blocked")
+			and modal.dialog_text.contains("No workbook was created"),
 		tag + " rejected full export explains authorization and no output")
 	modal.hide()
 

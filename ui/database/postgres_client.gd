@@ -24,7 +24,8 @@ const MAX_IDENTIFIER_LENGTH := 128
 const MAX_NAME_LENGTH := 200
 const MAX_GRADE_LENGTH := 100
 const MAX_IMPORT_CSV_BYTES := 1_000_000
-const ADMIN_OPERATIONS := ["export_data_csv", "export_data_xlsx", "import_data_csv", "request_delete_all_challenge", "delete_all_data"]
+const MAX_IMPORT_XLSX_BYTES := 8_000_000
+const ADMIN_OPERATIONS := ["export_data_csv", "export_data_xlsx", "import_data_csv", "import_data_xlsx", "request_delete_all_challenge", "delete_all_data"]
 
 var _next_request_id := 0
 var _inflight: Dictionary = {}
@@ -445,6 +446,20 @@ func import_data_csv(csv_text: String, context: Dictionary = {}) -> int:
 		return _reject("import_data_csv", context, "invalid_csv_size")
 	return _send("import_data_csv", HTTPClient.METHOD_POST, "/data/import", {
 		"csv": csv_text,
+	}, context)
+
+
+func import_data_xlsx(workbook_base64: String, context: Dictionary = {}) -> int:
+	## Teacher-only, independently validated by the Python API before an
+	## atomic import_snapshot. The UI only opens .xlsx; no CSV picker is shown.
+	if workbook_base64.is_empty() or workbook_base64.length() > 11_000_000:
+		return _reject("import_data_xlsx", context, "invalid_xlsx_size")
+	var raw := Marshalls.base64_to_raw(workbook_base64)
+	if raw.size() < 100 or raw.size() > MAX_IMPORT_XLSX_BYTES \
+			or raw[0] != 80 or raw[1] != 75 or raw[2] != 3 or raw[3] != 4:
+		return _reject("import_data_xlsx", context, "invalid_xlsx_file")
+	return _send("import_data_xlsx", HTTPClient.METHOD_POST, "/data/import_xlsx", {
+		"xlsx_base64": workbook_base64,
 	}, context)
 
 

@@ -70,7 +70,7 @@ func _test_viewport(viewport: Vector2i) -> void:
 	board.set("_last_management_action", "import")
 	board.set_transfer_pending("Valid CSV import dispatched to backend")
 	board.set_transfer_status(GENERIC_DISCONNECT)
-	_check(modal.visible and modal.dialog_text.contains("CSV import")
+	_check(modal.visible and modal.dialog_text.contains("Excel import")
 		and modal.dialog_text.contains("outcome is unknown")
 		and not modal.dialog_text.contains("succeeded"),
 		key + " interrupted in-flight import still warns that records need checking")

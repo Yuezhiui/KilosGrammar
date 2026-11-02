@@ -576,40 +576,31 @@ theme_override_styles/panel = SubResource("LeaderboardNoticePanel")
 ok_button_text = "OK"
 dialog_text = "No saved scores yet. Local score storage is not connected."
 
-[node name="SaveCsvDialog" type="FileDialog" parent="." unique_id=426954753]
-unique_name_in_owner = true
-editor_description = "Active filtered CSV Save As dialog, opened by leaderboard.gd. Preserve the native file selector and file_selected callback."
-title = "Export leaderboard as CSV"
-size = Vector2i(760, 500)
-access = 2
-filters = PackedStringArray("*.csv ; CSV Files")
-use_native_dialog = true
-
 [node name="ImportCsvDialog" type="FileDialog" parent="." unique_id=1899776685]
 unique_name_in_owner = true
-editor_description = "Active CSV import file selector. Preserve authorization checks and the separate ImportReviewDialog confirmation."
-title = "Open a File"
+editor_description = "Existing Import button's XLSX file selector. Preserve authorization checks and the separate ImportReviewDialog confirmation."
+title = "Import student records from Excel workbook"
 size = Vector2i(840, 560)
 file_mode = 0
 access = 2
-filters = PackedStringArray("*.csv ; CSV Files")
+filters = PackedStringArray("*.xlsx ; Excel Workbooks")
 use_native_dialog = true
 
 [node name="ImportReviewDialog" type="ConfirmationDialog" parent="." unique_id=680743559]
 unique_name_in_owner = true
-editor_description = "Active CSV import review/confirmation; conditional dialog must not be removed because it is normally hidden."
-title = "Review CSV import request"
+editor_description = "Active XLSX import review/confirmation; conditional dialog must not be removed because it is normally hidden."
+title = "Review Excel workbook import request"
 size = Vector2i(660, 295)
 ok_button_text = "CONFIRM IMPORT"
-dialog_text = "Importing will send these student profiles and scores to the local database for validation. Verify that the selected file and its contents are correct before continuing."
+dialog_text = "Importing this Excel workbook will send student profiles and scores to the local database for validation. Verify the selected file and its contents before continuing."
 
 [node name="ExportDatabaseCsvDialog" type="FileDialog" parent="." unique_id=1176457840]
 unique_name_in_owner = true
-editor_description = "Active canonical database CSV Export As dialog. Used separately from the filtered CSV export."
-title = "Export ALL student profiles and completed scores"
+editor_description = "Existing Export button's XLSX Save As dialog, exporting all student profiles and completed scores."
+title = "Export ALL student profiles and scores to Excel"
 size = Vector2i(840, 560)
 access = 2
-filters = PackedStringArray("*.csv ; CSV Files")
+filters = PackedStringArray("*.xlsx ; Excel Workbooks")
 use_native_dialog = true
 
 [node name="DeleteFirstOverlay" type="Control" parent="." unique_id=221906430]

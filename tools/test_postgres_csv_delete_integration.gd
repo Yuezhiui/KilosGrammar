@@ -4,6 +4,7 @@ extends SceneTree
 ## NEVER connects to PostgreSQL or calls the real local HTTP endpoint.
 ## godot --headless --path . --script res://tools/test_postgres_csv_delete_integration.gd
 const MENU_PATH := "res://tools/test_postgres_csv_delete_menu_fixture.gd"
+const SAMPLE_XLSX := "res://docs/examples/KilosGrammar_DEMO_8_Students_Grades_1_to_4_20261102.xlsx"
 const VALID_CSV := "student_id,student_name,grade_section,minigame,game_style,game_mode,difficulty,score\r\n\"ID-1\",\"Ada, \"\"Quoted\"\"\",\"Grade 5\",\"Catch the Word\",\"Noun\",\"Seconds\",\"Easy\",\"7\"\r\n"
 const LEGACY_CSV := "student_id,student_name,grade_section,game_style,game_mode,difficulty,score\r\n\"LEG-1\",\"Bea, \"\"Legacy\"\"\",\"Grade 5\",\"Noun\",\"Seconds\",\"Easy\",\"4\"\r\n"
 ## Every QA CSV file and recovery event stays under a fresh test-only folder;
@@ -30,12 +31,12 @@ func _initialize() -> void:
 		push_error("Could not create isolated QA CSV/recovery directory")
 		quit(1)
 		return
-	IMPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_import.csv")
-	LEGACY_IMPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_legacy_import.csv")
-	EXPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_export.csv")
+	IMPORT_PATH = qa_storage.path_join("qa_postgres_xlsx_delete_import.xlsx")
+	LEGACY_IMPORT_PATH = qa_storage.path_join("qa_postgres_xlsx_delete_legacy_import.xlsx")
+	EXPORT_PATH = qa_storage.path_join("qa_postgres_xlsx_delete_export.xlsx")
 	FILTERED_PATH = qa_storage.path_join("qa_postgres_csv_delete_filtered.csv")
-	STALE_EXPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_stale_export.csv")
-	STALE_IMPORT_PATH = qa_storage.path_join("qa_postgres_csv_delete_stale_import.csv")
+	STALE_EXPORT_PATH = qa_storage.path_join("qa_postgres_xlsx_delete_stale_export.xlsx")
+	STALE_IMPORT_PATH = qa_storage.path_join("qa_postgres_xlsx_delete_stale_import.xlsx")
 	call_deferred("_run")
 
 
@@ -82,8 +83,8 @@ func _run() -> void:
 	}, "leaderboard"), "Leaderboard fixtures are provided only via mock response")
 	_check((board.get_node("%ScoreRows") as VBoxContainer).get_child_count() == 1,
 		"One previously saved row is shown before CSV/delete interaction")
-	_check(_find(board, ["SaveCsvDialog"]) is FileDialog,
-		"Existing editor-authored Save CSV file dialog remains")
+	_check(_find(board, ["SaveCsvDialog"]) == null,
+		"Unused filtered Save CSV dialog was deleted")
 	_check(_find(board, ["ImportCsvDialog", "OpenCsvDialog"]) is FileDialog,
 		"Import uses a native editor-authored Open CSV FileDialog")
 	_check(_find(board, ["ImportButton", "ImportCsvButton"]) is Button,
@@ -118,7 +119,7 @@ func _test_minigame_display_and_filters() -> void:
 	for old_node in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
 		_check(board.find_child(old_node, true, false) == null,
 			"removed FILTERS/popover cannot be reopened: " + old_node)
-	_check(board.has_method("set_minigame_filter") and board.has_method("request_filtered_csv_export"),
+	_check(board.has_method("set_minigame_filter") and board.has_method("_validate_import_xlsx"),
 		"hidden minigame and CSV preserve explicit non-popover host APIs")
 	var expected := ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE"]
 	_check(not board.has_node("MinigameFilter") and board.has_method("set_minigame_filter"),
@@ -166,24 +167,8 @@ func _test_minigame_display_and_filters() -> void:
 	if _count_rows() == 1:
 		var historic_style := (rows.get_child(0).get_node("GameStyle") as Label).text
 		_check(historic_style == "NOUN", "Historical score retains grammar topic alone, with no Legacy prefix")
-	# The older green Download button saves a display extract; its header must
-	# not be confused with the server's canonical full backup field names.
-	var local_save := _find(board, ["SaveCsvDialog"]) as FileDialog
-	_check(_find(board, ["DownloadButton"]) == null and local_save != null,
-		"filtered CSV host API retains SaveCsvDialog, with unused DownloadButton physically removed")
-	if local_save != null:
-		board.call("request_filtered_csv_export")
-		_check(local_save.visible, "Filtered Download launches its native SaveCsvDialog")
-		local_save.file_selected.emit(ProjectSettings.globalize_path(FILTERED_PATH))
-		local_save.hide()
-		_check(FileAccess.file_exists(FILTERED_PATH), "Filtered CSV is created for selected Legacy rank only")
-		if FileAccess.file_exists(FILTERED_PATH):
-			var filtered := FileAccess.get_file_as_string(FILTERED_PATH)
-			_check(filtered.begins_with("STUDENT ID,NAME,GRADE,MINIGAME,GAME STYLE,GAME MODE,DIFFICULTY,SCORE\r\n")
-				and filtered.contains("\"Legacy\",\"Noun\"")
-				and filtered.count("\r\n") == 2,
-				"Filtered CSV has eight display columns and one Legacy record, distinct from canonical full export")
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(FILTERED_PATH))
+	_check(_find(board, ["DownloadButton", "SaveCsvDialog"]) == null,
+		"Filtered local CSV download and dialog absent; genuine XLSX-only main controls remain")
 	_check(bool(board.call("set_minigame_filter", "ALL MINIGAMES")),
 		"public API resets hidden minigame filter")
 	_check(_count_rows() == 4, "Restoring ALL MINIGAMES shows all four independent scores")
@@ -196,248 +181,172 @@ func _test_minigame_display_and_filters() -> void:
 
 
 func _test_export() -> void:
-	var export_button := _find(board, ["ExportCsvButton"]) as Button
+	var button := _find(board, ["ExportCsvButton"]) as Button
 	var chooser := _find(board, ["ExportDatabaseCsvDialog"]) as FileDialog
-	if export_button == null or chooser == null:
+	_check(button != null and chooser != null, "Original Export button and Save dialog retained")
+	if button == null or chooser == null:
 		return
-	var initial_mutations: int = client.call("mutation_count")
-	var initial_exports: int = client.call("count", "export_data_csv")
-	export_button.pressed.emit()
-	_check(chooser.visible, "Export button displays native Save FileDialog")
+	var original_mutations: int = client.call("mutation_count")
+	var before: int = client.call("count", "export_data_xlsx")
+	_check(chooser.filters.size() == 1 and String(chooser.filters[0]).contains("*.xlsx"),
+		"Unchanged Export button opens XLSX-only file picker")
+	button.pressed.emit()
+	_check(chooser.visible, "Authorized export opens picker")
 	chooser.canceled.emit()
 	chooser.hide()
-	_check(int(client.call("mutation_count")) == initial_mutations,
-		"Cancel Export never inserts/deletes records")
-	_check(not FileAccess.file_exists(EXPORT_PATH),
-		"Cancelled Export does not create a misleading file")
-	export_button.pressed.emit()
+	_check(int(client.call("count", "export_data_xlsx")) == before
+		and client.call("mutation_count") == original_mutations,
+		"Canceled export cannot contact backend or change data")
 	chooser.file_selected.emit(ProjectSettings.globalize_path(EXPORT_PATH))
-	chooser.hide()
-	_check(int(client.call("count", "export_data_csv")) > initial_exports,
-		"Selecting an export destination requests complete backend-authorized CSV")
-	_check(not FileAccess.file_exists(EXPORT_PATH),
-		"No saved CSV is claimed before backend acknowledges the export")
-	_check(client.call("reply", "export_data_csv", {
+	_check(int(client.call("count", "export_data_xlsx")) == before + 1,
+		"Selecting XLSX destination requests guarded report from fake backend")
+	_check(not FileAccess.file_exists(EXPORT_PATH), "No Excel workbook written before backend succeeds")
+	_check(client.call("reply", "export_data_xlsx", {
 		"ok": false, "status": 403, "error": "admin_authorization_required",
 		"message": "Teacher permission missing", "data": null,
-	}), "Backend may reject export without a local teacher authorization token")
-	_check(not FileAccess.file_exists(EXPORT_PATH),
-		"Rejected unauthorized export leaves no CSV file behind")
-	var denied_status := _find(board, ["EmptyNotice"]) as AcceptDialog
-	_check(denied_status != null and denied_status.dialog_text.contains("failed"),
-		"Denied export does not claim saved CSV success")
-	export_button.pressed.emit()
+	}), "Mock backend can deny export despite selected destination")
+	_check(not FileAccess.file_exists(EXPORT_PATH), "Denied export leaves no XLSX file")
+	var notice := _find(board, ["EmptyNotice"]) as AcceptDialog
+	_check(notice != null and notice.dialog_text.contains("failed"),
+		"Denied Excel export cannot show false success")
+	button.pressed.emit()
 	chooser.file_selected.emit(ProjectSettings.globalize_path(EXPORT_PATH))
-	chooser.hide()
-	var response := {"ok": true, "status": 200,
-		"data": {"csv": VALID_CSV, "students": 1, "scores": 1}}
-	_check(client.call("reply", "export_data_csv", response),
-		"Server-generated CSV reply reaches the real export callback")
-	_check(FileAccess.file_exists(EXPORT_PATH),
-		"CSV file is created only after a successful export response")
+	var raw := FileAccess.get_file_as_bytes(SAMPLE_XLSX)
+	_check(raw.size() > 100 and raw[0] == 80 and raw[1] == 75,
+		"Actual grade-tab sample workbook is OOXML ZIP")
+	_check(client.call("reply", "export_data_xlsx", {
+		"ok": true, "status": 200,
+		"data": {"xlsx_base64": Marshalls.raw_to_base64(raw), "students": 8, "scores": 8},
+	}), "Mock server XLSX response reaches real MainMenu save callback")
+	_check(FileAccess.file_exists(EXPORT_PATH), "Export writes only after valid server response")
 	if FileAccess.file_exists(EXPORT_PATH):
-		var text_csv := FileAccess.get_file_as_string(EXPORT_PATH)
-		_check(text_csv == VALID_CSV,
-			"Backend full export preserves eight canonical fields, comma quoting, escaped quotes and CRLF")
-		_check(text_csv.begins_with("student_id,student_name,grade_section,minigame,game_style,game_mode,difficulty,score\r\n")
-			and text_csv.contains("\"Catch the Word\",\"Noun\""),
-			"Full backup CSV includes minigame as FOURTH column, not filtered legacy layout")
-		_check(text_csv.contains("\"Ada, \"\"Quoted\"\"\""),
-			"Quoted student name is not corrupted by export")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(EXPORT_PATH))
-	var transfer_status := _find(board, ["EmptyNotice"]) as AcceptDialog
-	_check(transfer_status != null and transfer_status.dialog_text.contains("saved: 1 students, 1 scores"),
-		"Export success is explicitly displayed only after confirmed backend response")
+		_check(FileAccess.get_file_as_bytes(EXPORT_PATH) == raw,
+			"All original four-grade worksheet bytes are preserved through export")
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(EXPORT_PATH))
+	_check(not notice.dialog_text.contains("failed") and notice.dialog_text.contains("saved"),
+		"Successful workbook export displays actual server-acknowledged result")
+	_check(client.call("mutation_count") == original_mutations,
+		"Excel export remains read-only with zero backend mutations")
 
 
 func _test_import() -> void:
-	var button := _find(board, ["ImportButton", "ImportCsvButton"]) as Button
-	var picker := _find(board, ["ImportCsvDialog", "OpenCsvDialog"]) as FileDialog
-	var review := _find(board, ["ImportReviewDialog"]) as ConfirmationDialog
-	_check(review != null, "Second import approval is an editor-authored ConfirmationDialog")
-	if button == null or picker == null or review == null:
-		return
-	var initial_mutations: int = client.call("mutation_count")
-	button.pressed.emit()
-	_check(picker.visible, "Import shows native Open CSV FileDialog")
-	picker.canceled.emit()
-	picker.hide()
-	_check(int(client.call("mutation_count")) == initial_mutations,
-		"Cancel Import never calls a write endpoint")
-	_check(not review.visible and String(board.get("_pending_import_path")).is_empty(),
-		"Canceling CSV picker cannot open/stage second import approval")
-	var file := FileAccess.open(IMPORT_PATH, FileAccess.WRITE)
-	_check(file != null, "Isolated QA CSV fixture can be created outside project files")
-	if file == null:
-		return
-	file.store_string(VALID_CSV)
-	file.close()
-	var local_validation := String(board.call("_validate_import_csv", ProjectSettings.globalize_path(IMPORT_PATH)))
-	_check(local_validation.is_empty(), "Valid quoted CSV passes native import prevalidation: " + local_validation)
-	var badfile := FileAccess.open(IMPORT_PATH, FileAccess.WRITE)
-	if badfile != null:
-		badfile.store_string("student_id,student_id,grade_section,minigame,game_style,game_mode,difficulty,score\r\n")
-		badfile.store_string("ID-1,Ada,Grade 5,Catch the Word,Noun,Seconds,Easy,7\r\n")
-		badfile.close()
-		var writes_before: int = client.call("count", "import_data_csv")
-		button.pressed.emit()
-		picker.file_selected.emit(ProjectSettings.globalize_path(IMPORT_PATH))
-		picker.hide()
-		_check(int(client.call("count", "import_data_csv")) == writes_before,
-			"Malformed/duplicate-column CSV is rejected locally before sending any write")
-		_check(not review.visible and String(board.get("_pending_import_path")).is_empty(),
-			"Malformed CSV cannot reach second import approval")
-		var restored_file := FileAccess.open(IMPORT_PATH, FileAccess.WRITE)
-		if restored_file != null:
-			restored_file.store_string(VALID_CSV)
-			restored_file.close()
-	_check(String(board.call("_validate_import_csv", ProjectSettings.globalize_path(IMPORT_PATH))).is_empty(),
-		"Eight-column canonical CSV is accepted after rejecting malformed input")
-	# Even after choosing a valid file, the import is only *staged* until the
-	# teacher explicitly approves the separate ConfirmationDialog.
-	var before_cancel: int = client.call("count", "import_data_csv")
-	button.pressed.emit()
-	picker.file_selected.emit(ProjectSettings.globalize_path(IMPORT_PATH))
-	picker.hide()
-	_check(review.visible and review.dialog_text.contains(IMPORT_PATH.get_file()),
-		"Valid CSV selection displays final review with exact filename")
-	_check(int(client.call("count", "import_data_csv")) == before_cancel,
-		"Choosing valid CSV without approving review sends no import request")
-	review.canceled.emit()
-	review.hide()
-	_check(int(client.call("count", "import_data_csv")) == before_cancel
-		and not review.visible and String(board.get("_pending_import_path")).is_empty(),
-		"Cancel second import confirmation clears staged path without mutation")
-	button.pressed.emit()
-	picker.file_selected.emit(ProjectSettings.globalize_path(IMPORT_PATH))
-	picker.hide()
-	_approve_import_review(board, ProjectSettings.globalize_path(IMPORT_PATH))
-	_check(int(client.call("count", "import_data_csv")) >= 1,
-		"Import sends selected UTF-8 CSV to server validation endpoint")
-	var pending: Dictionary = client.call("find_pending", "import_data_csv")
-	_check(String(pending.get("args", {}).get("csv", "")) == VALID_CSV,
-		"Eight-column import passes exact selected bytes, minigame, and quoted fields")
-	_check(_count_rows() == 1,
-		"Before import confirmation old backend scores remain unchanged")
-	_check(client.call("reply", "import_data_csv", {
-		"ok": false, "status": 400, "error": "invalid_csv",
-		"message": "CSV row has an invalid score", "data": null,
-	}), "Malformed CSV response is delivered")
-	_check(_count_rows() == 1,
-		"Rejected malformed CSV never replaces previously saved scores")
-	var status := _find(board, ["EmptyNotice"]) as AcceptDialog
-	_check(status != null and status.dialog_text.contains("failed"),
-		"Malformed CSV response displays a failure, never a success message")
-	button.pressed.emit()
-	picker.file_selected.emit(ProjectSettings.globalize_path(IMPORT_PATH))
-	picker.hide()
-	_approve_import_review(board, ProjectSettings.globalize_path(IMPORT_PATH))
-	_check(client.call("reply", "import_data_csv", {
-		"ok": false, "status": 409, "error": "duplicate_record",
-		"message": "Duplicated student identity", "data": null,
-	}), "Duplicate record rejection is delivered")
-	_check(_count_rows() == 1,
-		"Duplicate-rejected CSV does not change leaderboard")
-	_check(status.dialog_text.contains("failed") and not status.dialog_text.contains("CSV imported"),
-		"Duplicate records cannot result in a misleading import-success status")
-	button.pressed.emit()
-	picker.file_selected.emit(ProjectSettings.globalize_path(IMPORT_PATH))
-	picker.hide()
-	_approve_import_review(board, ProjectSettings.globalize_path(IMPORT_PATH))
-	var fetches: int = client.call("count", "get_leaderboard")
-	_check(client.call("reply", "import_data_csv", {
-		"ok": true, "status": 200, "data": {"students": 1, "scores": 1},
-	}), "Valid import confirmation is delivered")
-	_check(int(client.call("count", "get_leaderboard")) == fetches + 1,
-		"Successful import refreshes authoritative leaderboard from server")
-	_check(status.dialog_text.contains("CSV imported"), "Only successful API import shows import-success notice")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(IMPORT_PATH))
-	# In-flight import results must not navigate back into the abandoned screen.
-	var count_before_missing: int = client.call("count", "import_data_csv")
-	button.pressed.emit()
-	picker.file_selected.emit(ProjectSettings.globalize_path(IMPORT_PATH))
-	picker.hide()
-	_check(int(client.call("count", "import_data_csv")) == count_before_missing,
-		"Missing input cannot dispatch a new server write or crash the callback")
-	_check(not review.visible and String(board.get("_pending_import_path")).is_empty(),
-		"Missing import file cannot stage a second approval or retain a dangerous path")
-
-
-func _test_legacy_import() -> void:
-	# Seven-column backups remain valid and are explicitly labeled Legacy by
-	# the server; they must NEVER be silently assigned a current minigame.
 	var button := _find(board, ["ImportCsvButton"]) as Button
 	var picker := _find(board, ["ImportCsvDialog"]) as FileDialog
 	var review := _find(board, ["ImportReviewDialog"]) as ConfirmationDialog
 	_check(button != null and picker != null and review != null,
-		"Original seven-column backup uses the same three native import controls")
+		"Three original import UI controls still exist")
 	if button == null or picker == null or review == null:
 		return
-	var file := FileAccess.open(LEGACY_IMPORT_PATH, FileAccess.WRITE)
-	_check(file != null, "Legacy CSV fixture can be written under isolated user:// path")
-	if file == null:
-		return
-	file.store_string(LEGACY_CSV)
-	file.close()
-	var source_path := ProjectSettings.globalize_path(LEGACY_IMPORT_PATH)
-	_check(String(board.call("_validate_import_csv", source_path)).is_empty(),
-		"Real leaderboard accepts exact seven-column pre-minigame backup format")
-	var count_before: int = client.call("count", "import_data_csv")
+	_check(picker.filters.size() == 1 and String(picker.filters[0]).contains("*.xlsx"),
+		"Original Import button exclusively opens XLSX")
+	var before: int = client.call("count", "import_data_xlsx")
 	button.pressed.emit()
-	picker.file_selected.emit(source_path)
+	_check(picker.visible, "Teacher sees Open Excel workbook dialog")
+	picker.canceled.emit()
 	picker.hide()
-	_check(review.visible and review.dialog_text.contains(LEGACY_IMPORT_PATH.get_file()),
-		"Legacy import also presents explicit filename review before any write")
-	_check(int(client.call("count", "import_data_csv")) == count_before,
-		"Seven-column file selection alone does not issue a DB write")
+	_check(int(client.call("count", "import_data_xlsx")) == before,
+		"Cancel picker cannot import")
+	_check(not review.visible and String(board.get("_pending_import_path")).is_empty(),
+		"Cancel picker leaves no import path")
+	var chosen := ProjectSettings.globalize_path(SAMPLE_XLSX)
+	_check(String(board.call("_validate_import_xlsx", chosen)).is_empty(),
+		"Real grade-separated 8-student XLSX passes local ZIP preflight")
+	button.pressed.emit()
+	picker.file_selected.emit(chosen)
+	picker.hide()
+	_check(review.visible and review.dialog_text.contains(chosen.get_file()),
+		"Selected actual XLSX filename appears in second consent")
+	_check(int(client.call("count", "import_data_xlsx")) == before,
+		"Selection without explicit confirmation cannot send workbook")
 	review.canceled.emit()
 	review.hide()
-	_check(int(client.call("count", "import_data_csv")) == count_before
+	_check(int(client.call("count", "import_data_xlsx")) == before
 		and String(board.get("_pending_import_path")).is_empty(),
-		"Canceling Legacy import review leaves database untouched and forgets path")
+		"Cancel review clears workbook path without mutation")
 	button.pressed.emit()
-	picker.file_selected.emit(source_path)
+	picker.file_selected.emit(chosen)
 	picker.hide()
-	_approve_import_review(board, source_path)
-	var pending: Dictionary = client.call("find_pending", "import_data_csv")
-	var submitted := String(pending.get("args", {}).get("csv", ""))
-	_check(submitted == LEGACY_CSV and not submitted.contains("minigame"),
-		"Approved legacy import sends ORIGINAL seven fields unchanged, never forges a minigame")
-	_check(submitted.contains("\"Bea, \"\"Legacy\"\"\""),
-		"Legacy import preserves commas and escaped quotes in student names")
-	var fetches_before: int = client.call("count", "get_leaderboard")
-	_check(client.call("reply", "import_data_csv", {
+	_approve_import_review(board, chosen)
+	_check(int(client.call("count", "import_data_xlsx")) == before + 1,
+		"Confirmed workbook dispatches one API import request")
+	var pending: Dictionary = client.call("find_pending", "import_data_xlsx")
+	var args: Dictionary = pending.get("args", {})
+	var raw: PackedByteArray = Marshalls.base64_to_raw(String(args.get("xlsx_base64", "")))
+	_check(raw == FileAccess.get_file_as_bytes(SAMPLE_XLSX),
+		"Actual grade-tab workbook bytes passed unchanged to mock server")
+	_check(_count_rows() == 1, "Before API reply existing saved scores stay unchanged")
+	_check(client.call("reply", "import_data_xlsx", {
+		"ok": false, "status": 400, "error": "invalid_xlsx",
+		"message": "Unsafe workbook rejected", "data": null,
+	}), "Mock server can reject unsafe workbook")
+	_check(_count_rows() == 1, "Rejected Excel import does not alter ranks")
+	var notice := _find(board, ["EmptyNotice"]) as AcceptDialog
+	_check(notice != null and notice.dialog_text.contains("failed"),
+		"Rejected import displays failure instead of success")
+	button.pressed.emit()
+	picker.file_selected.emit(chosen)
+	picker.hide()
+	_approve_import_review(board, chosen)
+	_check(client.call("reply", "import_data_xlsx", {
+		"ok": false, "status": 409, "error": "student_exists",
+		"message": "Duplicate student identity", "data": null,
+	}), "Existing student conflicts remain guarded")
+	_check(_count_rows() == 1, "Duplicate-rejected workbook keeps original leaderboard")
+	button.pressed.emit()
+	picker.file_selected.emit(chosen)
+	picker.hide()
+	_approve_import_review(board, chosen)
+	var fetches: int = client.call("count", "get_leaderboard")
+	_check(client.call("reply", "import_data_xlsx", {
 		"ok": true, "status": 200,
-		"data": {"students_created": 1, "scores_imported": 1, "legacy_rows": 1},
-	}), "Backend acknowledgment of correctly labeled Legacy import is delivered")
-	_check(int(client.call("count", "get_leaderboard")) == fetches_before + 1,
-		"Legacy import success re-queries server instead of fabricating local scores")
-	_check(client.call("reply", "get_leaderboard", {
-		"ok": true, "status": 200, "data": {"leaderboard": [{
-			"student_id": "LEG-1", "student_name": "Bea, \"Legacy\"",
-			"grade_section": "Grade 5", "minigame": "Legacy", "game_style": "Noun",
-			"game_mode": "Seconds", "difficulty": "Easy", "score": 4,
-		}]},
-	}, "leaderboard"), "Server-supplied Legacy minigame record reaches native leaderboard")
-	_check(_count_rows() == 1
-		and (board.get_node("%ScoreRows").get_child(0).get_node("GameStyle") as Label).text == "NOUN",
-		"Post-import historical score is still present while visible style omits misleading Legacy prefix")
-	var raw_records: Array = board.get("_all_rows")
-	_check(raw_records.size() == 1 and raw_records[0].get("minigame") == "Legacy"
-		and raw_records[0].get("game_style") == "Noun" and int(raw_records[0].get("score", -1)) == 4,
-		"Historical backend record retains original Legacy minigame, Noun topic, and score without rewriting data")
-	var minigame_filter := _find(board, ["MinigameFilter"]) as OptionButton
-	if minigame_filter != null:
-		_check(minigame_filter.item_count == 4, "Historical Legacy not exposed in native MinigameFilter options")
-		_check(bool(board.call("set_minigame_filter", "Legacy")) and _count_rows() == 1,
-			"Historical seven-column backup rank is still retrievable through Legacy compatibility API")
-		minigame_filter.select(1)
-		minigame_filter.item_selected.emit(1)
-		_check(_count_rows() == 0,
-			"Legacy score is never misclassified as Catch the Word")
-		minigame_filter.select(0)
-		minigame_filter.item_selected.emit(0)
-	DirAccess.remove_absolute(source_path)
+		"data": {"students_created": 8, "scores_imported": 8},
+	}), "Authorized workbook import response accepted")
+	_check(int(client.call("count", "get_leaderboard")) == fetches + 1,
+		"Successful workbook import refreshes authoritative rankings")
+	_check(not notice.dialog_text.contains("failed") and notice.dialog_text.contains("Excel imported"),
+		"Success notice only after backend confirms import")
+	before = int(client.call("count", "import_data_xlsx"))
+	button.pressed.emit()
+	picker.file_selected.emit(ProjectSettings.globalize_path(qa_storage.path_join("missing.xlsx")))
+	picker.hide()
+	_check(int(client.call("count", "import_data_xlsx")) == before
+		and not review.visible and String(board.get("_pending_import_path")).is_empty(),
+		"Missing selected workbook cannot stage approval or dispatch")
+
+
+func _test_legacy_import() -> void:
+	# Retain hostile/malformed-file and authorization probes. Legacy 7-column
+	# XLSX parsing is covered by database/tests/test_grade_xlsx_import_20261102.py.
+	var button := _find(board, ["ImportCsvButton"]) as Button
+	var picker := _find(board, ["ImportCsvDialog"]) as FileDialog
+	var review := _find(board, ["ImportReviewDialog"]) as ConfirmationDialog
+	_check(button != null and picker != null and review != null,
+		"Legacy and current XLSX use existing safe import controls")
+	var before := int(client.call("count", "import_data_xlsx"))
+	var bad := FileAccess.open(LEGACY_IMPORT_PATH, FileAccess.WRITE)
+	_check(bad != null, "Test-only malformed XLSX can be written in isolated user directory")
+	if bad != null:
+		bad.store_string(LEGACY_CSV)
+		bad.close()
+	var chosen := ProjectSettings.globalize_path(LEGACY_IMPORT_PATH)
+	_check(not String(board.call("_validate_import_xlsx", chosen)).is_empty(),
+		"Renaming raw CSV as XLSX cannot bypass ZIP signature validation")
+	button.pressed.emit()
+	picker.file_selected.emit(chosen)
+	picker.hide()
+	_check(not review.visible and int(client.call("count", "import_data_xlsx")) == before,
+		"Invalid XLSX never reaches approval or server")
+	DirAccess.remove_absolute(chosen)
+	_check(not String(board.call("_validate_import_xlsx", chosen)).is_empty(),
+		"Deleted XLSX file cannot be silently accepted")
+	var good := ProjectSettings.globalize_path(SAMPLE_XLSX)
+	board.set_context({"database_connected": true, "teacher_authorized": false})
+	button.pressed.emit()
+	picker.file_selected.emit(good)
+	picker.hide()
+	_check(int(client.call("count", "import_data_xlsx")) == before
+		and not review.visible and String(board.get("_pending_import_path")).is_empty(),
+		"Unauthorized workbook selection never stages or imports")
 	_authorize_mock_teacher()
 
 
@@ -563,65 +472,59 @@ func _test_delete() -> void:
 
 
 func _test_stale_callbacks() -> void:
-	# A response to a management request is allowed to arrive after navigation,
-	# but must never resurrect a previous screen or write a CSV after route exit.
 	_authorize_mock_teacher()
 	var export_button := _find(board, ["ExportCsvButton"]) as Button
 	var export_picker := _find(board, ["ExportDatabaseCsvDialog"]) as FileDialog
 	var import_button := _find(board, ["ImportCsvButton"]) as Button
 	var import_picker := _find(board, ["ImportCsvDialog"]) as FileDialog
+	_check(export_button != null and export_picker != null
+		and import_button != null and import_picker != null,
+		"Stale-response test uses same three original actions")
 	if export_button == null or export_picker == null or import_button == null or import_picker == null:
 		return
 	export_button.pressed.emit()
 	export_picker.file_selected.emit(ProjectSettings.globalize_path(STALE_EXPORT_PATH))
 	export_picker.hide()
-	_check(not (client.call("find_pending", "export_data_csv") as Dictionary).is_empty(),
-		"Export request may be outstanding while teacher navigates away")
-	# Explicitly return to Main, simulating Back without any file write.
+	_check(not (client.call("find_pending", "export_data_xlsx") as Dictionary).is_empty(),
+		"Excel export may remain pending when teacher navigates")
 	app.call("_return_to_main")
 	await process_frame
-	var initial_fetches: int = client.call("count", "get_leaderboard")
-	_check(client.call("reply", "export_data_csv", {
+	var initial_fetches := int(client.call("count", "get_leaderboard"))
+	var raw := FileAccess.get_file_as_bytes(SAMPLE_XLSX)
+	_check(client.call("reply", "export_data_xlsx", {
 		"ok": true, "status": 200,
-		"data": {"csv": VALID_CSV, "students": 1, "scores": 1},
-	}), "Late authorized export reply can arrive after leaving Leaderboard")
+		"data": {"xlsx_base64": Marshalls.raw_to_base64(raw), "students": 8, "scores": 8},
+	}), "Late XLSX export acknowledgment arrives after leaving scene")
 	_check(not FileAccess.file_exists(STALE_EXPORT_PATH),
-		"Stale export response does not write an unattended file after navigation")
-	_check(String(app.get("current_route")) == "main",
-		"Stale export response cannot change current route")
-	_check(int(client.call("count", "get_leaderboard")) == initial_fetches,
-		"Stale export does not trigger an unrelated leaderboard refresh")
-	# Navigate back for a pending import, then abandon it before the reply.
+		"Abandoned export must not write XLSX file")
+	_check(String(app.get("current_route")) == "main"
+		and int(client.call("count", "get_leaderboard")) == initial_fetches,
+		"Late export cannot reopen leaderboard or trigger fetch")
 	(app.get_node("MainLayer/LeftMenu/Leaderboard") as Button).pressed.emit()
 	await process_frame
 	board = app.get("active_panel") as Control
 	_authorize_mock_teacher()
 	import_button = _find(board, ["ImportCsvButton"]) as Button
 	import_picker = _find(board, ["ImportCsvDialog"]) as FileDialog
-	var file := FileAccess.open(STALE_IMPORT_PATH, FileAccess.WRITE)
-	if file == null:
-		_check(false, "Isolated stale-import CSV can be opened")
-		return
-	file.store_string(VALID_CSV)
-	file.close()
+	var chosen := ProjectSettings.globalize_path(SAMPLE_XLSX)
 	import_button.pressed.emit()
-	import_picker.file_selected.emit(ProjectSettings.globalize_path(STALE_IMPORT_PATH))
+	import_picker.file_selected.emit(chosen)
 	import_picker.hide()
-	_approve_import_review(board, ProjectSettings.globalize_path(STALE_IMPORT_PATH))
-	_check(not (client.call("find_pending", "import_data_csv") as Dictionary).is_empty(),
-		"Import validation may still be in flight when teacher leaves the scene")
+	_approve_import_review(board, chosen)
+	_check(not (client.call("find_pending", "import_data_xlsx") as Dictionary).is_empty(),
+		"Authorized workbook import may be pending at scene navigation")
 	app.call("_return_to_main")
 	await process_frame
-	initial_fetches = client.call("count", "get_leaderboard")
-	_check(client.call("reply", "import_data_csv", {
+	initial_fetches = int(client.call("count", "get_leaderboard"))
+	_check(client.call("reply", "import_data_xlsx", {
 		"ok": true, "status": 200,
-		"data": {"students_created": 1, "scores_imported": 1},
-	}), "Backend may finish import after the old panel was abandoned")
+		"data": {"students_created": 8, "scores_imported": 8},
+	}), "Import response may arrive after closing its Leaderboard")
 	_check(String(app.get("current_route")) == "main"
 		and app.get("active_panel") == null,
-		"Stale import callback cannot restore abandoned Leaderboard or claim UI success")
+		"Stale import success cannot restore abandoned screen")
 	_check(int(client.call("count", "get_leaderboard")) == initial_fetches,
-		"Stale import response cannot fetch/replace rankings in a different screen")
+		"Stale import cannot fetch or overwrite unrelated screen")
 
 
 func _count_rows() -> int:
@@ -630,26 +533,23 @@ func _count_rows() -> int:
 
 
 func _approve_import_review(parent: Control, chosen_path: String) -> void:
-	## Exercise the native Confirmed signal rather than calling production
-	## import methods or backend mock endpoints directly. Real teacher action
-	## cannot send CSV until this visible second dialog is explicitly accepted.
 	var review := _find(parent, ["ImportReviewDialog"]) as ConfirmationDialog
-	_check(review != null, "Import confirmation dialog exists before acceptance")
+	_check(review != null, "Separate XLSX approval dialog exists")
 	if review == null:
 		return
-	var writes_before: int = client.call("count", "import_data_csv")
+	var before := int(client.call("count", "import_data_xlsx"))
 	_check(review.visible and review.dialog_text.contains(chosen_path.get_file()),
-		"Teacher sees exact selected filename in the second CSV confirmation")
+		"Review shows selected XLSX filename")
 	_check(String(parent.get("_pending_import_path")) == chosen_path,
-		"Review stages exact selected CSV path without dispatching request")
-	_check(int(client.call("count", "import_data_csv")) == writes_before,
-		"No API import request happens before second confirmation is accepted")
+		"Review holds correct XLSX path before approval")
+	_check(int(client.call("count", "import_data_xlsx")) == before,
+		"No workbook bytes sent before confirmation")
 	review.confirmed.emit()
 	review.hide()
-	_check(int(client.call("count", "import_data_csv")) == writes_before + 1,
-		"Clicking confirmed review is the single trigger for import API validation")
+	_check(int(client.call("count", "import_data_xlsx")) == before + 1,
+		"Confirm sends exactly one guarded XLSX request")
 	_check(String(parent.get("_pending_import_path")).is_empty() and not review.visible,
-		"Accepted import clears staged path and closes second confirmation")
+		"Accepted workbook clears staged path")
 
 
 func _authorize_mock_teacher() -> void:

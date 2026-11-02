@@ -91,8 +91,8 @@ func _run() -> void:
 	for removed in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
 		_check(panel.find_child(removed, true, false) == null,
 			"FILTERS and associated popup removed completely: " + removed)
-	_check(panel.has_method("request_filtered_csv_export"),
-		"Filtered CSV remains accessible through explicit host API despite removed button")
+	_check(panel.has_method("_validate_import_xlsx") and panel.get_node_or_null("SaveCsvDialog") == null,
+		"Removed filtered CSV host API and dialog do not leave a hidden export path")
 	_check(style.item_count == 6 and style.selected == 0,
 	"Grammar options and default selection are authored in scene Inspector")
 	_check(mode.item_count == 3 and difficulty.item_count == 4,
@@ -157,14 +157,20 @@ func _run() -> void:
 	difficulty.item_selected.emit(1)
 	_check((panel.get("_visible_rows") as Array).size() == 1,
 		"Mode and difficulty filters combine correctly")
-	var filename := "user://_leaderboard_qa_%s.csv" % str(Time.get_ticks_usec())
-	var full_path := ProjectSettings.globalize_path(filename)
-	panel.call("_write_csv", full_path)
-	var csv_text := FileAccess.get_file_as_string(full_path)
-	_check(csv_text.contains("STUDENT ID,NAME,GRADE") and csv_text.contains("Sample Alpha"),
-		"CSV exports selected data and authored columns")
-	_check(not csv_text.contains("Sample Beta"), "CSV excludes filtered-out records")
-	DirAccess.remove_absolute(full_path)
+	var importer := panel.get_node_or_null("ImportCsvDialog") as FileDialog
+	var exporter := panel.get_node_or_null("ExportDatabaseCsvDialog") as FileDialog
+	_check(importer != null and exporter != null, "Existing three-button XLSX selectors remain")
+	if importer != null and exporter != null:
+		_check(importer.file_mode == FileDialog.FILE_MODE_OPEN_FILE and
+			exporter.file_mode == FileDialog.FILE_MODE_SAVE_FILE,
+			"Workbook import opens and export saves through correct dialogs")
+		_check(importer.filters.size() == 1 and exporter.filters.size() == 1 and
+			String(importer.filters[0]).contains("*.xlsx") and
+			String(exporter.filters[0]).contains("*.xlsx"),
+			"Import/export selectors accept only Excel XLSX")
+	_check(panel.get_node_or_null("ExportGradeXlsxButton") == null and
+		panel.get_node_or_null("PullOutStudentButton") == null,
+		"No extra buttons added to existing three-actions layout")
 	panel.requested.connect(_navigated)
 	back.pressed.emit()
 	_check(returned_home, "Back works without a separate invisible hitbox")
@@ -186,7 +192,7 @@ func _run() -> void:
 	panel.free()
 	await process_frame
 	if failures == 0:
-		print("PASS Editor-draggable Leaderboard; interchangeable background; filters, rows, CSV, Back")
+		print("PASS Editor-draggable Leaderboard; interchangeable background; filters, rows, XLSX, Back")
 	quit(1 if failures > 0 else 0)
 
 

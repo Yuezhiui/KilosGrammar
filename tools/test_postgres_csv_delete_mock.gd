@@ -20,6 +20,15 @@ func export_data_csv(context: Dictionary = {}) -> int:
 	return _record("export_data_csv", {}, context)
 
 
+func export_data_xlsx(student_id: String = "", context: Dictionary = {}) -> int:
+	return _record("export_data_xlsx", {"student_id": student_id}, context)
+
+
+func import_data_xlsx(workbook_base64: String, context: Dictionary = {}) -> int:
+	mutations.append({"operation": "import_data_xlsx", "xlsx_base64": workbook_base64})
+	return _record("import_data_xlsx", {"xlsx_base64": workbook_base64}, context)
+
+
 func export_csv(context: Dictionary = {}) -> int:
 	return export_data(context)
 

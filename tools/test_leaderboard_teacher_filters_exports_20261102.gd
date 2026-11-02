@@ -100,8 +100,8 @@ func _check_signals(board: Control, size_key: String) -> void:
 	var canonical_csv: Array = []
 	var import_csv: Array = []
 	var deleted: Array = []
-	board.database_export_csv_requested.connect(func(path: String) -> void: canonical_csv.append(path))
-	board.database_import_csv_requested.connect(func(path: String) -> void: import_csv.append(path))
+	board.database_export_xlsx_requested.connect(func(path: String) -> void: canonical_csv.append(path))
+	board.database_import_xlsx_requested.connect(func(path: String) -> void: import_csv.append(path))
 	board.database_delete_all_requested.connect(func(phrase: String) -> void: deleted.append(phrase))
 	var export_button := board.get_node("%ExportCsvButton") as Button
 	var import_button := board.get_node("%ImportCsvButton") as Button
@@ -111,12 +111,12 @@ func _check_signals(board: Control, size_key: String) -> void:
 	board.call("_on_export_file_selected", "user://wrong.xls")
 	_check(canonical_csv.is_empty(), size_key + " invalid export extension never emits CSV")
 	board.set_transfer_status("", false)
-	board.call("_on_export_file_selected", "user://backup.csv")
-	_check(canonical_csv.size() == 1 and canonical_csv[0] == "user://backup.csv",
-		size_key + " full database CSV signal emits exact destination")
+	board.call("_on_export_file_selected", "user://backup.xlsx")
+	_check(canonical_csv.size() == 1 and canonical_csv[0] == "user://backup.xlsx",
+		size_key + " full database XLSX signal emits exact destination")
 	_check(export_button.disabled and import_button.disabled and delete_button.disabled,
 		size_key + " pending CSV export locks concurrent management actions")
-	board.call("_on_export_file_selected", "user://duplicate.csv")
+	board.call("_on_export_file_selected", "user://duplicate.xlsx")
 	_check(canonical_csv.size() == 1, size_key + " concurrent CSV export cannot duplicate dispatch")
 	board.set_transfer_status("Simulated authorized export completed.", true)
 	(board.get_node("%EmptyNotice") as AcceptDialog).hide()
@@ -125,7 +125,7 @@ func _check_signals(board: Control, size_key: String) -> void:
 	var context: Dictionary = {"leaderboard_rows": DATA, "database_connected": true,
 		"teacher_authorized": false}
 	board.set_context(context)
-	board.call("_choose_import_csv")
+	board.call("_choose_import_xlsx")
 	_check(import_csv.is_empty(), size_key + " unauthorized import cannot emit database mutation")
 	board.call("_begin_delete_all")
 	_check(not (board.get_node("%DeleteFirstOverlay") as Control).visible
@@ -134,9 +134,9 @@ func _check_signals(board: Control, size_key: String) -> void:
 	board.set_context({"leaderboard_rows": [], "database_connected": true,
 		"teacher_authorized": true})
 	_check(not export_button.disabled, size_key + " full CSV backup remains available even when no scores exist")
-	board.call("_on_export_file_selected", "user://empty_scoreboard.csv")
-	_check(canonical_csv.size() == 2 and canonical_csv[1] == "user://empty_scoreboard.csv",
-		size_key + " full CSV backup permits empty scoreboards")
+	board.call("_on_export_file_selected", "user://empty_scoreboard.xlsx")
+	_check(canonical_csv.size() == 2 and canonical_csv[1] == "user://empty_scoreboard.xlsx",
+		size_key + " full XLSX backup permits empty scoreboards")
 	board.set_transfer_status("", false)
 	(board.get_node("%EmptyNotice") as AcceptDialog).hide()
 	_check(deleted.is_empty() and import_csv.is_empty(),

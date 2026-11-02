@@ -28,12 +28,14 @@ from .recovery_store import (
 )
 from .storage import MAX_BULK_ROWS, BulkLimitExceeded, PostgreSQLStore, SchemaNotReady, StudentIdentityConflict
 from .xlsx_export import encoded_workbook, grade_filter_number, selected_students, student_details
+from .xlsx_import import MAX_IMPORT_XLSX_BYTES, InvalidXlsx, XlsxTooLarge, workbook_to_csv
 
 LEGACY_MINIGAME = "Legacy"
 LEGACY_CSV_COLUMNS = ("student_id", "student_name", "grade_section", "game_style", "game_mode", "difficulty", "score")
 CSV_COLUMNS = ("student_id", "student_name", "grade_section", "minigame", "game_style", "game_mode", "difficulty", "score")
 MAX_CSV_BYTES = 1_048_576
 MAX_JSON_BODY_BYTES = MAX_CSV_BYTES + 64_000
+MAX_XLSX_JSON_BODY_BYTES = 4 * ((MAX_IMPORT_XLSX_BYTES + 2) // 3) + 4096
 CONFIRM_DELETE = "DELETE ALL DATA"
 CHALLENGE_LIFETIME_SECONDS = 60
 
@@ -369,6 +371,21 @@ class API:
             if not students:
                 raise ApiError(400, "invalid_csv", "CSV must contain at least one student row")
             return 200, self.store.import_snapshot(students, scores)
+        if method == "POST" and path in ("/data/import_xlsx", "/data/import/xlsx"):
+            request = object_body(body, {"xlsx_base64"})
+            try:
+                canonical_csv = workbook_to_csv(request["xlsx_base64"])
+            except XlsxTooLarge as exc:
+                raise ApiError(413, "xlsx_too_large", str(exc)) from None
+            except InvalidXlsx as exc:
+                raise ApiError(400, "invalid_xlsx", str(exc)) from None
+            # Identical validations (IDs, identities, score conflict, current
+            # minigame dimension and limits) and ONE atomic storage operation
+            # as POST /data/import; never invent a second database write path.
+            students, scores = _csv_import(canonical_csv)
+            if not students:
+                raise ApiError(400, "invalid_xlsx", "XLSX must contain at least one student row")
+            return 200, self.store.import_snapshot(students, scores)
         if method == "GET" and path == "/data/delete_all/challenge":
             challenge = secrets.token_urlsafe(24)
             with self._challenge_lock:
@@ -617,11 +634,17 @@ def make_handler(api: API) -> type[BaseHTTPRequestHandler]:
                     self._error(415, "invalid_content_type", "Use application/json")
                     return
                 length_header = self.headers.get("Content-Length", "")
-                if not re.fullmatch(r"[0-9]{1,6}", length_header):
+                if not re.fullmatch(r"[0-9]{1,8}", length_header):
                     self._error(400, "invalid_body", "Invalid JSON body length")
                     return
                 length = int(length_header)
-                max_length = MAX_JSON_BODY_BYTES if self.path == "/data/import" else 16_384
+                request_path = urlsplit(self.path).path.rstrip("/")
+                if request_path in ("/data/import_xlsx", "/data/import/xlsx"):
+                    max_length = MAX_XLSX_JSON_BODY_BYTES
+                elif request_path == "/data/import":
+                    max_length = MAX_JSON_BODY_BYTES
+                else:
+                    max_length = 16_384
                 if length < 2 or length > max_length:
                     self._error(413, "invalid_body", "JSON body exceeds the allowed size")
                     return

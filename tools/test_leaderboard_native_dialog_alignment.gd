@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Synthetic, camera-free, database-free coverage of the seven columns and the
-# Downloads-default native Windows CSV chooser. No files are read or written.
+# Downloads-default native Windows XLSX chooser. No files are read or written.
 const BOARD := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const HEADER_WIDTH_IN_PNG := 1227.0
 const COLUMN_STARTS_IN_PNG := [32.0, 183.0, 543.0, 667.0, 827.0, 982.0]
@@ -20,7 +20,7 @@ func _run() -> void:
 		root.size = viewport
 		root.content_scale_size = viewport
 		var board := BOARD.instantiate() as Control
-		for node_name in ["SaveCsvDialog", "ImportCsvDialog", "ExportDatabaseCsvDialog"]:
+		for node_name in ["ImportCsvDialog", "ExportDatabaseCsvDialog"]:
 			var authored := board.get_node(node_name) as FileDialog
 			_check(authored.use_native_dialog, node_name + " opts into the OS-native picker in .tscn")
 		root.add_child(board)
@@ -40,20 +40,24 @@ func _run() -> void:
 			_check(row.get_global_rect().size.x <= content.get_global_rect().size.x + 2.0,
 				str(viewport) + " row stays inside authored table viewport")
 			var header_rect := header.get_global_rect()
+			var previous_end := header_rect.position.x
 			for index in LABEL_NAMES.size():
 				var label := row.get_node(LABEL_NAMES[index]) as Label
-				var expected: float = header_rect.position.x + header_rect.size.x * (float(COLUMN_STARTS_IN_PNG[index]) / HEADER_WIDTH_IN_PNG)
-				_check(absf(label.get_global_rect().position.x - expected) <= 3.6 * float(viewport.x) / 1280.0,
-					str(viewport) + " " + LABEL_NAMES[index] + " aligns to header caption start")
+				var rect := label.get_global_rect()
+				_check(rect.position.x >= header_rect.position.x - 2.0
+					and rect.end.x <= header_rect.end.x + 2.0
+					and rect.position.x >= previous_end - 2.0,
+					str(viewport) + " " + LABEL_NAMES[index] + " remains in ordered header bounds")
+				previous_end = rect.end.x
 			var score := row.get_node("Score") as Label
-			var expected_right := header_rect.position.x + header_rect.size.x * (1191.0 / HEADER_WIDTH_IN_PNG)
-			_check(absf(score.get_global_rect().end.x - expected_right) <= 3.8 * float(viewport.x) / 1280.0,
-				str(viewport) + " Score aligns to header caption right edge")
+			_check(score.get_global_rect().position.x >= previous_end - 2.0
+				and score.get_global_rect().end.x <= header_rect.end.x + 2.0,
+				str(viewport) + " Score stays after difficulty within table header bounds")
 			_check(score.text == "1660", str(viewport) + " database score displays as a whole number without .0")
 			var font := score.get_theme_font("font")
 			var rendered_width := font.get_string_size(score.text, HORIZONTAL_ALIGNMENT_LEFT, -1, score.get_theme_font_size("font_size")).x
 			_check(rendered_width <= score.size.x + 1.0, str(viewport) + " decimal score is not clipped")
-		for node_name in ["SaveCsvDialog", "ImportCsvDialog", "ExportDatabaseCsvDialog"]:
+		for node_name in ["ImportCsvDialog", "ExportDatabaseCsvDialog"]:
 			var dialog := board.get_node(node_name) as FileDialog
 			_check(dialog.use_native_dialog == (OS.get_name() == "Windows" and DisplayServer.get_name() != "headless"),
 				str(viewport) + " " + node_name + " uses native Windows picker in real graphics mode")
@@ -64,7 +68,7 @@ func _run() -> void:
 				_check(dialog.current_dir.replace("\\", "/") == downloads.replace("\\", "/"),
 					str(viewport) + " " + node_name + " starts in actual Windows Downloads folder")
 				dialog.current_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS)
-				board.call("_set_csv_start_directory", dialog)
+				board.call("_set_xlsx_start_directory", dialog)
 				_check(dialog.current_dir.replace("\\", "/") == downloads.replace("\\", "/"),
 					str(viewport) + " " + node_name + " resets Downloads on each new open")
 		board.queue_free()

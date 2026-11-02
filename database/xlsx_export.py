@@ -18,7 +18,9 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-MAX_XLSX_BYTES = 12 * 1024 * 1024
+# Match the bounded XLSX import limit so a valid exported workbook is always
+# small enough to be imported back through the local administrator endpoint.
+MAX_XLSX_BYTES = 8_000_000
 REPORT_COLUMNS = (
     "Student ID", "Student Name", "Grade & Section", "Minigame", "Grammar Topic",
     "Game Mode", "Difficulty", "Current Score", "Completed At (Last Record)",

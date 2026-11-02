@@ -1266,40 +1266,46 @@ func _leaderboard_management_pending(message: String) -> void:
 			active_panel.call("set_transfer_status", message)
 
 
-func _on_database_export_csv_requested(path: String) -> void:
+func _on_database_export_xlsx_requested(path: String) -> void:
 	if not database_online or not is_instance_valid(database_client):
 		_leaderboard_management_status("Local database is offline. Nothing was exported.")
 		return
-	if path.get_extension().to_lower() != "csv" or path.is_empty():
-		_leaderboard_management_status("Choose a .csv file to export the complete database.")
+	if path.get_extension().to_lower() != "xlsx" or path.is_empty():
+		_leaderboard_management_status("Choose a .xlsx workbook for the grade-separated export.")
 		return
 	database_transfer_ticket += 1
-	_leaderboard_management_pending("Preparing full database CSV export...")
+	_leaderboard_management_pending("Preparing Excel workbook with separate sheets for each grade...")
 	var context := _leaderboard_management_context()
 	context["path"] = path
-	database_client.call("export_data_csv", context)
+	database_client.call("export_data_xlsx", "", context)
 
 
-func _on_database_import_csv_requested(path: String) -> void:
+func _on_database_import_xlsx_requested(path: String) -> void:
 	if not database_online or not is_instance_valid(database_client):
 		_leaderboard_management_status("Local database is offline. Nothing was imported.")
 		return
-	if path.get_extension().to_lower() != "csv" or path.is_empty():
-		_leaderboard_management_status("Choose a valid .csv file. Nothing was changed.")
+	if path.get_extension().to_lower() != "xlsx" or path.is_empty():
+		_leaderboard_management_status("Choose a valid .xlsx workbook. Nothing was changed.")
 		return
-	var csv_file := FileAccess.open(path, FileAccess.READ)
-	if csv_file == null:
-		_leaderboard_management_status("Could not read the selected CSV file. Nothing was changed.")
+	var excel_file := FileAccess.open(path, FileAccess.READ)
+	if excel_file == null:
+		_leaderboard_management_status("Could not read the selected workbook. Nothing was changed.")
 		return
-	if csv_file.get_length() < 1 or csv_file.get_length() > 1_000_000:
-		csv_file.close()
-		_leaderboard_management_status("CSV must contain data and be 1 MB or smaller. Nothing was changed.")
+	if excel_file.get_length() < 100 or excel_file.get_length() > 8_000_000:
+		excel_file.close()
+		_leaderboard_management_status("XLSX must contain data and be 8 MB or smaller. Nothing was changed.")
 		return
-	var csv_text := csv_file.get_as_text()
-	csv_file.close()
+	var workbook := excel_file.get_buffer(excel_file.get_length())
+	excel_file.close()
+	# XLSX files are ZIP-based; this is only a fast preflight. The local
+	# Python API validates the OOXML structure and EVERY row transactionally.
+	if workbook.size() < 100 or workbook[0] != 80 or workbook[1] != 75 \
+			or workbook[2] != 3 or workbook[3] != 4:
+		_leaderboard_management_status("Invalid Excel workbook. Nothing was imported.")
+		return
 	database_transfer_ticket += 1
-	_leaderboard_management_pending("Validating and importing CSV. This may take a moment...")
-	database_client.call("import_data_csv", csv_text, _leaderboard_management_context())
+	_leaderboard_management_pending("Validating every grade sheet before importing the Excel workbook...")
+	database_client.call("import_data_xlsx", Marshalls.raw_to_base64(workbook), _leaderboard_management_context())
 
 
 func _on_database_delete_all_requested(confirmation: String) -> void:
@@ -1326,29 +1332,35 @@ func _handle_database_management_result(info: Dictionary, result: Dictionary) ->
 			message = "Local database rejected the request. No success was recorded."
 		_leaderboard_management_status("Database operation failed: " + message.left(160))
 		return
-	if operation == "export_data_csv":
-		var csv_data := String(data.get("csv", ""))
-		var filename := String(info.get("path", ""))
-		if csv_data.is_empty() or csv_data.to_utf8_buffer().size() > 1_500_000 \
-				or filename.get_extension().to_lower() != "csv":
-			_leaderboard_management_status("Export data was invalid. No file was written.")
+	if operation == "export_data_xlsx":
+		var destination := String(info.get("path", ""))
+		var encoded := String(data.get("xlsx_base64", ""))
+		if destination.get_extension().to_lower() != "xlsx" or encoded.is_empty() \
+				or encoded.length() > 12_000_000:
+			_leaderboard_management_status("Workbook data was invalid. No file was written.")
 			return
-		var target := FileAccess.open(filename, FileAccess.WRITE)
-		if target == null:
-			_leaderboard_management_status("Could not write to the selected file. Try another location.")
+		var workbook := Marshalls.base64_to_raw(encoded)
+		if workbook.size() < 100 or workbook.size() > 8_000_000 \
+				or workbook[0] != 80 or workbook[1] != 75 \
+				or workbook[2] != 3 or workbook[3] != 4:
+			_leaderboard_management_status("Excel export was not a valid XLSX package. No file was written.")
 			return
-		target.store_string(csv_data)
-		target.flush()
-		var write_error := target.get_error()
-		target.close()
+		var file := FileAccess.open(destination, FileAccess.WRITE)
+		if file == null:
+			_leaderboard_management_status("Could not write the chosen Excel file. Try another location.")
+			return
+		file.store_buffer(workbook)
+		file.flush()
+		var write_error := file.get_error()
+		file.close()
 		if write_error != OK:
-			_leaderboard_management_status("Could not finish writing the CSV. Please try again.")
+			_leaderboard_management_status("Could not finish writing the Excel workbook.")
 		else:
-			_leaderboard_management_status("Full CSV export saved: %d students, %d scores." % [
+			_leaderboard_management_status("Excel workbook saved: %d students, %d scores, one sheet per grade." % [
 				int(data.get("students", 0)), int(data.get("scores", 0))], true)
 		return
-	if operation == "import_data_csv":
-		_leaderboard_management_status("CSV imported: %d new students, %d score records." % [
+	if operation == "import_data_xlsx":
+		_leaderboard_management_status("Excel imported: %d new students, %d score records." % [
 			int(data.get("students_created", 0)), int(data.get("scores_imported", 0))], true)
 		_request_database_leaderboard()
 		return
@@ -1558,7 +1570,7 @@ func _on_database_request_finished(info: Dictionary, result: Dictionary) -> void
 				String(info.get("autofill_field", "")), String(info.get("autofill_value", "")),
 				int(info.get("autofill_epoch", -1)))
 		return
-	if operation in ["export_data_csv", "import_data_csv", "request_delete_all_challenge", "delete_all_data"]:
+	if operation in ["export_data_xlsx", "import_data_xlsx", "request_delete_all_challenge", "delete_all_data"]:
 		_handle_database_management_result(info, result)
 		return
 	if operation == "health":
@@ -1866,10 +1878,10 @@ func _show_panel(route: String) -> void:
 			else:
 				_ensure_database_service()
 	if route == "leaderboard":
-		if active_panel.has_signal("database_export_csv_requested"):
-			active_panel.connect("database_export_csv_requested", Callable(self, "_on_database_export_csv_requested"))
-		if active_panel.has_signal("database_import_csv_requested"):
-			active_panel.connect("database_import_csv_requested", Callable(self, "_on_database_import_csv_requested"))
+		if active_panel.has_signal("database_export_xlsx_requested"):
+			active_panel.connect("database_export_xlsx_requested", Callable(self, "_on_database_export_xlsx_requested"))
+		if active_panel.has_signal("database_import_xlsx_requested"):
+			active_panel.connect("database_import_xlsx_requested", Callable(self, "_on_database_import_xlsx_requested"))
 		if active_panel.has_signal("database_delete_all_requested"):
 			active_panel.connect("database_delete_all_requested", Callable(self, "_on_database_delete_all_requested"))
 	button_sounds.call("watch", active_panel)

@@ -1,4 +1,4 @@
-﻿extends SceneTree
+extends SceneTree
 
 # Pixel/geometry and native-interaction checks for the current approved art.
 # No camera, PostgreSQL connection, import, file-dialog writing or student data.
@@ -96,8 +96,8 @@ func _run() -> void:
         _check(scene.find_child("MinigameFilter", true, false) == null
             and scene.find_child("DownloadButton", true, false) == null,
             prefix + " minigame and filtered CSV hidden controls removed completely")
-        _check(scene.has_method("set_minigame_filter") and scene.has_method("request_filtered_csv_export"),
-            prefix + " hidden minigame and filtered CSV remain safely callable through public APIs")
+        _check(scene.has_method("set_minigame_filter") and scene.has_method("_validate_import_xlsx"),
+            prefix + " hidden minigame filtering and XLSX import verification remain callable")
         _check(filter_buttons[0].get_global_rect().end.y < header.get_global_rect().position.y,
             prefix + " reference keeps one clean filter row above the table")
         var main: Array[Control] = []
