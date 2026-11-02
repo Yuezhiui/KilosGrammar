@@ -41,7 +41,7 @@ const RESPONSIVE_NODE_NAMES := [
 	"TableHeaderArt", "TableBodyArt",
 	"TableContent", "ImportCsvButton", "ExportCsvButton",
 	"DeleteAllButton", "SelectedStudentLabel",
-	"PullOutStudentButton", "ExportGradeXlsxButton"
+	"PullOutStudentButton", "ExportGradeXlsxButton", "DatabaseStatusNote"
 ]
 
 var _context: Dictionary = {}
@@ -75,6 +75,7 @@ var _section_regex: RegEx
 @onready var import_button: Button = %ImportCsvButton
 @onready var export_button: Button = %ExportCsvButton
 @onready var delete_button: Button = %DeleteAllButton
+@onready var database_status_note: Label = %DatabaseStatusNote
 @onready var import_dialog: FileDialog = %ImportCsvDialog
 @onready var import_review_dialog: ConfirmationDialog = %ImportReviewDialog
 @onready var database_export_dialog: FileDialog = %ExportDatabaseCsvDialog
@@ -97,6 +98,8 @@ var _queued_transfer_notice := ""
 var _queued_transfer_success := false
 var _last_transfer_notice_text := ""
 var _authored_ui_transforms: Dictionary = {}
+var _connection_note_active := false
+var _inline_status_message := ""
 
 
 func _ready() -> void:
@@ -160,6 +163,8 @@ func _ready() -> void:
 	call_deferred("_focus_back")
 	_on_filter_changed()
 	_update_student_export_state()
+	if not _inline_status_message.is_empty():
+		_set_inline_status(_inline_status_message, _connection_note_active)
 	if not _queued_transfer_notice.is_empty():
 		call_deferred("_flush_queued_transfer_notice")
 
@@ -224,6 +229,11 @@ func _focus_back() -> void:
 
 func set_context(context: Dictionary) -> void:
 	_context = context.duplicate(true)
+	if bool(_context.get("database_connected", false)):
+		if _connection_note_active:
+			_set_inline_status("")
+	elif not bool(_context.get("database_loading", false)):
+		_set_inline_status("Local database unavailable • Teacher: check database setup or connection.", true)
 	# A new database state must revoke a pending destructive confirmation.
 	_cancel_delete_all()
 	if not _teacher_authorized():
@@ -1032,14 +1042,38 @@ func _validate_import_csv(path: String) -> String:
 
 
 func _show_status(message: String) -> void:
-	# Status warnings now use the existing notice dialog, with no beige banner.
-	_queue_or_show_transfer_notice(message, false)
+	# Local validation or availability feedback belongs on the board itself.
+	# Backend acknowledgements and uncertain writes still use the notice dialog.
+	_set_inline_status(message)
+
+
+func _set_inline_status(message: String, is_connection_status: bool = false) -> void:
+	_connection_note_active = is_connection_status and not message.is_empty()
+	_inline_status_message = message
+	if not is_instance_valid(database_status_note):
+		return
+	database_status_note.text = message
+	database_status_note.tooltip_text = message
+	database_status_note.visible = not message.is_empty()
 
 
 func set_transfer_status(message: String, success: bool = false) -> void:
 	## Main menu should call this when the backend acknowledges an operation.
 	## A failed call keeps database state unchanged; show the actual server error.
+	var was_pending := _transfer_pending
+	var action := _last_management_action
 	_set_transfer_pending_state(false)
+	if message.begins_with("Connection lost. Any pending import/delete outcome is unknown"):
+		# The host emits this generic warning whenever its health changes to
+		# offline, even at startup with no import or delete in flight. Only a
+		# dispatched mutation can have an unknown write outcome.
+		if was_pending and action in ["import", "delete"]:
+			var operation := "CSV import" if action == "import" else "DELETE ALL DATA"
+			_queue_or_show_transfer_notice("Connection lost during %s. Its outcome is unknown. After reconnection, check saved records before attempting it again." % operation, false)
+		else:
+			_set_inline_status("Local database unavailable • Teacher: check database setup or connection.", true)
+		_last_management_action = ""
+		return
 	_queue_or_show_transfer_notice(_explain_management_authorization(message), success)
 	_last_management_action = ""
 	# A successful *unrelated* export must not close a teacher's active delete
