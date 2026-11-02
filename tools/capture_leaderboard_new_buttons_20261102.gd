@@ -115,7 +115,8 @@ func _check_control_layout(board: Control, resolution: Vector2i) -> void:
 		str(resolution) + " dropdown hitbox inside viewport")
 	_check(sort_rect.end.y <= header_rect.position.y + resolution.y * 0.003,
 		str(resolution) + " sorting button does not collide with score table header")
-	_check(sort.has_focus() or not sort.has_focus(), str(resolution) + " native OptionButton remains active")
+	_check(sort.is_visible_in_tree() and not sort.disabled and sort.item_count == 6,
+		str(resolution) + " sorting dropdown remains visible and has all six functional options")
 
 
 func _capture(filename: String, resolution: Vector2i) -> void:
