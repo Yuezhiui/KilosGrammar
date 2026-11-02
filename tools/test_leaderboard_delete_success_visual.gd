@@ -46,7 +46,7 @@ func _run() -> void:
 	var header := panel.get_node("DeleteSuccessOverlay/SuccessHeader") as TextureRect
 	var message := panel.get_node("%SuccessMessage") as Label
 	var okay := panel.get_node("%SuccessOkayButton") as Button
-	var notice := panel.get_node("%EmptyNotice") as AcceptDialog
+	var notice := panel.get_node("%NoticeOverlay") as Control
 	var first := panel.get_node("%DeleteFirstOverlay") as Control
 	var final := panel.get_node("%DeleteFinalOverlay") as Control
 	_check(bg.texture is AtlasTexture and (bg.texture as AtlasTexture).atlas.resource_path.ends_with("/Success/bg.png"),
@@ -63,11 +63,11 @@ func _run() -> void:
 		"Success artwork never obstructs Leaderboard before backend acknowledgement")
 	panel.set_context({"teacher_authorized": true, "database_connected": true})
 	panel.set_transfer_status("Database deletion failed: nothing was deleted.")
-	_check(not overlay.visible and notice.visible and notice.dialog_text.contains("failed"),
+	_check(not overlay.visible and notice.visible and notice.get_node("%NoticeMessage").text.contains("failed"),
 		"Failed deletion stays on ordinary notice and cannot trigger false success")
 	notice.hide()
 	panel.set_transfer_status("Full CSV export saved.", true)
-	_check(not overlay.visible and notice.visible and notice.dialog_text.contains("CSV export"),
+	_check(not overlay.visible and notice.visible and notice.get_node("%NoticeMessage").text.contains("CSV export"),
 		"Unrelated successful CSV export still uses its ordinary notice")
 	notice.hide()
 
@@ -96,7 +96,7 @@ func _run() -> void:
 		_check(overlay.visible and not notice.visible,
 			"Unrelated notice queues behind success board at %s" % resolution)
 		okay.pressed.emit()
-		_check(not overlay.visible and notice.visible and notice.dialog_text == "CSV import done later.",
+		_check(not overlay.visible and notice.visible and notice.get_node("%NoticeMessage").text == "CSV import done later.",
 			"Native green OK closes board and restores queued CSV notice at %s" % resolution)
 		notice.hide()
 	panel.show_delete_success(12, 34)

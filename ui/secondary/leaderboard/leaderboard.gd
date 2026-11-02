@@ -30,7 +30,7 @@ const RESPONSIVE_NODE_NAMES := [
 	"GradeLevelFilter", "SectionFilter", "StudentSearch", "ScoreSort",
 	"TableHeaderArt", "TableBodyArt",
 	"TableContent", "ImportCsvButton", "ExportCsvButton",
-	"DeleteAllButton"
+		"DeleteAllButton", "NoticeOverlay/NoticeStage"
 ]
 
 var _context: Dictionary = {}
@@ -52,7 +52,10 @@ var _section_regex: RegEx
 @onready var empty_message: Label = %EmptyMessage
 @onready var scroll: ScrollContainer = %ScoreRowsScroll
 @onready var rows_container: VBoxContainer = %ScoreRows
-@onready var empty_dialog: AcceptDialog = %EmptyNotice
+@onready var notice_overlay: Control = %NoticeOverlay
+@onready var notice_message: Label = %NoticeMessage
+@onready var notice_okay_button: Button = %NoticeOkayButton
+@onready var notice_close_button: Button = %NoticeCloseButton
 @onready var import_button: Button = %ImportCsvButton
 @onready var export_button: Button = %ExportCsvButton
 @onready var delete_button: Button = %DeleteAllButton
@@ -77,6 +80,7 @@ var _last_management_action := ""
 var _queued_transfer_notice := ""
 var _queued_transfer_success := false
 var _last_transfer_notice_text := ""
+var _notice_success := false
 var _authored_ui_transforms: Dictionary = {}
 
 
@@ -84,13 +88,11 @@ func _ready() -> void:
 	_grade_regex = RegEx.create_from_string("(?i)(?:^|[^a-z0-9])(?:grade\\s*|g\\s*)([0-9]{1,2})(?=$|[^0-9])")
 	_section_regex = RegEx.create_from_string("(?i)^(?:grade\\s*|g\\s*)?[0-9]{1,2}\\s*[-:,&/| ]*\\s*(?:section\\s*)?")
 	_capture_editor_layout()
-	# The inherited secondary theme's muted purple text is hard to read on
-	# Godot's gray AcceptDialog panel. Keep the existing real modal and its OK
-	# button, but give its label an accessible high-contrast foreground.
-	var notice_label := empty_dialog.get_label()
-	notice_label.add_theme_color_override("font_color", Color(0.055, 0.065, 0.12, 1.0))
-	notice_label.add_theme_font_size_override("font_size", 19)
-	notice_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# All notice controls are editor-authored; no native AcceptDialog survives.
+	notice_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	notice_overlay.hide()
+	notice_okay_button.pressed.connect(_dismiss_notice)
+	notice_close_button.pressed.connect(_dismiss_notice)
 	resized.connect(_apply_viewport_layout)
 	call_deferred("_apply_viewport_layout")
 	back_button.pressed.connect(_request_main)
@@ -536,8 +538,8 @@ func _open_xlsx_dialog(dialog: FileDialog, suggested_filename: String = "") -> v
 	dialog.current_file = suggested_filename
 	# The previous backend result must not remain an exclusive native window
 	# over a new Excel workbook file chooser.
-	if empty_dialog.visible:
-		empty_dialog.hide()
+	if notice_overlay.visible:
+		_dismiss_notice()
 	dialog.popup_centered()
 
 
@@ -585,8 +587,8 @@ func _on_import_file_selected(path: String) -> void:
 	) % path.get_file()
 	# File selection signals can arrive directly in tests or from native dialogs.
 	# Close a prior backend notice before opening this exclusive review window.
-	if empty_dialog.visible:
-		empty_dialog.hide()
+	if notice_overlay.visible:
+		_dismiss_notice()
 	import_review_dialog.popup_centered()
 
 
@@ -641,12 +643,12 @@ func _begin_delete_all() -> void:
 		set_transfer_status("Teacher authorization required before deleting ALL students and scores.")
 		return
 	_reset_delete_confirmation()
-	if empty_dialog.visible:
-		# A previous CSV/backend notice must not cover the custom warning board.
+	if notice_overlay.visible:
+		# An earlier notice must not cover the custom delete warning board.
 		# Restore its text after the teacher closes the delete challenge.
-		_queued_transfer_notice = empty_dialog.dialog_text
-		_queued_transfer_success = empty_dialog.title == "Leaderboard — Completed"
-		empty_dialog.hide()
+		_queued_transfer_notice = notice_message.text
+		_queued_transfer_success = _notice_success
+		_dismiss_notice()
 	# The custom board carries the complete warning; no separate status banner.
 	delete_first_overlay.show()
 	first_continue_button.call_deferred("grab_focus")
@@ -700,7 +702,7 @@ func _cancel_delete_all() -> void:
 		or (is_instance_valid(delete_final_overlay) and delete_final_overlay.visible)
 	_reset_delete_confirmation()
 	if was_open and not _transfer_pending and is_instance_valid(delete_button) \
-			and delete_button.is_visible_in_tree() and not empty_dialog.visible:
+			and delete_button.is_visible_in_tree() and not notice_overlay.visible:
 		delete_button.grab_focus()
 
 
@@ -731,7 +733,7 @@ func show_delete_success(students_deleted: int, scores_deleted: int) -> void:
 	_queued_transfer_notice = ""
 	_queued_transfer_success = false
 	_last_transfer_notice_text = ""
-	empty_dialog.hide()
+	notice_overlay.hide()
 	success_message.text = "Deleted %d student profiles and %d saved scores." % [
 		maxi(0, students_deleted), maxi(0, scores_deleted)]
 	delete_success_overlay.show()
@@ -750,6 +752,16 @@ func _input(event: InputEvent) -> void:
 	# pointer events. Escape is intentionally inert throughout this app:
 	# destructive dialogs may be dismissed only with their authored buttons.
 	if not delete_first_overlay.visible and not delete_final_overlay.visible:
+		if notice_overlay.visible and event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode == KEY_ESCAPE:
+				get_viewport().set_input_as_handled()
+			elif event.is_action_pressed("ui_focus_prev") or event.is_action_pressed("ui_focus_next"):
+				var focus := get_viewport().gui_get_focus_owner()
+				var backwards := event.is_action_pressed("ui_focus_prev")
+				(notice_close_button if (focus == notice_okay_button and backwards) \
+					else notice_okay_button if backwards or focus == notice_close_button \
+					else notice_close_button).grab_focus()
+				get_viewport().set_input_as_handled()
 		return
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
@@ -874,7 +886,7 @@ func _explain_management_authorization(message: String) -> String:
 
 
 func _queue_or_show_transfer_notice(message: String, success: bool) -> void:
-	if not is_instance_valid(empty_dialog):
+	if not is_instance_valid(notice_overlay):
 		# Hosts can call status methods before the scene enters the tree.
 		_queued_transfer_notice = message
 		_queued_transfer_success = success
@@ -882,7 +894,7 @@ func _queue_or_show_transfer_notice(message: String, success: bool) -> void:
 	if (is_instance_valid(delete_first_overlay) and delete_first_overlay.visible) \
 			or (is_instance_valid(delete_final_overlay) and delete_final_overlay.visible) \
 			or (is_instance_valid(delete_success_overlay) and delete_success_overlay.visible):
-		# A generic dialog must never obscure either custom delete challenge.
+		# A generic notice must never obscure any custom delete challenge.
 		_queued_transfer_notice = message
 		_queued_transfer_success = success
 	elif not message.is_empty():
@@ -890,12 +902,16 @@ func _queue_or_show_transfer_notice(message: String, success: bool) -> void:
 	else:
 		_queued_transfer_notice = ""
 		_queued_transfer_success = false
-		if empty_dialog.visible and empty_dialog.dialog_text == _last_transfer_notice_text:
-			empty_dialog.hide()
+		if notice_overlay.visible and notice_message.text == _last_transfer_notice_text:
+			_dismiss_notice()
 		_last_transfer_notice_text = ""
 
 
 func _flush_queued_transfer_notice() -> void:
+	if (is_instance_valid(delete_first_overlay) and delete_first_overlay.visible) \
+			or (is_instance_valid(delete_final_overlay) and delete_final_overlay.visible) \
+			or (is_instance_valid(delete_success_overlay) and delete_success_overlay.visible):
+		return
 	var message := _queued_transfer_notice
 	var success := _queued_transfer_success
 	_queued_transfer_notice = ""
@@ -908,9 +924,22 @@ func _show_transfer_notice(message: String, success: bool) -> void:
 	if message.is_empty():
 		return
 	_last_transfer_notice_text = message
-	empty_dialog.title = "Leaderboard — Completed" if success else "Leaderboard — Notice"
-	empty_dialog.dialog_text = message
-	empty_dialog.popup_centered()
+	_notice_success = success
+	notice_message.text = message
+	# Long security explanations must remain readable inside the illustrated
+	# wood board; preserve the exact backend text without truncating it.
+	notice_message.add_theme_font_size_override("font_size",
+		20 if message.length() > 280 else 23 if message.length() > 160 else 27)
+	notice_overlay.show()
+	notice_okay_button.grab_focus()
+
+
+func _dismiss_notice() -> void:
+	if is_instance_valid(notice_overlay):
+		notice_overlay.hide()
+	_last_transfer_notice_text = ""
+	if is_instance_valid(back_button) and back_button.is_visible_in_tree():
+		back_button.grab_focus()
 
 
 func set_transfer_pending(message: String) -> void:

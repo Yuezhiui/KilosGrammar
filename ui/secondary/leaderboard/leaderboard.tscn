@@ -9,6 +9,11 @@
 [ext_resource type="Texture2D" uid="uid://cfi6us1oc0ffo" path="res://Components/Leaderboard/Success/bg.png" id="DeleteSuccessBoard"]
 [ext_resource type="Texture2D" uid="uid://yk7myk08208f" path="res://Components/Leaderboard/Success/00669de2-99cd-46c6-bef9-f3a0f69c72e1.png" id="DeleteSuccessHeader"]
 [ext_resource type="Texture2D" uid="uid://d27av70p4au2c" path="res://Components/Leaderboard/Success/OkayButton.png" id="DeleteSuccessOkay"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_1.png" id="NoticeCapBooks"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_2.png" id="NoticeClose"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_3.png" id="NoticeHeader"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_4.png" id="NoticeWoodBoard"]
+[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_5.png" id="NoticeOkay"]
 [ext_resource type="Texture2D" uid="uid://c1hnw6023f15n" path="res://Components/Credits/Redesign/HOME.png" id="LeaderboardHomeArtwork"]
 [ext_resource type="Texture2D" uid="uid://chi18crtpcpah" path="res://Components/Leaderboard/Secondary/transparent_dropdown_arrow.png" id="NativeArrowHidden"]
 [ext_resource type="Texture2D" uid="uid://07j2oiaypxwm" path="res://Components/Leaderboard/NotifLeader/notif background.png" id="NotifBoard"]
@@ -181,6 +186,22 @@ region = Rect2(500, 150, 1160, 460)
 
 [sub_resource type="StyleBoxTexture" id="DeleteSuccessOkayStyle"]
 texture = SubResource("DeleteSuccessOkayCrop")
+
+[sub_resource type="AtlasTexture" id="NoticeHeaderCrop"]
+atlas = ExtResource("NoticeHeader")
+region = Rect2(18, 226, 2136, 326)
+
+[sub_resource type="AtlasTexture" id="NoticeCapCrop"]
+atlas = ExtResource("NoticeCapBooks")
+region = Rect2(74, 248, 1128, 798)
+
+[sub_resource type="AtlasTexture" id="NoticeCloseCrop"]
+atlas = ExtResource("NoticeClose")
+region = Rect2(84, 92, 1070, 1080)
+
+[sub_resource type="AtlasTexture" id="NoticeOkayCrop"]
+atlas = ExtResource("NoticeOkay")
+region = Rect2(178, 165, 1414, 578)
 
 [sub_resource type="StyleBoxFlat" id="LeaderboardNoticePanel"]
 bg_color = Color(0.976, 0.966, 0.937, 1)
@@ -566,16 +587,6 @@ theme_override_styles/pressed = SubResource("DeleteActionStyle")
 theme_override_styles/hover = SubResource("DeleteActionStyle")
 theme_override_styles/disabled = SubResource("DeleteActionStyle")
 
-[node name="EmptyNotice" type="AcceptDialog" parent="." unique_id=697134937]
-unique_name_in_owner = true
-editor_description = "Runtime empty/storage notice. Hidden until requested by leaderboard.gd; this is live behavior, NOT obsolete artwork."
-title = "Leaderboard"
-size = Vector2i(620, 205)
-min_size = Vector2i(600, 190)
-theme_override_styles/panel = SubResource("LeaderboardNoticePanel")
-ok_button_text = "OK"
-dialog_text = "No saved scores yet. Local score storage is not connected."
-
 [node name="ImportCsvDialog" type="FileDialog" parent="." unique_id=1899776685]
 unique_name_in_owner = true
 editor_description = "Existing Import button's XLSX file selector. Preserve authorization checks and the separate ImportReviewDialog confirmation."
@@ -935,4 +946,131 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("DeleteSuccessHeader")
+expand_mode = 1
+
+[node name="NoticeOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+editor_description = "Full-screen, editor-authored illustrated notice. Replaces native EmptyNotice; hidden until an explicit backend/import/export notice."
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="NoticeDimBackground" type="ColorRect" parent="NoticeOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.05, 0.035, 0.08, 0.76)
+
+[node name="NoticeStage" type="Control" parent="NoticeOverlay"]
+editor_description = "1280x720 authored stage; leaderboard.gd scales this whole node to 16:9 viewports. Every component is independently draggable."
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 1
+
+[node name="NoticeBoardArtwork" type="TextureRect" parent="NoticeOverlay/NoticeStage"]
+layout_mode = 0
+offset_left = 83.0
+offset_top = 152.0
+offset_right = 1197.0
+offset_bottom = 597.0
+mouse_filter = 2
+texture = ExtResource("NoticeWoodBoard")
+expand_mode = 1
+
+[node name="NoticeTitleArtwork" type="TextureRect" parent="NoticeOverlay/NoticeStage"]
+layout_mode = 0
+offset_left = 305.0
+offset_top = 115.0
+offset_right = 975.0
+offset_bottom = 217.0
+mouse_filter = 2
+texture = SubResource("NoticeHeaderCrop")
+expand_mode = 1
+
+[node name="NoticeCapArtwork" type="TextureRect" parent="NoticeOverlay/NoticeStage"]
+layout_mode = 0
+offset_left = 132.0
+offset_top = 93.0
+offset_right = 310.0
+offset_bottom = 223.0
+mouse_filter = 2
+texture = SubResource("NoticeCapCrop")
+expand_mode = 1
+
+[node name="NoticeMessage" type="Label" parent="NoticeOverlay/NoticeStage"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 172.0
+offset_top = 251.0
+offset_right = 1108.0
+offset_bottom = 477.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.085, 0.115, 0.32, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 27
+text = "No saved scores yet. Local score storage is not connected."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="NoticeOkayButton" type="Button" parent="NoticeOverlay/NoticeStage"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 524.0
+offset_top = 488.0
+offset_right = 756.0
+offset_bottom = 581.0
+mouse_default_cursor_shape = 2
+tooltip_text = "OK — close notice"
+accessibility_name = "OK. Dismiss leaderboard notice"
+theme_override_styles/normal = SubResource("NotifNoFocus")
+theme_override_styles/pressed = SubResource("NotifNoFocus")
+theme_override_styles/hover = SubResource("NotifNoFocus")
+theme_override_styles/focus = SubResource("NotifNoFocus")
+
+[node name="Artwork" type="TextureRect" parent="NoticeOverlay/NoticeStage/NoticeOkayButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("NoticeOkayCrop")
+expand_mode = 1
+
+[node name="NoticeCloseButton" type="Button" parent="NoticeOverlay/NoticeStage"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1085.0
+offset_top = 159.0
+offset_right = 1169.0
+offset_bottom = 243.0
+mouse_default_cursor_shape = 2
+tooltip_text = "Close notice"
+accessibility_name = "Close leaderboard notice"
+theme_override_styles/normal = SubResource("NotifNoFocus")
+theme_override_styles/pressed = SubResource("NotifNoFocus")
+theme_override_styles/hover = SubResource("NotifNoFocus")
+theme_override_styles/focus = SubResource("NotifNoFocus")
+
+[node name="Artwork" type="TextureRect" parent="NoticeOverlay/NoticeStage/NoticeCloseButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("NoticeCloseCrop")
 expand_mode = 1

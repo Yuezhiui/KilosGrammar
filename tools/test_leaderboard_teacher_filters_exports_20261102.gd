@@ -119,7 +119,7 @@ func _check_signals(board: Control, size_key: String) -> void:
 	board.call("_on_export_file_selected", "user://duplicate.xlsx")
 	_check(canonical_csv.size() == 1, size_key + " concurrent CSV export cannot duplicate dispatch")
 	board.set_transfer_status("Simulated authorized export completed.", true)
-	(board.get_node("%EmptyNotice") as AcceptDialog).hide()
+	(board.get_node("%NoticeOverlay") as Control).hide()
 	board.call("_on_final_delete_pressed")
 	_check(deleted.is_empty(), size_key + " naked delete callback cannot bypass protected confirmation")
 	var context: Dictionary = {"leaderboard_rows": DATA, "database_connected": true,
@@ -138,7 +138,7 @@ func _check_signals(board: Control, size_key: String) -> void:
 	_check(canonical_csv.size() == 2 and canonical_csv[1] == "user://empty_scoreboard.xlsx",
 		size_key + " full XLSX backup permits empty scoreboards")
 	board.set_transfer_status("", false)
-	(board.get_node("%EmptyNotice") as AcceptDialog).hide()
+	(board.get_node("%NoticeOverlay") as Control).hide()
 	_check(deleted.is_empty() and import_csv.is_empty(),
 		size_key + " read-only exports have no import or delete side effects")
 

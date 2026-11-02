@@ -206,8 +206,8 @@ func _test_export() -> void:
 		"message": "Teacher permission missing", "data": null,
 	}), "Mock backend can deny export despite selected destination")
 	_check(not FileAccess.file_exists(EXPORT_PATH), "Denied export leaves no XLSX file")
-	var notice := _find(board, ["EmptyNotice"]) as AcceptDialog
-	_check(notice != null and notice.dialog_text.contains("failed"),
+	var notice := _find(board, ["NoticeOverlay"]) as Control
+	_check(notice != null and notice.get_node("%NoticeMessage").text.contains("failed"),
 		"Denied Excel export cannot show false success")
 	button.pressed.emit()
 	chooser.file_selected.emit(ProjectSettings.globalize_path(EXPORT_PATH))
@@ -223,7 +223,7 @@ func _test_export() -> void:
 		_check(FileAccess.get_file_as_bytes(EXPORT_PATH) == raw,
 			"All original four-grade worksheet bytes are preserved through export")
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(EXPORT_PATH))
-	_check(not notice.dialog_text.contains("failed") and notice.dialog_text.contains("saved"),
+	_check(not notice.get_node("%NoticeMessage").text.contains("failed") and notice.get_node("%NoticeMessage").text.contains("saved"),
 		"Successful workbook export displays actual server-acknowledged result")
 	_check(client.call("mutation_count") == original_mutations,
 		"Excel export remains read-only with zero backend mutations")
@@ -280,8 +280,8 @@ func _test_import() -> void:
 		"message": "Unsafe workbook rejected", "data": null,
 	}), "Mock server can reject unsafe workbook")
 	_check(_count_rows() == 1, "Rejected Excel import does not alter ranks")
-	var notice := _find(board, ["EmptyNotice"]) as AcceptDialog
-	_check(notice != null and notice.dialog_text.contains("failed"),
+	var notice := _find(board, ["NoticeOverlay"]) as Control
+	_check(notice != null and notice.get_node("%NoticeMessage").text.contains("failed"),
 		"Rejected import displays failure instead of success")
 	button.pressed.emit()
 	picker.file_selected.emit(chosen)
@@ -303,7 +303,7 @@ func _test_import() -> void:
 	}), "Authorized workbook import response accepted")
 	_check(int(client.call("count", "get_leaderboard")) == fetches + 1,
 		"Successful workbook import refreshes authoritative rankings")
-	_check(not notice.dialog_text.contains("failed") and notice.dialog_text.contains("Excel imported"),
+	_check(not notice.get_node("%NoticeMessage").text.contains("failed") and notice.get_node("%NoticeMessage").text.contains("Excel imported"),
 		"Success notice only after backend confirms import")
 	before = int(client.call("count", "import_data_xlsx"))
 	button.pressed.emit()
@@ -437,8 +437,8 @@ func _test_delete() -> void:
 		"ok": false, "status": 503, "error": "database_unavailable", "data": null,
 	}), "Failed deletion can return from the backend")
 	_check(_count_rows() == 1, "Failed deletion preserves existing scores and no false success")
-	var status := _find(board, ["EmptyNotice"]) as AcceptDialog
-	_check(status != null and status.dialog_text.contains("failed"),
+	var status := _find(board, ["NoticeOverlay"]) as Control
+	_check(status != null and status.get_node("%NoticeMessage").text.contains("failed"),
 		"Failed deletion displays failure rather than a destructive success")
 	var before_fetches: int = client.call("count", "get_leaderboard")
 	button.pressed.emit()

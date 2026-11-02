@@ -38,14 +38,14 @@ func _run() -> void:
 	var edit := board.get_node_or_null("%TypedConfirmationEdit") as LineEdit
 	var final_button := board.get_node_or_null("%FinalDeleteButton") as Button
 	var cancel_button := board.get_node_or_null("%FinalCancelButton") as Button
-	var status := board.get_node_or_null("%EmptyNotice") as AcceptDialog
+	var status := board.get_node_or_null("%NoticeOverlay") as Control
 	var filters := [board.get_node_or_null("%StyleFilter"), board.get_node_or_null("%ModeFilter"), board.get_node_or_null("%DifficultyFilter")]
 	var new_buttons := [import_button, export_button, delete_button]
 	for obsolete in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
 		_check(board.find_child(obsolete, true, false) == null,
 			"FILTERS and popover physically removed: " + obsolete)
-	_check(original == null and board.has_method("request_filtered_csv_export"),
-		"deleted filtered CSV Button leaves explicit host API intact")
+	_check(original == null and not board.has_method("request_filtered_csv_export"),
+		"deleted filtered CSV Button and retired host API remain absent")
 	for item in [import_button, export_button, delete_button]:
 		_check(item is Button and item.is_visible_in_tree(), "permanent native action is visible")
 		_check(item.focus_mode == Control.FOCUS_ALL, "action accessible by keyboard")
@@ -63,7 +63,7 @@ func _run() -> void:
 		await process_frame
 		_check(action.position.distance_to(prior_position + Vector2(5, 2)) < 0.5, "new action can be moved in the editor without runtime coordinates")
 		action.position = prior_position
-	_check((board.get_node("%SaveCsvDialog") as FileDialog).file_mode == FileDialog.FILE_MODE_SAVE_FILE, "legacy filtered Download uses Save File dialog")
+	_check(board.get_node_or_null("%SaveCsvDialog") == null, "obsolete local CSV chooser removed")
 	_check(imports_dialog.file_mode == FileDialog.FILE_MODE_OPEN_FILE and imports_dialog.access == FileDialog.ACCESS_FILESYSTEM, "Import uses Windows-compatible filesystem open dialog")
 	_check(review_import.ok_button_text == "CONFIRM IMPORT", "import requires a second deliberate confirmation")
 	_check(exports_dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE and exports_dialog.access == FileDialog.ACCESS_FILESYSTEM, "Full export uses Windows-compatible filesystem save dialog")
@@ -81,8 +81,8 @@ func _run() -> void:
 		quit(1)
 		return
 
-	board.database_import_csv_requested.connect(func(path: String) -> void: imports.append(path))
-	board.database_export_csv_requested.connect(func(path: String) -> void: exports.append(path))
+	board.database_import_xlsx_requested.connect(func(path: String) -> void: imports.append(path))
+	board.database_export_xlsx_requested.connect(func(path: String) -> void: exports.append(path))
 	board.database_delete_all_requested.connect(func(value: String) -> void: deletions.append(value))
 
 	# No teacher verification -> import and deletion refuse to proceed.
@@ -143,30 +143,27 @@ func _run() -> void:
 	_check(deletions.size() == 1 and not first_warning.visible and not final_overlay.visible,
 		"pending transfer blocks reopening either delete modal")
 	board.set_transfer_status("Backend rejected delete: teacher permissions required", false)
-	_check(status.dialog_text.contains("Backend rejected") and not board.get("_transfer_pending"), "backend failure appears in notice dialog and clears pending state")
+	_check(status.get_node("%NoticeMessage").text.contains("Backend rejected") and not board.get("_transfer_pending"), "backend failure appears in notice dialog and clears pending state")
 
-	var csv_header := "student_id,student_name,grade_section,game_style,game_mode,difficulty,score\n"
-	var valid_file := _make_csv("valid", csv_header + "KG-01,Student A,Grade 2,Noun,Seconds,Easy,12\n")
-	var bad_formula := _make_csv("formula", csv_header + "KG-02,\"=HYPERLINK(1)\",Grade 3,Noun,Seconds,Easy,10\n")
-	var bad_columns := _make_csv("columns", csv_header + "KG-03,Student B\n")
-	var bad_header := _make_csv("no_id", "student_name,student_id,grade_section,game_style,game_mode,difficulty,score\nStudent C,KG-05,Grade 5,Noun,Seconds,Easy,18\n")
-	var fake_extension := _make_csv("extension", csv_header + "KG-04,Student D,Grade 4,Noun,Seconds,Easy,17\n", ".txt")
-	var import_selected: String = valid_file
-	_check(board.call("_validate_import_csv", valid_file) == "", "valid student CSV accepted for backend validation")
-	for path in [bad_formula, bad_columns, bad_header, fake_extension]:
-		_check(not String(board.call("_validate_import_csv", path)).is_empty(), "unsafe CSV rejected before backend")
-	imports_dialog.file_selected.emit(bad_formula)
-	imports_dialog.file_selected.emit(bad_columns)
-	_check(imports.is_empty(), "bad CSV selections never emit an import request")
+	var import_selected := ProjectSettings.globalize_path("res://docs/examples/KilosGrammar_DEMO_8_Students_Grades_1_to_4_20261102.xlsx")
+	_check(String(board.call("_validate_import_xlsx", import_selected)).is_empty(),
+		"real demo Excel workbook passes local preflight")
+	for invalid in ["user://missing.xlsx", "user://invalid.csv", "user://bad.xls"]:
+		_check(not String(board.call("_validate_import_xlsx", invalid)).is_empty(),
+			"invalid workbook path or extension rejected locally")
+	imports_dialog.file_selected.emit("user://invalid.csv")
+	_check(imports.is_empty(), "bad XLSX selection never dispatches")
 	imports_dialog.file_selected.emit(import_selected)
-	_check(imports.is_empty() and review_import.visible, "valid CSV opens confirmation without dispatching import")
+	_check(imports.is_empty() and review_import.visible,
+		"valid XLSX selection requires second-stage approval")
 	review_import.canceled.emit()
-	_check(imports.is_empty() and not review_import.visible, "canceling CSV review never emits a mutation")
+	_check(imports.is_empty() and not review_import.visible, "canceling Excel review never mutates")
 	imports_dialog.file_selected.emit(import_selected)
 	review_import.confirmed.emit()
-	_check(imports == [valid_file] and board.get("_transfer_pending"), "teacher-confirmed CSV dispatched once as selected path")
+	_check(imports == [import_selected] and board.get("_transfer_pending"),
+		"confirmed Excel workbook dispatches once")
 	board.set_transfer_pending("Database checking imported rows...")
-	_check(board.get("_transfer_pending") and not status.dialog_text.contains("Database checking imported rows"),
+	_check(board.get("_transfer_pending") and not status.get_node("%NoticeMessage").text.contains("Database checking imported rows"),
 		"intermediate import progress holds lock without an obstructing status popup")
 	_check(import_button.disabled and export_button.disabled and delete_button.disabled, "all transfer buttons disabled throughout pending operation")
 	board.set_context({"teacher_authorized": false, "database_connected": false})
@@ -174,14 +171,17 @@ func _run() -> void:
 	imports_dialog.file_selected.emit(import_selected)
 	_check(imports.size() == 1, "pending transfer blocks double-import")
 	board.set_transfer_status("Imported 1 student", true)
-	_check(status.dialog_text == "Imported 1 student" and not board.get("_transfer_pending"), "import success notice shows genuine result")
+	_check(status.get_node("%NoticeMessage").text == "Imported 1 student" and not board.get("_transfer_pending"), "import success notice shows genuine result")
 	_check(not import_button.disabled and not export_button.disabled and not delete_button.disabled, "transfer buttons recover after completion")
 	board.set_context({"teacher_authorized": false, "database_connected": true})
-	imports_dialog.file_selected.emit(valid_file)
+	imports_dialog.file_selected.emit(import_selected)
 	_check(imports.size() == 1, "teacher loss revokes CSV import even if dialog was open")
 
 	# Full export should be independent of the visible leaderboard filters.
-	var export_path := ProjectSettings.globalize_path("user://leaderboard_full_export_qa.csv")
+	board.set_transfer_status("")
+	board.set_context({"teacher_authorized": true, "database_connected": true})
+	board.call("_dismiss_notice")
+	var export_path := ProjectSettings.globalize_path("user://leaderboard_full_export_qa.xlsx")
 	export_button.pressed.emit()
 	_check(exports_dialog.visible, "Export opens filesystem Save File dialog")
 	exports_dialog.file_selected.emit(export_path)
@@ -192,17 +192,15 @@ func _run() -> void:
 	_check(board.get("_transfer_pending"), "intermediate full export progress retains pending lock")
 	_check(not FileAccess.file_exists(export_path), "UI export did not fabricate database output")
 	board.set_transfer_status("Database unavailable: export failed", false)
-	_check(status.dialog_text.contains("failed") and not board.get("_transfer_pending"), "failed export notice displays server error and unlocks UI")
+	_check(status.get_node("%NoticeMessage").text.contains("failed") and not board.get("_transfer_pending"), "failed export notice displays server error and unlocks UI")
 	exports_dialog.file_selected.emit(ProjectSettings.globalize_path("user://bad_export.txt"))
 	_check(exports.size() == 1, "bad extension never reaches backend export")
 
 	var hostile := {"student_id": "=1+2", "student_name": "+CMD", "grade": "@bad",
 		"game_style": "Noun", "game_mode": "Seconds", "difficulty": "Easy", "score": 42}
 	board.set_context({"leaderboard_rows": [hostile]})
-	var old_csv := _make_csv("legacy", "")
-	board.call("_write_csv", old_csv)
-	var escaped := FileAccess.get_file_as_string(old_csv)
-	_check(escaped.contains("\"'=1+2\"") and escaped.contains("\"'+CMD\"") and escaped.contains("\"'@bad\""), "original filtered Download CSV neutralizes Excel formula prefixes")
+	_check(not board.has_method("_write_csv") and board.get_node_or_null("%SaveCsvDialog") == null,
+		"Obsolete local CSV download and write path are removed from XLSX-only screen")
 	_check((board.get("_visible_rows") as Array).size() == 1, "existing filters and row rendering remain functional")
 
 	if OS.get_environment("CAPTURE_LEADERBOARD_TRANSFER") == "1" and DisplayServer.get_name() != "headless":

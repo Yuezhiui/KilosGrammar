@@ -40,7 +40,7 @@ func _run() -> void:
 	var final_art := panel.get_node_or_null("%DeleteFinalOverlay/ConfirmPanel") as TextureRect
 	var status_panel := panel.get_node_or_null("TransferStatusPanel") as Panel
 	var status_label := panel.get_node_or_null("%TransferStatus") as Label
-	var notice := panel.get_node_or_null("%EmptyNotice") as AcceptDialog
+	var notice := panel.get_node_or_null("%NoticeOverlay") as Control
 	_check(first != null and final != null and delete != null and input != null
 		and permanent != null and final_cancel != null
 		and first_cancel != null and first_continue != null
@@ -250,7 +250,7 @@ func _run() -> void:
 		]:
 			var genuine_message := String(status_case["message"])
 			panel.set_transfer_status(genuine_message, bool(status_case["ok"]))
-			_check(notice.visible and notice.dialog_text == genuine_message,
+			_check(notice.visible and notice.get_node("%NoticeMessage").text == genuine_message,
 				"Backend %s result appears in native notice at %s" % [status_case["name"], resolution])
 			notice.hide() # Teacher dismisses notice before opening delete.
 			delete.pressed.emit()
@@ -261,7 +261,7 @@ func _run() -> void:
 				"During first warning, backend %s result queues without generic popup at %s" % [status_case["name"], resolution])
 			first_cancel.pressed.emit()
 			_check(not first.visible and not final.visible and notice.visible
-				and notice.dialog_text == genuine_message,
+				and notice.get_node("%NoticeMessage").text == genuine_message,
 				"First-stage Cancel restores genuine %s notice at %s" % [status_case["name"], resolution])
 			notice.hide()
 			delete.pressed.emit()
@@ -273,7 +273,7 @@ func _run() -> void:
 				"Backend %s notice queues until final modal is closed at %s" % [status_case["name"], resolution])
 			final_cancel.pressed.emit()
 			_check(not first.visible and not final.visible and notice.visible
-				and notice.dialog_text == genuine_message,
+				and notice.get_node("%NoticeMessage").text == genuine_message,
 				"Final-stage Cancel restores genuine %s notice at %s" % [status_case["name"], resolution])
 			notice.hide()
 			panel.set_transfer_status("")

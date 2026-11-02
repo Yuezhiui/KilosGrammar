@@ -30,18 +30,18 @@ func _case(size: Vector2i) -> void:
 	for index in range(3):
 		await process_frame
 	var tag := str(size)
-	var modal := panel.get_node("%EmptyNotice") as AcceptDialog
-	var label := modal.get_label()
-	var text_color := label.get_theme_color("font_color")
-	_check(text_color.r < 0.15 and text_color.g < 0.15 and text_color.b < 0.20
-			and text_color.a > 0.99 and label.get_theme_font_size("font_size") >= 19,
-		tag + " high-contrast large notice text overrides inherited muted purple")
-	var panel_style := modal.get_theme_stylebox("panel") as StyleBoxFlat
-	_check(panel_style != null and panel_style.bg_color.r >= 0.95
-			and panel_style.bg_color.g >= 0.95 and modal.size.x >= 600,
-		tag + " dialog has a large cream panel behind dark text")
-	_check(modal.get_ok_button() != null and not modal.get_ok_button().disabled,
-		tag + " original accessible OK control remains functional")
+	var modal := panel.get_node("%NoticeOverlay") as Control
+	var label := panel.get_node("%NoticeMessage") as Label
+	var okay := panel.get_node("%NoticeOkayButton") as Button
+	_check(modal != null and label != null and okay != null,
+		tag + " authored illustrated notice, message and dismiss control exist")
+	if modal == null or label == null or okay == null:
+		panel.queue_free()
+		await process_frame
+		return
+	_check(label.get_theme_font_size("font_size") >= 19,
+		tag + " illustrated notice keeps readable large text")
+	_check(not okay.disabled, tag + " original accessible okay action remains enabled")
 	var signals := {"imports": 0, "exports": 0, "deletions": 0}
 	panel.database_import_xlsx_requested.connect(func(_path: String) -> void: signals["imports"] += 1)
 	panel.database_export_xlsx_requested.connect(func(_path: String) -> void: signals["exports"] += 1)
@@ -54,17 +54,17 @@ func _case(size: Vector2i) -> void:
 	# two simultaneous exclusive Windows dialogs are invalid UI state.
 	(panel.get_node("%ImportCsvDialog") as FileDialog).hide()
 	panel.set_transfer_status(BACKEND_ERROR, false)
-	_check(modal.dialog_text.contains("Excel import was blocked")
-			and modal.dialog_text.contains("No records were imported")
-			and modal.dialog_text.contains("administrator authorization"),
+	_check(label.text.contains("Excel import was blocked")
+			and label.text.contains("No records were imported")
+			and label.text.contains("administrator authorization"),
 		tag + " rejected import explains authorization and zero import")
 	modal.hide()
 
 	(panel.get_node("%ExportCsvButton") as Button).pressed.emit()
 	(panel.get_node("%ExportDatabaseCsvDialog") as FileDialog).hide()
 	panel.set_transfer_status(BACKEND_ERROR, false)
-	_check(modal.dialog_text.contains("Full database Excel export was blocked")
-			and modal.dialog_text.contains("No workbook was created"),
+	_check(label.text.contains("Full database Excel export was blocked")
+			and label.text.contains("No workbook was created"),
 		tag + " rejected full export explains authorization and no output")
 	modal.hide()
 
@@ -75,8 +75,8 @@ func _case(size: Vector2i) -> void:
 	_check(not modal.visible and String(panel.get("_queued_transfer_notice")).contains("No student profiles or scores were deleted"),
 		tag + " backend rejection is queued behind delete warning, not overlaid")
 	(panel.get_node("%FirstCancelButton") as Button).pressed.emit()
-	_check(not warning.visible and modal.dialog_text.contains("DELETE ALL DATA was blocked")
-			and modal.dialog_text.contains("No student profiles or scores were deleted"),
+	_check(not warning.visible and label.text.contains("DELETE ALL DATA was blocked")
+			and label.text.contains("No student profiles or scores were deleted"),
 		tag + " canceled delete warning shows readable authorization rejection")
 	_check(not (panel.get_node("%DeleteFinalOverlay") as Control).visible,
 		tag + " final destructive confirmation stayed closed")
@@ -85,7 +85,7 @@ func _case(size: Vector2i) -> void:
 	modal.hide()
 
 	panel.set_transfer_status("Database operation failed: disk not ready", false)
-	_check(modal.dialog_text == "Database operation failed: disk not ready",
+	_check(label.text == "Database operation failed: disk not ready",
 		tag + " unrelated backend failure retains its exact original explanation")
 	panel.queue_free()
 	await process_frame

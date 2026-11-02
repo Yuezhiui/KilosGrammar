@@ -31,7 +31,7 @@ func _test_viewport(viewport: Vector2i) -> void:
 	for i in range(3):
 		await process_frame
 	var key := str(viewport)
-	var modal := board.get_node("%EmptyNotice") as AcceptDialog
+	var modal := board.get_node("%NoticeOverlay") as Control
 	var table := board.get_node("TableContent") as Control
 	var board_art := board.get_node("BoardArtwork") as Control
 	var bottom_actions: Array[Control] = [
@@ -70,17 +70,17 @@ func _test_viewport(viewport: Vector2i) -> void:
 	board.set("_last_management_action", "import")
 	board.set_transfer_pending("Valid CSV import dispatched to backend")
 	board.set_transfer_status(GENERIC_DISCONNECT)
-	_check(modal.visible and modal.dialog_text.contains("Excel import")
-		and modal.dialog_text.contains("outcome is unknown")
-		and not modal.dialog_text.contains("succeeded"),
+	_check(modal.visible and modal.get_node("%NoticeMessage").text.contains("Excel import")
+		and modal.get_node("%NoticeMessage").text.contains("outcome is unknown")
+		and not modal.get_node("%NoticeMessage").text.contains("succeeded"),
 		key + " interrupted in-flight import still warns that records need checking")
 	_check(not board.get("_transfer_pending"), key + " interrupted import clears UI progress lock")
 	modal.hide()
 	board.set("_last_management_action", "delete")
 	board.set_transfer_pending("Delete dispatched to backend")
 	board.set_transfer_status(GENERIC_DISCONNECT)
-	_check(modal.visible and modal.dialog_text.contains("DELETE ALL DATA")
-		and modal.dialog_text.contains("outcome is unknown"),
+	_check(modal.visible and modal.get_node("%NoticeMessage").text.contains("DELETE ALL DATA")
+		and modal.get_node("%NoticeMessage").text.contains("outcome is unknown"),
 		key + " interrupted in-flight deletion warns without asserting deletion")
 	modal.hide()
 	board.set("_last_management_action", "export")

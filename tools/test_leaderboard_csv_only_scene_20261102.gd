@@ -59,7 +59,7 @@ func _run() -> void:
         panel.call("_on_export_file_selected", "user://wrong.csv")
         _check(exports.is_empty(), key+" CSV export rejected")
         panel.set_transfer_status("")
-        (panel.get_node("%EmptyNotice") as AcceptDialog).hide()
+        (panel.get_node("%NoticeOverlay") as Control).hide()
         panel.call("_on_export_file_selected", "user://fixture.xlsx")
         _check(exports == ["user://fixture.xlsx"], key+" XLSX export signal exactly once")
         panel.call("_on_export_file_selected", "user://repeat.xlsx")
