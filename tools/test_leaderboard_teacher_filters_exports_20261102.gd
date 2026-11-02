@@ -1,7 +1,7 @@
 extends SceneTree
 
-## Non-destructive, camera-free UI regression tests. All exports are observed
-## as signals; no file is written and no database request is executed.
+## Non-destructive, camera-free UI regression tests. Canonical CSV operations
+## are observed as signals; no file is written and no database is accessed.
 const SCENE := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
 const SIZES := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
 const DATA: Array[Dictionary] = [
@@ -97,69 +97,50 @@ func _check_filters(board: Control, size_key: String) -> void:
 
 
 func _check_signals(board: Control, size_key: String) -> void:
-	var student_requests: Array = []
-	var grade_requests: Array = []
 	var canonical_csv: Array = []
+	var import_csv: Array = []
 	var deleted: Array = []
-	board.database_export_student_requested.connect(func(sid: String, path: String) -> void:
-		student_requests.append({"id": sid, "path": path}))
-	board.database_export_grade_xlsx_requested.connect(func(path: String) -> void: grade_requests.append(path))
 	board.database_export_csv_requested.connect(func(path: String) -> void: canonical_csv.append(path))
+	board.database_import_csv_requested.connect(func(path: String) -> void: import_csv.append(path))
 	board.database_delete_all_requested.connect(func(phrase: String) -> void: deleted.append(phrase))
-	var pull_out := board.get_node("%PullOutStudentButton") as Button
-	var xlsx := board.get_node("%ExportGradeXlsxButton") as Button
-	_check(pull_out.disabled, size_key + " Pull-Out is disabled before selection")
-	board.call("_select_student", "ID-004")
-	_check(not pull_out.disabled and not xlsx.disabled,
-		size_key + " teacher auth + selection unlock Pull-Out and grouped workbook")
-	_check((board.get_node("%SelectedStudentLabel") as Label).text.contains("ID-004"),
-		size_key + " selected exact student ID displayed")
-	board.call("_choose_student_export")
-	board.call("_on_student_export_file_selected", "user://student.csv")
-	_check(student_requests.is_empty(), size_key + " rejects .csv path for Excel Pull-Out")
-	board.call("_choose_student_export")
-	board.call("_select_student", "ID-005")
-	board.call("_on_student_export_file_selected", "user://stale.xlsx")
-	_check(student_requests.is_empty(),
-		size_key + " export chooser cannot silently switch to another student ID")
-	board.call("_select_student", "ID-004")
-	board.call("_choose_student_export")
-	board.call("_on_student_export_file_selected", "user://student.xlsx")
-	_check(student_requests.size() == 1 and student_requests[0]["id"] == "ID-004"
-		and student_requests[0]["path"] == "user://student.xlsx",
-		size_key + " Pull-Out emits exact ID/path, writes nothing locally")
-	_check(pull_out.disabled and xlsx.disabled, size_key + " pending export locks both buttons")
-	board.set_transfer_status("Simulated authorized export completed.", true)
-	board.call("_on_grade_xlsx_file_selected", "user://multi.csv")
-	_check(grade_requests.is_empty(), size_key + " rejects CSV as grouped-grade XLSX")
-	board.call("_on_grade_xlsx_file_selected", "user://grades.xlsx")
-	_check(grade_requests.size() == 1 and grade_requests[0] == "user://grades.xlsx",
-		size_key + " grouped-grade export emits exact XLSX destination")
-	board.set_transfer_status("Simulated authorized export completed.", true)
+	var export_button := board.get_node("%ExportCsvButton") as Button
+	var import_button := board.get_node("%ImportCsvButton") as Button
+	var delete_button := board.get_node("%DeleteAllButton") as Button
+	_check(export_button != null and import_button != null and delete_button != null,
+		size_key + " only canonical CSV import/export and protected deletion remain as actions")
+	board.call("_on_export_file_selected", "user://wrong.xls")
+	_check(canonical_csv.is_empty(), size_key + " invalid export extension never emits CSV")
+	board.set_transfer_status("", false)
 	board.call("_on_export_file_selected", "user://backup.csv")
 	_check(canonical_csv.size() == 1 and canonical_csv[0] == "user://backup.csv",
-		size_key + " existing full database CSV signal preserved")
+		size_key + " full database CSV signal emits exact destination")
+	_check(export_button.disabled and import_button.disabled and delete_button.disabled,
+		size_key + " pending CSV export locks concurrent management actions")
+	board.call("_on_export_file_selected", "user://duplicate.csv")
+	_check(canonical_csv.size() == 1, size_key + " concurrent CSV export cannot duplicate dispatch")
 	board.set_transfer_status("Simulated authorized export completed.", true)
+	(board.get_node("%EmptyNotice") as AcceptDialog).hide()
 	board.call("_on_final_delete_pressed")
 	_check(deleted.is_empty(), size_key + " naked delete callback cannot bypass protected confirmation")
 	var context: Dictionary = {"leaderboard_rows": DATA, "database_connected": true,
 		"teacher_authorized": false}
 	board.set_context(context)
-	_check((board.get_node("%PullOutStudentButton") as Button).disabled
-		and (board.get_node("%ExportGradeXlsxButton") as Button).disabled,
-		size_key + " teacher authorization loss disables protected exports")
-	board.call("_on_student_export_file_selected", "user://forbidden.xlsx")
-	board.call("_on_grade_xlsx_file_selected", "user://forbidden.xlsx")
-	_check(student_requests.size() == 1 and grade_requests.size() == 1,
-		size_key + " invoking handlers directly cannot bypass teacher authorization")
-	_check(deleted.is_empty(), size_key + " exports cannot mutate student profiles")
+	board.call("_choose_import_csv")
+	_check(import_csv.is_empty(), size_key + " unauthorized import cannot emit database mutation")
+	board.call("_begin_delete_all")
+	_check(not (board.get_node("%DeleteFirstOverlay") as Control).visible
+		and deleted.is_empty(), size_key + " unauthorized delete cannot open confirmation or dispatch")
+	_check(canonical_csv.size() == 1, size_key + " import/delete actions never emit an extra export")
 	board.set_context({"leaderboard_rows": [], "database_connected": true,
 		"teacher_authorized": true})
-	_check(not (board.get_node("%ExportGradeXlsxButton") as Button).disabled,
-		size_key + " full XLSX export remains available for students with no saved scores")
-	board.call("_on_grade_xlsx_file_selected", "user://empty_scoreboard.xlsx")
-	_check(grade_requests.size() == 2,
-		size_key + " teacher can request full roster XLSX despite empty scoreboard")
+	_check(not export_button.disabled, size_key + " full CSV backup remains available even when no scores exist")
+	board.call("_on_export_file_selected", "user://empty_scoreboard.csv")
+	_check(canonical_csv.size() == 2 and canonical_csv[1] == "user://empty_scoreboard.csv",
+		size_key + " full CSV backup permits empty scoreboards")
+	board.set_transfer_status("", false)
+	(board.get_node("%EmptyNotice") as AcceptDialog).hide()
+	_check(deleted.is_empty() and import_csv.is_empty(),
+		size_key + " read-only exports have no import or delete side effects")
 
 
 func _stress_filters(board: Control, size_key: String) -> void:
@@ -174,13 +155,11 @@ func _stress_filters(board: Control, size_key: String) -> void:
 		board.call("_on_filter_changed")
 		_check(_rows(board).size() == (2 if cycle % 2 == 0 else 6),
 			size_key + " stress refresh cycle %d respects exact teacher search" % cycle)
-		board.call("_select_student", "ID-004")
-		_check(String(board.get("_selected_student_id")) == "ID-004",
-			size_key + " stress refresh cycle %d keeps eligible selection" % cycle)
+		_check((board.get_node("%ScoreRows") as VBoxContainer).get_child_count() == _rows(board).size(),
+			size_key + " stress refresh cycle %d redraws only filtered rows" % cycle)
 	search.text = ""
 	sort.select(0)
 	board.call("_on_filter_changed")
-	board.call("_select_student", "")
 
 
 func _test_viewport(viewport: Vector2i) -> void:
@@ -195,7 +174,7 @@ func _test_viewport(viewport: Vector2i) -> void:
 	await process_frame
 	var key := str(viewport)
 	for name in ["GradeLevelFilter", "SectionFilter", "StudentSearch", "ScoreSort",
-		"SelectedStudentLabel", "PullOutStudentButton", "ExportGradeXlsxButton"]:
+		"ImportCsvButton", "ExportCsvButton", "DeleteAllButton"]:
 		var control := board.get_node_or_null("%" + name) as Control
 		_check(control != null and control.is_visible_in_tree(), key + " visible control " + name)
 		if control:
@@ -208,8 +187,8 @@ func _test_viewport(viewport: Vector2i) -> void:
 	var name_cell := first_row.get_node("StudentName") as Label
 	_click(name_cell.get_global_rect().get_center())
 	await process_frame
-	_check(String(board.get("_selected_student_id")) == "ID-007",
-		key + " mouse click on a real editor-authored score row selects student ID")
+	_check((board.get_node("%ScoreRows") as VBoxContainer).get_child_count() == DATA.size(),
+		key + " mouse click on a real scoreboard row preserves all records")
 	_check_filters(board, key)
 	_stress_filters(board, key)
 	_check_signals(board, key)

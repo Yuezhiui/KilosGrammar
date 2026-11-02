@@ -8,9 +8,6 @@ signal requested(target: String, payload: Dictionary)
 signal database_import_csv_requested(path: String)
 signal database_export_csv_requested(path: String)
 signal database_delete_all_requested(confirmation: String)
-## Backend-authorized read-only extracts; no direct database access from UI.
-signal database_export_student_requested(student_id: String, path: String)
-signal database_export_grade_xlsx_requested(path: String)
 
 ## Local filtered Download CSV is a display-only extract, distinct from the
 ## backend's canonical 8-column import/export (underscore field identifiers).
@@ -40,8 +37,7 @@ const RESPONSIVE_NODE_NAMES := [
 	"GradeLevelFilter", "SectionFilter", "StudentSearch", "ScoreSort",
 	"TableHeaderArt", "TableBodyArt",
 	"TableContent", "ImportCsvButton", "ExportCsvButton",
-	"DeleteAllButton", "SelectedStudentLabel",
-	"PullOutStudentButton", "ExportGradeXlsxButton", "DatabaseStatusNote"
+	"DeleteAllButton"
 ]
 
 var _context: Dictionary = {}
@@ -49,8 +45,6 @@ var _all_rows: Array[Dictionary] = []
 var _visible_rows: Array[Dictionary] = []
 var _selected_minigame := "ALL MINIGAMES"
 var _filter_historical_minigame_only := false
-var _selected_student_id := ""
-var _student_export_chooser_id := ""
 var _grade_regex: RegEx
 var _section_regex: RegEx
 
@@ -62,11 +56,6 @@ var _section_regex: RegEx
 @onready var section_filter: OptionButton = %SectionFilter
 @onready var student_search: LineEdit = %StudentSearch
 @onready var score_sort: OptionButton = %ScoreSort
-@onready var selected_student_label: Label = %SelectedStudentLabel
-@onready var pull_out_button: Button = %PullOutStudentButton
-@onready var export_grade_xlsx_button: Button = %ExportGradeXlsxButton
-@onready var student_export_dialog: FileDialog = %ExportStudentCsvDialog
-@onready var grade_xlsx_dialog: FileDialog = %ExportGradeXlsxDialog
 @onready var empty_message: Label = %EmptyMessage
 @onready var scroll: ScrollContainer = %ScoreRowsScroll
 @onready var rows_container: VBoxContainer = %ScoreRows
@@ -75,7 +64,6 @@ var _section_regex: RegEx
 @onready var import_button: Button = %ImportCsvButton
 @onready var export_button: Button = %ExportCsvButton
 @onready var delete_button: Button = %DeleteAllButton
-@onready var database_status_note: Label = %DatabaseStatusNote
 @onready var import_dialog: FileDialog = %ImportCsvDialog
 @onready var import_review_dialog: ConfirmationDialog = %ImportReviewDialog
 @onready var database_export_dialog: FileDialog = %ExportDatabaseCsvDialog
@@ -98,8 +86,6 @@ var _queued_transfer_notice := ""
 var _queued_transfer_success := false
 var _last_transfer_notice_text := ""
 var _authored_ui_transforms: Dictionary = {}
-var _connection_note_active := false
-var _inline_status_message := ""
 
 
 func _ready() -> void:
@@ -124,16 +110,11 @@ func _ready() -> void:
 	section_filter.item_selected.connect(_on_filter_changed.unbind(1))
 	student_search.text_changed.connect(_on_filter_changed.unbind(1))
 	score_sort.item_selected.connect(_on_filter_changed.unbind(1))
-	pull_out_button.pressed.connect(_choose_student_export)
-	export_grade_xlsx_button.pressed.connect(_choose_grade_xlsx_export)
-	student_export_dialog.file_selected.connect(_on_student_export_file_selected)
-	student_export_dialog.canceled.connect(func() -> void: _student_export_chooser_id = "")
-	grade_xlsx_dialog.file_selected.connect(_on_grade_xlsx_file_selected)
 	csv_dialog.file_selected.connect(_write_csv)
 	# Native Windows File Explorer dialogs use the actual Downloads folder,
 	# instead of Godot's default project directory. Do not change the CSV
 	# security/authorization callbacks or their selected absolute paths.
-	for dialog in [csv_dialog, import_dialog, database_export_dialog, student_export_dialog, grade_xlsx_dialog]:
+	for dialog in [csv_dialog, import_dialog, database_export_dialog]:
 		dialog.use_native_dialog = OS.get_name() == "Windows" and DisplayServer.get_name() != "headless"
 		_set_csv_start_directory(dialog)
 	import_button.pressed.connect(_choose_import_csv)
@@ -162,9 +143,6 @@ func _ready() -> void:
 	_on_typed_confirmation_changed("")
 	call_deferred("_focus_back")
 	_on_filter_changed()
-	_update_student_export_state()
-	if not _inline_status_message.is_empty():
-		_set_inline_status(_inline_status_message, _connection_note_active)
 	if not _queued_transfer_notice.is_empty():
 		call_deferred("_flush_queued_transfer_notice")
 
@@ -229,11 +207,6 @@ func _focus_back() -> void:
 
 func set_context(context: Dictionary) -> void:
 	_context = context.duplicate(true)
-	if bool(_context.get("database_connected", false)):
-		if _connection_note_active:
-			_set_inline_status("")
-	elif not bool(_context.get("database_loading", false)):
-		_set_inline_status("Local database unavailable • Teacher: check database setup or connection.", true)
 	# A new database state must revoke a pending destructive confirmation.
 	_cancel_delete_all()
 	if not _teacher_authorized():
@@ -292,10 +265,7 @@ func _on_filter_changed() -> void:
 			continue
 		_visible_rows.append(record)
 	_sort_visible_rows()
-	if not _visible_rows.any(func(row: Dictionary) -> bool: return _student_id(row) == _selected_student_id):
-		_selected_student_id = ""
 	_redraw_rows()
-	_update_student_export_state()
 
 
 func _on_grade_changed() -> void:
@@ -440,17 +410,9 @@ func _redraw_rows() -> void:
 	for record in _visible_rows:
 		var row: Control = ROW_SCENE.instantiate()
 		rows_container.add_child(row)
-		var sid := _student_id(record)
-		row.modulate = Color(0.72, 0.88, 0.75, 1.0) if not sid.is_empty() and sid == _selected_student_id else Color.WHITE
 		for col in range(FIELD_KEYS.size()):
 			var cell := row.get_node_or_null(ROW_LABELS[col]) as Label
 			if cell != null:
-				# Existing editor-authored cells pass input to the scoreboard. A
-				# click selects an exact student ID without creating fictitious
-				# profiles, editing rows or intercepting scroll-wheel input.
-				if not sid.is_empty():
-					cell.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-					cell.gui_input.connect(_on_student_row_input.bind(sid))
 				if FIELD_KEYS[col] == "game_style":
 					var topic := _record_text(record, col)
 					var minigame := _minigame_name(record)
@@ -468,40 +430,6 @@ func _redraw_rows() -> void:
 					# Keep the complete source text available when the row must ellipsize.
 					cell.tooltip_text = cell.text
 					_fit_row_cell_font(cell, col)
-
-
-func _on_student_row_input(event: InputEvent, student_id: String) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_select_student(student_id)
-
-
-func _select_student(student_id: String) -> void:
-	if student_id.is_empty():
-		_selected_student_id = ""
-	elif _visible_rows.any(func(row: Dictionary) -> bool: return _student_id(row) == student_id):
-		_selected_student_id = student_id
-	else:
-		_selected_student_id = ""
-	_redraw_rows()
-	_update_student_export_state()
-
-
-func _update_student_export_state() -> void:
-	if not is_instance_valid(selected_student_label):
-		return
-	var label := ""
-	for row in _visible_rows:
-		if _student_id(row) == _selected_student_id and not _selected_student_id.is_empty():
-			label = "%s (%s)" % [str(row.get("student_name", row.get("name", ""))), _selected_student_id]
-			break
-	selected_student_label.text = "Selected student: " + (label if not label.is_empty() else "Click a score row")
-	selected_student_label.tooltip_text = selected_student_label.text
-	pull_out_button.disabled = _transfer_pending or _selected_student_id.is_empty() or not _teacher_authorized()
-	# The protected backend export includes registered students who have not
-	# played yet; an empty *scoreboard* must not hide those roster records.
-	export_grade_xlsx_button.disabled = _transfer_pending or not _teacher_authorized() \
-		or not bool(_context.get("database_connected", false))
-
 
 func _fit_row_cell_font(cell: Label, column: int) -> void:
 	# Columns and their maximum fonts are defined in leaderboard_row.tscn.
@@ -694,87 +622,6 @@ func _choose_database_export_csv() -> void:
 		return
 	_last_management_action = "export"
 	_open_csv_dialog(database_export_dialog, "kilosgrammar_student_scores.csv")
-
-
-func _choose_student_export() -> void:
-	if _transfer_pending:
-		_show_status("Another database transfer is already pending.")
-		return
-	if not _teacher_authorized():
-		_show_status("Teacher authorization is required to export a student's scores.")
-		return
-	if _selected_student_id.is_empty() or not _visible_rows.any(
-			func(record: Dictionary) -> bool: return _student_id(record) == _selected_student_id):
-		_show_status("Select a student by clicking a scoreboard row before exporting.")
-		return
-	_last_management_action = "student_export"
-	_student_export_chooser_id = _selected_student_id
-	_open_csv_dialog(student_export_dialog, "kilosgrammar_student_%s.xlsx" % _safe_filename_part(_selected_student_id))
-
-
-func _on_student_export_file_selected(path: String) -> void:
-	student_export_dialog.hide()
-	var requested_id := _student_export_chooser_id
-	_student_export_chooser_id = ""
-	if _transfer_pending:
-		_show_status("Another database transfer is still pending.")
-		return
-	if not _teacher_authorized():
-		set_transfer_status("Teacher authorization expired. Student export canceled.")
-		return
-	if not _is_xlsx_path(path):
-		set_transfer_status("Choose a .xlsx filename for the student Pull-Out export.")
-		return
-	if requested_id.is_empty() or requested_id != _selected_student_id or not _visible_rows.any(
-			func(record: Dictionary) -> bool: return _student_id(record) == requested_id):
-		set_transfer_status("Student selection changed. Select the student again.")
-		return
-	_last_management_action = "student_export"
-	set_transfer_pending("Requested XLSX Pull-Out for the selected student. Awaiting authorized database export.")
-	database_export_student_requested.emit(requested_id, path)
-
-
-func _choose_grade_xlsx_export() -> void:
-	if _transfer_pending:
-		_show_status("Another database transfer is already pending.")
-		return
-	if not _teacher_authorized():
-		_show_status("Teacher authorization is required for grade-grouped XLSX export.")
-		return
-	if not bool(_context.get("database_connected", false)):
-		_show_status("The local database is unavailable. Grade XLSX export was not started.")
-		return
-	_last_management_action = "grade_xlsx"
-	_open_csv_dialog(grade_xlsx_dialog, "kilosgrammar_scores_by_grade.xlsx")
-
-
-func _on_grade_xlsx_file_selected(path: String) -> void:
-	grade_xlsx_dialog.hide()
-	if _transfer_pending:
-		_show_status("Another database transfer is still pending.")
-		return
-	if not _teacher_authorized():
-		set_transfer_status("Teacher authorization expired. XLSX export canceled.")
-		return
-	if not _is_xlsx_path(path):
-		set_transfer_status("Choose a .xlsx filename. Grade worksheets require an XLSX workbook, not CSV.")
-		return
-	_last_management_action = "grade_xlsx"
-	set_transfer_pending("Requested full XLSX workbook with a separate worksheet for each grade.")
-	database_export_grade_xlsx_requested.emit(path)
-
-
-func _safe_filename_part(value: String) -> String:
-	var cleaned := ""
-	for index in range(value.length()):
-		var char := value[index]
-		if char.is_valid_identifier() or char.is_valid_int() or char in ["-", "_"]:
-			cleaned += char
-	return cleaned.left(48) if not cleaned.is_empty() else "selected"
-
-
-func _is_xlsx_path(path: String) -> bool:
-	return not path.is_empty() and path.to_lower().ends_with(".xlsx") and not path.contains("\n") and not path.contains("\r")
 
 
 func _on_import_file_selected(path: String) -> void:
@@ -1042,19 +889,9 @@ func _validate_import_csv(path: String) -> String:
 
 
 func _show_status(message: String) -> void:
-	# Local validation or availability feedback belongs on the board itself.
-	# Backend acknowledgements and uncertain writes still use the notice dialog.
-	_set_inline_status(message)
-
-
-func _set_inline_status(message: String, is_connection_status: bool = false) -> void:
-	_connection_note_active = is_connection_status and not message.is_empty()
-	_inline_status_message = message
-	if not is_instance_valid(database_status_note):
-		return
-	database_status_note.text = message
-	database_status_note.tooltip_text = message
-	database_status_note.visible = not message.is_empty()
+	# Deliberate CSV actions may need validation feedback. The in-table empty
+	# state already communicates routine offline health without a banner.
+	_queue_or_show_transfer_notice(message, false)
 
 
 func set_transfer_status(message: String, success: bool = false) -> void:
@@ -1070,8 +907,6 @@ func set_transfer_status(message: String, success: bool = false) -> void:
 		if was_pending and action in ["import", "delete"]:
 			var operation := "CSV import" if action == "import" else "DELETE ALL DATA"
 			_queue_or_show_transfer_notice("Connection lost during %s. Its outcome is unknown. After reconnection, check saved records before attempting it again." % operation, false)
-		else:
-			_set_inline_status("Local database unavailable • Teacher: check database setup or connection.", true)
 		_last_management_action = ""
 		return
 	_queue_or_show_transfer_notice(_explain_management_authorization(message), success)
@@ -1097,10 +932,6 @@ func _explain_management_authorization(message: String) -> String:
 			return "CSV import was blocked. Local administrator authorization is required to import student records. No records were imported. Ask the local administrator to authorize database management."
 		"export":
 			return "Full database CSV export was blocked. Local administrator authorization is required for database-wide exports. No CSV file was created. Ask the local administrator to authorize database management."
-		"student_export":
-			return "Student Pull-Out export was blocked. Local administrator authorization is required. No student workbook was created."
-		"grade_xlsx":
-			return "Grade-grouped XLSX export was blocked. Local administrator authorization is required. No workbook was created."
 		_:
 			return "Database administration was blocked. Local administrator authorization is required for import, full export, and permanent deletion. No database change was confirmed."
 
@@ -1168,4 +999,3 @@ func _set_transfer_pending_state(pending: bool) -> void:
 	for button in [import_button, export_button, delete_button]:
 		if is_instance_valid(button):
 			button.disabled = pending
-	_update_student_export_state()

@@ -1280,34 +1280,6 @@ func _on_database_export_csv_requested(path: String) -> void:
 	database_client.call("export_data_csv", context)
 
 
-func _request_excel_workbook_export(path: String, student_id: String = "") -> void:
-	if not database_online or not is_instance_valid(database_client):
-		_leaderboard_management_status("Local database is offline. Nothing was exported.")
-		return
-	if path.strip_edges().is_empty() or path.get_extension().to_lower() != "xlsx":
-		_leaderboard_management_status("Choose an .xlsx workbook file. Nothing was exported.")
-		return
-	database_transfer_ticket += 1
-	_leaderboard_management_pending(
-		"Preparing individual student report..." if not student_id.is_empty() else
-		"Preparing grade-sorted Excel worksheets...")
-	var info := _leaderboard_management_context()
-	info["path"] = path
-	info["student_id"] = student_id
-	database_client.call("export_data_xlsx", student_id, info)
-
-
-func _on_database_export_student_requested(student_id: String, path: String) -> void:
-	if student_id.strip_edges().is_empty():
-		_leaderboard_management_status("Select a student before exporting.")
-		return
-	_request_excel_workbook_export(path, student_id)
-
-
-func _on_database_export_grade_xlsx_requested(path: String) -> void:
-	_request_excel_workbook_export(path)
-
-
 func _on_database_import_csv_requested(path: String) -> void:
 	if not database_online or not is_instance_valid(database_client):
 		_leaderboard_management_status("Local database is offline. Nothing was imported.")
@@ -1374,36 +1346,6 @@ func _handle_database_management_result(info: Dictionary, result: Dictionary) ->
 		else:
 			_leaderboard_management_status("Full CSV export saved: %d students, %d scores." % [
 				int(data.get("students", 0)), int(data.get("scores", 0))], true)
-		return
-	if operation == "export_data_xlsx":
-		var destination := String(info.get("path", ""))
-		var encoded := String(data.get("xlsx_base64", ""))
-		if destination.get_extension().to_lower() != "xlsx" or encoded.is_empty() \
-				or encoded.length() > 12_000_000:
-			_leaderboard_management_status("Workbook data was invalid. No file was written.")
-			return
-		var workbook := Marshalls.base64_to_raw(encoded)
-		# Validate the ZIP local-file signature and size before writing any
-		# teacher-selected file. The backend prevents XML formula injection.
-		if workbook.size() < 100 or workbook.size() > 8_000_000 \
-				or workbook[0] != 80 or workbook[1] != 75 \
-				or workbook[2] != 3 or workbook[3] != 4:
-			_leaderboard_management_status("Workbook was not a valid XLSX package. Nothing was written.")
-			return
-		var file := FileAccess.open(destination, FileAccess.WRITE)
-		if file == null:
-			_leaderboard_management_status("Cannot write the chosen XLSX file. Try another folder.")
-			return
-		file.store_buffer(workbook)
-		file.flush()
-		var failure := file.get_error()
-		file.close()
-		if failure != OK:
-			_leaderboard_management_status("Excel workbook could not be saved completely.")
-		else:
-			var kind := "individual student" if not String(info.get("student_id", "")).is_empty() else "grade-sorted"
-			_leaderboard_management_status("Exported %s Excel workbook: %d students, %d score records." % [
-				kind, int(data.get("students", 0)), int(data.get("scores", 0))], true)
 		return
 	if operation == "import_data_csv":
 		_leaderboard_management_status("CSV imported: %d new students, %d score records." % [
@@ -1616,7 +1558,7 @@ func _on_database_request_finished(info: Dictionary, result: Dictionary) -> void
 				String(info.get("autofill_field", "")), String(info.get("autofill_value", "")),
 				int(info.get("autofill_epoch", -1)))
 		return
-	if operation in ["export_data_csv", "export_data_xlsx", "import_data_csv", "request_delete_all_challenge", "delete_all_data"]:
+	if operation in ["export_data_csv", "import_data_csv", "request_delete_all_challenge", "delete_all_data"]:
 		_handle_database_management_result(info, result)
 		return
 	if operation == "health":
@@ -1926,10 +1868,6 @@ func _show_panel(route: String) -> void:
 	if route == "leaderboard":
 		if active_panel.has_signal("database_export_csv_requested"):
 			active_panel.connect("database_export_csv_requested", Callable(self, "_on_database_export_csv_requested"))
-		if active_panel.has_signal("database_export_student_requested"):
-			active_panel.connect("database_export_student_requested", Callable(self, "_on_database_export_student_requested"))
-		if active_panel.has_signal("database_export_grade_xlsx_requested"):
-			active_panel.connect("database_export_grade_xlsx_requested", Callable(self, "_on_database_export_grade_xlsx_requested"))
 		if active_panel.has_signal("database_import_csv_requested"):
 			active_panel.connect("database_import_csv_requested", Callable(self, "_on_database_import_csv_requested"))
 		if active_panel.has_signal("database_delete_all_requested"):
