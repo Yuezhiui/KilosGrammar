@@ -924,7 +924,7 @@ func _on_database_local_service_status_changed(state: String, details: Dictionar
 		return
 	if state == "offline":
 		database_transfer_ticket += 1 # Ignore any now-ambiguous CSV/delete callbacks.
-		if current_route == "leaderboard" and is_instance_valid(active_panel) \
+		if database_online and current_route == "leaderboard" and is_instance_valid(active_panel) \
 				and active_panel.has_method("set_transfer_status"):
 			active_panel.call("set_transfer_status",
 				"Connection lost. Any pending import/delete outcome is unknown; check saved records after reconnection.")
@@ -947,6 +947,14 @@ func _database_student_status(message: String, connected: bool = false, setup_re
 	if current_route == "student_setup" and is_instance_valid(active_panel) \
 		and active_panel.has_method("show_database_status"):
 		active_panel.call("show_database_status", message, connected, setup_required)
+
+
+func _database_setup_status(message: String) -> void:
+	if current_route == "leaderboard" and is_instance_valid(active_panel) \
+			and active_panel.has_method("set_transfer_status"):
+		active_panel.call("set_transfer_status", message)
+	else:
+		_database_student_status(message, false, true)
 
 
 func _show_student_registration_error(message: String) -> void:
@@ -1161,7 +1169,7 @@ func _on_database_setup_requested() -> void:
 	# Setup must be an explicit teacher action: never open an interactive
 	# PowerShell window without a user pressing the authored Setup button.
 	if OS.get_name() != "Windows" or DisplayServer.get_name() == "headless":
-		_database_student_status("LOCAL DATABASE SETUP • Available on the Windows computer running Godot.", false, true)
+		_database_setup_status("LOCAL DATABASE SETUP • Available on the Windows computer running Godot.")
 		return
 	# Exported builds must invoke the physical file next to the EXE, not
 	# a virtual `res://` path into Godot's packed resource archive.
@@ -1169,7 +1177,7 @@ func _on_database_setup_requested() -> void:
 	if not FileAccess.file_exists(path):
 		path = ProjectSettings.globalize_path(LOCAL_DATABASE_SETUP_PATH)
 	if not FileAccess.file_exists(path):
-		_database_student_status("LOCAL DATABASE SETUP UNAVAILABLE • Check database/setup_from_game.ps1.", false, true)
+		_database_setup_status("LOCAL DATABASE SETUP UNAVAILABLE • Check database/setup_from_game.ps1.")
 		return
 	var args := PackedStringArray([
 		"-NoLogo", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
@@ -1177,9 +1185,9 @@ func _on_database_setup_requested() -> void:
 	])
 	var pid := OS.create_process("powershell.exe", args, false)
 	if pid <= 0:
-		_database_student_status("CANNOT OPEN LOCAL SETUP • Windows PowerShell is unavailable.", false, true)
+		_database_setup_status("CANNOT OPEN LOCAL SETUP • Windows PowerShell is unavailable.")
 		return
-	_database_student_status("SECURE SETUP WINDOW OPENED • Follow the teacher prompts. The game will reconnect automatically.", false, true)
+	_database_setup_status("SECURE SETUP LAUNCH REQUESTED • Complete the Windows teacher prompts; the game will reconnect automatically when the credentials are valid.")
 
 
 func _on_database_retry_requested() -> void:
@@ -1206,6 +1214,7 @@ func _load_database_leaderboard() -> void:
 		return
 	var state := session_state.duplicate(true)
 	state["database_connected"] = database_online
+	state["database_setup_required"] = database_setup_required
 	state["database_loading"] = is_instance_valid(database_client)
 	state["leaderboard_rows"] = []
 	state["teacher_authorized"] = _has_local_database_admin_access()
@@ -1751,6 +1760,7 @@ func _set_leaderboard_database_rows(rows: Array, connected: bool) -> void:
 		return
 	var state := session_state.duplicate(true)
 	state["database_connected"] = connected
+	state["database_setup_required"] = database_setup_required
 	state["database_loading"] = false
 	state["leaderboard_rows"] = rows
 	state["teacher_authorized"] = _has_local_database_admin_access() if connected else false
@@ -1878,6 +1888,8 @@ func _show_panel(route: String) -> void:
 			else:
 				_ensure_database_service()
 	if route == "leaderboard":
+		if active_panel.has_signal("database_setup_requested"):
+			active_panel.connect("database_setup_requested", Callable(self, "_on_database_setup_requested"))
 		if active_panel.has_signal("database_export_xlsx_requested"):
 			active_panel.connect("database_export_xlsx_requested", Callable(self, "_on_database_export_xlsx_requested"))
 		if active_panel.has_signal("database_import_xlsx_requested"):

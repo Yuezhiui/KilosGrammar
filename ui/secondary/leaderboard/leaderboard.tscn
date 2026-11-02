@@ -452,6 +452,27 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
+[node name="DatabaseSetupButton" type="Button" parent="TableContent"]
+unique_name_in_owner = true
+editor_description = "Secure first-time PostgreSQL setup from the Leaderboard. Shows only when configured credentials are missing; does not bypass teacher authentication."
+visible = false
+layout_mode = 0
+offset_left = 299.0
+offset_top = 172.0
+offset_right = 626.0
+offset_bottom = 218.0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.075, 0.11, 0.32, 1)
+theme_override_colors/font_hover_color = Color(0.075, 0.11, 0.32, 1)
+theme_override_colors/font_pressed_color = Color(0.075, 0.11, 0.32, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("TeacherFilterField")
+theme_override_styles/hover = SubResource("TeacherFilterField")
+theme_override_styles/pressed = SubResource("TeacherFilterField")
+text = "SET UP LOCAL DATABASE"
+focus_mode = 2
+
 [node name="ScoreRowsScroll" type="ScrollContainer" parent="TableContent" unique_id=25878174]
 unique_name_in_owner = true
 visible = false

@@ -8,6 +8,8 @@ signal requested(target: String, payload: Dictionary)
 signal database_import_xlsx_requested(path: String)
 signal database_export_xlsx_requested(path: String)
 signal database_delete_all_requested(confirmation: String)
+## Opens the existing password-protected Windows setup wizard; never sends credentials.
+signal database_setup_requested()
 
 const FIELD_KEYS := ["student_id", "student_name", "grade", "game_style", "game_mode", "difficulty", "score"]
 const ROW_SCENE := preload("res://ui/secondary/leaderboard/leaderboard_row.tscn")
@@ -47,6 +49,7 @@ var _section_regex: RegEx
 @onready var student_search: LineEdit = %StudentSearch
 @onready var score_sort: OptionButton = %ScoreSort
 @onready var empty_message: Label = %EmptyMessage
+@onready var database_setup_button: Button = %DatabaseSetupButton
 @onready var scroll: ScrollContainer = %ScoreRowsScroll
 @onready var rows_container: VBoxContainer = %ScoreRows
 @onready var notice_overlay: Control = %NoticeOverlay
@@ -93,6 +96,7 @@ func _ready() -> void:
 	resized.connect(_apply_viewport_layout)
 	call_deferred("_apply_viewport_layout")
 	back_button.pressed.connect(_request_main)
+	database_setup_button.pressed.connect(_request_database_setup)
 	# Minigame filtering remains host-callable without hidden controls.
 	# The three visible selection filters remain editor-authored.
 	for selector in [style_filter, mode_filter, difficulty_filter]:
@@ -217,6 +221,18 @@ func _request_main() -> void:
 	if is_instance_valid(delete_success_overlay):
 		delete_success_overlay.hide()
 	requested.emit("main", _context.duplicate(true))
+
+
+func _request_database_setup() -> void:
+	# Do not allow a synthetic/stale click to open the wizard while connected,
+	# while another operation is pending, or underneath a modal confirmation.
+	if not database_setup_button.visible or not database_setup_button.is_inside_tree() \
+			or bool(_context.get("database_connected", false)) \
+			or not bool(_context.get("database_setup_required", false)) \
+			or _transfer_pending or notice_overlay.visible \
+			or delete_first_overlay.visible or delete_final_overlay.visible:
+		return
+	database_setup_requested.emit()
 
 
 func _on_filter_changed() -> void:
@@ -397,13 +413,18 @@ func _redraw_rows() -> void:
 		row.queue_free()
 	scroll.visible = not _visible_rows.is_empty()
 	empty_message.visible = _visible_rows.is_empty()
+	database_setup_button.visible = _visible_rows.is_empty() \
+		and not bool(_context.get("database_connected", false)) \
+		and bool(_context.get("database_setup_required", false)) \
+		and not bool(_context.get("database_loading", false))
 	if empty_message.visible:
 		if not _all_rows.is_empty():
 			empty_message.text = "No scores match these filters"
 		elif bool(_context.get("database_loading", false)):
 			empty_message.text = "Loading saved student scores..."
 		elif not bool(_context.get("database_connected", false)):
-			empty_message.text = "Local database unavailable • Ask your teacher for help"
+			empty_message.text = "Local database unavailable • Press SET UP LOCAL DATABASE below" \
+				if database_setup_button.visible else "Local database unavailable • Ask your teacher for help"
 		else:
 			empty_message.text = "No completed scores saved yet"
 	for record in _visible_rows:
