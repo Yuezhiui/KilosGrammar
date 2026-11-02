@@ -1,9 +1,9 @@
 extends SceneTree
 
-## Focused October 25 regression for fully image-skinned native filter selections.
+## Historical regression migrated to shared wood, real native text and XLSX-only actions.
 ## No database server or destructive operations are called.
 const BOARD := preload("res://ui/secondary/leaderboard/leaderboard.tscn")
-const ASSETS := "res://Components/Leaderboard/"
+const SHARED := "res://Components/Leaderboard/SharedDropdown20261102/dropdown_base.png"
 const CAPTURE_PATH := "res://ui/secondary/_review_selected_leaderboard.png"
 
 var errors: Array[String] = []
@@ -23,40 +23,49 @@ func _run() -> void:
 		and panel.get_node_or_null("FiltersToggle") == null
 		and panel.get_node_or_null("MoreFiltersPanel") == null,
 		"FILTERS art, button, and popover are entirely removed")
-	_check(panel.has_method("set_minigame_filter")
-		and panel.has_method("request_filtered_csv_export"),
-		"minigame and filtered CSV backend remain callable without popover")
+	_check(panel.has_method("set_minigame_filter") and panel.has_method("_validate_import_xlsx")
+		and not panel.has_method("request_filtered_csv_export") and not panel.has_method("_write_csv"),
+		"minigame API retained, obsolete CSV export removed, XLSX validator remains")
 	_check(panel.find_child("MinigameFilter", true, false) == null
 		and panel.find_child("DownloadButton", true, false) == null,
 		"retired backend-only controls are physically removed and cannot intercept clicks")
 
 	var groups := [
-		["StyleFilter", ["ALL STYLES", "NOUN", "PRONOUN", "VERB", "ADJECTIVE", "ADVERB"],
-			["ALL STYLES.png", "NOUN.png", "PRONOUN.png", "VERB.png", "ADJECTIVE.png", "ADVERB.png"]],
-		["ModeFilter", ["ALL MODES", "SECONDS", "LIVES"],
-			["ALL MODES.png", "seconds.png", "2lives.png"]],
-		["DifficultyFilter", ["ALL DIFFICULTIES", "EASY", "NORMAL", "HARD"],
-			["ALL DIFFICULTIES.png", "easy.png", "normal.png", "Hard.png"]],
+		["StyleFilter", ["ALL STYLES", "NOUN", "PRONOUN", "VERB", "ADJECTIVE", "ADVERB"]],
+		["ModeFilter", ["ALL MODES", "SECONDS", "LIVES"]],
+		["DifficultyFilter", ["ALL DIFFICULTIES", "EASY", "NORMAL", "HARD"]],
+		["ScoreSort", ["SCORE", "HIGHEST SCORE", "LOWEST SCORE", "STUDENT ID A-Z", "GRADE LEVEL", "STUDENT NAME A-Z"]],
 	]
+	var shared_style: StyleBoxTexture
+	var native_font := -1
 	for group in groups:
 		var selector := panel.get_node("%" + group[0]) as OptionButton
 		var labels: Array = group[1]
-		var filenames: Array = group[2]
 		_check(selector != null and selector.item_count == labels.size(),
 			group[0] + " has exactly the supported options")
 		if selector == null:
 			continue
+		var original_skin := selector.get_theme_stylebox("normal") as StyleBoxTexture
+		_check(original_skin != null and _asset_source(original_skin.texture) == SHARED,
+			group[0] + " uses sole shared AtlasTexture wood PNG")
+		if shared_style == null:
+			shared_style = original_skin
+		else:
+			_check(original_skin == shared_style, group[0] + " reuses identical shared StyleBoxTexture")
+		if native_font < 0:
+			native_font = selector.get_theme_font_size("font_size")
+		_check(selector.get_theme_font_size("font_size") == native_font and native_font >= 14,
+			group[0] + " uses consistent readable Godot font")
 		for index in labels.size():
-			_check(selector.get_item_text(index) == labels[index],
+			_check(selector.get_item_text(index).to_upper() == labels[index],
 				"%s option %d has expected label" % [group[0], index])
 			selector.select(index)
 			selector.item_selected.emit(index)
 			var skin := selector.get_theme_stylebox("normal") as StyleBoxTexture
-			_check(skin != null and skin.texture != null
-					and _is_leaderboard_png(_asset_source(skin.texture), filenames[index]),
-				"%s index %d uses supplied image %s" % [group[0], index, filenames[index]])
-			_check(selector.get_theme_color("font_color").a < 0.01,
-				"%s index %d hides the native duplicate caption" % [group[0], index])
+			_check(skin == original_skin and _asset_source(skin.texture) == SHARED,
+				"%s index %d keeps the single shared wood background" % [group[0], index])
+			_check(selector.get_theme_color("font_color").a > 0.95 and selector.get_item_text(selector.selected).length() > 0,
+				"%s index %d displays native selected caption" % [group[0], index])
 			_check(selector.get_theme_icon("arrow").get_image().get_pixel(0, 0).a < 0.01,
 				"%s index %d hides the native duplicate chevron" % [group[0], index])
 		selector.select(0)
@@ -75,12 +84,28 @@ func _run() -> void:
 	_check(not panel.set_minigame_filter("Does not exist"),
 		"unknown minigame filter is rejected")
 	_check(panel.set_minigame_filter("ALL MINIGAMES"), "host can reset minigame selection")
-	var path := ProjectSettings.globalize_path("user://_lb_selected_art_test.csv")
-	panel.call("_write_csv", path)
-	var exported := FileAccess.get_file_as_string(path)
-	_check(exported.contains("MINIGAME") and exported.contains("Catch the Word")
-		and exported.contains("Human Plane"), "filtered CSV implementation remains functional")
-	DirAccess.remove_absolute(path)
+	var importer := panel.get_node("%ImportCsvDialog") as FileDialog
+	var exporter := panel.get_node("%ExportDatabaseCsvDialog") as FileDialog
+	_check(importer.filters.size() == 1 and String(importer.filters[0]).contains("*.xlsx")
+		and exporter.filters.size() == 1 and String(exporter.filters[0]).contains("*.xlsx"),
+		"same import/export buttons exclusively use Excel workbooks")
+	var imports: Array[String] = []
+	var exports: Array[String] = []
+	var deletes: Array[String] = []
+	panel.database_import_xlsx_requested.connect(func(p: String): imports.append(p))
+	panel.database_export_xlsx_requested.connect(func(p: String): exports.append(p))
+	panel.database_delete_all_requested.connect(func(p: String): deletes.append(p))
+	panel.call("_choose_import_xlsx")
+	panel.call("_begin_delete_all")
+	_check(imports.is_empty() and deletes.is_empty(), "unauthorized import/delete never dispatches")
+	panel.set_context({"teacher_authorized": true, "database_connected": true})
+	panel.call("_on_export_file_selected", "user://not_excel.csv")
+	_check(exports.is_empty(), "CSV export filename rejected")
+	panel.set_transfer_status("")
+	panel.call("_on_export_file_selected", "user://safe_report.xlsx")
+	_check(exports == ["user://safe_report.xlsx"] and imports.is_empty() and deletes.is_empty(),
+		"authorized XLSX export emits exact one destination without mutation")
+	panel.set_transfer_status("")
 	if OS.get_environment("CAPTURE_LEADERBOARD_SELECTED") == "1" and DisplayServer.get_name() != "headless":
 		panel.set_transfer_status("")
 		for target in [["StyleFilter", 3], ["ModeFilter", 2], ["DifficultyFilter", 3]]:
@@ -99,7 +124,7 @@ func _run() -> void:
 		await process_frame
 		await process_frame
 		var bounds := Rect2(Vector2.ZERO, Vector2(viewport)).grow(3)
-		for name in ["StyleFilter", "ModeFilter", "DifficultyFilter", "ImportCsvButton", "ExportCsvButton", "DeleteAllButton"]:
+		for name in ["StyleFilter", "ModeFilter", "DifficultyFilter", "ScoreSort", "ImportCsvButton", "ExportCsvButton", "DeleteAllButton"]:
 			var control := panel.get_node("%" + name) as Control
 			_check(bounds.encloses(control.get_global_rect()),
 				"%s stays inside %s viewport" % [name, viewport])
@@ -115,11 +140,6 @@ func _asset_source(texture: Texture2D) -> String:
 	if texture is AtlasTexture:
 		return (texture as AtlasTexture).atlas.resource_path
 	return texture.resource_path if texture != null else ""
-
-func _is_leaderboard_png(path: String, original_name: String) -> bool:
-	# Image organization may add screen-specific folders without changing the
-	# pixels, dropdown option ordering or the editor-authored selected sprites.
-	return path.begins_with(ASSETS) and path.get_file() == original_name and ResourceLoader.exists(path)
 
 func _check(ok: bool, description: String) -> void:
 	checks += 1

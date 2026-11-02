@@ -12,12 +12,19 @@ func _initialize() -> void:
     call_deferred("_run")
 
 func _run() -> void:
-    for filename in ["BACKGROUND.png", "LEADERBOARD.png", "BACK.png",
-            "ALL STYLES.png", "ALL MODES.png", "ALL DIFFICULTIES.png",
-            "IMPORT.png", "EXPORT.png", "DELETE.png"]:
-        _check(_find_asset(ASSETS, filename), "source art survives relocation in Components/Leaderboard: " + filename)
+    for path in ["res://Components/Leaderboard/SharedDropdown20261102/dropdown_base.png",
+            "res://Components/Credits/Redesign/background1.png",
+            "res://Components/Credits/Redesign/HOME.png",
+            "res://Components/Leaderboard/NewButtons20261102/IMPORT_transparent.png",
+            "res://Components/Leaderboard/NewButtons20261102/EXPORT_transparent.png",
+            "res://Components/Leaderboard/NewButtons20261102/DELETE_transparent.png"]:
+        _check(ResourceLoader.exists(path), "retained shared/background/action asset exists: " + path)
     var authored_scene := FileAccess.get_file_as_string("res://ui/secondary/leaderboard/leaderboard.tscn")
     _check(not authored_scene.contains("FILTERS.png"), "deleted FILTERS sprite is not referenced by active leaderboard scene")
+    for retired in ["ALL STYLES.png", "ALL MODES.png", "ALL DIFFICULTIES.png",
+            "NOUN.png", "PRONOUN.png", "VERB.png", "ADJECTIVE.png", "ADVERB.png",
+            "seconds.png", "2lives.png", "easy.png", "normal.png", "Hard.png"]:
+        _check(not authored_scene.contains(retired), "obsolete per-option dropdown art unreferenced: " + retired)
     for viewport in SIZES:
         root.size = viewport
         root.content_scale_size = viewport
@@ -74,22 +81,23 @@ func _run() -> void:
                 prefix + setting + " remains a keyboard-accessible native dropdown")
             _check(_inside(selector.get_global_rect(), full, 3.0),
                 prefix + setting + " in viewport")
-        for index in range(3):
-            var selector := filter_buttons[index] as OptionButton
-            var source_name: String = ["ALL STYLES.png", "ALL MODES.png", "ALL DIFFICULTIES.png"][index]
+        for selector in filter_buttons:
             var image_style := selector.get_theme_stylebox("normal") as StyleBoxTexture
             _check(image_style != null and image_style.texture != null
-                and _leaderboard_asset(image_style.texture.resource_path, source_name),
-                prefix + " " + source_name + " uses the complete updated PNG, not an obsolete atlas crop")
-            _check(image_style != null and image_style.texture != null
-                and image_style.texture.get_size() == Vector2(2003, 402),
-                prefix + " " + source_name + " retains original updated 2003x402 dimensions")
-            var hidden_arrow := selector.get_theme_icon("arrow")
-            _check(hidden_arrow != null and hidden_arrow.get_size() == Vector2(2, 2)
-                and hidden_arrow.get_image().get_pixel(0, 0).a < 0.01,
-                prefix + " " + source_name + " uses only the arrow baked into the new PNG")
-            _check(selector.get_theme_color("font_color").a <= 0.01,
-                prefix + " " + source_name + " native text does not duplicate baked caption")
+                and _atlas_source(image_style.texture).ends_with("SharedDropdown20261102/dropdown_base.png"),
+                prefix + " " + selector.name + " uses shared original wood texture")
+            _check(selector.get_theme_color("font_color").a > 0.95,
+                prefix + " " + selector.name + " renders native text over wood")
+            var arrow := selector.get_theme_icon("arrow")
+            _check(arrow != null and arrow.get_size() == Vector2(2, 2)
+                and arrow.get_image().get_pixel(0, 0).a < 0.01,
+                prefix + " " + selector.name + " hides duplicate arrow")
+            _check(selector.get_theme_font_size("font_size") >= 14,
+                prefix + " " + selector.name + " keeps readable native dropdown font")
+            _check(selector.get_item_text(selector.selected).strip_edges().length() > 0,
+                prefix + " " + selector.name + " has live selected caption")
+            _check(image_style != null and image_style.texture is AtlasTexture,
+                prefix + " " + selector.name + " reuses atlas-backed shared wood")
         for obsolete in ["FiltersToggle", "FiltersArt", "MoreFiltersPanel", "CloseMoreFilters"]:
             _check(scene.find_child(obsolete, true, false) == null,
                 prefix + " obsolete FILTERS/popover node physically absent: " + obsolete)
@@ -154,29 +162,26 @@ func _run() -> void:
             prefix + " obsolete décor removed; complete new title/art has original composition")
         var style := scene.get_node("%StyleFilter") as OptionButton
         var normal_style := style.get_theme_stylebox("normal") as StyleBoxTexture
-        _check(normal_style != null and _leaderboard_asset(_atlas_source(normal_style.texture), "ALL STYLES.png"),
-            prefix + " default filter shows original baked label only once")
-        _check(style.get_theme_color("font_color").a <= 0.01,
-            prefix + " Godot does not overprint ALL STYLES over supplied sprite")
-        var expected_selected := [
-            ["ALL STYLES.png", "NOUN.png", "PRONOUN.png", "VERB.png", "ADJECTIVE.png", "ADVERB.png"],
-            ["ALL MODES.png", "seconds.png", "2lives.png"],
-            ["ALL DIFFICULTIES.png", "easy.png", "normal.png", "Hard.png"],
-        ]
+        _check(normal_style != null and _atlas_source(normal_style.texture).ends_with("SharedDropdown20261102/dropdown_base.png"),
+            prefix + " default filter uses shared wood background")
+        _check(style.get_theme_color("font_color").a > 0.95,
+            prefix + " native text is visible over shared wood")
+        var expected_counts := [6, 3, 4]
         for k in range(filter_buttons.size()):
             var control := filter_buttons[k] as OptionButton
-            _check(control.item_count == expected_selected[k].size(),
-                prefix + " selected-state artwork count matches exact dropdown options")
+            var base_style := control.get_theme_stylebox("normal") as StyleBoxTexture
+            _check(control.item_count == expected_counts[k],
+                prefix + " selectable topic/mode/difficulty options preserved")
             for chosen in range(control.item_count):
                 control.select(chosen)
                 control.item_selected.emit(chosen)
                 var chosen_style := control.get_theme_stylebox("normal") as StyleBoxTexture
-                _check(chosen_style != null and _leaderboard_asset(_atlas_source(chosen_style.texture), expected_selected[k][chosen]),
-                    prefix + " selected artwork " + str(control.name) + "[" + str(chosen) + "]")
-                _check(control.get_theme_color("font_color").a <= 0.01,
-                    prefix + " baked selected caption never has duplicated native text")
+                _check(chosen_style == base_style and control.get_item_text(control.selected).length() > 0,
+                    prefix + " native selected caption and unchanged shared wood " + str(control.name) + "[" + str(chosen) + "]")
+                _check(control.get_theme_color("font_color").a > 0.95,
+                    prefix + " selected caption remains visible")
                 _check(control.get_theme_icon("arrow").get_image().get_pixel(0, 0).a < 0.01,
-                    prefix + " selected PNG has one arrow and no native overlay")
+                    prefix + " shared PNG arrow remains single")
             control.select(0)
             control.item_selected.emit(0)
         for obsolete_option in ["INTERJECTION", "PREPOSITION", "CONJUNCTION", "QUIZ", "ACTIVITY"]:

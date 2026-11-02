@@ -32,7 +32,7 @@ func _run() -> void:
 	var former_texture := background.texture
 	# Use an actively shipped alternate texture rather than retaining the
 	# obsolete 2026-10-20 prototype backdrop solely for this QA fixture.
-	background.texture = load("res://Components/Leaderboard/2026-10-24/ALL STYLES.png")
+	background.texture = load("res://Components/Leaderboard/SharedDropdown20261102/dropdown_base.png")
 	_check(background.texture != former_texture and background.texture != null,
 		"Inspector texture swap works without modifying leaderboard.gd")
 	background.texture = former_texture
@@ -113,12 +113,13 @@ func _run() -> void:
 		selector.select(1)
 		selector.item_selected.emit(1)
 		_check(selector.get_theme_stylebox("normal") is StyleBoxTexture
-			and selector.get_theme_stylebox("normal") != original_skin,
-			"Selection replaces artwork using scene-authored selected-state PNG: " + selector.name)
+			and selector.get_theme_stylebox("normal") == original_skin
+			and selector.get_theme_color("font_color").a > 0.95,
+			"Selection updates native visible caption without swapping shared wood: " + selector.name)
 		selector.select(0)
 		selector.item_selected.emit(0)
 		_check(selector.get_theme_stylebox("normal") == original_skin,
-			"Reset restores exact authored ALL state PNG: " + selector.name)
+			"Reset keeps shared wood with native ALL caption: " + selector.name)
 
 	var empty := panel.get_node("%EmptyMessage") as Label
 	var scroll := panel.get_node("%ScoreRowsScroll") as ScrollContainer

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://chi18crtpcpah"
-path="res://.godot/imported/transparent_dropdown_arrow.png-002e320e7b9269ae538400ed63942c43.ctex"
+uid="uid://khimd2ibn2v0"
+path="res://.godot/imported/dropdown_base.png-053a0908dafd658723a831f6cd4c9845.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Components/Leaderboard/Secondary/transparent_dropdown_arrow.png"
-dest_files=["res://.godot/imported/transparent_dropdown_arrow.png-002e320e7b9269ae538400ed63942c43.ctex"]
+source_file="res://Components/Leaderboard/SharedDropdown20261102/dropdown_base.png"
+dest_files=["res://.godot/imported/dropdown_base.png-053a0908dafd658723a831f6cd4c9845.ctex"]
 
 [params]
 

@@ -9,21 +9,15 @@
 [ext_resource type="Texture2D" uid="uid://cfi6us1oc0ffo" path="res://Components/Leaderboard/Success/bg.png" id="DeleteSuccessBoard"]
 [ext_resource type="Texture2D" uid="uid://yk7myk08208f" path="res://Components/Leaderboard/Success/00669de2-99cd-46c6-bef9-f3a0f69c72e1.png" id="DeleteSuccessHeader"]
 [ext_resource type="Texture2D" uid="uid://d27av70p4au2c" path="res://Components/Leaderboard/Success/OkayButton.png" id="DeleteSuccessOkay"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_1.png" id="NoticeCapBooks"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_2.png" id="NoticeClose"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_3.png" id="NoticeHeader"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_4.png" id="NoticeWoodBoard"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/Notice20261102/notice_asset_5.png" id="NoticeOkay"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/IMPORT_transparent.png" id="NewImportAction"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/EXPORT_transparent.png" id="NewExportAction"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/DELETE_transparent.png" id="NewDeleteAction"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/SCORE.png" id="NewScoreSort"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/HIGHEST SCORE.png" id="NewHighestSort"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/LOWEST SCORE.png" id="NewLowestSort"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/STUDENT ID.png" id="NewStudentIdSort"]
-[ext_resource type="Texture2D" path="res://Components/Leaderboard/NewButtons20261102/GRADE LEVEL.png" id="NewGradeSort"]
 [ext_resource type="Texture2D" uid="uid://c1hnw6023f15n" path="res://Components/Credits/Redesign/HOME.png" id="LeaderboardHomeArtwork"]
-[ext_resource type="Texture2D" uid="uid://chi18crtpcpah" path="res://Components/Leaderboard/Secondary/transparent_dropdown_arrow.png" id="NativeArrowHidden"]
+[ext_resource type="Texture2D" uid="uid://k4m6gy2e1irh" path="res://Components/Leaderboard/NewButtons20261102/DELETE_transparent.png" id="NewDeleteAction"]
+[ext_resource type="Texture2D" uid="uid://c0wxe6c0ryjtv" path="res://Components/Leaderboard/NewButtons20261102/EXPORT_transparent.png" id="NewExportAction"]
+[ext_resource type="Texture2D" uid="uid://diefohesmjrtf" path="res://Components/Leaderboard/NewButtons20261102/IMPORT_transparent.png" id="NewImportAction"]
+[ext_resource type="Texture2D" uid="uid://b1kpx7udpskef" path="res://Components/Leaderboard/Notice20261102/notice_asset_1.png" id="NoticeCapBooks"]
+[ext_resource type="Texture2D" uid="uid://dqivhuym8elmk" path="res://Components/Leaderboard/Notice20261102/notice_asset_2.png" id="NoticeClose"]
+[ext_resource type="Texture2D" uid="uid://dtotkfki1khub" path="res://Components/Leaderboard/Notice20261102/notice_asset_3.png" id="NoticeHeader"]
+[ext_resource type="Texture2D" uid="uid://w7jsctxk2b1t" path="res://Components/Leaderboard/Notice20261102/notice_asset_5.png" id="NoticeOkay"]
+[ext_resource type="Texture2D" uid="uid://dw2g1355iyxjb" path="res://Components/Leaderboard/Notice20261102/notice_asset_4.png" id="NoticeWoodBoard"]
 [ext_resource type="Texture2D" uid="uid://07j2oiaypxwm" path="res://Components/Leaderboard/NotifLeader/notif background.png" id="NotifBoard"]
 [ext_resource type="Texture2D" uid="uid://d1iuuyiiowkjx" path="res://Components/Leaderboard/NotifLeader/cancel.png" id="NotifCancel"]
 [ext_resource type="Texture2D" uid="uid://dc2ivo07mqq4m" path="res://Components/Leaderboard/NotifLeader/show final conf.png" id="NotifContinue"]
@@ -32,82 +26,28 @@
 [ext_resource type="Texture2D" uid="uid://cci7sakhdv8ij" path="res://Components/Leaderboard/NotifLeader/header end.png" id="NotifFinalHeader"]
 [ext_resource type="Texture2D" uid="uid://vu0jn0i2e0oq" path="res://Components/Leaderboard/NotifLeader/hgeader before end.png" id="NotifFirstHeader"]
 [ext_resource type="Texture2D" uid="uid://2uqxg56b3yyy" path="res://Components/Leaderboard/NotifLeader/type delete all data.png" id="NotifTypedFrame"]
-[ext_resource type="Texture2D" uid="uid://bx8tcifhk5oaw" path="res://Components/Leaderboard/2026-10-24/DELETE.png" id="Oct24_DELETE"]
-[ext_resource type="Texture2D" uid="uid://d21twhlubm325" path="res://Components/Leaderboard/2026-10-24/ALL DIFFICULTIES.png" id="Oct24_DIFFICULTY"]
-[ext_resource type="Texture2D" uid="uid://bgtev2thmw75y" path="res://Components/Leaderboard/2026-10-24/EXPORT.png" id="Oct24_EXPORT"]
-[ext_resource type="Texture2D" uid="uid://buyfq5evt7pft" path="res://Components/Leaderboard/2026-10-24/IMPORT.png" id="Oct24_IMPORT"]
-[ext_resource type="Texture2D" uid="uid://usyeboqnr32u" path="res://Components/Leaderboard/2026-10-24/ALL MODES.png" id="Oct24_MODE"]
-[ext_resource type="Texture2D" uid="uid://c1ujriojc77y8" path="res://Components/Leaderboard/2026-10-24/ALL STYLES.png" id="Oct24_STYLE"]
 [ext_resource type="Texture2D" uid="uid://dwh231fvljlo5" path="res://Components/Leaderboard/2026-10-24/LEADERBOARD.png" id="Oct24_TITLE"]
-[ext_resource type="Texture2D" uid="uid://ccxx37r7e071w" path="res://Components/Leaderboard/2026-10-24/ADJECTIVE.png" id="SelectedAdjective"]
-[ext_resource type="Texture2D" uid="uid://l242xsav6waj" path="res://Components/Leaderboard/2026-10-24/ADVERB.png" id="SelectedAdverb"]
-[ext_resource type="Texture2D" uid="uid://do5bhi1gq8g3y" path="res://Components/Leaderboard/2026-10-24/easy.png" id="SelectedEasy"]
-[ext_resource type="Texture2D" uid="uid://bcpgq73cma5gd" path="res://Components/Leaderboard/2026-10-24/Hard.png" id="SelectedHard"]
-[ext_resource type="Texture2D" uid="uid://bm5rxywfmrf1k" path="res://Components/Leaderboard/2026-10-24/2lives.png" id="SelectedLives"]
-[ext_resource type="Texture2D" uid="uid://c1age8pct3yqe" path="res://Components/Leaderboard/2026-10-24/normal.png" id="SelectedNormal"]
-[ext_resource type="Texture2D" uid="uid://ccwy0fganjqhb" path="res://Components/Leaderboard/2026-10-24/NOUN.png" id="SelectedNoun"]
-[ext_resource type="Texture2D" uid="uid://cpb2khn7ns6f4" path="res://Components/Leaderboard/2026-10-24/PRONOUN.png" id="SelectedPronoun"]
-[ext_resource type="Texture2D" uid="uid://br6kv40yt0xlm" path="res://Components/Leaderboard/2026-10-24/seconds.png" id="SelectedSeconds"]
-[ext_resource type="Texture2D" uid="uid://b0hidi0l2bsq3" path="res://Components/Leaderboard/2026-10-24/VERB.png" id="SelectedVerb"]
+[ext_resource type="Texture2D" uid="uid://khimd2ibn2v0" path="res://Components/Leaderboard/SharedDropdown20261102/dropdown_base.png" id="SharedBlankDropdown"]
 
-[sub_resource type="StyleBoxTexture" id="Oct24StyleDefault"]
-texture = ExtResource("Oct24_STYLE")
+[sub_resource type="Gradient" id="TransparentNativeArrowGradient"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0, 0, 0, 0, 0, 0, 0, 0)
 
-[sub_resource type="StyleBoxTexture" id="SelectedNounStyle"]
-texture = ExtResource("SelectedNoun")
+[sub_resource type="GradientTexture2D" id="TransparentNativeArrow"]
+gradient = SubResource("TransparentNativeArrowGradient")
+width = 2
+height = 2
 
-[sub_resource type="StyleBoxTexture" id="SelectedPronounStyle"]
-texture = ExtResource("SelectedPronoun")
+[sub_resource type="AtlasTexture" id="SharedDropdownCrop"]
+atlas = ExtResource("SharedBlankDropdown")
+region = Rect2(7, 143, 2158, 434)
 
-[sub_resource type="StyleBoxTexture" id="SelectedVerbStyle"]
-texture = ExtResource("SelectedVerb")
-
-[sub_resource type="StyleBoxTexture" id="SelectedAdjectiveStyle"]
-texture = ExtResource("SelectedAdjective")
-
-[sub_resource type="StyleBoxTexture" id="SelectedAdverbStyle"]
-texture = ExtResource("SelectedAdverb")
-
-[sub_resource type="StyleBoxTexture" id="Oct24ModeDefault"]
-texture = ExtResource("Oct24_MODE")
-
-[sub_resource type="AtlasTexture" id="SelectedSecondsAtlas"]
-atlas = ExtResource("SelectedSeconds")
-region = Rect2(11, 142, 2153, 424)
-
-[sub_resource type="StyleBoxTexture" id="SelectedSecondsStyle"]
-texture = SubResource("SelectedSecondsAtlas")
-
-[sub_resource type="AtlasTexture" id="SelectedLivesAtlas"]
-atlas = ExtResource("SelectedLives")
-region = Rect2(12, 142, 2151, 426)
-
-[sub_resource type="StyleBoxTexture" id="SelectedLivesStyle"]
-texture = SubResource("SelectedLivesAtlas")
-
-[sub_resource type="StyleBoxTexture" id="Oct24DifficultyDefault"]
-texture = ExtResource("Oct24_DIFFICULTY")
-
-[sub_resource type="AtlasTexture" id="SelectedEasyAtlas"]
-atlas = ExtResource("SelectedEasy")
-region = Rect2(10, 142, 2159, 438)
-
-[sub_resource type="StyleBoxTexture" id="SelectedEasyStyle"]
-texture = SubResource("SelectedEasyAtlas")
-
-[sub_resource type="AtlasTexture" id="SelectedNormalAtlas"]
-atlas = ExtResource("SelectedNormal")
-region = Rect2(10, 142, 2157, 436)
-
-[sub_resource type="StyleBoxTexture" id="SelectedNormalStyle"]
-texture = SubResource("SelectedNormalAtlas")
-
-[sub_resource type="AtlasTexture" id="SelectedHardAtlas"]
-atlas = ExtResource("SelectedHard")
-region = Rect2(10, 142, 2161, 436)
-
-[sub_resource type="StyleBoxTexture" id="SelectedHardStyle"]
-texture = SubResource("SelectedHardAtlas")
+[sub_resource type="StyleBoxTexture" id="SharedDropdownStyle"]
+content_margin_left = 17.0
+content_margin_top = 6.0
+content_margin_right = 29.0
+content_margin_bottom = 6.0
+texture = SubResource("SharedDropdownCrop")
 
 [sub_resource type="AtlasTexture" id="Oct24TitleAtlas"]
 atlas = ExtResource("Oct24_TITLE")
@@ -115,61 +55,28 @@ region = Rect2(0, 9, 2144, 715)
 
 [sub_resource type="StyleBoxEmpty" id="LeaderboardBackTransparent"]
 
-[sub_resource type="AtlasTexture" id="Oct24ImportAtlas"]
-atlas = ExtResource("Oct24_IMPORT")
-region = Rect2(54, 104, 2069, 510)
+[sub_resource type="StyleBoxFlat" id="TeacherFilterField"]
+content_margin_left = 9.0
+content_margin_right = 9.0
+bg_color = Color(0.987, 0.968, 0.896, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.47, 0.31, 0.18, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [sub_resource type="StyleBoxTexture" id="ImportActionStyle"]
 texture = ExtResource("NewImportAction")
 
-[sub_resource type="AtlasTexture" id="Oct24ExportAtlas"]
-atlas = ExtResource("Oct24_EXPORT")
-region = Rect2(54, 103, 2073, 515)
-
 [sub_resource type="StyleBoxTexture" id="ExportActionStyle"]
 texture = ExtResource("NewExportAction")
 
-[sub_resource type="AtlasTexture" id="Oct24DeleteAtlas"]
-atlas = ExtResource("Oct24_DELETE")
-region = Rect2(59, 108, 2055, 510)
-
 [sub_resource type="StyleBoxTexture" id="DeleteActionStyle"]
 texture = ExtResource("NewDeleteAction")
-
-[sub_resource type="AtlasTexture" id="ScoreSortBaseCrop"]
-atlas = ExtResource("NewScoreSort")
-region = Rect2(0, 142, 2170, 436)
-
-[sub_resource type="StyleBoxTexture" id="ScoreSortBaseStyle"]
-texture = SubResource("ScoreSortBaseCrop")
-
-[sub_resource type="AtlasTexture" id="HighestScoreSortCrop"]
-atlas = ExtResource("NewHighestSort")
-region = Rect2(0, 142, 2170, 436)
-
-[sub_resource type="StyleBoxTexture" id="HighestScoreSortStyle"]
-texture = SubResource("HighestScoreSortCrop")
-
-[sub_resource type="AtlasTexture" id="LowestScoreSortCrop"]
-atlas = ExtResource("NewLowestSort")
-region = Rect2(0, 142, 2170, 436)
-
-[sub_resource type="StyleBoxTexture" id="LowestScoreSortStyle"]
-texture = SubResource("LowestScoreSortCrop")
-
-[sub_resource type="AtlasTexture" id="StudentIdSortCrop"]
-atlas = ExtResource("NewStudentIdSort")
-region = Rect2(0, 142, 2170, 436)
-
-[sub_resource type="StyleBoxTexture" id="StudentIdSortStyle"]
-texture = SubResource("StudentIdSortCrop")
-
-[sub_resource type="AtlasTexture" id="GradeLevelSortCrop"]
-atlas = ExtResource("NewGradeSort")
-region = Rect2(0, 142, 2170, 436)
-
-[sub_resource type="StyleBoxTexture" id="GradeLevelSortStyle"]
-texture = SubResource("GradeLevelSortCrop")
 
 [sub_resource type="AtlasTexture" id="NotifBoardCrop"]
 atlas = ExtResource("NotifBoard")
@@ -238,39 +145,13 @@ region = Rect2(18, 226, 2136, 326)
 atlas = ExtResource("NoticeCapBooks")
 region = Rect2(74, 248, 1128, 798)
 
-[sub_resource type="AtlasTexture" id="NoticeCloseCrop"]
-atlas = ExtResource("NoticeClose")
-region = Rect2(84, 92, 1070, 1080)
-
 [sub_resource type="AtlasTexture" id="NoticeOkayCrop"]
 atlas = ExtResource("NoticeOkay")
 region = Rect2(178, 165, 1414, 578)
 
-[sub_resource type="StyleBoxFlat" id="LeaderboardNoticePanel"]
-bg_color = Color(0.976, 0.966, 0.937, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.2, 0.17, 0.27, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-
-[sub_resource type="StyleBoxFlat" id="TeacherFilterField"]
-bg_color = Color(0.987, 0.968, 0.896, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.47, 0.31, 0.18, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-content_margin_left = 9.0
-content_margin_right = 9.0
+[sub_resource type="AtlasTexture" id="NoticeCloseCrop"]
+atlas = ExtResource("NoticeClose")
+region = Rect2(84, 92, 1070, 1080)
 
 [node name="Leaderboard" type="Control" unique_id=502061973]
 layout_mode = 3
@@ -281,11 +162,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_script")
-style_filter_skins = Array[StyleBoxTexture]([SubResource("Oct24StyleDefault"), SubResource("SelectedNounStyle"), SubResource("SelectedPronounStyle"), SubResource("SelectedVerbStyle"), SubResource("SelectedAdjectiveStyle"), SubResource("SelectedAdverbStyle")])
-mode_filter_skins = Array[StyleBoxTexture]([SubResource("Oct24ModeDefault"), SubResource("SelectedSecondsStyle"), SubResource("SelectedLivesStyle")])
-difficulty_filter_skins = Array[StyleBoxTexture]([SubResource("Oct24DifficultyDefault"), SubResource("SelectedEasyStyle"), SubResource("SelectedNormalStyle"), SubResource("SelectedHardStyle")])
-sort_filter_skins = Array[StyleBoxTexture]([SubResource("ScoreSortBaseStyle"), SubResource("HighestScoreSortStyle"), SubResource("LowestScoreSortStyle"), SubResource("StudentIdSortStyle"), SubResource("GradeLevelSortStyle")])
-sort_student_name_skin = SubResource("TeacherFilterField")
+shared_dropdown_skin = SubResource("SharedDropdownStyle")
 
 [node name="Background" type="TextureRect" parent="." unique_id=1181573477]
 layout_mode = 1
@@ -352,22 +229,23 @@ stretch_mode = 5
 [node name="StyleFilter" type="OptionButton" parent="." unique_id=1336159057]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 248.0
+offset_left = 158.0
 offset_top = 170.0
-offset_right = 508.0
+offset_right = 393.0
 offset_bottom = 229.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_pressed_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_hover_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.025, 0.095, 0.285, 1)
 theme_override_fonts/font = ExtResource("14_font")
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("Oct24StyleDefault")
-theme_override_styles/pressed = SubResource("Oct24StyleDefault")
-theme_override_styles/hover = SubResource("Oct24StyleDefault")
-theme_override_styles/hover_pressed = SubResource("Oct24StyleDefault")
-theme_override_icons/arrow = ExtResource("NativeArrowHidden")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("SharedDropdownStyle")
+theme_override_styles/pressed = SubResource("SharedDropdownStyle")
+theme_override_styles/hover = SubResource("SharedDropdownStyle")
+theme_override_styles/hover_pressed = SubResource("SharedDropdownStyle")
+theme_override_styles/focus = SubResource("SharedDropdownStyle")
+theme_override_icons/arrow = SubResource("TransparentNativeArrow")
 selected = 0
 item_count = 6
 popup/item_0/text = "ALL STYLES"
@@ -386,22 +264,23 @@ popup/item_5/id = 5
 [node name="ModeFilter" type="OptionButton" parent="." unique_id=1912104736]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 511.0
-offset_top = 169.0
-offset_right = 771.0
-offset_bottom = 229.0
+offset_left = 394.0
+offset_top = 170.0
+offset_right = 629.0
+offset_bottom = 230.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_pressed_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_hover_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.025, 0.095, 0.285, 1)
 theme_override_fonts/font = ExtResource("14_font")
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("Oct24ModeDefault")
-theme_override_styles/pressed = SubResource("Oct24ModeDefault")
-theme_override_styles/hover = SubResource("Oct24ModeDefault")
-theme_override_styles/hover_pressed = SubResource("Oct24ModeDefault")
-theme_override_icons/arrow = ExtResource("NativeArrowHidden")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("SharedDropdownStyle")
+theme_override_styles/pressed = SubResource("SharedDropdownStyle")
+theme_override_styles/hover = SubResource("SharedDropdownStyle")
+theme_override_styles/hover_pressed = SubResource("SharedDropdownStyle")
+theme_override_styles/focus = SubResource("SharedDropdownStyle")
+theme_override_icons/arrow = SubResource("TransparentNativeArrow")
 selected = 0
 item_count = 3
 popup/item_0/text = "ALL MODES"
@@ -414,22 +293,23 @@ popup/item_2/id = 2
 [node name="DifficultyFilter" type="OptionButton" parent="." unique_id=160068874]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 774.0
+offset_left = 633.0
 offset_top = 170.0
-offset_right = 1034.0
+offset_right = 868.0
 offset_bottom = 228.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
+theme_override_colors/font_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_pressed_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_hover_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.025, 0.095, 0.285, 1)
 theme_override_fonts/font = ExtResource("14_font")
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("Oct24DifficultyDefault")
-theme_override_styles/pressed = SubResource("Oct24DifficultyDefault")
-theme_override_styles/hover = SubResource("Oct24DifficultyDefault")
-theme_override_styles/hover_pressed = SubResource("Oct24DifficultyDefault")
-theme_override_icons/arrow = ExtResource("NativeArrowHidden")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("SharedDropdownStyle")
+theme_override_styles/pressed = SubResource("SharedDropdownStyle")
+theme_override_styles/hover = SubResource("SharedDropdownStyle")
+theme_override_styles/hover_pressed = SubResource("SharedDropdownStyle")
+theme_override_styles/focus = SubResource("SharedDropdownStyle")
+theme_override_icons/arrow = SubResource("TransparentNativeArrow")
 selected = 0
 item_count = 4
 popup/item_0/text = "ALL DIFFICULTIES"
@@ -482,13 +362,13 @@ item_count = 1
 popup/item_0/text = "All Sections"
 popup/item_0/id = 0
 
-[node name="StudentSearch" type="LineEdit" parent="."]
+[node name="StudentSearch" type="LineEdit" parent="." unique_id=2082373220]
 unique_name_in_owner = true
 editor_description = "Teacher student name or ID search across the saved leaderboard."
 layout_mode = 0
-offset_left = 149.0
+offset_left = 158.0
 offset_top = 235.0
-offset_right = 748.0
+offset_right = 1106.0
 offset_bottom = 274.0
 theme_override_colors/font_color = Color(0.19, 0.16, 0.13, 1)
 theme_override_colors/font_placeholder_color = Color(0.37, 0.33, 0.28, 1)
@@ -499,24 +379,27 @@ theme_override_styles/focus = SubResource("TeacherFilterField")
 placeholder_text = "Search Student Name or ID"
 clear_button_enabled = true
 
-[node name="ScoreSort" type="OptionButton" parent="."]
+[node name="ScoreSort" type="OptionButton" parent="." unique_id=1778313628]
 unique_name_in_owner = true
-editor_description = "One real responsive score sort dropdown. Five editor-authored image skins plus native-text Student Name A-Z fallback; underlying grade/section data remains sortable."
+editor_description = "Single shared blank dropdown texture with native TitanOne selected text; all six existing sort choices remain intact."
 layout_mode = 0
-offset_left = 760.0
-offset_top = 231.0
-offset_right = 1118.0
-offset_bottom = 279.0
+offset_left = 873.0
+offset_top = 170.0
+offset_right = 1108.0
+offset_bottom = 227.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_color = Color(0, 0, 0, 0)
-theme_override_colors/font_pressed_color = Color(0, 0, 0, 0)
-theme_override_colors/font_hover_pressed_color = Color(0, 0, 0, 0)
-theme_override_font_sizes/font_size = 15
-theme_override_styles/normal = SubResource("ScoreSortBaseStyle")
-theme_override_styles/hover = SubResource("ScoreSortBaseStyle")
-theme_override_styles/pressed = SubResource("ScoreSortBaseStyle")
-theme_override_icons/arrow = ExtResource("NativeArrowHidden")
+theme_override_colors/font_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_pressed_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_hover_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.025, 0.095, 0.285, 1)
+theme_override_fonts/font = ExtResource("14_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("SharedDropdownStyle")
+theme_override_styles/pressed = SubResource("SharedDropdownStyle")
+theme_override_styles/hover = SubResource("SharedDropdownStyle")
+theme_override_styles/hover_pressed = SubResource("SharedDropdownStyle")
+theme_override_styles/focus = SubResource("SharedDropdownStyle")
+theme_override_icons/arrow = SubResource("TransparentNativeArrow")
 selected = 0
 item_count = 6
 popup/item_0/text = "SCORE"

@@ -1,22 +1,21 @@
-# KILOSGRAMMAR — Live Leaderboard artwork
+# KILOSGRAMMAR Leaderboard assets (November 2, 2026)
 
-Only images used by the current Godot Leaderboard (and its editable confirmation dialogs) belong in this folder. The older prototype sprite packs, reference-sheet screenshots, their `.import` files, unused manifests, and retired extractor scripts were pruned on 25 October 2026 at the user's request.
+The active scene is `res://ui/secondary/leaderboard/leaderboard.tscn`, with behavior in `leaderboard.gd`. The Windows Downloads folder is **not** a runtime dependency.
 
-**Runtime artwork is fully local to the Godot project.** The supplied Downloads folders are source-only and are **not** read at runtime or referenced by the scene. All eight notification PNGs live in `res://Components/Leaderboard/NotifLeader/`; all three success PNGs live in `res://Components/Leaderboard/Success/`. Each has its own Godot `.png.import` metadata. The three success PNGs were verified as byte-identical copies of the supplied originals.
+## Reusable dropdowns
 
-## Live artwork
+The four native Godot `OptionButton` controls—grammar style, mode, difficulty, and score sorting—share **one** image: `SharedDropdown20261102/dropdown_base.png`. It supplies the cream wooden background and decorative blue chevron, **not** option captions. The same cropped `SharedDropdownStyle` is assigned to all four buttons. Their actual changing captions are drawn with the existing Titan One font in Godot, using the same size, navy text, left alignment, and padding. Each dropdown retains its original selectable items and filter/sorting logic. The Grade and Section selectors are hidden as previously requested; grade/section data and grade sorting remain supported.
 
-- `2026-10-24/` — Leaderboard background, title, row/table header, back/import/export/delete buttons and all grammar/mode/difficulty dropdown selected-state textures. The PNGs are referenced individually by `res://ui/secondary/leaderboard.tscn` and remain draggable/editable in the editor.
-- `NotifLeader/` — First and final wooden warning panels, two-stage confirmation buttons, input frame, and separate gray/red **`FinalDeleteButton`** styles. The red and gray are **one** native Godot Button with two authored styles, not two controls.
-- `Success/` — Locally copied `bg.png`, `OkayButton.png`, and `00669de2-99cd-46c6-bef9-f3a0f69c72e1.png` (decorated **Leaderboard — Completed** header), displayed only on confirmed successful deletion. `SuccessBoard` and `SuccessHeader` remain separate editable TextureRects, green OK remains a native Button, and `SuccessMessage` is a native Label populated with backend-deleted record counts.
-- `Secondary/transparent_dropdown_arrow.png` — Invisible native OptionButton arrow; the selected-state PNG artwork supplies the visible arrow so it never doubles.
+After verifying that there were no remaining runtime or test dependencies, 18 old per-selection PNGs and their 18 `.png.import` files were removed: 13 grammar/mode/difficulty variants in `2026-10-24/` and five score-sort variants in `NewButtons20261102/`. The separate 2-pixel transparent `Secondary/transparent_dropdown_arrow.png` and its import file were also removed: one editor-authored, fully transparent Godot `GradientTexture2D` now suppresses the duplicate native arrow without requiring another PNG. These files are recoverable from Git history and are **not** recreated at runtime. Do not reintroduce one PNG per selection: change the native option text or shared Inspector theme instead.
 
-There is no image drawn as a screenshot of the whole Leaderboard. Native Buttons, LineEdit, OptionButtons, labels, two delete-warning overlays and a separate success overlay remain `.tscn` nodes for drag-and-drop editing. The generic `EmptyNotice` remains untouched for unrelated CSV/import/export results and failures.
+## Other illustrated controls remain separate
 
-The active Godot scene is `res://ui/secondary/leaderboard.tscn`, with logic in `leaderboard.gd` and rows in `leaderboard_row.tscn`. To resize the red/gray PERMANENTLY DELETE art together, select `DeleteFinalOverlay/ConfirmPanel/FinalDeleteButton`. Change its offsets/rect once; `NotifDeleteEnabledStyle` and `NotifDeleteDisabledStyle` both use the same target rectangle, despite their underlying artwork being different original PNGs.
+- `NewButtons20261102/IMPORT_transparent.png`, `EXPORT_transparent.png`, `DELETE_transparent.png` — blue, green, and red artwork for the existing three real buttons. Their teacher-authorized XLSX import/export and two-stage protected Delete behavior are unchanged. Original supplied button files remain as source artwork.
+- `2026-10-24/LEADERBOARD.png` and `table_header.png` — retained title and table-header artwork.
+- `NotifLeader/` — protected first- and second-stage deletion confirmation overlays.
+- `Success/` — verified deletion-completed notice components.
+- `Notice20261102/` — separate illustrated Leaderboard status/authorization notice components.
 
-## Safety and verification
+The background, title, buttons, OptionButtons, search field, table rows, notices, and delete overlays remain independent editor-authored nodes, not a flattened screenshot. Preserve the active node paths and test security actions before pruning any more art. In particular, a missing direct path reference alone does not prove an asset is unused when a loader constructs paths dynamically.
 
-Do not remove any texture referenced from `.tscn` or from dynamic selected-skin loaders in `.gd`, even if it appears hidden. Check both direct file references and constructed resource paths. Tests include `tools/test_leaderboard_selected_assets.gd`, `tools/test_leaderboard_design.gd`, `tools/test_leaderboard_delete_modal_visual.gd`, `tools/test_leaderboard_delete_success_visual.gd`, and `tools/test_component_prune_integrity.gd`. The latter checks resource validity across the game.
-
-The original reference packs were not part of the playable UI and have been removed rather than duplicated across folders. No database records were deleted, and the teacher-only two-stage delete flow is preserved.
+Focused coverage includes `tools/test_leaderboard_shared_dropdown_20261102.gd`, `tools/test_leaderboard_selected_assets.gd`, `tools/test_leaderboard_oct24_visual.gd`, `tools/test_leaderboard_design.gd`, and the protected import/export/delete integration suites. No database records were altered by this asset cleanup.

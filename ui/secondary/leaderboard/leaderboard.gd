@@ -16,17 +16,9 @@ const DELETE_CONFIRMATION := "DELETE ALL DATA"
 const MAX_IMPORT_XLSX_BYTES := 8000000
 const MINIGAME_FILTER_OPTIONS := ["ALL MINIGAMES", "CATCH THE WORD", "BALLOON POPPING", "HUMAN PLANE"]
 const EDITOR_CANVAS_SIZE := Vector2(1280, 720)
-const FILTER_INVISIBLE_ARROW := preload("res://Components/Leaderboard/Secondary/transparent_dropdown_arrow.png")
-## Inspector-editable selected-state artwork. Index 0 is the original ALL image.
-## Every element is an authored StyleBoxTexture from leaderboard.tscn.
-@export var style_filter_skins: Array[StyleBoxTexture] = []
-@export var mode_filter_skins: Array[StyleBoxTexture] = []
-@export var difficulty_filter_skins: Array[StyleBoxTexture] = []
-## Art states correspond to Score, Highest, Lowest, Student ID, Grade Level.
-## Student Name retains its native readable label because no matching PNG
-## was supplied; all six options stay available in the popup.
-@export var sort_filter_skins: Array[StyleBoxTexture] = []
-@export var sort_student_name_skin: StyleBox
+## One editor-authored blank cream/wood background shared by all four
+## OptionButtons. Captions are Godot font text, never baked into PNG skins.
+@export var shared_dropdown_skin: StyleBoxTexture
 # Each node keeps its independent editor-authored position. Only proportional
 # viewport scaling/centering happens at runtime, never per-button hardcoded XY.
 const RESPONSIVE_NODE_NAMES := [
@@ -379,44 +371,24 @@ func _sort_visible_rows() -> void:
 
 
 func _update_filter_appearance() -> void:
-	var controls: Array[OptionButton] = [style_filter, mode_filter, difficulty_filter]
-	var skin_sets: Array = [style_filter_skins, mode_filter_skins, difficulty_filter_skins]
-	for index in controls.size():
-		var selector := controls[index]
-		var skins: Array = skin_sets[index]
-		if selector.selected < 0 or selector.selected >= skins.size():
-			continue
-		var style := skins[selector.selected] as StyleBoxTexture
-		if style == null:
-			continue
-		# The native button handles focus/click/dropdown; the image carries
-		# the selected caption and its ONE arrow in every selected state.
-		selector.add_theme_icon_override("arrow", FILTER_INVISIBLE_ARROW)
-		for state in ["normal", "hover", "pressed", "hover_pressed"]:
-			selector.add_theme_stylebox_override(state, style)
-		for key in ["font_color", "font_hover_color", "font_pressed_color",
-			"font_hover_pressed_color", "font_focus_color"]:
-			selector.add_theme_color_override(key, Color.TRANSPARENT)
-	# The score sort is one real OptionButton with independently authored skins
-	# for the five supplied drop-down artwork states, not five dummy buttons.
-	var selection := score_sort.selected
-	var named_fallback := score_sort.get_item_text(selection).to_upper() == "STUDENT NAME A-Z"
-	var sort_style: StyleBox = null
-	if named_fallback:
-		sort_style = sort_student_name_skin
-	elif selection >= 0 and selection < sort_filter_skins.size():
-		sort_style = sort_filter_skins[selection]
-	if sort_style != null:
-		for state in ["normal", "hover", "pressed", "hover_pressed"]:
-			score_sort.add_theme_stylebox_override(state, sort_style)
-	if named_fallback:
-		score_sort.remove_theme_icon_override("arrow")
-	else:
-		score_sort.add_theme_icon_override("arrow", FILTER_INVISIBLE_ARROW)
-	for key in ["font_color", "font_hover_color", "font_pressed_color",
-			"font_hover_pressed_color", "font_focus_color"]:
-		score_sort.add_theme_color_override(key,
-			Color(0.19, 0.16, 0.13, 1.0) if named_fallback else Color.TRANSPARENT)
+	# Native OptionButton selection text automatically updates to the real
+	# selected popup item. The same background/left padding/font works for
+	# every grammar, mode, difficulty and score sort option.
+	for selector in [style_filter, mode_filter, difficulty_filter, score_sort]:
+		selector.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		# The editor-authored 2x2 transparent GradientTexture2D suppresses the
+		# native arrow. Do not load a second PNG or override the scene's icon:
+		# the only visible arrow is already baked into dropdown_base.png.
+		if shared_dropdown_skin != null:
+			for state in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
+				selector.add_theme_stylebox_override(state, shared_dropdown_skin)
+		for color_state in ["font_color", "font_hover_color", "font_pressed_color",
+				"font_hover_pressed_color", "font_focus_color", "font_disabled_color"]:
+			selector.add_theme_color_override(color_state, Color(0.025, 0.095, 0.285, 1.0))
+		# Preserve all popup item strings and their indices, while rendering the
+		# selected caption in a consistent all-caps TitanOne label.
+		if selector.selected >= 0:
+			selector.text = selector.get_item_text(selector.selected).to_upper()
 
 
 func _redraw_rows() -> void:
