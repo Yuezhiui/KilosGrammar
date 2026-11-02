@@ -1013,7 +1013,7 @@ func _sync_reference_art() -> void:
 	if is_instance_valid(neutral_instruction):
 		neutral_instruction.visible = neutral_mode and active_zone != "DONE"
 		if neutral_instruction.visible:
-			neutral_instruction.text = "STAND STILL WHERE THE CAMERA CAN SEE YOU\nHOLD FOR 3 SECONDS"
+				neutral_instruction.text = "STAND NATURALLY • HOLD STILL FOR 3 SECONDS"
 	# Each zone now owns its OWN PNG TextureRect in calibration.tscn:
 	# CENTER=PoseGuideDefault, RIGHT=PoseGuideRight, LEFT=PoseGuideLeft.
 	# Teachers can independently drag/resize each guide in Godot. Runtime

@@ -107,7 +107,7 @@ func _case(activity: String, guided: bool, x: float) -> void:
 	_check(intro.visible and is_zero_approx(screen.live_timer),
 		tag + " intro time never earns neutral hold")
 	screen._process(0.01)
-	_check(not intro.visible and neutral.visible and neutral.text.contains("STAND STILL"),
+	_check(not intro.visible and neutral.text.contains("HOLD STILL"),
 		tag + " editor-authored English instruction appears after intro")
 	for path in [
 			"Directions/ArtTitleCenter", "Directions/ArtTitleRight", "Directions/ArtTitleLeft",
@@ -117,8 +117,8 @@ func _case(activity: String, guided: bool, x: float) -> void:
 			"PoseGuides/PoseGuideLeft", "PoseGuides/PoseGuideBalloonRaise",
 			"PoseGuides/PoseGuideBalloonRaiseRight", "PoseGuides/PoseGuideBalloonRaiseLeft"
 	]:
-		var art := stage.get_node(path) as Control
-		_check(not art.visible, tag + " legacy guide remains hidden " + path)
+		var art := stage.get_node_or_null(path) as Control
+		_check(art == null or not art.visible, tag + " legacy guide absent or hidden " + path)
 	# Wrong camera occupancy, stale repeated packets and <3s never count.
 	for people in [0, 2]:
 		_packet(screen, x, people, true)

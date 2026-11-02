@@ -1850,8 +1850,19 @@ func _show_panel(route: String) -> void:
 		push_warning("Unknown KilosGrammar panel route: " + route)
 		return
 	var path: String = PANEL_SCENES[route]
-	if route == "calibration" and String(session_state.get("player_mode", "Single Player")) == "Multiplayer":
-		path = "res://ui/vision/calibration/multiplayer_calibration.tscn"
+	if route == "calibration":
+		# Both student modes get real, editable calibration scenes. The old
+		# T-pose artwork is retained ONLY for Human Plane; it must never
+		# appear in Catch/Balloon's single neutral-standing calibration.
+		var player_mode := String(session_state.get("player_mode", "Single Player")).strip_edges()
+		var activity := String(session_state.get("activity", "Catch the Word")).strip_edges()
+		if player_mode == "Multiplayer":
+			if activity != "Catch the Word":
+				push_warning("Two-player calibration currently supports Catch the Word only.")
+				return
+			path = "res://ui/vision/calibration/multiplayer_calibration.tscn"
+		elif activity == "Human Plane":
+			path = "res://ui/vision/calibration/human_plane_calibration.tscn"
 	if not ResourceLoader.exists(path):
 		push_warning("Panel is not available yet: " + path)
 		return

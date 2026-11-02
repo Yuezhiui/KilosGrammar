@@ -1,0 +1,1114 @@
+{
+  "as_of": "2026-11-02",
+  "scope": "All live Components/Gameplay/Calibration PNG and PNG.import; whole repository textual scene/script/QA/doc search",
+  "files_scanned": 544,
+  "calibration_png_count": 20,
+  "assets": {
+    "Components/Gameplay/Calibration/1.png": {
+      "size": 1073856,
+      "sha256": "6d8e81120a38608806639ed0f3ae80a1194ad83dd30ff454ffab1230e4384992",
+      "import_path": "Components/Gameplay/Calibration/1.png.import",
+      "uid": "uid://b5akb7suoldlx",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "docs/asset-prune/spotlight-project-cleanup-20261029.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "docs/calibration-latency/visual.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "ui/minigames/human_plane/human_plane.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.gd",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/2.png": {
+      "size": 1107696,
+      "sha256": "e8658116f77a04ce986f775cb125d53161c5eb5469ccbcf2584e844160685406",
+      "import_path": "Components/Gameplay/Calibration/2.png.import",
+      "uid": "uid://2n0metk7ac7y",
+      "references": {
+        "possible_dynamic": [
+          {
+            "file": "docs/asset-cleanup/README.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "docs/calibration-latency/visual.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "ui/minigames/human_plane/human_plane.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.gd",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/3.png": {
+      "size": 1061715,
+      "sha256": "36f6ce7078709e3309096740a9bd32bda47cb70d67bc5d8518480d7f4b2ebf5d",
+      "import_path": "Components/Gameplay/Calibration/3.png.import",
+      "uid": "uid://kysyulngt85n",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "docs/asset-prune/spotlight-project-cleanup-20261029.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "docs/calibration-latency/visual.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "ui/minigames/human_plane/human_plane.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.gd",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/ARROW.png": {
+      "size": 621102,
+      "sha256": "006c9bbfdcc429d1a2e8e04104f92b2ec6eab7cf3c41a04c49544d98934b3986",
+      "import_path": "Components/Gameplay/Calibration/ARROW.png.import",
+      "uid": "uid://d1eljjv4pd611",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/BACK.png": {
+      "size": 623684,
+      "sha256": "931e9158ee663ae5f2b6e592d482c408fab871440b3af730d2307d2e28ac9cf3",
+      "import_path": "Components/Gameplay/Calibration/BACK.png.import",
+      "uid": "uid://d052dwf4qtjin",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/calibration-ui/png-layout-and-guides.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "docs/asset-prune/spotlight-project-cleanup-20261029.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/calibration.tscn",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/BACKGROUND.png": {
+      "size": 1809776,
+      "sha256": "242d920db42fb6a102e19b6d33e4f70c846ad28ea1e01820287270a841682cf3",
+      "import_path": "Components/Gameplay/Calibration/BACKGROUND.png.import",
+      "uid": "uid://c8w3pjyuceu4d",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "docs/asset-prune/spotlight-project-cleanup-20261029.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "qa": [
+          {
+            "file": "tools/KILOS_GAMEPLAY_BRUTEFORCE_20261028.md",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "tools/test_guided_countdown_visual_20261030.gd",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/play/gameplay/guided_countdown.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/BORDER.png": {
+      "size": 1078517,
+      "sha256": "abf5c8b34445b8aa3ec17a651ee06803614356e37b995306eea20b84c0068122",
+      "import_path": "Components/Gameplay/Calibration/BORDER.png.import",
+      "uid": "uid://dgksmfu3ym6na",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "docs/calibration-latency/visual.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "docs/calibration-ui/png-layout-and-guides.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/multiplayer_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/MOVE TO HIGHLIGHTED AREA.png": {
+      "size": 873973,
+      "sha256": "b35eec1b136884f904216f5e0877dd49c2acdf653ec0ddaf42231498ef5030b2",
+      "import_path": "Components/Gameplay/Calibration/MOVE TO HIGHLIGHTED AREA.png.import",
+      "uid": "uid://cpk57yr2oahvg",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/Pose Guides/BALOON POP.png": {
+      "size": 40733,
+      "sha256": "4bd8ed9daee1418f25476a0053fbcca6af80dcb5a712dd1f3878f2077b33b539",
+      "import_path": "Components/Gameplay/Calibration/Pose Guides/BALOON POP.png.import",
+      "uid": "uid://qdhgw3lb18s8",
+      "references": {
+        "possible_dynamic": [
+          {
+            "file": "docs/cloud-flight/calibration.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/FIVE_POSE_PNG_CALIBRATION_QA.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "qa": [
+          {
+            "file": "tools/test_calibration_green_zone_visibility_20261029.gd",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/Pose Guides/DEFAULT.png": {
+      "size": 40132,
+      "sha256": "da8be20ffb17d54bbcfac5e6664c67e0c713dbbc4d89431e9171afbbfa5fbdb8",
+      "import_path": "Components/Gameplay/Calibration/Pose Guides/DEFAULT.png.import",
+      "uid": "uid://ffgm87eg6y6q",
+      "references": {
+        "possible_dynamic": [
+          {
+            "file": "docs/cloud-flight/calibration.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/FIVE_POSE_PNG_CALIBRATION_QA.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "qa": [
+          {
+            "file": "tools/test_calibration_green_zone_visibility_20261029.gd",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO LEFT.png": {
+      "size": 40164,
+      "sha256": "1bd282054718043c5cbb614459c64349d161acc83d17f07a081d6c782aa68ac1",
+      "import_path": "Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO LEFT.png.import",
+      "uid": "uid://cylo3hdp3ahtm",
+      "references": {
+        "possible_dynamic": [
+          {
+            "file": "docs/cloud-flight/calibration.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/FIVE_POSE_PNG_CALIBRATION_QA.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "qa": [
+          {
+            "file": "tools/test_calibration_green_zone_visibility_20261029.gd",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/minigames/human_plane/human_plane.gd",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO RIGHT.png": {
+      "size": 41123,
+      "sha256": "d95d467f6fbb4f42a27bb4878802ff068726b464fa87ed8ba3f5d05425855561",
+      "import_path": "Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO RIGHT.png.import",
+      "uid": "uid://biug334gjvk3c",
+      "references": {
+        "possible_dynamic": [
+          {
+            "file": "docs/cloud-flight/calibration.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/FIVE_POSE_PNG_CALIBRATION_QA.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "qa": [
+          {
+            "file": "tools/test_calibration_green_zone_visibility_20261029.gd",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/minigames/human_plane/human_plane.gd",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/Pose Guides/PLANE T POSE.png": {
+      "size": 34577,
+      "sha256": "c772a384140256371b6c46cddf81cf21cd149ecaf92a4bc822d068b36c838399",
+      "import_path": "Components/Gameplay/Calibration/Pose Guides/PLANE T POSE.png.import",
+      "uid": "uid://cmmubew7fphtu",
+      "references": {
+        "possible_dynamic": [
+          {
+            "file": "docs/cloud-flight/calibration.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/FIVE_POSE_PNG_CALIBRATION_QA.md",
+            "match": [
+              "possible_dynamic"
+            ]
+          },
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "qa": [
+          {
+            "file": "tools/test_calibration_green_zone_visibility_20261029.gd",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/STARS.png": {
+      "size": 258512,
+      "sha256": "e7616ee74cde8fb894caa9497216b2c69b43d1425dd050cb18a9846867c93359",
+      "import_path": "Components/Gameplay/Calibration/STARS.png.import",
+      "uid": "uid://cdcvwghy8rvfa",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/spotlight-project-cleanup-20261029.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/STAY IN THE CENTER.png": {
+      "size": 954261,
+      "sha256": "c89f4ba7c0ac71c1a0f3b4da7a496ac2c973bef03c0a8f28f1f65bde2dbca6b6",
+      "import_path": "Components/Gameplay/Calibration/STAY IN THE CENTER.png.import",
+      "uid": "uid://cwgm7rl4dptgk",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/STAY OF THE LEFT.png": {
+      "size": 909052,
+      "sha256": "4469e0b31d34ff47e41971be5c6b360bd82d5adc4c5c9cabec828aad38d76401",
+      "import_path": "Components/Gameplay/Calibration/STAY OF THE LEFT.png.import",
+      "uid": "uid://de241ctdo50wh",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/STAY ON THE RIGHT.png": {
+      "size": 906898,
+      "sha256": "cc2a1d10d30ff22a577adc4dd0b36ece529b474f156a6a23a10fd4988186f035",
+      "import_path": "Components/Gameplay/Calibration/STAY ON THE RIGHT.png.import",
+      "uid": "uid://c6ixjswfv6gro",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/STEP 1.png": {
+      "size": 609461,
+      "sha256": "45fb39cbe8b68f5a9d1c3682c83e292189e4800a5f12fce4b2b978fc1933cd40",
+      "import_path": "Components/Gameplay/Calibration/STEP 1.png.import",
+      "uid": "uid://bah7bc3omo700",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/STEP 2.png": {
+      "size": 1246146,
+      "sha256": "122a012cb8b5d12e2f3f0bc0c81e6a1b326ee7a10c62e41687c8e78eda049ccc",
+      "import_path": "Components/Gameplay/Calibration/STEP 2.png.import",
+      "uid": "uid://dsj3168wjitxq",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    },
+    "Components/Gameplay/Calibration/STEP 3.png": {
+      "size": 644322,
+      "sha256": "6aa252e859a524490a1b4cc3f890eeaa802af26d137a92c7d4cd5ab707a636af",
+      "import_path": "Components/Gameplay/Calibration/STEP 3.png.import",
+      "uid": "uid://j7avft553vs",
+      "references": {
+        "docs_or_other": [
+          {
+            "file": "docs/asset-migration/prime.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/gameplay.json",
+            "match": [
+              "path"
+            ]
+          },
+          {
+            "file": "docs/asset-prune/projectwide-2026-10-26.md",
+            "match": [
+              "path"
+            ]
+          }
+        ],
+        "possible_dynamic": [
+          {
+            "file": "tools/test_calibration_assets_layering.gd",
+            "match": [
+              "possible_dynamic"
+            ]
+          }
+        ],
+        "production": [
+          {
+            "file": "ui/vision/calibration/human_plane_calibration.tscn",
+            "match": [
+              "path",
+              "uid"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

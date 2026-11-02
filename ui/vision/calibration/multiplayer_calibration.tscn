@@ -1,10 +1,14 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://ui/vision/calibration/multiplayer_calibration.gd" id="1"]
 [ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/BACKGROUND.png" id="2"]
 [ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/BORDER.png" id="3"]
-[ext_resource type="Texture2D" path="res://Components/Game Chooser/back button.png" id="4"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/BACK.png" id="4"]
 [ext_resource type="FontFile" path="res://assets/fonts/GochiHand-Regular.ttf" id="5"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/1.png" id="6"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/2.png" id="7"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/3.png" id="8"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Balloon Popping/Art/reference/prompt_blank.png" id="9"]
 
 [sub_resource type="Shader" id="WoodenFrameTransparentCenter"]
 code = "shader_type canvas_item;
@@ -18,6 +22,20 @@ void fragment() {
 [sub_resource type="ShaderMaterial" id="WoodenFrameMaterial"]
 shader = SubResource("WoodenFrameTransparentCenter")
 
+[sub_resource type="StyleBoxFlat" id="IndependentReadyPlate"]
+bg_color = Color(0.17, 0.48, 0.24, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.94, 0.81, 0.44, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxEmpty" id="TransparentNavigation"]
+
 [node name="MultiplayerCalibration" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -28,6 +46,7 @@ grow_vertical = 2
 script = ExtResource("1")
 
 [node name="Background" type="TextureRect" parent="."]
+editor_description = "Real illustrated 16:9 calibration classroom; the same image as single-player calibration."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -40,20 +59,36 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Stage" type="Control" parent="."]
+editor_description = "Two fixed editor-authored 1280x720 camera panels. Runtime scales this whole stage, but does not move either panel."
 layout_mode = 0
 offset_right = 1280.0
 offset_bottom = 720.0
 mouse_filter = 2
 
+[node name="WoodenHeaderBoard" type="NinePatchRect" parent="Stage"]
+editor_description = "Real blank gold-edged wooden-style plaque prompt_blank.png. The requested exact English-header PNG is absent, so editable Header and Subtitle labels overlay this original illustrated plaque."
+layout_mode = 0
+offset_left = 340.0
+offset_top = 7.0
+offset_right = 940.0
+offset_bottom = 140.0
+mouse_filter = 2
+texture = ExtResource("9")
+patch_margin_left = 43
+patch_margin_top = 39
+patch_margin_right = 43
+patch_margin_bottom = 39
+
 [node name="Header" type="Label" parent="Stage"]
+editor_description = "Editable ENGLISH CALIBRATION title over the original illustrated blank plaque."
 layout_mode = 0
 offset_left = 365.0
 offset_top = 30.0
 offset_right = 915.0
 offset_bottom = 92.0
-theme_override_colors/font_color = Color(1, 0.93, 0.69, 1)
-theme_override_colors/font_outline_color = Color(0.36, 0.12, 0.03, 1)
-theme_override_constants/outline_size = 12
+theme_override_colors/font_color = Color(0.39, 0.18, 0.065, 1)
+theme_override_colors/font_outline_color = Color(1, 0.9, 0.68, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("5")
 theme_override_font_sizes/font_size = 65
 text = "CALIBRATION"
@@ -61,20 +96,22 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Stage"]
+editor_description = "Exact requested English instruction on the gold-edged plaque, independent of the two camera previews."
 layout_mode = 0
 offset_left = 320.0
 offset_top = 87.0
 offset_right = 960.0
 offset_bottom = 122.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0.24, 0.13, 0.05, 1)
-theme_override_constants/outline_size = 6
+theme_override_colors/font_color = Color(0.38, 0.18, 0.07, 1)
+theme_override_colors/font_outline_color = Color(1, 0.9, 0.68, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("5")
 theme_override_font_sizes/font_size = 29
 text = "STAY INSIDE THE SQUARE"
 horizontal_alignment = 1
 
 [node name="PlayerOne" type="Control" parent="Stage"]
+editor_description = "Static left wood-framed view; its virtual crop follows Player One while inference remains FULL FRAME from a single shared webcam."
 layout_mode = 0
 offset_left = 36.0
 offset_top = 158.0
@@ -82,22 +119,34 @@ offset_right = 621.0
 offset_bottom = 542.0
 mouse_filter = 2
 
-[node name="LiveCamera" type="TextureRect" parent="Stage/PlayerOne"]
+[node name="CameraBacking" type="ColorRect" parent="Stage/PlayerOne"]
+editor_description = "Fixed dark camera placeholder INSIDE the genuine wood BORDER.png, visible in the editor and when the webcam has not produced a frame. It is BEHIND LiveCamera, never covering the image."
 layout_mode = 0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 571.0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = 558.0
+offset_bottom = 290.0
+mouse_filter = 2
+color = Color(0.065, 0.115, 0.125, 1)
+
+[node name="LiveCamera" type="TextureRect" parent="Stage/PlayerOne"]
+editor_description = "Cropped preview only, not a second camera. Fixed, draggable region behind wood BORDER.png."
+layout_mode = 0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = 558.0
 offset_bottom = 290.0
 mouse_filter = 2
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
 
 [node name="WoodenFrame" type="TextureRect" parent="Stage/PlayerOne"]
+editor_description = "Original BORDER.png clover/wood art. Shader transparently removes ONLY its baked black center to show live webcam crop behind it."
 layout_mode = 0
-offset_left = -19.0
-offset_top = -44.0
-offset_right = 608.0
-offset_bottom = 334.0
+offset_left = -7.0
+offset_top = -19.0
+offset_right = 590.0
+offset_bottom = 328.0
 mouse_filter = 2
 material = SubResource("WoodenFrameMaterial")
 texture = ExtResource("3")
@@ -105,6 +154,8 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Countdown" type="Label" parent="Stage/PlayerOne"]
+editor_description = "Accessible/legacy countdown value updated in lockstep; rendered number comes from CountdownArt with original 1, 2, 3 artwork."
+visible = false
 layout_mode = 0
 offset_left = 202.0
 offset_top = 63.0
@@ -119,26 +170,77 @@ text = "3"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="CountdownArt" type="TextureRect" parent="Stage/PlayerOne"]
+editor_description = "Real illustrated 3.png / 2.png / 1.png. Player One countdown independently follows its own neutral hold."
+layout_mode = 0
+offset_left = 223.0
+offset_top = 69.0
+offset_right = 353.0
+offset_bottom = 199.0
+mouse_filter = 2
+texture = ExtResource("8")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ReadyPlate" type="Panel" parent="Stage/PlayerOne"]
+editor_description = "Appears only once Player One's neutral hold was actually accepted. Does not imply Player Two is ready."
+visible = false
+layout_mode = 0
+offset_left = 200.0
+offset_top = 104.0
+offset_right = 378.0
+offset_bottom = 162.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("IndependentReadyPlate")
+
+[node name="ReadyText" type="Label" parent="Stage/PlayerOne/ReadyPlate"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 0.9, 1)
+theme_override_fonts/font = ExtResource("5")
+theme_override_font_sizes/font_size = 39
+text = "READY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NamePlate" type="NinePatchRect" parent="Stage/PlayerOne"]
+editor_description = "Fixed independent wood/gold nameplate from genuine prompt_blank.png; the PLAYER ONE text remains editor authored."
+layout_mode = 0
+offset_left = 143.0
+offset_top = 295.0
+offset_right = 442.0
+offset_bottom = 354.0
+mouse_filter = 2
+texture = ExtResource("9")
+patch_margin_left = 42
+patch_margin_top = 30
+patch_margin_right = 42
+patch_margin_bottom = 29
+
 [node name="Name" type="Label" parent="Stage/PlayerOne"]
 layout_mode = 0
-offset_left = 105.0
-offset_top = 305.0
-offset_right = 470.0
-offset_bottom = 349.0
-theme_override_colors/font_color = Color(1, 0.96, 0.72, 1)
-theme_override_colors/font_outline_color = Color(0.31, 0.12, 0.05, 1)
-theme_override_constants/outline_size = 7
+offset_left = 155.0
+offset_top = 303.0
+offset_right = 432.0
+offset_bottom = 344.0
+theme_override_colors/font_color = Color(0.34, 0.18, 0.075, 1)
+theme_override_colors/font_outline_color = Color(1, 0.93, 0.75, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("5")
 theme_override_font_sizes/font_size = 34
 text = "PLAYER ONE"
 horizontal_alignment = 1
 
 [node name="Status" type="Label" parent="Stage/PlayerOne"]
+editor_description = "Readiness / camera instruction owned only by Player One; no global pause or other-player substitution."
 layout_mode = 0
 offset_left = 42.0
-offset_top = 349.0
+offset_top = 352.0
 offset_right = 545.0
-offset_bottom = 383.0
+offset_bottom = 386.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.13, 0.25, 0.24, 1)
 theme_override_constants/outline_size = 5
@@ -148,6 +250,7 @@ text = "STAND COMFORTABLY"
 horizontal_alignment = 1
 
 [node name="PlayerTwo" type="Control" parent="Stage"]
+editor_description = "Static right wood-framed view; its crop smoothly follows Player Two independent of Player One."
 layout_mode = 0
 offset_left = 658.0
 offset_top = 158.0
@@ -155,22 +258,34 @@ offset_right = 1243.0
 offset_bottom = 542.0
 mouse_filter = 2
 
-[node name="LiveCamera" type="TextureRect" parent="Stage/PlayerTwo"]
+[node name="CameraBacking" type="ColorRect" parent="Stage/PlayerTwo"]
+editor_description = "Second independent dark camera placeholder, behind Player Two's live preview and wood frame. Does not cover or share Player One's visual crop."
 layout_mode = 0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 571.0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = 558.0
+offset_bottom = 290.0
+mouse_filter = 2
+color = Color(0.065, 0.115, 0.125, 1)
+
+[node name="LiveCamera" type="TextureRect" parent="Stage/PlayerTwo"]
+editor_description = "Cropped preview only, not a second camera. Fixed, draggable region behind wood BORDER.png."
+layout_mode = 0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = 558.0
 offset_bottom = 290.0
 mouse_filter = 2
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
 
 [node name="WoodenFrame" type="TextureRect" parent="Stage/PlayerTwo"]
+editor_description = "Original wood/clover BORDER.png. Fixed even when Player Two's visual-only crop follows its own detected center."
 layout_mode = 0
-offset_left = -19.0
-offset_top = -44.0
-offset_right = 608.0
-offset_bottom = 334.0
+offset_left = -7.0
+offset_top = -19.0
+offset_right = 590.0
+offset_bottom = 328.0
 mouse_filter = 2
 material = SubResource("WoodenFrameMaterial")
 texture = ExtResource("3")
@@ -178,6 +293,8 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Countdown" type="Label" parent="Stage/PlayerTwo"]
+editor_description = "Accessible/legacy countdown value updated in lockstep; rendered number comes from CountdownArt."
+visible = false
 layout_mode = 0
 offset_left = 202.0
 offset_top = 63.0
@@ -192,26 +309,77 @@ text = "3"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="CountdownArt" type="TextureRect" parent="Stage/PlayerTwo"]
+editor_description = "Original 3.png / 2.png / 1.png; updates independently from Player One's countdown."
+layout_mode = 0
+offset_left = 223.0
+offset_top = 69.0
+offset_right = 353.0
+offset_bottom = 199.0
+mouse_filter = 2
+texture = ExtResource("8")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ReadyPlate" type="Panel" parent="Stage/PlayerTwo"]
+editor_description = "Appears only on confirmed Player Two calibration; neither player can mark the other READY."
+visible = false
+layout_mode = 0
+offset_left = 200.0
+offset_top = 104.0
+offset_right = 378.0
+offset_bottom = 162.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("IndependentReadyPlate")
+
+[node name="ReadyText" type="Label" parent="Stage/PlayerTwo/ReadyPlate"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 0.9, 1)
+theme_override_fonts/font = ExtResource("5")
+theme_override_font_sizes/font_size = 39
+text = "READY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NamePlate" type="NinePatchRect" parent="Stage/PlayerTwo"]
+editor_description = "Independent fixed Player Two illustrated gold/wood nameplate, original prompt_blank.png art."
+layout_mode = 0
+offset_left = 143.0
+offset_top = 295.0
+offset_right = 442.0
+offset_bottom = 354.0
+mouse_filter = 2
+texture = ExtResource("9")
+patch_margin_left = 42
+patch_margin_top = 30
+patch_margin_right = 42
+patch_margin_bottom = 29
+
 [node name="Name" type="Label" parent="Stage/PlayerTwo"]
 layout_mode = 0
-offset_left = 105.0
-offset_top = 305.0
-offset_right = 470.0
-offset_bottom = 349.0
-theme_override_colors/font_color = Color(1, 0.96, 0.72, 1)
-theme_override_colors/font_outline_color = Color(0.31, 0.12, 0.05, 1)
-theme_override_constants/outline_size = 7
+offset_left = 155.0
+offset_top = 303.0
+offset_right = 432.0
+offset_bottom = 344.0
+theme_override_colors/font_color = Color(0.34, 0.18, 0.075, 1)
+theme_override_colors/font_outline_color = Color(1, 0.93, 0.75, 1)
+theme_override_constants/outline_size = 2
 theme_override_fonts/font = ExtResource("5")
 theme_override_font_sizes/font_size = 34
 text = "PLAYER TWO"
 horizontal_alignment = 1
 
 [node name="Status" type="Label" parent="Stage/PlayerTwo"]
+editor_description = "Readiness / camera instruction owned only by Player Two; unchanged full-frame AI detection."
 layout_mode = 0
 offset_left = 42.0
-offset_top = 349.0
+offset_top = 352.0
 offset_right = 545.0
-offset_bottom = 383.0
+offset_bottom = 386.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.13, 0.25, 0.24, 1)
 theme_override_constants/outline_size = 5
@@ -221,6 +389,7 @@ text = "STAND COMFORTABLY"
 horizontal_alignment = 1
 
 [node name="DistanceNote" type="Label" parent="Stage"]
+editor_description = "Teacher-friendly physical floor markers only; a normal RGB webcam does not provide accurate meter measurements."
 layout_mode = 0
 offset_left = 145.0
 offset_top = 568.0
@@ -231,22 +400,27 @@ theme_override_colors/font_outline_color = Color(0.2, 0.13, 0.08, 1)
 theme_override_constants/outline_size = 6
 theme_override_fonts/font = ExtResource("5")
 theme_override_font_sizes/font_size = 22
-text = "CAMERA TEST RANGE: 2.5–4.0 METERS • MEASURED FLOOR MARKERS REQUIRED"
+text = "STAND ON FLOOR MARKERS ABOUT 2.5-4 m FROM THE CAMERA"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="BackButton" type="Button" parent="Stage"]
+editor_description = "Uses real calibration BACK.png asset and stays available throughout both players' neutral calibration."
 layout_mode = 0
 offset_left = 1020.0
 offset_top = 32.0
 offset_right = 1220.0
 offset_bottom = 96.0
-theme_override_fonts/font = ExtResource("5")
-theme_override_font_sizes/font_size = 30
-text = "BACK"
+mouse_default_cursor_shape = 2
+tooltip_text = "Back to Student Setup"
+accessibility_name = "Back to Student Setup"
+theme_override_styles/normal = SubResource("TransparentNavigation")
+theme_override_styles/hover = SubResource("TransparentNavigation")
+theme_override_styles/pressed = SubResource("TransparentNavigation")
+theme_override_styles/focus = SubResource("TransparentNavigation")
 
 [node name="BackArt" type="TextureRect" parent="Stage/BackButton"]
-show_behind_parent = true
+editor_description = "Actual purple BACK artwork; no duplicate text is drawn on top."
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

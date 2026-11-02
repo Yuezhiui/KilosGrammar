@@ -1,4 +1,4 @@
-extends "res://tools/test_single_neutral_calibration_20261102.gd"
+extends "res://tools/test_calibration_raw_bilateral_consumer_20261030.gd"
 
 # Migrated latency/source-freshness suite. The SOLO Catch/Balloon task now
 # makes one measured 3s hold at any visible camera X, not three floor zones

@@ -8,6 +8,11 @@ const MIN_SAMPLES := 8
 const MAX_SOURCE_GAP := 0.7
 const MAX_NEUTRAL_SPREAD := 0.095
 const DESIGN_SIZE := Vector2(1280, 720)
+const COUNTDOWN_ART: Dictionary = {
+	1: preload("res://Components/Gameplay/Calibration/1.png"),
+	2: preload("res://Components/Gameplay/Calibration/2.png"),
+	3: preload("res://Components/Gameplay/Calibration/3.png"),
+}
 
 @onready var stage: Control = $Stage
 @onready var video1: TextureRect = $Stage/PlayerOne/LiveCamera
@@ -16,6 +21,10 @@ const DESIGN_SIZE := Vector2(1280, 720)
 @onready var count2: Label = $Stage/PlayerTwo/Countdown
 @onready var status1: Label = $Stage/PlayerOne/Status
 @onready var status2: Label = $Stage/PlayerTwo/Status
+@onready var countdown_art1: TextureRect = $Stage/PlayerOne/CountdownArt
+@onready var countdown_art2: TextureRect = $Stage/PlayerTwo/CountdownArt
+@onready var ready_plate1: Panel = $Stage/PlayerOne/ReadyPlate
+@onready var ready_plate2: Panel = $Stage/PlayerTwo/ReadyPlate
 @onready var back_button: Button = $Stage/BackButton
 @onready var distance_note: Label = $Stage/DistanceNote
 
@@ -40,7 +49,7 @@ func _ready() -> void:
 	PoseService.start_camera()
 	# A single ordinary RGB webcam cannot prove accurate meters without a
 	# camera/floor calibration. Never display fabricated live depth figures.
-	distance_note.text = "TWO PLAYERS • CAMERA TEST RANGE: 2.5–4.0 m (MEASURE FLOOR DISTANCE)"
+	distance_note.text = "STAND ON FLOOR MARKERS ABOUT 2.5-4 m FROM THE CAMERA"
 	set_process(true)
 
 
@@ -57,6 +66,10 @@ func _fit_stage() -> void:
 
 
 func _reset_holds() -> void:
+	source_time = -1.0
+	complete = false
+	complete_elapsed = 0.0
+	preview_center_x = [0.25, 0.75]
 	player_state = []
 	for _i in range(2):
 		player_state.append({"ready": false, "timer": 0.0, "count": 0,
@@ -65,6 +78,11 @@ func _reset_holds() -> void:
 	count2.text = "3"
 	status1.text = "STAND COMFORTABLY"
 	status2.text = "STAND COMFORTABLY"
+	for number in [countdown_art1, countdown_art2]:
+		number.texture = COUNTDOWN_ART[3]
+		number.show()
+	ready_plate1.hide()
+	ready_plate2.hide()
 
 
 func _on_pose(data: Dictionary) -> void:
@@ -127,12 +145,20 @@ func _process(delta: float) -> void:
 		var state: Dictionary = player_state[index]
 		var label: Label = count1 if index == 0 else count2
 		var status: Label = status1 if index == 0 else status2
+		var numbered_art: TextureRect = countdown_art1 if index == 0 else countdown_art2
+		var ready_badge: Panel = ready_plate1 if index == 0 else ready_plate2
 		if bool(state["ready"]):
-			label.text = "✓"
-			status.text = "READY • CENTER SAVED"
+			label.text = "READY"
+			status.text = "READY - CENTER SAVED"
+			numbered_art.hide()
+			ready_badge.show()
 			continue
-		label.text = str(clampi(ceili(TARGET_HOLD - float(state["timer"])), 1, 3))
-		status.text = "HOLD STILL • AUTO-CENTERING" if PoseService.has_multiplayer_pose(index) \
+		var number := clampi(ceili(TARGET_HOLD - float(state["timer"])), 1, 3)
+		label.text = str(number)
+		numbered_art.texture = COUNTDOWN_ART[number]
+		numbered_art.show()
+		ready_badge.hide()
+		status.text = "HOLD STILL - AUTO-CENTERING" if PoseService.has_multiplayer_pose(index) \
 			else "STEP INTO CAMERA VIEW"
 	if not PoseService.has_multiplayer_calibration():
 		complete_elapsed = 0.0
@@ -165,8 +191,13 @@ func _on_preview(texture: Texture2D) -> void:
 		return
 	var width := picture.get_width()
 	var height := picture.get_height()
-	var roi_width := mini(width, roundi(float(width) * .58))
-	var roi_height := mini(height, roundi(float(height) * .80))
+	# The two illustrated webcam frames are wide. Crop the original image
+	# once per player to a similarly wide *visual* region rather than
+	# distorting a narrow portrait crop into an elongated face. Every YOLO
+	# detection/calibration sample still comes from PoseService's original
+	# untouched full camera frame.
+	var roi_width := clampi(roundi(float(width) * .68), 1, width)
+	var roi_height := clampi(roundi(float(height) * .56), 1, height)
 	for index in range(2):
 		var center_x: float = .25 if index == 0 else .75
 		if PoseService.has_multiplayer_pose(index):
@@ -176,7 +207,11 @@ func _on_preview(texture: Texture2D) -> void:
 		# Smooth the VISUAL crop only. It cannot change a saved gameplay
 		# neutral or move the wooden frame, and avoids a jumpy camera preview
 		# when YOLO torso X flickers between adjacent pixels.
-		preview_center_x[index] = lerpf(preview_center_x[index], center_x, .28)
+		# Independent low-pass filters. No shared center, no frame motion, and
+		# no alteration to the calibrated positions or gameplay ownership.
+		if not is_finite(center_x):
+			center_x = .25 if index == 0 else .75
+		preview_center_x[index] = lerpf(preview_center_x[index], clampf(center_x, .0, 1.0), .22)
 		var left := clampi(roundi(preview_center_x[index] * width) - roi_width / 2, 0, width - roi_width)
 		var top := clampi(roundi(.5 * height) - roi_height / 2, 0, height - roi_height)
 		var crop: Image = picture.get_region(Rect2i(left, top, roi_width, roi_height))

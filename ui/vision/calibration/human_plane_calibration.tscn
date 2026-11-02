@@ -1,0 +1,662 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://b0rdun5hl44uu" path="res://ui/vision/calibration/calibration.gd" id="1_script"]
+[ext_resource type="FontFile" uid="uid://bmjxboei7ncjf" path="res://assets/fonts/GochiHand-Regular.ttf" id="2_font"]
+[ext_resource type="Texture2D" uid="uid://c8w3pjyuceu4d" path="res://Components/Gameplay/Calibration/BACKGROUND.png" id="4_v2_background"]
+[ext_resource type="Texture2D" uid="uid://dgksmfu3ym6na" path="res://Components/Gameplay/Calibration/BORDER.png" id="5_v2_border"]
+[ext_resource type="Texture2D" uid="uid://d1eljjv4pd611" path="res://Components/Gameplay/Calibration/ARROW.png" id="9_v2_arrow"]
+[ext_resource type="Texture2D" uid="uid://cpk57yr2oahvg" path="res://Components/Gameplay/Calibration/MOVE TO HIGHLIGHTED AREA.png" id="10_v2_move"]
+[ext_resource type="Texture2D" uid="uid://cwgm7rl4dptgk" path="res://Components/Gameplay/Calibration/STAY IN THE CENTER.png" id="11_v2_title_center"]
+[ext_resource type="Texture2D" uid="uid://c6ixjswfv6gro" path="res://Components/Gameplay/Calibration/STAY ON THE RIGHT.png" id="12_v2_title_right"]
+[ext_resource type="Texture2D" uid="uid://de241ctdo50wh" path="res://Components/Gameplay/Calibration/STAY OF THE LEFT.png" id="13_v2_title_left"]
+[ext_resource type="Texture2D" uid="uid://bah7bc3omo700" path="res://Components/Gameplay/Calibration/STEP 1.png" id="14_v2_step1"]
+[ext_resource type="Texture2D" uid="uid://dsj3168wjitxq" path="res://Components/Gameplay/Calibration/STEP 2.png" id="15_v2_step2"]
+[ext_resource type="Texture2D" uid="uid://j7avft553vs" path="res://Components/Gameplay/Calibration/STEP 3.png" id="16_v2_step3"]
+[ext_resource type="Texture2D" uid="uid://b5akb7suoldlx" path="res://Components/Gameplay/Calibration/1.png" id="17_v2_count1"]
+[ext_resource type="Texture2D" uid="uid://8xwbkspkkpfk" path="res://Components/Game Chooser/back button.png" id="18_rxbyu"]
+[ext_resource type="Texture2D" uid="uid://2n0metk7ac7y" path="res://Components/Gameplay/Calibration/2.png" id="18_v2_count2"]
+[ext_resource type="Texture2D" uid="uid://kysyulngt85n" path="res://Components/Gameplay/Calibration/3.png" id="19_v2_count3"]
+[ext_resource type="Texture2D" uid="uid://ffgm87eg6y6q" path="res://Components/Gameplay/Calibration/Pose Guides/DEFAULT.png" id="21_pose_default"]
+[ext_resource type="Texture2D" uid="uid://qdhgw3lb18s8" path="res://Components/Gameplay/Calibration/Pose Guides/BALOON POP.png" id="22_pose_balloon_raise"]
+[ext_resource type="Texture2D" uid="uid://cmmubew7fphtu" path="res://Components/Gameplay/Calibration/Pose Guides/PLANE T POSE.png" id="23_pose_plane_center"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO LEFT.png" id="24_pose_plane_left"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Calibration/Pose Guides/PLANE GOING TO RIGHT.png" id="25_pose_plane_right"]
+
+[sub_resource type="StyleBoxFlat" id="CameraFrame"]
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 1, 1, 0.78)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 8
+
+[sub_resource type="Shader" id="V2BlackInteriorTransparent"]
+code = "shader_type canvas_item;
+void fragment() {
+    vec4 sample_color = texture(TEXTURE, UV);
+    float brightness = max(sample_color.r, max(sample_color.g, sample_color.b));
+    sample_color.a *= smoothstep(0.04, 0.14, brightness);
+    COLOR = sample_color;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="V2FrameOverlayMaterial"]
+shader = SubResource("V2BlackInteriorTransparent")
+
+[sub_resource type="AtlasTexture" id="V2Step1Visible"]
+atlas = ExtResource("14_v2_step1")
+region = Rect2(239, 277, 1184, 419)
+
+[sub_resource type="AtlasTexture" id="V2Step2Visible"]
+atlas = ExtResource("15_v2_step2")
+region = Rect2(55, 259, 1432, 506)
+
+[sub_resource type="AtlasTexture" id="V2Step3Visible"]
+atlas = ExtResource("16_v2_step3")
+region = Rect2(223, 264, 1212, 414)
+
+[sub_resource type="Shader" id="V2CountdownOriginalTransparency"]
+code = "shader_type canvas_item;
+uniform sampler2D silhouette_mask : repeat_disable, filter_linear;
+void fragment() {
+    vec4 badge = texture(TEXTURE, UV);
+    badge.a *= texture(silhouette_mask, UV).a;
+    COLOR = badge;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="V2CountdownMaterial"]
+shader = SubResource("V2CountdownOriginalTransparency")
+shader_parameter/silhouette_mask = ExtResource("19_v2_count3")
+
+[sub_resource type="StyleBoxEmpty" id="TransparentArtButton"]
+
+[node name="Calibration" type="Control" unique_id=1969878418]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="ClassroomBackground" type="TextureRect" parent="." unique_id=123662511]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4_v2_background")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="ClassroomDimmer" type="ColorRect" parent="." unique_id=647422963]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.1)
+
+[node name="TutorialStage" type="Control" parent="." unique_id=872677461]
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="CameraArea" type="Control" parent="TutorialStage" unique_id=1510755703]
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="CameraFrame" type="Panel" parent="TutorialStage/CameraArea" unique_id=1773139807]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_left = 141.0
+offset_top = 150.0
+offset_right = 1167.0
+offset_bottom = 590.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("CameraFrame")
+
+[node name="CameraBlackBacking" type="ColorRect" parent="TutorialStage/CameraArea" unique_id=1471195238]
+editor_description = "Editable camera background: drag this separately in 2D or edit Layout > Transform in Inspector."
+layout_mode = 0
+offset_left = 141.0
+offset_top = 143.0
+offset_right = 1158.0
+offset_bottom = 641.0
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="LiveCameraInset" type="TextureRect" parent="TutorialStage/CameraArea" unique_id=1599570847]
+editor_description = "MAIN CAMERA DISPLAY CONTROL: change Layout > Transform > Position / Size to change the live image. Stretch Mode = Scale fills this entire rectangle without black bars (but stretches 4:3 webcams). Choose Keep Aspect Centered to preserve proportions with sidebars. GDScript never overrides this layout."
+layout_mode = 0
+offset_left = 141.0
+offset_top = 147.0
+offset_right = 1148.0
+offset_bottom = 593.0
+mouse_filter = 2
+expand_mode = 1
+
+[node name="SkeletonPlacement" type="ReferenceRect" parent="TutorialStage/CameraArea" unique_id=1271269511]
+editor_description = "VISUAL YOLO BONE ALIGNMENT ONLY. Default rectangle exactly matches LiveCameraInset (1007 x 446), so real keypoints draw over the same pixels as the camera. Drag/resize in the Godot 2D editor if the preview layout changes; this never alters calibration measurements. The green reference border is editor-only."
+layout_mode = 0
+offset_left = 141.0
+offset_top = 147.0
+offset_right = 1148.0
+offset_bottom = 593.0
+mouse_filter = 2
+border_color = Color(0.25, 0.94, 0.37, 0.82)
+
+[node name="ArtCameraFrame" type="TextureRect" parent="TutorialStage/CameraArea" unique_id=627544975]
+editor_description = "Editable decorative wood frame. Adjust this independently of LiveCameraInset; it does not control source camera resolution."
+material = SubResource("V2FrameOverlayMaterial")
+layout_mode = 0
+offset_left = 70.0
+offset_top = 45.0
+offset_right = 1220.0
+offset_bottom = 745.0
+mouse_filter = 2
+texture = ExtResource("5_v2_border")
+expand_mode = 1
+
+[node name="PoseGuides" type="Control" parent="TutorialStage" unique_id=272731653]
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="PoseGuideDefault" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=820298991]
+editor_description = "CENTER DEFAULT.png pose guide for Catch/Balloon. Edit this TextureRect in Godot; its position and size are never overwritten by runtime code."
+visible = false
+layout_mode = 0
+offset_left = 262.0
+offset_top = 66.0
+offset_right = 1029.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("21_pose_default")
+expand_mode = 1
+
+[node name="PoseGuideRight" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=816847498]
+editor_description = "RIGHT DEFAULT.png guide, duplicated from PoseGuideDefault. Drag this node yourself in the Godot 2D editor; runtime only changes visibility."
+visible = false
+layout_mode = 0
+offset_left = 575.0
+offset_top = 66.0
+offset_right = 1342.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("21_pose_default")
+expand_mode = 1
+
+[node name="PoseGuideLeft" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=1828292039]
+editor_description = "LEFT DEFAULT.png guide, duplicated from PoseGuideDefault. Drag this node yourself in the Godot 2D editor; runtime only changes visibility."
+visible = false
+layout_mode = 0
+offset_left = -50.0
+offset_top = 66.0
+offset_right = 717.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("21_pose_default")
+expand_mode = 1
+
+[node name="PoseGuideBalloonRaise" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=740498862]
+editor_description = "CENTER BALOON POP.png raised-hand guide for Balloon Popping. Position/size are editor-authored and unchanged at runtime."
+visible = false
+layout_mode = 0
+offset_left = 262.0
+offset_top = 66.0
+offset_right = 1029.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("22_pose_balloon_raise")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PoseGuideBalloonRaiseRight" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=1559434947]
+editor_description = "RIGHT raised-hand Balloon guide, independent editor-authored duplicate; move this in the 2D editor to match PoseGuideRight."
+visible = false
+layout_mode = 0
+offset_left = 570.0
+offset_top = 66.0
+offset_right = 1337.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("22_pose_balloon_raise")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PoseGuideBalloonRaiseLeft" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=1611406655]
+editor_description = "LEFT raised-hand Balloon guide, independent editor-authored duplicate; move this in the 2D editor to match PoseGuideLeft."
+visible = false
+layout_mode = 0
+offset_left = -50.0
+offset_top = 66.0
+offset_right = 717.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("22_pose_balloon_raise")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PoseGuidePlaneCenter" type="TextureRect" parent="TutorialStage/PoseGuides" unique_id=2086394099]
+editor_description = "PLANE T POSE.png Human Plane center/T-pose guide. Scene-authored and manually transformable; intended as the 3-second center reference."
+layout_mode = 0
+offset_left = 262.0
+offset_top = 66.0
+offset_right = 1029.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("23_pose_plane_center")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PoseGuidePlaneLeft" type="TextureRect" parent="TutorialStage/PoseGuides"]
+editor_description = "Visual LEFT turn demonstration after the single CENTER T-pose hold. Move/resize independently in the Godot editor."
+visible = false
+layout_mode = 0
+offset_left = 262.0
+offset_top = 66.0
+offset_right = 1029.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("24_pose_plane_left")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PoseGuidePlaneRight" type="TextureRect" parent="TutorialStage/PoseGuides"]
+editor_description = "Visual RIGHT turn demonstration after the single CENTER T-pose hold. Move/resize independently in the Godot editor."
+visible = false
+layout_mode = 0
+offset_left = 262.0
+offset_top = 66.0
+offset_right = 1029.0
+offset_bottom = 550.0
+mouse_filter = 2
+texture = ExtResource("25_pose_plane_right")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Directions" type="Control" parent="TutorialStage" unique_id=1119697125]
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="ArtArrowCenter" type="TextureRect" parent="TutorialStage/Directions" unique_id=1070318143]
+visible = false
+layout_mode = 0
+offset_left = 384.0
+offset_top = 310.0
+offset_right = 520.0
+offset_bottom = 446.0
+mouse_filter = 2
+texture = ExtResource("9_v2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtArrowRight" type="TextureRect" parent="TutorialStage/Directions" unique_id=618732512]
+visible = false
+layout_mode = 0
+offset_left = 663.0
+offset_top = 315.0
+offset_right = 799.0
+offset_bottom = 451.0
+mouse_filter = 2
+texture = ExtResource("9_v2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtArrowLeft" type="TextureRect" parent="TutorialStage/Directions" unique_id=469760251]
+visible = false
+layout_mode = 0
+offset_left = 498.0
+offset_top = 311.0
+offset_right = 634.0
+offset_bottom = 447.0
+scale = Vector2(-1, 1)
+pivot_offset = Vector2(68, 68)
+mouse_filter = 2
+texture = ExtResource("9_v2_arrow")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtTitleCenter" type="TextureRect" parent="TutorialStage/Directions" unique_id=1463487908]
+editor_description = "Updated STAY IN THE CENTER.png is 1672x432 with its lettering across the full PNG. Use original texture directly; DO NOT crop it with a previous art version's AtlasTexture."
+visible = false
+layout_mode = 0
+offset_left = 320.0
+offset_top = 28.0
+offset_right = 960.0
+offset_bottom = 176.0
+mouse_filter = 2
+texture = ExtResource("11_v2_title_center")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtTitleRight" type="TextureRect" parent="TutorialStage/Directions" unique_id=1292491791]
+editor_description = "Updated STAY ON THE RIGHT.png is 1672x432. Full updated PNG, no legacy crop; drag/resize its independent rectangle in Godot's 2D editor."
+visible = false
+layout_mode = 0
+offset_left = 320.0
+offset_top = 28.0
+offset_right = 960.0
+offset_bottom = 176.0
+mouse_filter = 2
+texture = ExtResource("12_v2_title_right")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtTitleLeft" type="TextureRect" parent="TutorialStage/Directions" unique_id=1856740181]
+editor_description = "Updated STAY OF THE LEFT.png is 1672x432. Full updated PNG, no legacy crop; its inspector rectangle is individually editable."
+visible = false
+layout_mode = 0
+offset_left = 320.0
+offset_top = 28.0
+offset_right = 960.0
+offset_bottom = 176.0
+mouse_filter = 2
+texture = ExtResource("13_v2_title_left")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtStep1" type="TextureRect" parent="TutorialStage/Directions" unique_id=1089465129]
+visible = false
+layout_mode = 0
+offset_left = 25.0
+offset_top = 17.0
+offset_right = 289.0
+offset_bottom = 110.0
+rotation = 0.025910724
+mouse_filter = 2
+texture = SubResource("V2Step1Visible")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtStep2" type="TextureRect" parent="TutorialStage/Directions" unique_id=247420183]
+visible = false
+layout_mode = 0
+offset_left = 25.0
+offset_top = 17.0
+offset_right = 289.0
+offset_bottom = 111.0
+mouse_filter = 2
+texture = SubResource("V2Step2Visible")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtStep3" type="TextureRect" parent="TutorialStage/Directions" unique_id=2096093161]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 17.0
+offset_right = 289.0
+offset_bottom = 110.0
+mouse_filter = 2
+texture = SubResource("V2Step3Visible")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtMoveHintCenter" type="TextureRect" parent="TutorialStage/Directions" unique_id=886219052]
+layout_mode = 0
+offset_left = 116.0
+offset_top = 299.0
+offset_right = 443.0
+offset_bottom = 472.0
+mouse_filter = 2
+texture = ExtResource("10_v2_move")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtMoveHintRight" type="TextureRect" parent="TutorialStage/Directions" unique_id=103691925]
+visible = false
+layout_mode = 0
+offset_left = 411.0
+offset_top = 305.0
+offset_right = 717.0
+offset_bottom = 478.0
+mouse_filter = 2
+texture = ExtResource("10_v2_move")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtMoveHintLeft" type="TextureRect" parent="TutorialStage/Directions" unique_id=1937786579]
+visible = false
+layout_mode = 0
+offset_left = 572.0
+offset_top = 304.0
+offset_right = 894.0
+offset_bottom = 477.0
+mouse_filter = 2
+texture = ExtResource("10_v2_move")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NeutralInstruction" type="Label" parent="TutorialStage"]
+editor_description = "Single-player Catch/Balloon neutral standing prompt. Drag and resize this editor-authored label independently. No old center/side pose guide is required."
+visible = false
+layout_mode = 0
+offset_left = 215.0
+offset_top = 47.0
+offset_right = 1065.0
+offset_bottom = 142.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.98, 0.86, 1)
+theme_override_colors/font_outline_color = Color(0.14, 0.11, 0.1, 1)
+theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 37
+text = "STAND STILL WHERE THE CAMERA CAN SEE YOU
+HOLD FOR 3 SECONDS"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="CountdownArtwork" type="Control" parent="TutorialStage" unique_id=1370989123]
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="ArtCountdown1" type="TextureRect" parent="TutorialStage/CountdownArtwork" unique_id=484408986]
+visible = false
+material = SubResource("V2CountdownMaterial")
+layout_mode = 0
+offset_left = 1075.0
+offset_top = -19.0
+offset_right = 1303.0
+offset_bottom = 153.0
+mouse_filter = 2
+texture = ExtResource("17_v2_count1")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtCountdown2" type="TextureRect" parent="TutorialStage/CountdownArtwork" unique_id=220980018]
+visible = false
+material = SubResource("V2CountdownMaterial")
+layout_mode = 0
+offset_left = 1075.0
+offset_top = -19.0
+offset_right = 1303.0
+offset_bottom = 153.0
+mouse_filter = 2
+texture = ExtResource("18_v2_count2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtCountdown3" type="TextureRect" parent="TutorialStage/CountdownArtwork" unique_id=922423743]
+visible = false
+layout_mode = 0
+offset_left = 1075.0
+offset_top = -19.0
+offset_right = 1303.0
+offset_bottom = 153.0
+mouse_filter = 2
+texture = ExtResource("19_v2_count3")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CameraFeedback" type="Control" parent="TutorialStage" unique_id=558138384]
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="CameraUnavailableLabel" type="Label" parent="TutorialStage/CameraFeedback" unique_id=1959146735]
+layout_mode = 0
+offset_left = 325.0
+offset_top = 527.0
+offset_right = 967.0
+offset_bottom = 594.0
+theme_override_colors/font_color = Color(1, 1, 0.94, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 17
+text = "CAMERA UNAVAILABLE
+Please ask your teacher for help."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="CameraStatusLabel" type="Label" parent="TutorialStage/CameraFeedback" unique_id=632795571]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_left = 275.0
+offset_top = 517.0
+offset_right = 1005.0
+offset_bottom = 543.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.92)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 19
+text = "CAMERA OFFLINE"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+
+[node name="ProgressLabel" type="Label" parent="TutorialStage/CameraFeedback" unique_id=2094269352]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_left = 275.0
+offset_top = 546.0
+offset_right = 1005.0
+offset_bottom = 569.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.92)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "CENTER • HOLD 3 SECONDS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Navigation" type="Control" parent="TutorialStage" unique_id=1391190917]
+anchors_preset = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+
+[node name="BackButton" type="Button" parent="TutorialStage/Navigation" unique_id=1419374582]
+editor_description = "Uses the latest Components/Gameplay/Calibration/BACK.png. No decorative yellow/blue focus rectangle. Keep this authored image button easy to resize without altering navigation."
+layout_mode = 0
+offset_left = 497.0
+offset_top = 640.0
+offset_right = 790.0
+offset_bottom = 720.0
+tooltip_text = "Back to Choose Activity"
+mouse_default_cursor_shape = 2
+accessibility_name = "Back to Choose Activity"
+theme_override_styles/normal = SubResource("TransparentArtButton")
+theme_override_styles/pressed = SubResource("TransparentArtButton")
+theme_override_styles/hover = SubResource("TransparentArtButton")
+theme_override_styles/disabled = SubResource("TransparentArtButton")
+theme_override_styles/focus = SubResource("TransparentArtButton")
+
+[node name="Artwork" type="TextureRect" parent="TutorialStage/Navigation/BackButton" unique_id=268662787]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("18_rxbyu")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="IntroOverlay" type="ColorRect" parent="TutorialStage" unique_id=2045608685]
+visible = false
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0, 0, 0, 0.66)
+
+[node name="ArtIntroTitle" type="Label" parent="TutorialStage/IntroOverlay" unique_id=1527280509]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 290.0
+offset_right = 1160.0
+offset_bottom = 421.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.13, 0.08, 0.04, 0.95)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 112
+text = "CALIBRATION"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SuccessOverlay" type="ColorRect" parent="TutorialStage" unique_id=1079388262]
+editor_description = "Success holds for three seconds after verified live SOLO pose calibration. Edit this darkening overlay, title and subtitle here. It uses the same 66% black as IntroOverlay."
+visible = false
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0, 0, 0, 0.66)
+
+[node name="SuccessTitle" type="Label" parent="TutorialStage/SuccessOverlay" unique_id=429447749]
+layout_mode = 0
+offset_left = 95.0
+offset_top = 266.0
+offset_right = 1185.0
+offset_bottom = 383.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.13, 0.08, 0.04, 0.95)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 80
+text = "CALIBRATION SUCCESS!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SuccessSubtitle" type="Label" parent="TutorialStage/SuccessOverlay" unique_id=723135460]
+layout_mode = 0
+offset_left = 125.0
+offset_top = 394.0
+offset_right = 1155.0
+offset_bottom = 469.0
+theme_override_colors/font_color = Color(1, 0.93, 0.73, 1)
+theme_override_colors/font_outline_color = Color(0.13, 0.08, 0.04, 0.95)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 33
+text = "Ready to play!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3

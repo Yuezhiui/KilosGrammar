@@ -3,7 +3,7 @@ extends SceneTree
 # Godot 4.7.2 --headless --path . --script res://tools/test_calibration_human_plane_center_only.gd
 # Regression for rejecting old floor-shift/center-only calibration on Human
 # Plane. The separate center-only steering test verifies source packet rules.
-const SCENE_PATH := "res://ui/vision/calibration/calibration.tscn"
+const SCENE_PATH := "res://ui/vision/calibration/human_plane_calibration.tscn"
 
 var failures: Array[String] = []
 var checks := 0
@@ -29,8 +29,8 @@ func _run() -> void:
 	_check(scene != null, "real calibration scene loads")
 	if scene != null:
 		await _test_plane_rejects_legacy_floor_positions()
-		await _test_legacy_three_positions("Catch the Word")
-		await _test_legacy_three_positions("Balloon Popping")
+			# Catch/Balloon now use the separate neutral-only calibration.tscn.
+			# Their torso-only holds are exercised by the neutral calibration QA.
 	pose.worker_pid = -1 # Never kill Godot's synthetic process-ID stand-in.
 	pose.stop_camera()
 	pose.set_process(true)
@@ -91,6 +91,21 @@ func _test_plane_rejects_legacy_floor_positions() -> void:
 		"3-second real fresh T-pose completes without fake LEFT/RIGHT")
 	_check(is_equal_approx(float(pose.plane_calibration.get("center", -1.0)), 0.5),
 		"real Human Plane torso center is measured independently from neutral arm steering")
+	_check(screen.plane_demo_running and not screen.success_running,
+		"After center hold, English left/right pose demonstrations precede success")
+	for index in range(46):
+		_fresh_pose(screen, 0.5, 0.10, false, true)
+	_check(not screen.plane_demo_running and screen.success_running,
+		"Both illustrated 2.2-second arm demonstrations finish before success")
+	var narration := screen.get_node_or_null("CalibrationVoice") as Node
+	var spoken: Dictionary = narration.get("_played_stages") if narration != null else {}
+	_check(narration != null and spoken.has("Human Plane:CENTER:default")
+		and spoken.has("Human Plane:demo:left") and spoken.has("Human Plane:demo:right"),
+		"T-pose and left/right demonstration voice cues each fire once")
+	_check(ResourceLoader.exists("res://assets/audio/calibration_voice/t_pose.wav")
+		and ResourceLoader.exists("res://assets/audio/calibration_voice/plane_left.wav")
+		and ResourceLoader.exists("res://assets/audio/calibration_voice/plane_right.wav"),
+		"Offline recorded T-pose and both demonstration cues resolve")
 	var measured_once: Dictionary = screen.measured_points.duplicate(true)
 	var elapsed_before_invalid: float = float(screen.success_elapsed)
 	for people in [2, 0]:
@@ -109,7 +124,7 @@ func _test_plane_rejects_legacy_floor_positions() -> void:
 			and is_equal_approx(float(screen.success_elapsed), elapsed_before_invalid),
 			"Human Plane %d-person camera frame FREEZES success without recalibration" % people)
 	_check_success_then_handoff(screen, routes, "Human Plane")
-	await _dispose(screen)
+	screen.queue_free()
 
 
 func _test_legacy_three_positions(activity: String) -> void:
@@ -176,13 +191,16 @@ func _fresh_pose(screen: Control, position: float, delta: float = 0.1,
 	# register ByteTrack IDs; Human Plane additionally requires hand-pose fields.
 	var packet := {"token": pose.session_token, "kind": "pose",
 		"state": "tracking", "pose": true, "camera": true, "camera_phase": "tracking",
-		"people": 1, "lock_state": "locked", "camera_frame_age_ms": 20,
+		"people": 1, "foreground_people": 1, "foreground_ambiguous": false,
+		"occupancy_verified": true, "player_lock_epoch": 1,
+		"lock_state": "locked", "camera_frame_age_ms": 20,
 		"x": position, "fps": 10.0,
 		"hand_observation_valid": true, "hand_up": raised,
 		"plane_t_pose_valid": t_pose,
 		# A neutral extended-arms pose generates ~0 arm steering even though the
 		# student's measured torso position is center x=0.5.
 		"plane_steering": 0.0, "plane_steering_valid": true,
+		"plane_bank": 0.0, "plane_bank_valid": true,
 		"plane_neutral_valid": true}
 	pose._apply_pose_packet(packet, Time.get_ticks_msec())
 	pose.player_x = position # Source-authenticated position; no rendering smoothing.
@@ -248,6 +266,8 @@ func _reset_synthetic_camera() -> void:
 	pose.set("packet_sequence", 0)
 	pose.set("current_status", {"state": "tracking", "pose": true,
 		"camera": true, "camera_phase": "tracking", "people": 1,
+		"foreground_people": 1, "foreground_ambiguous": false,
+		"occupancy_verified": true, "player_lock_epoch": 1,
 		"token": pose.session_token, "lock_state": "locked",
 		"camera_frame_age_ms": 20, "x": 0.5})
 
