@@ -7,6 +7,9 @@ const TARGET_HOLD := 3.0
 const MIN_SAMPLES := 8
 const MAX_SOURCE_GAP := 0.7
 const MAX_NEUTRAL_SPREAD := 0.095
+const SOLO_LEFT_MAX_X := 0.45
+const SOLO_RIGHT_MIN_X := 0.55
+const SOLO_MIN_CENTER_SEPARATION := 0.20
 const DESIGN_SIZE := Vector2(1280, 720)
 const COUNTDOWN_ART: Dictionary = {
 	1: preload("res://Components/Gameplay/Calibration/1.png"),
@@ -34,11 +37,18 @@ var source_time := -1.0
 var complete := false
 var complete_elapsed := 0.0
 var preview_center_x: Array[float] = [0.25, 0.75]
+var sequential_solo := false
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	back_button.pressed.connect(_back)
+	# A two-person crossing can make anonymous identity attribution genuinely
+	# unknowable. The Python lock deliberately latches both controls inactive
+	# until an explicit teacher restart. Re-entering calibration is that
+	# intentional reset; restart the camera worker only for the latched case.
+	if bool(PoseService.current_status.get("requires_teacher_recalibration", false)):
+		PoseService.stop_camera()
 	PoseService.set_multiplayer_mode(true)
 	PoseService.begin_new_multiplayer_calibration()
 	PoseService.status_updated.connect(_on_pose)
@@ -56,7 +66,8 @@ func _ready() -> void:
 func set_context(value: Dictionary) -> void:
 	context = value.duplicate(true)
 	context["player_mode"] = "Multiplayer"
-	context["activity"] = "Catch the Word"
+	if String(context.get("activity", "")) not in ["Catch the Word", "Balloon Popping"]:
+		context["activity"] = "Catch the Word"
 
 
 func _fit_stage() -> void:
@@ -69,6 +80,7 @@ func _reset_holds() -> void:
 	source_time = -1.0
 	complete = false
 	complete_elapsed = 0.0
+	sequential_solo = false
 	preview_center_x = [0.25, 0.75]
 	player_state = []
 	for _i in range(2):
@@ -99,11 +111,29 @@ func _on_pose(data: Dictionary) -> void:
 	if source <= source_time:
 		return
 	source_time = source
+	# The full-frame detector may report one person in either slot while that
+	# same person walks between the LEFT and RIGHT floor positions. Do not
+	# rely on the Python track index as the student's calibration identity.
+	# This alternate path is active ONLY when exactly one valid body exists;
+	# normal simultaneous two-person tracking keeps its original slot mapping.
+	var solo: Dictionary = _single_live_player(players)
 	for index in range(2):
 		var state: Dictionary = player_state[index]
 		if bool(state["ready"]):
 			continue
 		var player: Variant = players[index]
+		if not solo.is_empty():
+			if index == 0 and not bool(player_state[0]["ready"]):
+				player = solo if float(solo["x"]) <= SOLO_LEFT_MAX_X else {}
+			elif index == 1 and not bool(player_state[0]["ready"]):
+				# A single body cannot earn BOTH slots during the P1 hold.
+				player = {}
+			elif index == 1 and bool(player_state[0]["ready"]) and sequential_solo:
+				var far_right := float(solo["x"]) >= SOLO_RIGHT_MIN_X \
+					and float(solo["x"]) - float(PoseService.multiplayer_calibration[0].get("center", 0.25)) >= SOLO_MIN_CENTER_SEPARATION
+				player = solo if far_right else {}
+			elif index == 1 and sequential_solo:
+				player = {}
 		var live := player is Dictionary and bool(player.get("active", false))
 		var raw_x: Variant = player.get("x", -1) if player is Dictionary else -1
 		live = live and (raw_x is float or raw_x is int) \
@@ -138,6 +168,31 @@ func _on_pose(data: Dictionary) -> void:
 		var noise: float = deviations[deviations.size() / 2]
 		if PoseService.multiplayer_set_center(index, neutral, noise):
 			state["ready"] = true
+			if index == 0 and not solo.is_empty():
+				sequential_solo = true
+
+
+func _single_live_player(players: Array) -> Dictionary:
+	var found: Dictionary = {}
+	var count := 0
+	for candidate in players:
+		if not (candidate is Dictionary) or not bool(candidate.get("active", false)):
+			continue
+		var x: Variant = candidate.get("x", -1.0)
+		if not (x is float or x is int) or not is_finite(float(x)) \
+				or float(x) < 0.04 or float(x) > 0.96:
+			continue
+		found = candidate
+		count += 1
+	return found if count == 1 else {}
+
+
+func _ready_to_go() -> bool:
+	# Both centers must be physically measured, but once both are READY the
+	# teacher's round must start even if one or both students leave the frame.
+	# Gameplay independently revokes missing players' control; neither setup
+	# nor the shared game clock automatically pauses because of an absence.
+	return PoseService.has_multiplayer_calibration()
 
 
 func _process(delta: float) -> void:
@@ -158,12 +213,12 @@ func _process(delta: float) -> void:
 		numbered_art.texture = COUNTDOWN_ART[number]
 		numbered_art.show()
 		ready_badge.hide()
-		status.text = "HOLD STILL - AUTO-CENTERING" if PoseService.has_multiplayer_pose(index) \
-			else "STEP INTO CAMERA VIEW"
-	if not PoseService.has_multiplayer_calibration():
-		complete_elapsed = 0.0
-		return
-	if not PoseService.has_multiplayer_pose(0) or not PoseService.has_multiplayer_pose(1):
+		if sequential_solo and index == 1:
+			status.text = "MOVE TO RIGHT MARKER - THEN HOLD STILL"
+		else:
+			status.text = "HOLD STILL - AUTO-CENTERING" if PoseService.has_multiplayer_pose(index) \
+				else ("STAND AT LEFT MARKER" if index == 0 else "STEP INTO CAMERA VIEW")
+	if not _ready_to_go():
 		complete_elapsed = 0.0
 		return
 	complete_elapsed += maxf(delta, 0.0)
@@ -172,11 +227,14 @@ func _process(delta: float) -> void:
 	complete = true
 	var next_context := context.duplicate(true)
 	next_context["player_mode"] = "Multiplayer"
-	next_context["activity"] = "Catch the Word"
+	next_context["activity"] = String(context.get("activity", "Catch the Word"))
 	next_context["camera_live"] = true
 	next_context["calibration_measured"] = true
 	next_context["calibration_live"] = true
 	next_context["multiplayer_calibration"] = true
+	# Rehearsing both slots with one physical body must never be mistaken
+	# for two independently present students in durable score recording.
+	next_context["multiplayer_solo_test"] = sequential_solo
 	next_context["start_countdown"] = true
 	requested.emit("gameplay", next_context)
 

@@ -6,9 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://dgksmfu3ym6na" path="res://Components/Gameplay/Calibration/BORDER.png" id="5_v2_border"]
 [ext_resource type="Texture2D" uid="uid://d1eljjv4pd611" path="res://Components/Gameplay/Calibration/ARROW.png" id="9_v2_arrow"]
 [ext_resource type="Texture2D" uid="uid://cpk57yr2oahvg" path="res://Components/Gameplay/Calibration/MOVE TO HIGHLIGHTED AREA.png" id="10_v2_move"]
-[ext_resource type="Texture2D" uid="uid://cwgm7rl4dptgk" path="res://Components/Gameplay/Calibration/STAY IN THE CENTER.png" id="11_v2_title_center"]
-[ext_resource type="Texture2D" uid="uid://c6ixjswfv6gro" path="res://Components/Gameplay/Calibration/STAY ON THE RIGHT.png" id="12_v2_title_right"]
-[ext_resource type="Texture2D" uid="uid://de241ctdo50wh" path="res://Components/Gameplay/Calibration/STAY OF THE LEFT.png" id="13_v2_title_left"]
+[ext_resource type="Texture2D" path="res://Components/Gameplay/Balloon Popping/Art/reference/prompt_blank.png" id="11_english_title_plaque"]
 [ext_resource type="Texture2D" uid="uid://bah7bc3omo700" path="res://Components/Gameplay/Calibration/STEP 1.png" id="14_v2_step1"]
 [ext_resource type="Texture2D" uid="uid://dsj3168wjitxq" path="res://Components/Gameplay/Calibration/STEP 2.png" id="15_v2_step2"]
 [ext_resource type="Texture2D" uid="uid://j7avft553vs" path="res://Components/Gameplay/Calibration/STEP 3.png" id="16_v2_step3"]
@@ -337,7 +335,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="ArtTitleCenter" type="TextureRect" parent="TutorialStage/Directions" unique_id=1463487908]
-editor_description = "Updated STAY IN THE CENTER.png is 1672x432 with its lettering across the full PNG. Use original texture directly; DO NOT crop it with a previous art version's AtlasTexture."
+editor_description = "English-only editor-authored title: original exact position/size, neutral blank plaque and editable EnglishHeading child. No bilingual image is loaded."
 visible = false
 layout_mode = 0
 offset_left = 320.0
@@ -345,12 +343,43 @@ offset_top = 28.0
 offset_right = 960.0
 offset_bottom = 176.0
 mouse_filter = 2
-texture = ExtResource("11_v2_title_center")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="EnglishPlaque" type="NinePatchRect" parent="TutorialStage/Directions/ArtTitleCenter"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("11_english_title_plaque")
+patch_margin_left = 34
+patch_margin_top = 34
+patch_margin_right = 34
+patch_margin_bottom = 34
+
+[node name="EnglishHeading" type="Label" parent="TutorialStage/Directions/ArtTitleCenter"]
+editor_description = "Edit this English instruction directly in the Godot 2D editor; changing text does not alter calibration logic."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 8.0
+offset_right = -18.0
+offset_bottom = -8.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.29, 0.14, 0.07, 1)
+theme_override_colors/font_outline_color = Color(1, 0.96, 0.82, 0.8)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 46
+text = "STAY IN THE CENTER"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ArtTitleRight" type="TextureRect" parent="TutorialStage/Directions" unique_id=1292491791]
-editor_description = "Updated STAY ON THE RIGHT.png is 1672x432. Full updated PNG, no legacy crop; drag/resize its independent rectangle in Godot's 2D editor."
+editor_description = "English-only editor-authored title: original exact position/size, neutral blank plaque and editable EnglishHeading child. No bilingual image is loaded."
 visible = false
 layout_mode = 0
 offset_left = 320.0
@@ -358,12 +387,43 @@ offset_top = 28.0
 offset_right = 960.0
 offset_bottom = 176.0
 mouse_filter = 2
-texture = ExtResource("12_v2_title_right")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="EnglishPlaque" type="NinePatchRect" parent="TutorialStage/Directions/ArtTitleRight"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("11_english_title_plaque")
+patch_margin_left = 34
+patch_margin_top = 34
+patch_margin_right = 34
+patch_margin_bottom = 34
+
+[node name="EnglishHeading" type="Label" parent="TutorialStage/Directions/ArtTitleRight"]
+editor_description = "Edit this English instruction directly in the Godot 2D editor; changing text does not alter calibration logic."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 8.0
+offset_right = -18.0
+offset_bottom = -8.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.29, 0.14, 0.07, 1)
+theme_override_colors/font_outline_color = Color(1, 0.96, 0.82, 0.8)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 46
+text = "STAY ON THE RIGHT"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="ArtTitleLeft" type="TextureRect" parent="TutorialStage/Directions" unique_id=1856740181]
-editor_description = "Updated STAY OF THE LEFT.png is 1672x432. Full updated PNG, no legacy crop; its inspector rectangle is individually editable."
+editor_description = "English-only editor-authored title: original exact position/size, neutral blank plaque and editable EnglishHeading child. No bilingual image is loaded."
 visible = false
 layout_mode = 0
 offset_left = 320.0
@@ -371,9 +431,40 @@ offset_top = 28.0
 offset_right = 960.0
 offset_bottom = 176.0
 mouse_filter = 2
-texture = ExtResource("13_v2_title_left")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="EnglishPlaque" type="NinePatchRect" parent="TutorialStage/Directions/ArtTitleLeft"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("11_english_title_plaque")
+patch_margin_left = 34
+patch_margin_top = 34
+patch_margin_right = 34
+patch_margin_bottom = 34
+
+[node name="EnglishHeading" type="Label" parent="TutorialStage/Directions/ArtTitleLeft"]
+editor_description = "Edit this English instruction directly in the Godot 2D editor; changing text does not alter calibration logic."
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 8.0
+offset_right = -18.0
+offset_bottom = -8.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.29, 0.14, 0.07, 1)
+theme_override_colors/font_outline_color = Color(1, 0.96, 0.82, 0.8)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 46
+text = "STAY ON THE LEFT"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ArtStep1" type="TextureRect" parent="TutorialStage/Directions" unique_id=1089465129]
 visible = false

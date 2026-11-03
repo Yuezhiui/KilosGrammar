@@ -242,7 +242,7 @@ func _complete_countdown_start() -> void:
 		_update_countdown_text()
 		var hint := countdown_panel.get_node_or_null("MovementHint") as Label
 		if hint != null:
-			hint.text = "TRACKING PAUSED • Wait for one player in view."
+			hint.text = "WAIT FOR CAMERA CALIBRATION TO FINISH"
 		if is_instance_valid(countdown_timer):
 			countdown_timer.stop()
 		return
@@ -278,10 +278,11 @@ func _clear_countdown_ui() -> void:
 
 func _has_live_calibrated_player() -> bool:
 	if String(context.get("player_mode", "")) == "Multiplayer":
+		# Both neutral positions are measured before this scene mounts. After
+		# that, the shared timer must start even if either/both bodies leave
+		# camera view; missing controls become inactive, never a global pause.
 		return bool(context.get("multiplayer_calibration", false)) \
-			and PoseService.has_multiplayer_calibration() \
-			and PoseService.has_multiplayer_pose(0) \
-			and PoseService.has_multiplayer_pose(1)
+			and PoseService.has_multiplayer_calibration()
 	# PoseService validates a fresh, trusted YOLO observation of exactly one
 	# stable, enrolled student (not an ID or epoch recycled from a prior frame).
 	# The initial physical positions remain in calibration for the whole round.
@@ -488,8 +489,7 @@ func _process(delta: float) -> void:
 
 
 func _process_multiplayer(_delta: float) -> void:
-	var ready := PoseService.has_multiplayer_pose(0) and PoseService.has_multiplayer_pose(1) \
-		and PoseService.has_multiplayer_calibration()
+	var ready := PoseService.has_multiplayer_calibration()
 	if guided_stage == "countdown":
 		if is_instance_valid(countdown_timer):
 			if not ready:
@@ -505,6 +505,7 @@ func _process_multiplayer(_delta: float) -> void:
 		return
 	# Source-fresh and identity-associated controls only. A remembered
 	# position cannot keep collecting points after the player disappears.
+	var balloon := String(context.get("activity", "")) == "Balloon Popping"
 	for index in range(2):
 		if PoseService.has_multiplayer_pose(index):
 			var direction := PoseService.multiplayer_player_x(index)
@@ -513,8 +514,19 @@ func _process_multiplayer(_delta: float) -> void:
 				active_game.call("set_multiplayer_body_x", index, direction)
 			elif active_game.has_method("clear_multiplayer_body_input"):
 				active_game.call("clear_multiplayer_body_input", index)
+			if balloon and active_game.has_method("set_multiplayer_hand_raise_state"):
+				# Each shot belongs to the freshly associated observed body for
+				# that slot. A lost wrist is UNKNOWN, never an intentional lowering
+				# or a reason to keep shooting from a remembered raised hand.
+				var slot: Dictionary = PoseService.multiplayer_status[index]
+				var hand_valid := bool(slot.get("hand_observation_valid", false))
+				active_game.call("set_multiplayer_hand_raise_state", index,
+					bool(slot.get("hand_up", false)) if hand_valid else false,
+					hand_valid)
 		elif active_game.has_method("clear_multiplayer_body_input"):
 			active_game.call("clear_multiplayer_body_input", index)
+			if balloon and active_game.has_method("set_multiplayer_hand_raise_state"):
+				active_game.call("set_multiplayer_hand_raise_state", index, false, false)
 
 
 func _clear_gesture_input() -> void:

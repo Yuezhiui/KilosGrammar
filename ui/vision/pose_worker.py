@@ -1131,6 +1131,14 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
         previous_sequence = -1
         student = StudentLock()
         two_player = TwoPlayerLock() if players == 2 else None
+        # Four independent observations and a release/rearm latch per student
+        # slot. Moving one physical person across the camera cannot copy their
+        # raised hand to two avatars or fire after an occluded/reassigned pose.
+        multiplayer_gestures = ([GestureDetector(), GestureDetector()]
+                                if two_player is not None else [])
+        multiplayer_hands_armed = [False, False]
+        multiplayer_release_since: list[float | None] = [None, None]
+        multiplayer_was_active = [False, False]
         gesture_detector = GestureDetector()
         plane_tracker = PlaneSteeringTracker()
         if recovery:
@@ -1210,9 +1218,73 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
             now = time.monotonic()
             if two_player is not None:
                 # One full-frame YOLO inference, two anonymous *stable* slots.
-                # No independent camera, tracker ID, or split-frame inference.
-                # Missing players never inherit a remembered control skeleton.
+                # No independent camera, face recognition, tracker identity,
+                # or split-frame inference. P1 left and P2 right may enroll
+                # consecutively with a single person; only a fresh in-zone
+                # pose can ever move or fire for the corresponding slot.
                 tracked = two_player.update(people, now)
+                source_by_index = {
+                    int(person["detection_index"]): person for person in people
+                    if isinstance(person.get("detection_index"), int)
+                }
+                for index, slot in enumerate(tracked):
+                    # Inactive records always contain explicit FALSE gesture
+                    # fields. Never publish a previously active hand as a
+                    # second player's new pose or inherit a stale wrist.
+                    slot.update(
+                        hand_up=False, hand_observation_valid=False,
+                        left_hand_up=False, right_hand_up=False,
+                        both_hands_up=False, both_hands_down=False,
+                        calibration_hand_observation_valid=False,
+                        calibration_both_hands_up=False,
+                        calibration_both_hands_down=False,
+                    )
+                    matched = (source_by_index.get(int(slot["index"]))
+                               if slot["active"] else None)
+                    if matched is None or not matched.get("keypoints"):
+                        if slot["active"]:
+                            slot.update(active=False, x=-1.0, index=-1,
+                                        reason="missing_live_pose")
+                        multiplayer_gestures[index].update(None, now)
+                        multiplayer_was_active[index] = False
+                        multiplayer_hands_armed[index] = False
+                        multiplayer_release_since[index] = None
+                        continue
+                    if not multiplayer_was_active[index]:
+                        multiplayer_hands_armed[index] = False
+                        multiplayer_release_since[index] = None
+                    state = multiplayer_gestures[index].update(
+                        matched["keypoints"], now, track_id=index)
+                    multiplayer_was_active[index] = True
+                    # On initial enrollment, returning from camera dropout,
+                    # or changing spatial zones, a child must first be
+                    # distinctly seen with BOTH hands lowered. Calibration
+                    # evidence stays independent from the gameplay latch.
+                    if not multiplayer_hands_armed[index]:
+                        if (state.calibration_hand_observation_valid
+                                and state.calibration_both_hands_down):
+                            if multiplayer_release_since[index] is None:
+                                multiplayer_release_since[index] = now
+                            elif now - multiplayer_release_since[index] >= 0.12:
+                                multiplayer_hands_armed[index] = True
+                        else:
+                            multiplayer_release_since[index] = None
+                    armed = multiplayer_hands_armed[index]
+                    slot.update(
+                        hand_up=bool(armed and state.hand_up),
+                        hand_observation_valid=bool(
+                            armed and state.hand_observation_valid),
+                        left_hand_up=bool(armed and state.left_hand_up),
+                        right_hand_up=bool(armed and state.right_hand_up),
+                        both_hands_up=bool(armed and state.both_hands_up),
+                        both_hands_down=bool(armed and state.both_hands_down),
+                        calibration_hand_observation_valid=bool(
+                            state.calibration_hand_observation_valid),
+                        calibration_both_hands_up=bool(
+                            state.calibration_both_hands_up),
+                        calibration_both_hands_down=bool(
+                            state.calibration_both_hands_down),
+                    )
                 live_indices = {int(p["index"]) for p in tracked if p["active"]}
                 source_preview = [
                     {**person, "preview_role": "active"}
@@ -1231,13 +1303,23 @@ def run(port: int, token: str, camera_index: int, model_path: str, preview: bool
                 send_status(sock, target, token, state="tracking", camera=True,
                             mode="multiplayer", pose=any(p["active"] for p in tracked),
                             people=number, foreground_people=len(live_indices),
-                            foreground_ambiguous=False, players=tracked,
+                            foreground_ambiguous=any(
+                                p["reason"] in (
+                                    "ambiguous", "crossing_ambiguous",
+                                    "spectator_ambiguous", "untrusted_pose",
+                                    "teacher_recalibration_required")
+                                for p in tracked), players=tracked,
+                            requires_teacher_recalibration=bool(
+                                two_player.requires_teacher_recalibration),
                             fps=round(pose_fps, 1),
                             camera_fps=round(camera_reader.camera_fps, 1),
                             camera_source_timestamp=captured_at,
                             camera_frame_age_ms=round(source_frame_age * 1000),
                             camera_phase="tracking", device="CUDA" if gpu else "CPU",
-                            detail="Two-player tracking; no automatic identity swap.",
+                            detail=("Two students crossed or were lost together. "
+                                    "Teacher must restart player calibration."
+                                    if two_player.requires_teacher_recalibration
+                                    else "Two-player tracking; no automatic identity swap."),
                             **camera_timings)
                 continue
             # Preserve truthful raw YOLO occupancy, including id-less boxes.

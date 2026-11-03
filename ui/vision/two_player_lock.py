@@ -1,181 +1,239 @@
-"""Conservative, anonymous two-player association for a single YOLO image.
+"""Safe anonymous two-zone spatial controller for ONE shared YOLO frame.
 
-Camera pixels are analyzed once. P1 and P2 are immutable session slots, not
-face-recognition identities or spatial boxes that every wrist must stay in.
-The teacher associates the left/right initial slots with student profiles.
-If identity becomes ambiguous, an affected controller is deactivated rather
-than silently assigned to another student. No predicted skeleton is emitted.
-
-The output x is absolute mirrored-camera torso X (0..1); Godot subtracts each
-slot's separately measured neutral X to derive movement.
+P1 is the left image zone and P2 the right; never infer a face/track identity.
+One moving body may enroll each zone in succession, but the center deadband
+disarms the first controller before the second can begin its stable hold.
+No predicted or previously seen detection is ever emitted as active. Student
+identity beyond spatial placement needs the teacher's verification.
 """
-
 from __future__ import annotations
 
-import itertools
 import math
 
 
 class TwoPlayerLock:
-    ENROLL_FRAMES = 4
-    RECOVER_FRAMES = 4
-    RECOVER_SECONDS = 0.45
-    MAX_GAP = 0.75
-    MAX_MOVEMENT_X = 0.25
-    MIN_SEPARATION_X = 0.16
+    # Match Godot's sequential calibration target x<=.45 and x>=.55.
+    # The narrow (0.49,0.51) keep gap still prevents dual authority.
+    LEFT_ENTER = 0.45
+    RIGHT_ENTER = 0.55
+    LEFT_KEEP = 0.49
+    RIGHT_KEEP = 0.51
+    MIN_SEPARATION = 0.16
     MIN_HEIGHT = 0.17
-    MAX_RELATIVE_HEIGHT = 1.9
-    SIZE_DEVIATION = 0.42
-    MIN_MATCH_MARGIN = 0.035
+    MIN_PROMINENCE = 0.52
+    ENROLL_SECONDS = 0.60
+    RECOVER_SECONDS = 0.45
+    HOLD_FRAMES = 4
+    MAX_GAP = 0.75
+    MAX_STABLE_X = 0.095
+    MAX_STABLE_HEIGHT_RATIO = 1.38
+    MAX_CONTINUOUS_X = 0.23
 
-    def __init__(self) -> None:
-        self.slots = [
-            {"reference_x": None, "x": None, "height": None,
-             "seen": None, "candidate_x": None, "candidate_since": None,
-             "candidate_frames": 0, "ready": False},
-            {"reference_x": None, "x": None, "height": None,
-             "seen": None, "candidate_x": None, "candidate_since": None,
-             "candidate_frames": 0, "ready": False},
-        ]
+    def __init__(self):
+        self.slots = [self._new_slot(), self._new_slot()]
+        self.last_frame_at = None
+        self.ever_simultaneous = False
+        # After two enrolled students cross/merge in the same frame, spatial
+        # evidence alone cannot tell which Student ID returned to which side.
+        # Hold both inactive until a teacher deliberately starts a NEW session.
+        self.requires_teacher_recalibration = False
+
+    def reset_for_teacher_calibration(self):
+        """Explicit teacher action only; NEVER called on a tracking timeout."""
+        self.slots = [self._new_slot(), self._new_slot()]
+        self.last_frame_at = None
+        self.ever_simultaneous = False
+        self.requires_teacher_recalibration = False
+
+    def _latch_teacher_recalibration(self):
+        self.requires_teacher_recalibration = True
+        for index in (0, 1):
+            self._suspend(index)
+        return [self._off(i, "teacher_recalibration_required", s["enrolled"])
+                for i, s in enumerate(self.slots)]
 
     @staticmethod
-    def _eligible(person: dict) -> bool:
+    def _new_slot():
+        return dict(enrolled=False, reference_x=None, x=None, height=None,
+                    seen=None, ready=False, candidate_x=None,
+                    candidate_height=None, candidate_since=None,
+                    candidate_last=None, candidate_frames=0)
+
+    @staticmethod
+    def _position(person):
         try:
-            x = float(person["x"])
-            height = float(person["height"])
+            x, h = float(person["x"]), float(person["height"])
+            if not all(map(math.isfinite, (x, h))) or not (0 <= x <= 1) or h < 0.17:
+                return None
+            return x, h
+        except (KeyError, ValueError, TypeError, OverflowError):
+            return None
+
+    @classmethod
+    def _eligible(cls, person):
+        if not isinstance(person, dict) or person.get("eligible", True) is False:
+            return False
+        if cls._position(person) is None:
+            return False
+        try:
             points = person["keypoints"]
-            if not math.isfinite(x) or not math.isfinite(height) or not 0 <= x <= 1:
+            if len(points) < 13:
                 return False
-            if height < TwoPlayerLock.MIN_HEIGHT or len(points) < 13:
-                return False
-            torso = [points[i] for i in (5, 6, 11, 12)]
-            return sum(len(p) >= 3 and float(p[2]) >= 0.45 for p in torso) >= 2
+            count = 0
+            for i in (5, 6, 11, 12):
+                joint = points[i]
+                if (len(joint) >= 3 and all(math.isfinite(float(t)) for t in joint[:3])
+                        and float(joint[2]) >= 0.45):
+                    count += 1
+            return count >= 2
         except (KeyError, IndexError, TypeError, ValueError, OverflowError):
             return False
 
-    @staticmethod
-    def _score(slot: dict, person: dict, now: float) -> float | None:
-        previous_x = slot["x"] if slot["x"] is not None else slot["reference_x"]
-        previous_size = slot["height"]
-        if previous_x is None or previous_size is None:
-            return None
-        dx = abs(float(person["x"]) - float(previous_x))
-        # After a gap, do NOT grant a broad search across another player's
-        # standing area; that could assign a passing stranger.
-        if dx > TwoPlayerLock.MAX_MOVEMENT_X:
-            return None
-        ratio = float(person["height"]) / float(previous_size)
-        if not 1 - TwoPlayerLock.SIZE_DEVIATION <= ratio <= 1 + TwoPlayerLock.SIZE_DEVIATION:
-            return None
-        return dx + abs(math.log(ratio)) * 0.09
+    @classmethod
+    def _in_zone(cls, index, x, keep=False):
+        return x <= (cls.LEFT_KEEP if keep else cls.LEFT_ENTER) if index == 0 else (
+            x >= (cls.RIGHT_KEEP if keep else cls.RIGHT_ENTER))
 
-    def _observe(self, index: int, person: dict, now: float) -> None:
+    @staticmethod
+    def _clear_candidate(slot):
+        slot.update(candidate_x=None, candidate_height=None,
+                    candidate_since=None, candidate_last=None, candidate_frames=0)
+
+    def _suspend(self, index):
         slot = self.slots[index]
-        prior_seen = slot["seen"]
-        gap = prior_seen is None or now - prior_seen > self.MAX_GAP
-        x = float(person["x"])
-        if gap or not slot["ready"]:
-            if (slot["candidate_x"] is None or
-                    abs(x - slot["candidate_x"]) > 0.08):
-                slot["candidate_x"] = x
-                slot["candidate_since"] = now
-                slot["candidate_frames"] = 1
+        slot["ready"] = False
+        self._clear_candidate(slot)
+
+    def _observe(self, index, person, now):
+        slot = self.slots[index]
+        x, height = self._position(person)
+        prior = slot["seen"]
+        interrupted = (prior is None or now - prior > self.MAX_GAP
+                       or (slot["x"] is not None and abs(x - slot["x"]) > self.MAX_CONTINUOUS_X)
+                       or (slot["height"] is not None and not 0.58 <= height / slot["height"] <= 1.48))
+        if interrupted:
+            self._suspend(index)
+        if not slot["ready"]:
+            steady = (
+                slot["candidate_x"] is not None and slot["candidate_last"] is not None
+                and 0 <= now - slot["candidate_last"] <= self.MAX_GAP
+                and abs(x - slot["candidate_x"]) <= self.MAX_STABLE_X
+                and 1 / self.MAX_STABLE_HEIGHT_RATIO
+                <= height / slot["candidate_height"] <= self.MAX_STABLE_HEIGHT_RATIO)
+            if not steady:
+                slot.update(candidate_x=x, candidate_height=height,
+                            candidate_since=now, candidate_frames=1)
             else:
                 slot["candidate_frames"] += 1
-            slot["ready"] = (slot["candidate_frames"] >= self.RECOVER_FRAMES
-                             and now - slot["candidate_since"] >= self.RECOVER_SECONDS)
-        # A stable continuous track can move quickly; a broken one cannot
-        # take over via a single matching frame.
-        slot["x"] = x
-        slot["height"] = float(person["height"])
-        slot["seen"] = now
-        if slot["reference_x"] is None:
-            slot["reference_x"] = x
-        if slot["ready"]:
-            slot["candidate_x"] = None
-            slot["candidate_since"] = None
-            slot["candidate_frames"] = 0
+            slot["candidate_last"] = now
+            duration = self.RECOVER_SECONDS if slot["enrolled"] else self.ENROLL_SECONDS
+            if (slot["candidate_frames"] >= self.HOLD_FRAMES
+                    and now - slot["candidate_since"] >= duration):
+                slot["ready"] = True
+                if not slot["enrolled"]:
+                    slot["reference_x"] = x
+                    slot["enrolled"] = True
+                self._clear_candidate(slot)
+        slot.update(x=x, height=height, seen=now)
+        return slot["ready"]
 
-    def update(self, people: list[dict], now: float) -> list[dict]:
-        """Return two slots, each active only when clearly source-observed."""
+    @staticmethod
+    def _off(index, reason, enrolled):
+        return dict(slot=index, active=False, x=-1.0, index=-1,
+                    enrolled=enrolled, reason=reason)
+
+    def update(self, people, now):
+        """One-to-one fresh detection binding; inactive slots have no live index."""
         if not math.isfinite(now):
             raise ValueError("Invalid source timestamp")
-        candidates = [p for p in people if self._eligible(p)]
-        result = [{"active": False, "x": -1.0, "index": -1, "reason": "not_visible"}
-                  for _ in range(2)]
-        for slot in self.slots:
-            if slot["seen"] is not None and now - slot["seen"] > self.MAX_GAP:
-                slot["ready"] = False
-                slot["candidate_x"] = None
-                slot["candidate_since"] = None
-                slot["candidate_frames"] = 0
+        if self.requires_teacher_recalibration:
+            return [self._off(i, "teacher_recalibration_required", s["enrolled"])
+                    for i, s in enumerate(self.slots)]
+        if self.last_frame_at is not None and now <= self.last_frame_at:
+            return [self._off(i, "stale_frame", s["enrolled"])
+                    for i, s in enumerate(self.slots)]
+        self.last_frame_at = now
+        out = [self._off(i, "not_visible", s["enrolled"])
+               for i, s in enumerate(self.slots)]
+        observed = [p for p in people
+                    if isinstance(p, dict) and self._position(p) is not None]
+        both_enrolled = all(slot["enrolled"] for slot in self.slots)
+        if not observed:
+            if (both_enrolled and self.ever_simultaneous and all(
+                    slot["seen"] is not None and now - slot["seen"] > self.MAX_GAP
+                    for slot in self.slots)):
+                # Both student identities vanished together for long enough
+                # that an entirely different pair could have entered view.
+                return self._latch_teacher_recalibration()
+            for i, slot in enumerate(self.slots):
+                if slot["seen"] is None or now - slot["seen"] > self.MAX_GAP:
+                    self._suspend(i)
+            return out
+        tallest = max(float(p["height"]) for p in observed)
+        # A small far spectator is ignored; a comparable third body is unsafe.
+        prominent = [p for p in observed
+                     if float(p["height"]) >= tallest * self.MIN_PROMINENCE]
+        if both_enrolled and len(prominent) == 2:
+            xs = [float(p["x"]) for p in prominent]
+            # One person can freely change zones when alone. With TWO
+            # comparable bodies in view, center crossing/merged ownership,
+            # disappearance of both owners, or both in one side means two
+            # Student IDs can no longer be attributed reliably.
+            at_center = any(0.47 <= x <= 0.53 for x in xs)
+            same_zone = (all(x <= self.LEFT_ENTER for x in xs)
+                         or all(x >= self.RIGHT_ENTER for x in xs))
+            both_stale = self.ever_simultaneous and all(
+                s["seen"] is not None and now - s["seen"] > self.MAX_GAP
+                for s in self.slots)
+            if (at_center or same_zone or both_stale
+                    or abs(xs[0] - xs[1]) < self.MIN_SEPARATION):
+                return self._latch_teacher_recalibration()
+        if len(prominent) > 2:
+            for i in range(2):
+                self._suspend(i)
+                out[i]["reason"] = "spectator_ambiguous"
+            return out
+        if (len(prominent) == 2
+                and abs(float(prominent[0]["x"]) - float(prominent[1]["x"]))
+                < self.MIN_SEPARATION):
+            for i in range(2):
+                self._suspend(i)
+                out[i]["reason"] = "crossing_ambiguous"
+            return out
 
-        if any(slot["reference_x"] is None for slot in self.slots):
-            # Do not initialize with exactly one child plus an unknown
-            # spectator. Both bodies must be prominent and safely separated.
-            if len(candidates) < 2:
-                return result
-            two = sorted(candidates, key=lambda p: float(p["height"]), reverse=True)[:2]
-            if (max(float(p["height"]) for p in two) /
-                    min(float(p["height"]) for p in two) > self.MAX_RELATIVE_HEIGHT
-                    or abs(float(two[0]["x"]) - float(two[1]["x"])) < self.MIN_SEPARATION_X):
-                return result
-            two.sort(key=lambda p: float(p["x"]))
-            for i, candidate in enumerate(two):
-                self._observe(i, candidate, now)
-                if self.slots[i]["ready"]:
-                    result[i] = {"active": True, "x": self.slots[i]["x"],
-                                 "index": int(candidate.get("detection_index", -1)),
-                                 "reason": "locked"}
-            return result
-
-        # One-to-one assignment. Missing bodies do not cause automatic P2/P1
-        # replacement; the absent slot retains its identity and neutral ref.
-        costs = [[self._score(slot, p, now) for p in candidates]
-                 for slot in self.slots]
-        pairings = []
-        for i, j in itertools.product(range(len(candidates)), repeat=2):
-            if i == j or costs[0][i] is None or costs[1][j] is None:
+        used = set()
+        for i, slot in enumerate(self.slots):
+            keep = (slot["ready"] and slot["seen"] is not None
+                    and now - slot["seen"] <= self.MAX_GAP)
+            occupants = [p for p in prominent
+                         if self._in_zone(i, float(p["x"]), keep)]
+            if len(occupants) != 1:
+                # Absence makes this frame inactive but a short dropout does
+                # not erase the last genuine hold. A crossing through center,
+                # however, requires a new stable hold on returning.
+                if len(occupants) > 1 or any(
+                        self._in_zone(i, float(p["x"]), keep=True) for p in prominent):
+                    self._suspend(i)
+                elif slot["seen"] is None or now - slot["seen"] > self.MAX_GAP:
+                    self._suspend(i)
+                out[i]["reason"] = "ambiguous" if len(occupants) > 1 else "not_visible"
                 continue
-            pairings.append((costs[0][i] + costs[1][j], i, j))
-        pairings.sort()
-        if pairings:
-            _, left, right = pairings[0]
-            if len(pairings) > 1 and pairings[1][0] - pairings[0][0] < self.MIN_MATCH_MARGIN:
-                return result
-            assignments = {0: left, 1: right}
-        else:
-            assignments = {}
-            for slot_index in range(2):
-                sorted_costs = sorted((score, idx) for idx, score in enumerate(costs[slot_index])
-                                      if score is not None)
-                if sorted_costs and (len(sorted_costs) == 1 or
-                                     sorted_costs[1][0] - sorted_costs[0][0] > self.MIN_MATCH_MARGIN):
-                    assignments[slot_index] = sorted_costs[0][1]
-            if len(assignments) == 2 and assignments[0] == assignments[1]:
-                return result
-
-        for slot_index, detection_index in assignments.items():
-            # Any comparable-size candidate overlapping the slot's location
-            # makes attribution uncertain: don't control an avatar with them.
-            chosen = candidates[detection_index]
-            x = float(chosen["x"])
-            size = float(chosen["height"])
-            cluttered = any(idx != detection_index
-                            and abs(float(other["x"]) - x) < 0.10
-                            and 0.6 <= float(other["height"]) / size <= 1.7
-                            for idx, other in enumerate(candidates))
-            if cluttered:
-                self.slots[slot_index]["ready"] = False
-                result[slot_index]["reason"] = "ambiguous"
+            person = occupants[0]
+            if not self._eligible(person):
+                self._suspend(i)
+                out[i]["reason"] = "untrusted_pose"
                 continue
-            self._observe(slot_index, chosen, now)
-            if self.slots[slot_index]["ready"]:
-                result[slot_index] = {
-                    "active": True, "x": self.slots[slot_index]["x"],
-                    "index": int(chosen.get("detection_index", -1)),
-                    "reason": "locked",
-                }
-            else:
-                result[slot_index]["reason"] = "recovering"
-        return result
+            source_index = int(person.get("detection_index", -1))
+            if source_index < 0 or source_index in used:
+                self._suspend(i)
+                out[i]["reason"] = "invalid_detection"
+                continue
+            ready = self._observe(i, person, now)
+            used.add(source_index)
+            out[i] = dict(slot=i, active=ready, x=float(person["x"]) if ready else -1.0,
+                          index=source_index if ready else -1,
+                          enrolled=slot["enrolled"],
+                          reason="locked" if ready else "holding")
+        if all(entry["active"] for entry in out):
+            self.ever_simultaneous = True
+        return out

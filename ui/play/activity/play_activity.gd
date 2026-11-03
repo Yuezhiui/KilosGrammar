@@ -85,6 +85,10 @@ func set_context(new_context: Dictionary) -> void:
 func _select_activity(activity: String) -> void:
 	if not ACTIVITIES.has(activity):
 		return
+	# Human Plane retains its separate single-student calibration/controls.
+	# Only Catch and Balloon currently have two independent player controllers.
+	if String(context.get("player_mode", "")) == "Multiplayer" and activity == "Human Plane":
+		return
 	context["activity"] = activity
 	_refresh_selection()
 	# Preload only the YOLO model as soon as a teacher selects camera play.
@@ -101,10 +105,13 @@ func _refresh_selection() -> void:
 	if next_button == null:
 		return
 	var selected := String(context.get("activity", ""))
-	var has_selection := ACTIVITIES.has(selected)
+	var multiplayer := String(context.get("player_mode", "")) == "Multiplayer"
+	var has_selection := ACTIVITIES.has(selected) and (not multiplayer or selected != "Human Plane")
 	for activity in activity_buttons:
 		var button: Button = activity_buttons[activity]
 		var chosen: bool = activity == selected
+		button.disabled = multiplayer and activity == "Human Plane"
+		button.tooltip_text = "Multiplayer is coming later for Human Plane" if button.disabled else activity
 		button.set_pressed_no_signal(chosen)
 		# No outline/corner overlay, including while focused: preview and
 		# slightly brighter original PNG are the selection indicator.
@@ -130,6 +137,9 @@ func _go_back() -> void:
 
 func _go_next() -> void:
 	if not ACTIVITIES.has(String(context.get("activity", ""))) or next_button == null or next_button.disabled:
+		return
+	if String(context.get("player_mode", "")) == "Multiplayer" \
+			and String(context.get("activity", "")) == "Human Plane":
 		return
 	if bool(context.get("guided_tutorial", false)):
 		var guided_payload := context.duplicate(true)

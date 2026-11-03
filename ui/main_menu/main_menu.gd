@@ -690,7 +690,7 @@ func _on_panel_requested(route: String, payload: Dictionary = {}) -> void:
 	# The verified marker lives only during this one setup navigation; never
 	# persist it into results or a later teacher's session.
 	var p2_gate_checked := bool(payload.get("_player_two_gate_checked", false))
-	if current_route == "student_setup" and route == "calibration" \
+	if current_route == "student_setup" and route in ["calibration", "play_activity"] \
 			and String(payload.get("player_mode", "")) == "Multiplayer" \
 			and not p2_gate_checked and not registration_gate_checked \
 			and database_online and is_instance_valid(database_client):
@@ -1413,6 +1413,16 @@ func _save_completed_round() -> void:
 		session_state["database_saving"] = false
 		active_panel.call("set_context", state)
 		return
+	# A single physical tester may calibrate P1, cross to P2, and exercise
+	# both competitive controllers. These scores must NEVER be attributed to
+	# two real students or queued in the durable PostgreSQL recovery outbox.
+	if bool(state.get("multiplayer_solo_test", false)):
+		state["score_saved"] = false
+		state["database_saving"] = false
+		state["test_only"] = true
+		session_state["test_only"] = true
+		active_panel.call("set_context", state)
+		return
 	if not _valid_round_completion(state):
 		active_panel.call("set_context", state)
 		return
@@ -1821,8 +1831,8 @@ func _show_panel(route: String) -> void:
 		var player_mode := String(session_state.get("player_mode", "Single Player")).strip_edges()
 		var activity := String(session_state.get("activity", "Catch the Word")).strip_edges()
 		if player_mode == "Multiplayer":
-			if activity != "Catch the Word":
-				push_warning("Two-player calibration currently supports Catch the Word only.")
+			if activity not in ["Catch the Word", "Balloon Popping"]:
+				push_warning("Multiplayer currently supports Catch the Word and Balloon Popping only.")
 				return
 			path = "res://ui/vision/calibration/multiplayer_calibration.tscn"
 		elif activity == "Human Plane":

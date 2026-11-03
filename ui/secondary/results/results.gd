@@ -74,10 +74,14 @@ static func should_play_catch_low_score(context: Dictionary) -> bool:
 
 
 static func _is_two_player_catch(context: Dictionary) -> bool:
-	# The competitive board belongs only to Catch's shared-arena mode. A
-	# stale multiplayer flag from a previous activity must not change other
-	# games' original, single-player results artwork.
+	# Preserve this Catch-only test helper for existing score/voice contracts.
 	return String(context.get("activity", "")) == "Catch the Word" \
+		and (String(context.get("player_mode", "")).strip_edges().to_lower() == "multiplayer" \
+		or bool(context.get("multiplayer", false)))
+
+
+static func _is_two_player_competitive(context: Dictionary) -> bool:
+	return String(context.get("activity", "")) in ["Catch the Word", "Balloon Popping"] \
 		and (String(context.get("player_mode", "")).strip_edges().to_lower() == "multiplayer" \
 		or bool(context.get("multiplayer", false)))
 
@@ -95,7 +99,7 @@ static func _competitive_score(value: Variant) -> int:
 
 static func competitive_winner(context: Dictionary) -> String:
 	## Returns Player 1, Player 2, Tie, or Unavailable; never infers saving.
-	if not _is_two_player_catch(context) or not bool(context.get("round_completed", false)):
+	if not _is_two_player_competitive(context) or not bool(context.get("round_completed", false)):
 		return "Unavailable"
 	var p1 := _competitive_score(context.get("player1_score", context.get("score")))
 	var p2 := _competitive_score(context.get("player2_score"))
@@ -117,7 +121,7 @@ func _stop_low_score_encouragement() -> void:
 
 
 func _refresh() -> void:
-	var competitive := _is_two_player_catch(_context)
+	var competitive := _is_two_player_competitive(_context)
 	_set_optional_row(%StudentIdRow, %StudentIdValue, ["student_id", "studentId", "id"])
 	_set_optional_row(%StudentNameRow, %StudentNameValue, ["student_name", "name"])
 	_set_optional_row(%GradeRow, %GradeValue, ["grade", "grade_section", "section"])
@@ -180,7 +184,9 @@ func _refresh_competitive_results() -> void:
 	# This field cannot report an unconditional DB success. In particular,
 	# `score_saved` is P1's receipt, not proof that P2's independent score
 	# made it to PostgreSQL. Only two explicit receipts permit that wording.
-	if not bool(_context.get("round_completed", false)):
+	if bool(_context.get("multiplayer_solo_test", false)) or bool(_context.get("test_only", false)):
+		%CompetitiveSaveNotice.text = "ONE-PERSON MULTIPLAYER TEST — SCORES NOT SAVED"
+	elif not bool(_context.get("round_completed", false)):
 		%CompetitiveSaveNotice.text = "No completed round to save"
 	elif bool(_context.get("player1_score_saved", false)) and bool(_context.get("player2_score_saved", false)):
 		%CompetitiveSaveNotice.text = "Both scores confirmed saved"

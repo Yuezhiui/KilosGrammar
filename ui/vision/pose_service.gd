@@ -47,8 +47,10 @@ var multiplayer_mode := false
 # Each slot has its own fresh YOLO X and neutral calibration. NEVER infer a
 # missing player's position from the other player or a spectator.
 var multiplayer_status: Array[Dictionary] = [
-	{"active": false, "x": -1.0, "last_ms": 0},
-	{"active": false, "x": -1.0, "last_ms": 0},
+	{"active": false, "x": -1.0, "last_ms": 0,
+		"hand_observation_valid": false, "hand_up": false},
+	{"active": false, "x": -1.0, "last_ms": 0,
+		"hand_observation_valid": false, "hand_up": false},
 ]
 var multiplayer_calibration: Array[Dictionary] = [{}, {}]
 # Separate center-relative Human Plane steering; other games retain measured
@@ -118,8 +120,10 @@ func set_multiplayer_mode(enabled: bool) -> void:
 
 func _clear_multiplayer_status() -> void:
 	multiplayer_status = [
-		{"active": false, "x": -1.0, "last_ms": 0},
-		{"active": false, "x": -1.0, "last_ms": 0},
+		{"active": false, "x": -1.0, "last_ms": 0,
+			"hand_observation_valid": false, "hand_up": false},
+		{"active": false, "x": -1.0, "last_ms": 0,
+			"hand_observation_valid": false, "hand_up": false},
 	]
 
 
@@ -253,6 +257,14 @@ func _launch_worker(recovering: bool = false, prewarm_only: bool = false) -> boo
 	var model_path := OS.get_executable_path().get_base_dir().path_join("runtime/models/yolo26n-pose.pt")
 	if not FileAccess.file_exists(model_path):
 		model_path = model_dir.path_join(DEFAULT_MODEL)
+	if not FileAccess.file_exists(model_path):
+		# F5 runs from Godot's editor executable directory rather than next to
+		# our shipped model. Reuse the verified OFFLINE release weight that is
+		# already on the teacher's development computer; never download it.
+		var editor_model := ProjectSettings.globalize_path(
+			"res://release/windows/offline/models/yolo26n-pose.pt")
+		if FileAccess.file_exists(editor_model):
+			model_path = editor_model
 	if not FileAccess.file_exists(model_path):
 		_close_transport()
 		active = false
@@ -801,6 +813,12 @@ func _apply_pose_packet(data: Dictionary, now: int) -> void:
 				"active": valid,
 				"x": float(x_value) if valid else -1.0,
 				"last_ms": now if valid else 0,
+				# Never treat stale/unassigned hands as the student's next shot.
+				"hand_observation_valid": valid and bool(person.get("hand_observation_valid", false)),
+				"hand_up": valid and bool(person.get("hand_observation_valid", false)) \
+					and bool(person.get("hand_up", false)),
+				"left_hand_up": valid and bool(person.get("left_hand_up", false)),
+				"right_hand_up": valid and bool(person.get("right_hand_up", false)),
 			}
 		current_status = data.duplicate()
 		if bool(data.get("camera", false)):

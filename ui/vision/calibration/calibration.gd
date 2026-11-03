@@ -779,7 +779,7 @@ func _process_stationary_plane(delta: float) -> void:
 	sorted_steering.sort()
 	if sorted_steering.back() - sorted_steering.front() > PLANE_NEUTRAL_MAX_SPREAD:
 		_reset_current_hold()
-		_set_live_instruction("PLEASE STAND A LITTLE STEADIER IN CENTER.\nPakipirmi sa gitna.")
+		_set_live_instruction("PLEASE STAND A LITTLE STEADIER IN CENTER.")
 		return
 	var neutral_steering := _plane_median(sorted_steering)
 	var deviations: Array[float] = []

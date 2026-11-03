@@ -506,7 +506,7 @@ func _multiplayer_activity_supported() -> bool:
 	if _selected_player_mode != "Multiplayer":
 		return true
 	var chosen_activity := String(context.get("activity", "")).strip_edges()
-	return chosen_activity.is_empty() or chosen_activity == "Catch the Word"
+	return chosen_activity.is_empty() or chosen_activity in ["Catch the Word", "Balloon Popping"]
 
 
 func _game_complete() -> bool:
@@ -671,7 +671,7 @@ func _update_validation() -> void:
 	var second_message := ""
 	if _selected_player_mode == "Multiplayer":
 		if not _multiplayer_activity_supported():
-			second_message = "MULTIPLAYER IS AVAILABLE ONLY IN CATCH THE WORD"
+			second_message = "MULTIPLAYER IS AVAILABLE IN CATCH THE WORD AND BALLOON POPPING"
 		elif not _player_two_id_edit.text.strip_edges().is_empty() and not _valid_student_id(_player_two_id_edit.text):
 			second_message = INVALID_STUDENT_ID_MESSAGE
 		elif not _player_two_id_edit.text.strip_edges().is_empty() \
@@ -721,7 +721,9 @@ func _continue() -> void:
 		payload["player2_student_id"] = _player_two_id_edit.text.strip_edges()
 		payload["player2_student_name"] = _player_two_name_edit.text.strip_edges()
 		payload["player2_grade_section"] = _player_two_grade_edit.text.strip_edges()
-		payload["activity"] = "Catch the Word"
+		# Keep the activity selected before Student Setup. One camera and one
+		# illustrated two-slot calibration are shared by Catch and Balloon.
+		payload["activity"] = String(context.get("activity", "")).strip_edges()
 	else:
 		for key in ["player2_student_id", "player2_student_name", "player2_grade_section"]:
 			payload.erase(key)
@@ -737,7 +739,11 @@ func _continue() -> void:
 		payload["entry_source"] = "play"
 		payload["camera_requested"] = true
 		payload["keyboard_mode"] = false
-		requested.emit("calibration", payload)
+		# Multiplayer shares the normal activity chooser. A teacher can choose
+		# Catch or Balloon without adding a third player mode or cloning scenes.
+		# P1/P2 profile verification still happens before leaving this form.
+		requested.emit("calibration" if not String(payload.get("activity", "")).is_empty()
+			else "play_activity", payload)
 	else:
 		payload.erase("guided_tutorial")
 		payload["entry_source"] = "play"

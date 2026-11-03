@@ -82,6 +82,11 @@ const BALLOON_COLORS := [Color("#C171CF"), Color("#69BE9A"), Color("#7BC9EF")]
 
 var context: Dictionary = {}
 var rng := RandomNumberGenerator.new()
+var multiplayer_enabled := false
+var player2_score := 0
+var player2_correct := 0
+var player2_attempts := 0
+var player2_hearts := LIVES_MODE_HEARTS
 
 var score := 0
 var correct_count := 0
@@ -120,6 +125,16 @@ var launcher_velocity := 0.0
 var body_target_x := 640.0
 var body_target_timer := 0.0
 var launcher: Node2D
+var player2_launcher: Node2D
+var multiplayer_launcher_x: Array[float] = [0.0, 0.0]
+var multiplayer_directions: Array[float] = [0.0, 0.0]
+var multiplayer_input_active: Array[bool] = [false, false]
+var multiplayer_hand_states: Array[Dictionary] = []
+var multiplayer_round_success: Array[bool] = [false, false]
+var projectile_owners: Dictionary = {}
+var multiplayer_score_plaque: TextureRect
+var multiplayer_score_number: Label
+var multiplayer_player_labels: Array[Label] = []
 var projectile_layer: Node2D
 var booth_backdrop: TextureRect
 var foreground_counter: TextureRect
@@ -276,16 +291,36 @@ func get_context() -> Dictionary:
 	payload["camera_live"] = false
 	payload["minigame_route"] = "balloon_popping"
 	payload["round_completed"] = round_completed
+	if multiplayer_enabled:
+		payload["multiplayer"] = true
+		payload["player_mode"] = "Multiplayer"
+		payload["player1_score"] = score
+		payload["player1_lives"] = hearts
+		payload["player2_score"] = player2_score
+		payload["player2_lives"] = player2_hearts
+		payload["player2_correct"] = player2_correct
+		payload["player2_attempts"] = player2_attempts
+		payload["player2_student_id"] = String(context.get("player2_student_id", ""))
+		payload["player2_student_name"] = String(context.get("player2_student_name", ""))
+		payload["player2_grade_section"] = String(context.get("player2_grade_section", ""))
+		payload["multiplayer_result_provisional"] = true
 	# Only the real game-ending timer or final lost heart can authorize a
 	# durable Play result. Pause/View Results/shutdown must not masquerade as
 	# completion, even if a caller carries stale context from another round.
 	payload["completion_reason"] = ("time_up" if is_seconds_mode else "lives_empty") \
 		if round_completed and ((is_seconds_mode and time_remaining <= 0.0) \
-		or (is_lives_mode and hearts <= 0)) else ""
+		or (is_lives_mode and _all_lives_exhausted())) else ""
 	return payload
 
 
+func _all_lives_exhausted() -> bool:
+	return hearts <= 0 and (not multiplayer_enabled or player2_hearts <= 0)
+
+
 func set_body_x(normalized_x: float) -> void:
+	if multiplayer_enabled:
+		set_multiplayer_body_x(0, normalized_x)
+		return
 	var safe_x := clampf(normalized_x, -1.0, 1.0)
 	var unit_x := (safe_x + 1.0) * 0.5
 	# Aim at the three ACTUAL balloon lanes, not the wider launcher travel
@@ -304,6 +339,10 @@ func set_body_x(normalized_x: float) -> void:
 
 
 func clear_body_input() -> void:
+	if multiplayer_enabled:
+		clear_multiplayer_body_input(0)
+		clear_multiplayer_body_input(1)
+		return
 	# The game may keep running with one fresh YOLO person box even when that
 	# person's wrist/torso pose briefly disappears. Stop the last commanded
 	# launcher motion immediately; never drive from a stale camera target.
@@ -312,12 +351,173 @@ func clear_body_input() -> void:
 	launcher_velocity = 0.0
 
 
+# The multiplayer pose service supplies signed VELOCITY per authenticated
+# camera slot. A missing slot receives clear_multiplayer_body_input(), so a
+# surviving P2 never borrows P1 movement or a cached camera location.
+func set_multiplayer_body_x(index: int, direction: float) -> void:
+	if not multiplayer_enabled or index < 0 or index > 1 or not is_finite(direction):
+		return
+	if direction < -1.0 or direction > 1.0:
+		clear_multiplayer_body_input(index)
+		return
+	if is_lives_mode or is_seconds_mode:
+		if _player_hearts(index) <= 0:
+			clear_multiplayer_body_input(index)
+			return
+	multiplayer_directions[index] = direction
+	multiplayer_input_active[index] = true
+
+
+func clear_multiplayer_body_input(index: int) -> void:
+	if index < 0 or index > 1:
+		return
+	multiplayer_directions[index] = 0.0
+	multiplayer_input_active[index] = false
+	clear_multiplayer_hand_raise_tracking(index)
+	# Revocation is immediate. A projectile from a now-untracked student may
+	# not pop a balloon later and be mistaken for an active student's shot.
+	_clear_multiplayer_projectiles(index)
+
+
+func _player_hearts(index: int) -> int:
+	return hearts if index == 0 else player2_hearts
+
+
+func _lose_player_heart(index: int) -> void:
+	if multiplayer_enabled and index == 1:
+		player2_hearts = maxi(player2_hearts - 1, 0)
+		if player2_hearts == 0:
+			clear_multiplayer_body_input(1)
+	else:
+		hearts = maxi(hearts - 1, 0)
+		if multiplayer_enabled and hearts == 0:
+			clear_multiplayer_body_input(0)
+
+
+func _setup_multiplayer_visuals() -> void:
+	# Both guns come from the existing authored launcher scene. Keep the
+	# original gun as P1 and instantiate its identical sibling only for MP.
+	if multiplayer_enabled and not is_instance_valid(player2_launcher):
+		player2_launcher = launcher.duplicate() as Node2D
+		player2_launcher.name = "PlayerTwoLauncher"
+		player2_launcher.modulate = Color("#7FCBFF")
+		launcher.get_parent().add_child(player2_launcher)
+		var guide := player2_launcher.get_node_or_null("TutorialFocusArea") as Control
+		if guide != null:
+			guide.visible = false
+	if is_instance_valid(player2_launcher):
+		player2_launcher.visible = multiplayer_enabled
+	if not is_instance_valid(carnival_score_plaque) or not is_instance_valid(score_bottom_number):
+		return
+	if multiplayer_enabled and not is_instance_valid(multiplayer_score_plaque):
+		var hud_layer := $HudLayer as Control
+		multiplayer_score_plaque = carnival_score_plaque.duplicate() as TextureRect
+		multiplayer_score_plaque.name = "PlayerTwoScorePlaque"
+		hud_layer.add_child(multiplayer_score_plaque)
+		multiplayer_score_number = score_bottom_number.duplicate() as Label
+		multiplayer_score_number.name = "PlayerTwoScoreNumber"
+		hud_layer.add_child(multiplayer_score_number)
+		for index in range(2):
+			var status_label := Label.new()
+			status_label.name = "Player%dStatus" % (index + 1)
+			status_label.add_theme_font_override("font", FONT)
+			status_label.add_theme_font_size_override("font_size", 21)
+			status_label.add_theme_color_override("font_color", Color.WHITE)
+			status_label.add_theme_color_override("font_outline_color", Color("#152C45"))
+			status_label.add_theme_constant_override("outline_size", 6)
+			status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			hud_layer.add_child(status_label)
+			multiplayer_player_labels.append(status_label)
+	if is_instance_valid(multiplayer_score_plaque):
+		multiplayer_score_plaque.visible = multiplayer_enabled
+	if is_instance_valid(multiplayer_score_number):
+		multiplayer_score_number.visible = multiplayer_enabled
+	for label in multiplayer_player_labels:
+		if is_instance_valid(label):
+			label.visible = multiplayer_enabled
+
+
+func _layout_multiplayer_hud(ui_scale: float) -> void:
+	if not multiplayer_enabled:
+		return
+	var left_position := Vector2(20.0 * ui_scale, size.y - 161.0 * ui_scale)
+	if is_instance_valid(multiplayer_score_plaque):
+		multiplayer_score_plaque.position = left_position
+		multiplayer_score_plaque.size = Vector2(204.0, 128.0) * ui_scale
+	if is_instance_valid(multiplayer_score_number):
+		multiplayer_score_number.position = left_position + Vector2(47.0, 50.0) * ui_scale
+		multiplayer_score_number.size = Vector2(110.0, 46.0) * ui_scale
+		multiplayer_score_number.add_theme_font_size_override("font_size", maxi(17, int(round(39.0 * ui_scale))))
+	for index in range(mini(2, multiplayer_player_labels.size())):
+		var label := multiplayer_player_labels[index]
+		label.position = Vector2(
+			14.0 * ui_scale if index == 1 else size.x - 274.0 * ui_scale,
+			size.y - 190.0 * ui_scale)
+		label.size = Vector2(260.0, 36.0) * ui_scale
+		label.add_theme_font_size_override("font_size", maxi(14, int(round(20.0 * ui_scale))))
+
+
+func _reset_multiplayer_hand_states() -> void:
+	multiplayer_hand_states = []
+	for _index in range(2):
+		multiplayer_hand_states.append({
+			"tracking_valid": false, "raw_raised": false, "sample_since_ms": 0,
+			"armed": false, "last_shot_ms": -1,
+		})
+
+
+func set_multiplayer_hand_raise_state(index: int, raised: bool,
+		tracking_valid: bool = true, now_ms: int = -1) -> bool:
+	if not multiplayer_enabled or index < 0 or index > 1:
+		return false
+	if not tracking_valid or not multiplayer_input_active[index] or tutorial_active \
+			or process_mode == Node.PROCESS_MODE_DISABLED or Engine.is_editor_hint() \
+			or finishing or not timer_running or not is_inside_tree() or _player_hearts(index) <= 0:
+		clear_multiplayer_hand_raise_tracking(index)
+		return false
+	var now := Time.get_ticks_msec() if now_ms < 0 else now_ms
+	var state: Dictionary = multiplayer_hand_states[index]
+	if not bool(state["tracking_valid"]) or raised != bool(state["raw_raised"]):
+		state["tracking_valid"] = true
+		state["raw_raised"] = raised
+		state["sample_since_ms"] = now
+	if not raised:
+		if now - int(state["sample_since_ms"]) >= HAND_RAISE_LOWER_CONFIRM_MS:
+			state["armed"] = true
+		return false
+	if now - int(state["sample_since_ms"]) < HAND_RAISE_UP_CONFIRM_MS:
+		return false
+	if not round_active:
+		state["armed"] = false
+		return false
+	if not bool(state["armed"]) or (int(state["last_shot_ms"]) >= 0 \
+			and now - int(state["last_shot_ms"]) < HAND_RAISE_RELOAD_MS):
+		return false
+	var fired := _launch_multiplayer_projectile(index, now)
+	if fired:
+		state["last_shot_ms"] = now
+	return fired
+
+
+func clear_multiplayer_hand_raise_tracking(index: int) -> void:
+	if index < 0 or index > 1 or multiplayer_hand_states.size() != 2:
+		return
+	var state: Dictionary = multiplayer_hand_states[index]
+	state["tracking_valid"] = false
+	state["raw_raised"] = false
+	state["sample_since_ms"] = 0
+	state["armed"] = false
+
+
 # Caller supplies the combined (left OR right) hand-up state for each valid
 # camera frame, including repeated unchanged frames. Untracked frames must use
 # tracking_valid=false: missing pose data is never interpreted as lowering.
 # The optional clock lets headless tests verify the one-second interval exactly.
 # Returns true only if this sample actually fired one projectile.
 func set_hand_raise_state(raised: bool, tracking_valid: bool = true, now_ms: int = -1) -> bool:
+	if multiplayer_enabled:
+		return false
 	if tutorial_active:
 		clear_hand_raise_tracking()
 		return false
@@ -377,9 +577,11 @@ func _finish_round() -> void:
 		return
 	# Vocabulary availability is never a game-over condition. Only the selected
 	# mode's actual losing condition may open Results.
-	if (is_seconds_mode and time_remaining > 0.0) or (is_lives_mode and hearts > 0):
+	if (is_seconds_mode and time_remaining > 0.0) or (is_lives_mode and not _all_lives_exhausted()):
 		return
 	clear_hand_raise_tracking()
+	for index in range(2):
+		clear_multiplayer_hand_raise_tracking(index)
 	_stop_voice_feedback()
 	_clear_score_feedback()
 	finishing = true
@@ -864,6 +1066,13 @@ func _apply_context() -> void:
 	_clear_score_feedback()
 	clear_hand_raise_tracking()
 	hand_raise_last_shot_ms = -1
+	multiplayer_enabled = bool(context.get("multiplayer", false)) \
+		or String(context.get("player_mode", "")).to_lower() in ["multiplayer", "two", "2", "two players"]
+	_reset_multiplayer_hand_states()
+	multiplayer_input_active = [false, false]
+	multiplayer_directions = [0.0, 0.0]
+	multiplayer_round_success = [false, false]
+	_setup_multiplayer_visuals()
 	_stop_voice_feedback()
 	last_missed_shot_voice_msec = -100000
 	used_words.clear()
@@ -886,7 +1095,7 @@ func _apply_context() -> void:
 		is_lives_mode = false
 		# Seconds mode is strictly one 60-second attempt; hearts do not exist.
 		time_remaining = SECONDS_MODE_DURATION
-		hearts = 0
+		hearts = LIVES_MODE_HEARTS if multiplayer_enabled else 0
 	else:
 		game_mode = "Lives"
 		is_seconds_mode = false
@@ -894,6 +1103,9 @@ func _apply_context() -> void:
 		# Lives ends on zero hearts, without a global countdown.
 		time_remaining = 0.0
 		hearts = LIVES_MODE_HEARTS
+	player2_hearts = LIVES_MODE_HEARTS
+	if multiplayer_enabled:
+		context["player_mode"] = "Multiplayer"
 
 	var difficulty := _difficulty()
 	match difficulty:
@@ -926,9 +1138,18 @@ func _apply_context() -> void:
 	miss_costs_heart = is_lives_mode
 	wrong_penalty = 0
 
-	score = int(context.get("score", 0))
-	correct_count = int(context.get("correct", 0))
-	attempts = int(context.get("attempts", 0))
+	var multiplayer_resume := bool(context.get("resume_round", false))
+	score = int(context.get("score", 0)) if not multiplayer_enabled or multiplayer_resume else 0
+	correct_count = int(context.get("correct", 0)) if not multiplayer_enabled or multiplayer_resume else 0
+	attempts = int(context.get("attempts", 0)) if not multiplayer_enabled or multiplayer_resume else 0
+	player2_score = maxi(int(context.get("player2_score", 0)), 0) if multiplayer_resume and multiplayer_enabled else 0
+	player2_correct = maxi(int(context.get("player2_correct", 0)), 0) if multiplayer_resume and multiplayer_enabled else 0
+	player2_attempts = maxi(int(context.get("player2_attempts", 0)), 0) if multiplayer_resume and multiplayer_enabled else 0
+	if multiplayer_resume and multiplayer_enabled:
+		hearts = clampi(int(context.get("hearts", LIVES_MODE_HEARTS)), 0, LIVES_MODE_HEARTS)
+		player2_hearts = clampi(int(context.get("player2_lives", LIVES_MODE_HEARTS)), 0, LIVES_MODE_HEARTS)
+		if is_seconds_mode:
+			time_remaining = clampf(float(context.get("time_remaining", SECONDS_MODE_DURATION)), 0.0, SECONDS_MODE_DURATION)
 	finishing = false
 	round_completed = false
 	timer_running = true
@@ -939,8 +1160,17 @@ func _apply_context() -> void:
 	launcher_x = size.x * 0.5
 	body_target_x = launcher_x
 	launcher_velocity = 0.0
+	multiplayer_launcher_x = [size.x * 0.32, size.x * 0.68]
+	if multiplayer_enabled:
+		launcher_x = multiplayer_launcher_x[0]
+		body_target_x = launcher_x
+		if is_instance_valid(player2_launcher):
+			player2_launcher.position = Vector2(multiplayer_launcher_x[1], _launcher_y())
 	round_index = maxi(int(context.get("balloon_round", 0)), 0)
 	_refresh_hud()
+	# Context may be applied after _ready's deferred initial layout. Place
+	# the runtime P2 plaque on the opposite side immediately in that case.
+	_layout_scene()
 	_start_new_round()
 	# The router mounts a guided game disabled while waiting for explanation and
 	# countdown. Our embedded CanvasLayer remains interactive during that wait.
@@ -956,7 +1186,7 @@ func _process(delta: float) -> void:
 		if time_remaining <= 0.0:
 			_finish_round()
 			return
-	if is_lives_mode and hearts <= 0:
+	if is_lives_mode and _all_lives_exhausted():
 		_finish_round()
 		return
 
@@ -1016,8 +1246,23 @@ func _input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if tutorial_active or finishing or not timer_running:
 		return
-	_update_launcher(delta)
+	if multiplayer_enabled:
+		_update_multiplayer_launchers(delta)
+	else:
+		_update_launcher(delta)
 	_update_projectiles(delta)
+
+
+func _update_multiplayer_launchers(delta: float) -> void:
+	for index in range(2):
+		if multiplayer_input_active[index] and _player_hearts(index) > 0:
+			multiplayer_launcher_x[index] = clampf(multiplayer_launcher_x[index] \
+				+ multiplayer_directions[index] * launcher_max_speed * delta,
+				_play_left(), _play_right())
+		var gun: Node2D = launcher if index == 0 else player2_launcher
+		if is_instance_valid(gun):
+			gun.position = Vector2(multiplayer_launcher_x[index], _launcher_y())
+	launcher_x = multiplayer_launcher_x[0]
 
 
 func _update_launcher(delta: float) -> void:
@@ -1057,6 +1302,40 @@ func _launch_projectile(now_ms: int = -1) -> bool:
 	projectiles.append(projectile)
 	projectile_velocities[projectile] = Vector2(0.0, -projectile_speed)
 	hand_raise_last_shot_ms = now
+	return true
+
+
+func _launch_multiplayer_projectile(index: int, _now_ms: int) -> bool:
+	if not multiplayer_enabled or index < 0 or index > 1 or finishing \
+			or not timer_running or not round_active or _player_hearts(index) <= 0 \
+			or not multiplayer_input_active[index] or not is_instance_valid(projectile_layer):
+		return false
+	# Each student may have two stones in flight; the other's shots cannot
+	# exhaust their capacity or use the wrong student's one-second cooldown.
+	var owned_count := 0
+	for owner in projectile_owners.values():
+		if int(owner) == index:
+			owned_count += 1
+	if owned_count >= 2:
+		return false
+	var gun: Node2D = launcher if index == 0 else player2_launcher
+	if not is_instance_valid(gun):
+		return false
+	var projectile := STONE_SCENE.instantiate() as Area2D
+	if projectile == null:
+		return false
+	projectile.name = "Player%dStone" % (index + 1)
+	projectile.position = Vector2(multiplayer_launcher_x[index], gun.position.y - 145.0)
+	projectile.z_index = 10
+	# Shared authored stone art is preserved. The P2 tint distinguishes
+	# overlapping shots without creating a second art asset or scene.
+	if index == 1:
+		projectile.modulate = Color("#70C9FF")
+	projectile_layer.add_child(projectile)
+	projectile.area_entered.connect(_on_projectile_area_entered.bind(projectile))
+	projectiles.append(projectile)
+	projectile_velocities[projectile] = Vector2(0.0, -projectile_speed)
+	projectile_owners[projectile] = index
 	return true
 
 
@@ -1131,12 +1410,13 @@ func _resolve_projectile_balloon_hit(projectile: Area2D, lane: int) -> void:
 	if not is_instance_valid(projectile) or not projectile_velocities.has(projectile):
 		return
 	var hit_pos := projectile.position
+	var owner_index := int(projectile_owners.get(projectile, 0))
 	_forget_projectile(projectile)
 	projectile.queue_free()
-	_handle_balloon_hit(lane, hit_pos)
+	_handle_balloon_hit(lane, hit_pos, owner_index)
 
 
-func _handle_balloon_hit(lane: int, hit_pos: Vector2) -> void:
+func _handle_balloon_hit(lane: int, hit_pos: Vector2, owner_index: int = 0) -> void:
 	if finishing or not timer_running or not round_active:
 		return
 	if lane < 0 or lane >= balloons.size():
@@ -1153,11 +1433,13 @@ func _handle_balloon_hit(lane: int, hit_pos: Vector2) -> void:
 		# Show the zero-point result without counting a second hit or attempt.
 		_show_floating_score("+0", hit_pos, SCORE_ZERO_COLOR)
 		return
-	_pop_balloon(lane)
+	_pop_balloon(lane, owner_index)
 
 
-func _pop_balloon(lane: int) -> void:
+func _pop_balloon(lane: int, owner_index: int = 0) -> void:
 	if finishing or not timer_running or not round_active:
+		return
+	if multiplayer_enabled and (owner_index < 0 or owner_index > 1 or _player_hearts(owner_index) <= 0):
 		return
 	if lane < 0 or lane >= balloons.size():
 		return
@@ -1172,14 +1454,25 @@ func _pop_balloon(lane: int) -> void:
 	balloons[lane] = null
 	_spawn_pop_burst(pop_position)
 
-	attempts += 1
+	if multiplayer_enabled and owner_index == 1:
+		player2_attempts += 1
+	else:
+		attempts += 1
 	if was_valid:
 		pending_valid_lanes.erase(lane)
-		correct_count += 1
+		if multiplayer_enabled and owner_index == 1:
+			player2_correct += 1
+		else:
+			correct_count += 1
+		if multiplayer_enabled:
+			multiplayer_round_success[owner_index] = true
 		_boost_balloon_ascent()
 		_speak_balloon_feedback(true)
 		var award := _correct_award()
-		score += award
+		if multiplayer_enabled and owner_index == 1:
+			player2_score += award
+		else:
+			score += award
 		_show_floating_score("+%d" % award, pop_position, SCORE_CORRECT_COLOR)
 		_spawn_confetti(pop_position, true)
 		if pending_valid_lanes.is_empty():
@@ -1194,10 +1487,12 @@ func _pop_balloon(lane: int) -> void:
 		_show_floating_score("+0", pop_position, SCORE_ZERO_COLOR)
 		_spawn_confetti(pop_position, false)
 		if is_lives_mode:
-			hearts = maxi(hearts - 1, 0)
+			_lose_player_heart(owner_index)
 			feedback_label.text = "WRONG BALLOON • 0 POINTS • -1 HEART"
-			if hearts <= 0:
+			if _all_lives_exhausted():
 				_finish_round()
+		elif multiplayer_enabled:
+			_lose_player_heart(owner_index)
 		else:
 			feedback_label.text = "WRONG BALLOON • 0 POINTS"
 	_refresh_hud()
@@ -1207,20 +1502,26 @@ func _on_projectile_missed(projectile: Area2D) -> void:
 	if not projectile_velocities.has(projectile):
 		return
 	var missed_position := projectile.position
+	var owner_index := int(projectile_owners.get(projectile, 0))
 	_forget_projectile(projectile)
 	projectile.queue_free()
 	# A late physics/miss notification after a round ends is cleanup only; it
 	# must never consume a Lives heart or change the attempt denominator.
 	if finishing or not timer_running or not round_active:
 		return
-	attempts += 1
+	if multiplayer_enabled and owner_index == 1:
+		player2_attempts += 1
+	else:
+		attempts += 1
 	_show_floating_score("+0", missed_position, SCORE_ZERO_COLOR)
 	_speak_balloon_feedback(false, true)
 	if miss_costs_heart:
-		hearts = maxi(hearts - 1, 0)
+		_lose_player_heart(owner_index)
 		feedback_label.text = "MISSED SHOT • -1 HEART"
-		if hearts <= 0:
+		if _all_lives_exhausted():
 			_finish_round()
+	elif multiplayer_enabled:
+		_lose_player_heart(owner_index)
 	else:
 		feedback_label.text = "MISSED SHOT"
 	_refresh_hud()
@@ -1240,9 +1541,16 @@ func _on_question_timeout() -> void:
 	round_active = false
 	balloon_floating = false
 	_speak_balloon_feedback(false, true)
-	if is_lives_mode:
-		hearts = maxi(hearts - 1, 0)
-		if hearts <= 0:
+	if is_lives_mode or multiplayer_enabled:
+		if multiplayer_enabled:
+			# A missing player does not lose a heart simply because the other
+			# student was present during this shared question.
+			for index in range(2):
+				if multiplayer_input_active[index] and not multiplayer_round_success[index]:
+					_lose_player_heart(index)
+		else:
+			hearts = maxi(hearts - 1, 0)
+		if _all_lives_exhausted():
 			_finish_round()
 			return
 	_schedule_next_round(0.55)
@@ -1271,6 +1579,7 @@ func _start_new_round() -> void:
 	if finishing or not timer_running or not is_inside_tree():
 		return
 	next_round_pending = false
+	multiplayer_round_success = [false, false]
 	_clear_balloons()
 	_clear_projectiles()
 	var data := _request_round_data()
@@ -1514,11 +1823,24 @@ func _clear_projectiles() -> void:
 			projectile.queue_free()
 	projectiles.clear()
 	projectile_velocities.clear()
+	projectile_owners.clear()
+
+
+func _clear_multiplayer_projectiles(index: int) -> void:
+	if not multiplayer_enabled:
+		return
+	for projectile in projectile_owners.keys():
+		if int(projectile_owners[projectile]) != index:
+			continue
+		_forget_projectile(projectile)
+		if is_instance_valid(projectile):
+			projectile.queue_free()
 
 
 func _forget_projectile(projectile: Area2D) -> void:
 	projectile_velocities.erase(projectile)
 	projectiles.erase(projectile)
+	projectile_owners.erase(projectile)
 
 
 func _layout_scene() -> void:
@@ -1529,6 +1851,12 @@ func _layout_scene() -> void:
 		foreground_counter.size = size
 	launcher_x = clampf(launcher_x, _play_left(), _play_right())
 	launcher.position = Vector2(launcher_x, _launcher_y())
+	if multiplayer_enabled:
+		for index in range(2):
+			multiplayer_launcher_x[index] = clampf(multiplayer_launcher_x[index], _play_left(), _play_right())
+		var gun2 := player2_launcher
+		if is_instance_valid(gun2):
+			gun2.position = Vector2(multiplayer_launcher_x[1], _launcher_y())
 	for lane in range(mini(balloons.size(), LANE_COUNT)):
 		var balloon := balloons[lane]
 		if is_instance_valid(balloon):
@@ -1600,6 +1928,7 @@ func _layout_hud() -> void:
 		if is_instance_valid(pause_button):
 			pause_button.position = Vector2(size.x - 68.0 * ui_scale, 25.0 * ui_scale)
 			pause_button.size = Vector2(48.0, 48.0) * ui_scale
+		_layout_multiplayer_hud(ui_scale)
 		return
 	title_label.position = Vector2(36.0, 16.0)
 	title_label.size = Vector2(340.0, 36.0)
@@ -1631,6 +1960,7 @@ func _layout_hud() -> void:
 	if is_instance_valid(pause_button):
 		pause_button.position = Vector2(size.x - 72.0, 22.0)
 		pause_button.size = Vector2(44.0, 44.0)
+	_layout_multiplayer_hud(1.0)
 
 
 func _hide_balloons_behind_counter() -> void:
@@ -1647,11 +1977,22 @@ func _hide_balloons_behind_counter() -> void:
 func _refresh_hud() -> void:
 	if score_bottom_number != null:
 		score_bottom_number.text = str(score)
+	if is_instance_valid(multiplayer_score_number):
+		multiplayer_score_number.text = str(player2_score)
+		var fit_size := 39
+		while fit_size > 17 and FONT.get_string_size(
+			multiplayer_score_number.text, HORIZONTAL_ALIGNMENT_LEFT,
+			-1, fit_size).x > multiplayer_score_number.size.x - 6.0:
+			fit_size -= 2
+		multiplayer_score_number.add_theme_font_size_override("font_size", fit_size)
+	if multiplayer_enabled and multiplayer_player_labels.size() == 2:
+		multiplayer_player_labels[0].text = "P1  •  %d HEARTS" % hearts
+		multiplayer_player_labels[1].text = "P2  •  %d HEARTS" % player2_hearts
 	if is_lives_mode:
 		if is_instance_valid(shared_timer_plaque):
 			shared_timer_plaque.visible = false
 		if is_instance_valid(shared_lives_plaque):
-			shared_lives_plaque.visible = hearts > 0
+			shared_lives_plaque.visible = not multiplayer_enabled and hearts > 0
 			match clampi(hearts, 1, 3):
 				1:
 					shared_lives_plaque.texture = SHARED_LIVES_STATE_1
@@ -1695,6 +2036,8 @@ func _pause() -> void:
 	if finishing or tutorial_active or not timer_running:
 		return
 	clear_hand_raise_tracking()
+	for index in range(2):
+		clear_multiplayer_hand_raise_tracking(index)
 	_stop_voice_feedback()
 	_pause_score_feedback(true)
 	round_active_before_pause = round_active
@@ -1725,6 +2068,8 @@ func _exit_to_results() -> void:
 	if finishing:
 		return
 	clear_hand_raise_tracking()
+	for index in range(2):
+		clear_multiplayer_hand_raise_tracking(index)
 	_stop_voice_feedback()
 	_clear_score_feedback()
 	finishing = true
@@ -1767,6 +2112,8 @@ func _stop_voice_feedback() -> void:
 func _exit_tree() -> void:
 	_cancel_integrated_tutorial()
 	clear_hand_raise_tracking()
+	for index in range(2):
+		clear_multiplayer_hand_raise_tracking(index)
 	_stop_voice_feedback()
 	if _kids_voice != null:
 		_kids_voice.release()
